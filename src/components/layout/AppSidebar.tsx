@@ -29,19 +29,19 @@ import {
 } from "@/components/ui/sidebar";
 
 const analysisViews = [
-  { title: "Panorama", url: "/dashboard/panorama", icon: LayoutDashboard },
-  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText },
-  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare },
-  { title: "Alertas", url: "/dashboard/alertas", icon: Bell },
-  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users },
-  { title: "Tendencias", url: "/dashboard/tendencias", icon: TrendingUp },
-  { title: "Fuentes", url: "/dashboard/fuentes", icon: Database },
-  { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart },
+  { title: "Panorama", url: "/dashboard/panorama", icon: LayoutDashboard, tourId: "nav-panorama" },
+  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText, tourId: "nav-semantica" },
+  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare, tourId: "nav-comparativa" },
+  { title: "Alertas", url: "/dashboard/alertas", icon: Bell, tourId: "nav-alertas" },
+  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users, tourId: "nav-influenciadores" },
+  { title: "Tendencias", url: "/dashboard/tendencias", icon: TrendingUp, tourId: "nav-tendencias" },
+  { title: "Fuentes", url: "/dashboard/fuentes", icon: Database, tourId: "nav-fuentes" },
+  { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart, tourId: "nav-reportes" },
 ];
 
 const managementItems = [
-  { title: "Proyectos", url: "/dashboard/proyectos", icon: FolderOpen },
-  { title: "Configuración", url: "/dashboard/configuracion", icon: Settings },
+  { title: "Proyectos", url: "/dashboard/proyectos", icon: FolderOpen, tourId: "nav-proyectos" },
+  { title: "Configuración", url: "/dashboard/configuracion", icon: Settings, tourId: "nav-configuracion" },
 ];
 
 export function AppSidebar() {
@@ -82,7 +82,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {analysisViews.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} data-tour={item.tourId}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
@@ -111,7 +111,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {managementItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} data-tour={item.tourId}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
