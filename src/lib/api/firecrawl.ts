@@ -131,21 +131,48 @@ export const firecrawlApi = {
   async search(query: string, options?: SearchOptions): Promise<FirecrawlResponse<SearchResult[]>> {
     try {
       const result = await withRetry(async () => {
-        const { data, error } = await supabase.functions.invoke('firecrawl-search', {
-          body: { query, options },
-        });
+        // Use AbortController to set a longer timeout (45s) for slow API calls
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-        if (error) {
-          throw new Error(error.message);
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/firecrawl-search`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ query, options }),
+              signal: controller.signal,
+            }
+          );
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Request failed with status ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Handle Firecrawl response structure
+          if (data?.success === false) {
+            throw new Error(data.error || 'Search failed');
+          }
+
+          return data;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (err instanceof Error && err.name === 'AbortError') {
+            throw new Error('La búsqueda tardó demasiado. Por favor intenta de nuevo.');
+          }
+          throw err;
         }
-
-        // Handle Firecrawl response structure
-        if (data?.success === false) {
-          throw new Error(data.error || 'Search failed');
-        }
-
-        return data;
-      });
+      }, 2, 2000); // 2 retries with 2s base delay
 
       return { 
         success: true, 
@@ -156,7 +183,7 @@ export const firecrawlApi = {
       console.error('Search failed after retries:', errorMessage);
       return { 
         success: false, 
-        error: errorMessage.includes('Failed to fetch') 
+        error: errorMessage.includes('Failed to fetch') || errorMessage.includes('Failed to send')
           ? 'La búsqueda tardó demasiado. Por favor intenta de nuevo.'
           : errorMessage
       };
