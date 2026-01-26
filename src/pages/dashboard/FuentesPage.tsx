@@ -17,6 +17,10 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { EntityForm } from "@/components/entities/EntityForm";
 import wizrLogoIcon from "@/assets/wizr-logo-icon.png";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   AlertCircle,
   Plus,
@@ -40,14 +44,34 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  CalendarIcon,
+  X,
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 type SearchMode = "manual" | "entities";
 type ViewMode = "search" | "history";
 
 const ITEMS_PER_PAGE = 10;
+
+// Extract unique domains from results or mentions
+const extractDomains = (items: { url?: string; source_domain?: string }[]): string[] => {
+  const domains = new Set<string>();
+  items.forEach((item) => {
+    if (item.source_domain) {
+      domains.add(item.source_domain);
+    } else if (item.url) {
+      try {
+        domains.add(new URL(item.url).hostname.replace("www.", ""));
+      } catch {
+        // ignore invalid URLs
+      }
+    }
+  });
+  return Array.from(domains).sort();
+};
 
 const FuentesPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
@@ -78,6 +102,21 @@ const FuentesPage = () => {
   const [searchPage, setSearchPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
 
+  // Filter state for search results
+  const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [searchFilterDomain, setSearchFilterDomain] = useState<string>("");
+  const [searchFilterKeyword, setSearchFilterKeyword] = useState("");
+  const [searchFilterDateFrom, setSearchFilterDateFrom] = useState<Date | undefined>();
+  const [searchFilterDateTo, setSearchFilterDateTo] = useState<Date | undefined>();
+
+  // Filter state for history
+  const [showHistoryFilters, setShowHistoryFilters] = useState(false);
+  const [historyFilterDomain, setHistoryFilterDomain] = useState<string>("");
+  const [historyFilterKeyword, setHistoryFilterKeyword] = useState("");
+  const [historyFilterDateFrom, setHistoryFilterDateFrom] = useState<Date | undefined>();
+  const [historyFilterDateTo, setHistoryFilterDateTo] = useState<Date | undefined>();
+  const [historyFilterEntityId, setHistoryFilterEntityId] = useState<string>("");
+
   // Auto-select all entities when they load
   useEffect(() => {
     if (entities.length > 0 && selectedEntityIds.size === 0) {
@@ -92,23 +131,115 @@ const FuentesPage = () => {
     setSearchQuery(selectedProject?.nombre || "");
     setSearchPage(1);
     setHistoryPage(1);
+    // Reset filters
+    clearSearchFilters();
+    clearHistoryFilters();
   }, [selectedProject]);
 
-  // Paginated results
+  // Available domains for filter dropdowns
+  const searchDomains = useMemo(() => extractDomains(results), [results]);
+  const historyDomains = useMemo(() => extractDomains(mentions), [mentions]);
+
+  // Filtered search results
+  const filteredResults = useMemo(() => {
+    return results.filter((result) => {
+      // Domain filter
+      if (searchFilterDomain) {
+        try {
+          const resultDomain = new URL(result.url).hostname.replace("www.", "");
+          if (resultDomain !== searchFilterDomain) return false;
+        } catch {
+          return false;
+        }
+      }
+      // Keyword filter
+      if (searchFilterKeyword.trim()) {
+        const keyword = searchFilterKeyword.toLowerCase();
+        const inTitle = result.title?.toLowerCase().includes(keyword);
+        const inDescription = result.description?.toLowerCase().includes(keyword);
+        if (!inTitle && !inDescription) return false;
+      }
+      // Date filter
+      if (searchFilterDateFrom || searchFilterDateTo) {
+        const pubDate = result.metadata?.publishedDate 
+          ? new Date(result.metadata.publishedDate) 
+          : null;
+        if (!pubDate) return false;
+        if (searchFilterDateFrom && pubDate < startOfDay(searchFilterDateFrom)) return false;
+        if (searchFilterDateTo && pubDate > endOfDay(searchFilterDateTo)) return false;
+      }
+      return true;
+    });
+  }, [results, searchFilterDomain, searchFilterKeyword, searchFilterDateFrom, searchFilterDateTo]);
+
+  // Filtered history mentions
+  const filteredMentions = useMemo(() => {
+    return mentions.filter((mention) => {
+      // Domain filter
+      if (historyFilterDomain && mention.source_domain !== historyFilterDomain) return false;
+      // Keyword filter
+      if (historyFilterKeyword.trim()) {
+        const keyword = historyFilterKeyword.toLowerCase();
+        const inTitle = mention.title?.toLowerCase().includes(keyword);
+        const inDescription = mention.description?.toLowerCase().includes(keyword);
+        const inKeywords = mention.matched_keywords?.some((k) => k.toLowerCase().includes(keyword));
+        if (!inTitle && !inDescription && !inKeywords) return false;
+      }
+      // Date filter
+      if (historyFilterDateFrom || historyFilterDateTo) {
+        const createdAt = new Date(mention.created_at);
+        if (historyFilterDateFrom && createdAt < startOfDay(historyFilterDateFrom)) return false;
+        if (historyFilterDateTo && createdAt > endOfDay(historyFilterDateTo)) return false;
+      }
+      // Entity filter
+      if (historyFilterEntityId && mention.entity_id !== historyFilterEntityId) return false;
+      return true;
+    });
+  }, [mentions, historyFilterDomain, historyFilterKeyword, historyFilterDateFrom, historyFilterDateTo, historyFilterEntityId]);
+
+  // Paginated results (using filtered)
   const paginatedResults = useMemo(() => {
     const startIndex = (searchPage - 1) * ITEMS_PER_PAGE;
-    return results.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [results, searchPage]);
+    return filteredResults.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredResults, searchPage]);
 
-  const totalSearchPages = Math.ceil(results.length / ITEMS_PER_PAGE);
+  const totalSearchPages = Math.ceil(filteredResults.length / ITEMS_PER_PAGE);
 
-  // Paginated mentions
+  // Paginated mentions (using filtered)
   const paginatedMentions = useMemo(() => {
     const startIndex = (historyPage - 1) * ITEMS_PER_PAGE;
-    return mentions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [mentions, historyPage]);
+    return filteredMentions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredMentions, historyPage]);
 
-  const totalHistoryPages = Math.ceil(mentions.length / ITEMS_PER_PAGE);
+  const totalHistoryPages = Math.ceil(filteredMentions.length / ITEMS_PER_PAGE);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setSearchPage(1);
+  }, [searchFilterDomain, searchFilterKeyword, searchFilterDateFrom, searchFilterDateTo]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historyFilterDomain, historyFilterKeyword, historyFilterDateFrom, historyFilterDateTo, historyFilterEntityId]);
+
+  // Count active filters
+  const activeSearchFilters = [searchFilterDomain, searchFilterKeyword, searchFilterDateFrom, searchFilterDateTo].filter(Boolean).length;
+  const activeHistoryFilters = [historyFilterDomain, historyFilterKeyword, historyFilterDateFrom, historyFilterDateTo, historyFilterEntityId].filter(Boolean).length;
+
+  const clearSearchFilters = () => {
+    setSearchFilterDomain("");
+    setSearchFilterKeyword("");
+    setSearchFilterDateFrom(undefined);
+    setSearchFilterDateTo(undefined);
+  };
+
+  const clearHistoryFilters = () => {
+    setHistoryFilterDomain("");
+    setHistoryFilterKeyword("");
+    setHistoryFilterDateFrom(undefined);
+    setHistoryFilterDateTo(undefined);
+    setHistoryFilterEntityId("");
+  };
 
   const handleToggleEntity = (entityId: string) => {
     const newSelected = new Set(selectedEntityIds);
@@ -570,16 +701,125 @@ const FuentesPage = () => {
             </Card>
           ) : results.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {results.length} menciones encontradas ({TIME_RANGE_LABELS[timeRange]})
-                </p>
-                {totalSearchPages > 1 && (
+              {/* Filters Toggle */}
+              <Collapsible open={showSearchFilters} onOpenChange={setShowSearchFilters}>
+                <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Página {searchPage} de {totalSearchPages}
+                    {filteredResults.length} de {results.length} menciones ({TIME_RANGE_LABELS[timeRange]})
                   </p>
-                )}
-              </div>
+                  <div className="flex items-center gap-2">
+                    {activeSearchFilters > 0 && (
+                      <Button variant="ghost" size="sm" onClick={clearSearchFilters} className="h-8 gap-1">
+                        <X className="h-3 w-3" />
+                        Limpiar filtros ({activeSearchFilters})
+                      </Button>
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtros
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", showSearchFilters && "rotate-180")} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    {totalSearchPages > 1 && (
+                      <span className="text-sm text-muted-foreground">
+                        Pág. {searchPage}/{totalSearchPages}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <CollapsibleContent className="mt-3">
+                  <Card className="bg-muted/30">
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Domain Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Globe className="h-3 w-3" />
+                            Dominio
+                          </Label>
+                          <Select value={searchFilterDomain} onValueChange={setSearchFilterDomain}>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Todos los dominios" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Todos los dominios</SelectItem>
+                              {searchDomains.map((domain) => (
+                                <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Keyword Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Search className="h-3 w-3" />
+                            Palabra clave
+                          </Label>
+                          <Input
+                            placeholder="Buscar en resultados..."
+                            value={searchFilterKeyword}
+                            onChange={(e) => setSearchFilterKeyword(e.target.value)}
+                            className="bg-background"
+                          />
+                        </div>
+                        
+                        {/* Date From */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            Desde
+                          </Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !searchFilterDateFrom && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {searchFilterDateFrom ? format(searchFilterDateFrom, "dd/MM/yyyy") : "Fecha inicio"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={searchFilterDateFrom}
+                                onSelect={setSearchFilterDateFrom}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        
+                        {/* Date To */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            Hasta
+                          </Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !searchFilterDateTo && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {searchFilterDateTo ? format(searchFilterDateTo, "dd/MM/yyyy") : "Fecha fin"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={searchFilterDateTo}
+                                onSelect={setSearchFilterDateTo}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CollapsibleContent>
+              </Collapsible>
 
               {paginatedResults.map((result, index) => (
                 <Card key={`${searchPage}-${index}`} className="overflow-hidden transition-shadow hover:shadow-md">
@@ -710,16 +950,144 @@ const FuentesPage = () => {
             </div>
           ) : mentions.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {mentions.length} menciones guardadas
-                </p>
-                {totalHistoryPages > 1 && (
+              {/* Filters Toggle */}
+              <Collapsible open={showHistoryFilters} onOpenChange={setShowHistoryFilters}>
+                <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Página {historyPage} de {totalHistoryPages}
+                    {filteredMentions.length} de {mentions.length} menciones guardadas
                   </p>
-                )}
-              </div>
+                  <div className="flex items-center gap-2">
+                    {activeHistoryFilters > 0 && (
+                      <Button variant="ghost" size="sm" onClick={clearHistoryFilters} className="h-8 gap-1">
+                        <X className="h-3 w-3" />
+                        Limpiar ({activeHistoryFilters})
+                      </Button>
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtros
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", showHistoryFilters && "rotate-180")} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    {totalHistoryPages > 1 && (
+                      <span className="text-sm text-muted-foreground">
+                        Pág. {historyPage}/{totalHistoryPages}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <CollapsibleContent className="mt-3">
+                  <Card className="bg-muted/30">
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        {/* Domain Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Globe className="h-3 w-3" />
+                            Dominio
+                          </Label>
+                          <Select value={historyFilterDomain} onValueChange={setHistoryFilterDomain}>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Todos los dominios</SelectItem>
+                              {historyDomains.map((domain) => (
+                                <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Entity Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Tag className="h-3 w-3" />
+                            Entidad
+                          </Label>
+                          <Select value={historyFilterEntityId} onValueChange={setHistoryFilterEntityId}>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="Todas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Todas las entidades</SelectItem>
+                              {entities.map((entity) => (
+                                <SelectItem key={entity.id} value={entity.id}>{entity.nombre}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Keyword Filter */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Search className="h-3 w-3" />
+                            Palabra clave
+                          </Label>
+                          <Input
+                            placeholder="Buscar..."
+                            value={historyFilterKeyword}
+                            onChange={(e) => setHistoryFilterKeyword(e.target.value)}
+                            className="bg-background"
+                          />
+                        </div>
+                        
+                        {/* Date From */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            Desde
+                          </Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !historyFilterDateFrom && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {historyFilterDateFrom ? format(historyFilterDateFrom, "dd/MM/yy") : "Inicio"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={historyFilterDateFrom}
+                                onSelect={setHistoryFilterDateFrom}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        
+                        {/* Date To */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            Hasta
+                          </Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !historyFilterDateTo && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {historyFilterDateTo ? format(historyFilterDateTo, "dd/MM/yy") : "Fin"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={historyFilterDateTo}
+                                onSelect={setHistoryFilterDateTo}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CollapsibleContent>
+              </Collapsible>
 
               {paginatedMentions.map((mention) => (
                 <Card 
