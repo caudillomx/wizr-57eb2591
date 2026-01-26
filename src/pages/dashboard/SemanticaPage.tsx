@@ -178,6 +178,7 @@ const SemanticaPage = () => {
       ) : (
         <AnalysisResults
           result={result}
+          mentions={mentions}
           onSaveSentiments={handleSaveSentiments}
           isSaving={isUpdatingSentiments}
           onReanalyze={handleAnalyze}

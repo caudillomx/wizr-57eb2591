@@ -9,6 +9,7 @@ import type { SentimentDistribution } from "@/hooks/useSemanticAnalysis";
 
 interface SentimentPieChartProps {
   distribution: SentimentDistribution;
+  onSentimentClick?: (sentiment: "positivo" | "neutral" | "negativo") => void;
 }
 
 const chartConfig: ChartConfig = {
@@ -32,7 +33,7 @@ const COLORS = [
   "hsl(0, 84%, 60%)",   // negativo - red
 ];
 
-export function SentimentPieChart({ distribution }: SentimentPieChartProps) {
+export function SentimentPieChart({ distribution, onSentimentClick }: SentimentPieChartProps) {
   const data = [
     { name: "Positivo", value: distribution.positivo, key: "positivo" },
     { name: "Neutral", value: distribution.neutral, key: "neutral" },
@@ -46,6 +47,12 @@ export function SentimentPieChart({ distribution }: SentimentPieChartProps) {
       </div>
     );
   }
+
+  const handleClick = (entry: { key: string }) => {
+    if (onSentimentClick) {
+      onSentimentClick(entry.key as "positivo" | "neutral" | "negativo");
+    }
+  };
 
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
@@ -62,11 +69,14 @@ export function SentimentPieChart({ distribution }: SentimentPieChartProps) {
             nameKey="name"
             label={({ name, value }) => `${name}: ${value}%`}
             labelLine={false}
+            style={{ cursor: onSentimentClick ? "pointer" : "default" }}
+            onClick={(_, index) => handleClick(data[index])}
           >
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[["positivo", "neutral", "negativo"].indexOf(entry.key)]}
+                className="hover:opacity-80 transition-opacity"
               />
             ))}
           </Pie>

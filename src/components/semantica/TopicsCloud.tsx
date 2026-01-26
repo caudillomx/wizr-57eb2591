@@ -5,9 +5,10 @@ import type { Topic } from "@/hooks/useSemanticAnalysis";
 interface TopicsCloudProps {
   topics: Topic[];
   maxTopics?: number;
+  onTopicClick?: (topicName: string) => void;
 }
 
-export function TopicsCloud({ topics, maxTopics = 8 }: TopicsCloudProps) {
+export function TopicsCloud({ topics, maxTopics = 8, onTopicClick }: TopicsCloudProps) {
   const displayTopics = topics.slice(0, maxTopics);
 
   const getSize = (relevance: number) => {
@@ -38,9 +39,11 @@ export function TopicsCloud({ topics, maxTopics = 8 }: TopicsCloudProps) {
           key={index}
           variant={getVariant(topic.relevance)}
           className={cn(
-            "cursor-default transition-transform hover:scale-105",
+            "transition-transform hover:scale-105",
+            onTopicClick ? "cursor-pointer" : "cursor-default",
             getSize(topic.relevance)
           )}
+          onClick={() => onTopicClick?.(topic.name)}
         >
           {topic.name}
           <span className="ml-1.5 opacity-70">({topic.mentionCount})</span>
