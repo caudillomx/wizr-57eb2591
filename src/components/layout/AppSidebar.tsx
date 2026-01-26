@@ -57,11 +57,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <img 
-            src={wizrIcon} 
-            alt="Wizr" 
-            className="h-10 w-10 object-contain"
-          />
+          <div className="h-10 w-10 rounded-lg bg-white/90 p-1.5 flex items-center justify-center">
+            <img 
+              src={wizrIcon} 
+              alt="Wizr" 
+              className="h-full w-full object-contain"
+            />
+          </div>
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
