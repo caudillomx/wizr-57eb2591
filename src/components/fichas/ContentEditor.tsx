@@ -5,9 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, X, Check, Plus, Trash2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Pencil, X, Check, Plus, Trash2, RefreshCw, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ConversationAnalysisContent, InformativeContent, CardType } from "@/hooks/useThematicCards";
 
 interface ContentEditorProps {
@@ -18,6 +24,9 @@ interface ContentEditorProps {
   mentionCount: number;
   onContentChange: (content: ConversationAnalysisContent | InformativeContent) => void;
   onTitleChange: (title: string) => void;
+  onRegenerateSection?: (section: string) => Promise<void>;
+  isRegenerating?: boolean;
+  regeneratingSection?: string | null;
 }
 
 interface EditableFieldProps {
@@ -129,6 +138,59 @@ function EditableListItem({
   );
 }
 
+interface SectionHeaderProps {
+  title: string;
+  section: string;
+  onRegenerate?: (section: string) => Promise<void>;
+  isRegenerating?: boolean;
+  regeneratingSection?: string | null;
+  children?: React.ReactNode;
+}
+
+function SectionHeader({ 
+  title, 
+  section, 
+  onRegenerate, 
+  isRegenerating, 
+  regeneratingSection,
+  children 
+}: SectionHeaderProps) {
+  const isThisSectionRegenerating = isRegenerating && regeneratingSection === section;
+
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="font-medium">{title}</h4>
+      <div className="flex items-center gap-1">
+        {children}
+        {onRegenerate && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2"
+                  onClick={() => onRegenerate(section)}
+                  disabled={isRegenerating}
+                >
+                  {isThisSectionRegenerating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Regenerar con AI</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ContentEditor({
   cardType,
   content,
@@ -137,6 +199,9 @@ export function ContentEditor({
   mentionCount,
   onContentChange,
   onTitleChange,
+  onRegenerateSection,
+  isRegenerating,
+  regeneratingSection,
 }: ContentEditorProps) {
   const updateContent = <K extends keyof typeof content>(
     key: K,
@@ -169,7 +234,13 @@ export function ContentEditor({
             {/* Executive Summary - Both types */}
             {"executiveSummary" in content && (
               <div>
-                <h4 className="font-medium mb-2">Resumen Ejecutivo</h4>
+                <SectionHeader
+                  title="Resumen Ejecutivo"
+                  section="executiveSummary"
+                  onRegenerate={onRegenerateSection}
+                  isRegenerating={isRegenerating}
+                  regeneratingSection={regeneratingSection}
+                />
                 <EditableField
                   value={content.executiveSummary}
                   onChange={(v) => updateContent("executiveSummary" as keyof typeof content, v as any)}
@@ -245,11 +316,17 @@ export function ContentEditor({
 
                 {/* Main Narratives */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Narrativas Principales</h4>
+                  <SectionHeader
+                    title="Narrativas Principales"
+                    section="mainNarratives"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newNarratives = [
                           ...conversationContent.mainNarratives,
@@ -261,7 +338,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <div className="space-y-2">
                     {conversationContent.mainNarratives.map((n, i) => (
                       <div key={i} className="group relative flex items-center gap-2 border rounded-md p-2">
@@ -304,11 +381,17 @@ export function ContentEditor({
 
                 {/* Relevant Actors */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Actores Relevantes</h4>
+                  <SectionHeader
+                    title="Actores Relevantes"
+                    section="relevantActors"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newActors = [
                           ...conversationContent.relevantActors,
@@ -320,7 +403,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <div className="space-y-2">
                     {conversationContent.relevantActors.map((actor, i) => (
                       <div key={i} className="group relative border rounded-md p-3 space-y-2">
@@ -374,11 +457,17 @@ export function ContentEditor({
 
                 {/* Risks */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Riesgos</h4>
+                  <SectionHeader
+                    title="Riesgos"
+                    section="risks"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newRisks = [...conversationContent.risks, "Nuevo riesgo"];
                         updateContent("risks" as keyof typeof content, newRisks as any);
@@ -387,7 +476,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <ul className="space-y-2">
                     {conversationContent.risks.map((risk, i) => (
                       <li key={i} className="group relative flex items-center gap-2">
@@ -419,11 +508,17 @@ export function ContentEditor({
 
                 {/* Recommendations */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Recomendaciones</h4>
+                  <SectionHeader
+                    title="Recomendaciones"
+                    section="recommendations"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newRecs = [...conversationContent.recommendations, "Nueva recomendación"];
                         updateContent("recommendations" as keyof typeof content, newRecs as any);
@@ -432,7 +527,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <ul className="space-y-2">
                     {conversationContent.recommendations.map((rec, i) => (
                       <li key={i} className="group relative flex items-center gap-2">
@@ -469,7 +564,13 @@ export function ContentEditor({
               <>
                 {/* Context */}
                 <div>
-                  <h4 className="font-medium mb-2">Contexto</h4>
+                  <SectionHeader
+                    title="Contexto"
+                    section="context"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  />
                   <EditableField
                     value={informativeContent.context}
                     onChange={(v) => updateContent("context" as keyof typeof content, v as any)}
@@ -480,11 +581,17 @@ export function ContentEditor({
 
                 {/* What is happening */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">¿Qué está pasando?</h4>
+                  <SectionHeader
+                    title="¿Qué está pasando?"
+                    section="whatIsHappening"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newItems = [
                           ...informativeContent.whatIsHappening,
@@ -496,7 +603,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <div className="space-y-2">
                     {informativeContent.whatIsHappening.map((item, i) => (
                       <EditableListItem
@@ -524,11 +631,17 @@ export function ContentEditor({
 
                 {/* Local Implications */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Implicaciones Locales</h4>
+                  <SectionHeader
+                    title="Implicaciones Locales"
+                    section="localImplications"
+                    onRegenerate={onRegenerateSection}
+                    isRegenerating={isRegenerating}
+                    regeneratingSection={regeneratingSection}
+                  >
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7"
                       onClick={() => {
                         const newItems = [
                           ...informativeContent.localImplications,
@@ -540,7 +653,7 @@ export function ContentEditor({
                       <Plus className="h-3 w-3 mr-1" />
                       Agregar
                     </Button>
-                  </div>
+                  </SectionHeader>
                   <div className="space-y-2">
                     {informativeContent.localImplications.map((item, i) => (
                       <EditableListItem
