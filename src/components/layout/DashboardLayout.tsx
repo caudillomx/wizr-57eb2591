@@ -1,11 +1,13 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProjectProvider } from "@/contexts/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import ProjectSelector from "@/components/layout/ProjectSelector";
 import { LogOut, User, Plus } from "lucide-react";
 
-const DashboardLayout = () => {
+const DashboardContent = () => {
   const { user, roles, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -33,17 +35,19 @@ const DashboardLayout = () => {
         <SidebarInset className="flex flex-1 flex-col">
           {/* Header */}
           <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <SidebarTrigger />
+              <div className="h-6 w-px bg-border" />
+              <ProjectSelector />
             </div>
 
             <div className="flex items-center gap-4">
               <Button size="sm" onClick={() => navigate("/nuevo-proyecto")}>
                 <Plus className="mr-2 h-4 w-4" />
-                Nuevo Proyecto
+                <span className="hidden sm:inline">Nuevo Proyecto</span>
               </Button>
 
-              <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-2 md:flex">
                 {roles.map((role) => (
                   <span
                     key={role}
@@ -56,7 +60,7 @@ const DashboardLayout = () => {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User size={14} />
-                <span className="hidden md:inline">{user?.email}</span>
+                <span className="hidden lg:inline">{user?.email}</span>
               </div>
 
               <Button variant="ghost" size="icon" onClick={handleSignOut}>
@@ -72,6 +76,14 @@ const DashboardLayout = () => {
         </SidebarInset>
       </div>
     </SidebarProvider>
+  );
+};
+
+const DashboardLayout = () => {
+  return (
+    <ProjectProvider>
+      <DashboardContent />
+    </ProjectProvider>
   );
 };
 
