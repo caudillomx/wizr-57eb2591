@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      entities: {
+        Row: {
+          activo: boolean
+          aliases: string[]
+          created_at: string
+          descripcion: string | null
+          id: string
+          metadata: Json | null
+          nombre: string
+          palabras_clave: string[]
+          project_id: string
+          tipo: Database["public"]["Enums"]["entity_type"]
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          aliases?: string[]
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          nombre: string
+          palabras_clave?: string[]
+          project_id: string
+          tipo: Database["public"]["Enums"]["entity_type"]
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          aliases?: string[]
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          nombre?: string
+          palabras_clave?: string[]
+          project_id?: string
+          tipo?: Database["public"]["Enums"]["entity_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -132,6 +182,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "analista" | "director"
+      entity_type: "persona" | "marca" | "institucion"
       project_type: "monitoreo" | "investigacion" | "crisis" | "benchmark"
       sensitivity_level: "bajo" | "medio" | "alto" | "critico"
       temporal_scope:
@@ -268,6 +319,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "analista", "director"],
+      entity_type: ["persona", "marca", "institucion"],
       project_type: ["monitoreo", "investigacion", "crisis", "benchmark"],
       sensitivity_level: ["bajo", "medio", "alto", "critico"],
       temporal_scope: [
