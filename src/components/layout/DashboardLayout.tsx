@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import ProjectSelector from "@/components/layout/ProjectSelector";
+import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
+import { TourGuide } from "@/components/onboarding/TourGuide";
 import { LogOut, User, Plus } from "lucide-react";
 
 const DashboardContent = () => {
@@ -38,7 +40,9 @@ const DashboardContent = () => {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="text-foreground" />
               <div className="h-6 w-px bg-border" />
-              <ProjectSelector />
+              <div data-tour="project-selector">
+                <ProjectSelector />
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -75,6 +79,10 @@ const DashboardContent = () => {
           </main>
         </SidebarInset>
       </div>
+
+      {/* Onboarding Components */}
+      <WelcomeModal />
+      <TourGuide />
     </SidebarProvider>
   );
 };

@@ -128,3 +128,21 @@ Wizr Brand: Purple (#5A2FBA), Orange (#FF6B35), with light theme as default.
     @apply font-semibold tracking-tight;
   }
 }
+
+/* Tour highlight effect */
+.tour-highlight {
+  position: relative;
+  z-index: 51;
+  box-shadow: 0 0 0 4px hsl(260 60% 45% / 0.3), 0 0 20px hsl(260 60% 45% / 0.2);
+  border-radius: 8px;
+  animation: tour-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tour-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px hsl(260 60% 45% / 0.3), 0 0 20px hsl(260 60% 45% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsl(260 60% 45% / 0.4), 0 0 30px hsl(260 60% 45% / 0.3);
+  }
+}
