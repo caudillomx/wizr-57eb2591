@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import wizrLogo from "@/assets/wizr-logo.png";
+import wizrLogoFull from "@/assets/wizr-logo-full.png";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -12,9 +12,9 @@ const Index = () => {
       <div className="flex flex-col items-center gap-8 text-center">
         {/* Logo */}
         <img
-          src={wizrLogo}
+          src={wizrLogoFull}
           alt="Wizr - Análisis Estratégico"
-          className="h-32 w-auto"
+          className="h-40 w-auto"
         />
 
         {/* Tagline */}
@@ -22,7 +22,7 @@ const Index = () => {
           <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
             Metodología Académica + Magia Analítica + Producto Operativo
           </p>
-          <p className="text-sm text-accent">
+          <p className="text-sm text-primary">
             Wizard → Wise → Structure + Insight
           </p>
         </div>
@@ -59,7 +59,7 @@ const Index = () => {
 
         {/* Footer */}
         <p className="mt-8 text-xs text-muted-foreground">
-          Un producto de <span className="font-medium text-accent">Kimedia</span>
+          Un producto de <span className="font-medium text-primary">Kimedia</span>
         </p>
       </div>
     </div>
