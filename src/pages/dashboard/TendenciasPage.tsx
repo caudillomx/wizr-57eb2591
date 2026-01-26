@@ -3,10 +3,27 @@ import { useProject } from "@/contexts/ProjectContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, Plus, TrendingUp, TrendingDown, Minus, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useMentions } from "@/hooks/useMentions";
+import { useEntities } from "@/hooks/useEntities";
+import { useTrendsData } from "@/hooks/useTrendsData";
+import { EntityTrendsChart } from "@/components/tendencias/EntityTrendsChart";
+import {
+  AlertCircle,
+  Plus,
+  TrendingUp,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  FileSearch,
+  User,
+  Building2,
+  Briefcase,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -20,54 +37,39 @@ import {
   Area,
 } from "recharts";
 
-// Mock data for demonstration
-const generateMockData = (days: number) => {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    
-    const baseVolume = 150 + Math.floor(Math.random() * 100);
-    const variation = Math.sin(i / 3) * 30;
-    
-    data.push({
-      date: date.toLocaleDateString("es-MX", { month: "short", day: "numeric" }),
-      fullDate: date.toISOString(),
-      menciones: Math.floor(baseVolume + variation + Math.random() * 40),
-      positivo: Math.floor(40 + Math.random() * 20 + Math.sin(i / 4) * 10),
-      neutral: Math.floor(35 + Math.random() * 15),
-      negativo: Math.floor(15 + Math.random() * 15 - Math.sin(i / 4) * 5),
-      alcance: Math.floor((baseVolume + variation) * 150 + Math.random() * 5000),
-      engagement: Math.floor(Math.random() * 500 + 200 + Math.sin(i / 2) * 100),
-    });
-  }
-  
-  return data;
-};
-
-const MOCK_DATA_7D = generateMockData(7);
-const MOCK_DATA_30D = generateMockData(30);
-const MOCK_DATA_90D = generateMockData(90);
+type TimeRange = "7d" | "30d" | "90d";
 
 const TendenciasPage = () => {
-  const { selectedProject, loading } = useProject();
+  const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
-  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [selectedEntityId, setSelectedEntityId] = useState<string>("all");
 
-  const data = timeRange === "7d" ? MOCK_DATA_7D : timeRange === "30d" ? MOCK_DATA_30D : MOCK_DATA_90D;
+  const { mentions, isLoading: mentionsLoading } = useMentions(
+    selectedProject?.id,
+    { isArchived: false }
+  );
+
+  const { entities } = useEntities(selectedProject?.id);
+
+  const { trendData, summary, entityBreakdown, hasData } = useTrendsData(
+    mentions,
+    timeRange,
+    selectedEntityId
+  );
+
+  const loading = projectLoading || mentionsLoading;
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <Skeleton className="h-8 w-48" />
         <div className="grid gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
-        <div className="h-80 animate-pulse rounded-lg bg-muted" />
+        <Skeleton className="h-80" />
       </div>
     );
   }
@@ -90,286 +92,300 @@ const TendenciasPage = () => {
     );
   }
 
-  // Calculate summary metrics
-  const totalMentions = data.reduce((sum, d) => sum + d.menciones, 0);
-  const avgMentions = Math.floor(totalMentions / data.length);
-  const lastDayMentions = data[data.length - 1]?.menciones || 0;
-  const prevDayMentions = data[data.length - 2]?.menciones || 0;
-  const mentionChange = prevDayMentions > 0 
-    ? ((lastDayMentions - prevDayMentions) / prevDayMentions * 100).toFixed(1) 
-    : "0";
-
-  const avgPositive = Math.floor(data.reduce((sum, d) => sum + d.positivo, 0) / data.length);
-  const avgNegative = Math.floor(data.reduce((sum, d) => sum + d.negativo, 0) / data.length);
-  const sentimentScore = avgPositive - avgNegative;
-
-  const totalReach = data.reduce((sum, d) => sum + d.alcance, 0);
-  const totalEngagement = data.reduce((sum, d) => sum + d.engagement, 0);
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Tendencias</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <TrendingUp className="h-7 w-7" />
+            Tendencias
+          </h1>
           <p className="text-muted-foreground">
-            Evolución temporal y patrones — <span className="font-medium">{selectedProject.nombre}</span>
+            Evolución temporal y patrones —{" "}
+            <span className="font-medium">{selectedProject.nombre}</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <Select value={timeRange} onValueChange={(v) => setTimeRange(v as typeof timeRange)}>
-            <SelectTrigger className="w-36 bg-background">
-              <SelectValue />
+        <div className="flex items-center gap-3">
+          {/* Entity Filter */}
+          <Select value={selectedEntityId} onValueChange={setSelectedEntityId}>
+            <SelectTrigger className="w-48 bg-background">
+              <SelectValue placeholder="Filtrar por entidad" />
             </SelectTrigger>
             <SelectContent className="bg-popover">
-              <SelectItem value="7d">Últimos 7 días</SelectItem>
-              <SelectItem value="30d">Últimos 30 días</SelectItem>
-              <SelectItem value="90d">Últimos 90 días</SelectItem>
+              <SelectItem value="all">Todas las entidades</SelectItem>
+              {entities.map((entity) => {
+                const Icon =
+                  entity.tipo === "persona"
+                    ? User
+                    : entity.tipo === "marca"
+                    ? Briefcase
+                    : Building2;
+                return (
+                  <SelectItem key={entity.id} value={entity.id}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="h-3 w-3" />
+                      {entity.nombre}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
+
+          {/* Time Range */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Select
+              value={timeRange}
+              onValueChange={(v) => setTimeRange(v as TimeRange)}
+            >
+              <SelectTrigger className="w-36 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="7d">Últimos 7 días</SelectItem>
+                <SelectItem value="30d">Últimos 30 días</SelectItem>
+                <SelectItem value="90d">Últimos 90 días</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Menciones Totales"
-          value={totalMentions.toLocaleString()}
-          change={Number(mentionChange)}
-          subtitle={`Promedio: ${avgMentions}/día`}
-        />
-        <MetricCard
-          title="Sentimiento Neto"
-          value={sentimentScore > 0 ? `+${sentimentScore}` : String(sentimentScore)}
-          change={sentimentScore}
-          subtitle={`${avgPositive}% positivo, ${avgNegative}% negativo`}
-          isScore
-        />
-        <MetricCard
-          title="Alcance Total"
-          value={formatNumber(totalReach)}
-          change={8.3}
-          subtitle="Impresiones estimadas"
-        />
-        <MetricCard
-          title="Engagement"
-          value={formatNumber(totalEngagement)}
-          change={-2.1}
-          subtitle="Interacciones totales"
-        />
-      </div>
-
-      {/* Charts */}
-      <Tabs defaultValue="volume" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="volume">Volumen</TabsTrigger>
-          <TabsTrigger value="sentiment">Sentimiento</TabsTrigger>
-          <TabsTrigger value="reach">Alcance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="volume">
-          <Card>
-            <CardHeader>
-              <CardTitle>Volumen de Menciones</CardTitle>
-              <CardDescription>
-                Evolución del número de menciones a lo largo del tiempo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorMenciones" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="date" 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="menciones"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorMenciones)"
-                      name="Menciones"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sentiment">
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribución de Sentimiento</CardTitle>
-              <CardDescription>
-                Evolución del sentimiento positivo, neutral y negativo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="date" 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      domain={[0, 100]}
-                      tickFormatter={(value) => `${value}%`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      formatter={(value: number) => [`${value}%`, '']}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="positivo"
-                      stroke="#22c55e"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Positivo"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="neutral"
-                      stroke="#94a3b8"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Neutral"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="negativo"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Negativo"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reach">
-          <Card>
-            <CardHeader>
-              <CardTitle>Alcance y Engagement</CardTitle>
-              <CardDescription>
-                Impresiones estimadas e interacciones a lo largo del tiempo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="date" 
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      yAxisId="left"
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      tickFormatter={(value) => formatNumber(value)}
-                    />
-                    <YAxis 
-                      yAxisId="right"
-                      orientation="right"
-                      className="text-xs"
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      formatter={(value: number, name: string) => [
-                        name === 'Alcance' ? formatNumber(value) : value.toLocaleString(),
-                        name
-                      ]}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="alcance"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={false}
-                      yAxisId="left"
-                      name="Alcance"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="engagement"
-                      stroke="hsl(var(--accent))"
-                      strokeWidth={2}
-                      dot={false}
-                      yAxisId="right"
-                      name="Engagement"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Info Banner */}
-      <Card className="border-dashed bg-muted/30">
-        <CardContent className="flex items-center gap-4 py-4">
-          <div className="rounded-full bg-primary/10 p-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium">Datos de demostración</p>
-            <p className="text-sm text-muted-foreground">
-              Los gráficos muestran datos simulados. Conecta fuentes de datos para ver información real.
+      {!hasData ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-primary/10 p-4">
+              <FileSearch className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">Sin menciones guardadas</h3>
+            <p className="mt-1 max-w-md text-center text-sm text-muted-foreground">
+              Para ver tendencias, primero necesitas buscar y guardar menciones desde
+              la sección de Fuentes.
             </p>
+            <Button
+              className="mt-4"
+              variant="outline"
+              onClick={() => navigate("/fuentes")}
+            >
+              Ir a Fuentes
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Menciones Totales"
+              value={summary.totalMentions.toLocaleString()}
+              change={summary.changePercent}
+              subtitle={`Promedio: ${summary.avgPerDay}/día`}
+            />
+            <MetricCard
+              title="Positivas"
+              value={summary.sentimentBreakdown.positivo.toString()}
+              subtitle={`${Math.round(
+                (summary.sentimentBreakdown.positivo / summary.totalMentions) * 100
+              ) || 0}% del total`}
+              variant="positive"
+            />
+            <MetricCard
+              title="Neutrales"
+              value={summary.sentimentBreakdown.neutral.toString()}
+              subtitle={`${Math.round(
+                (summary.sentimentBreakdown.neutral / summary.totalMentions) * 100
+              ) || 0}% del total`}
+              variant="neutral"
+            />
+            <MetricCard
+              title="Negativas"
+              value={summary.sentimentBreakdown.negativo.toString()}
+              subtitle={`${Math.round(
+                (summary.sentimentBreakdown.negativo / summary.totalMentions) * 100
+              ) || 0}% del total`}
+              variant="negative"
+            />
           </div>
-          <Badge variant="outline">Demo</Badge>
-        </CardContent>
-      </Card>
+
+          {/* Charts */}
+          <Tabs defaultValue="volume" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="volume">Volumen</TabsTrigger>
+              <TabsTrigger value="sentiment">Sentimiento</TabsTrigger>
+              <TabsTrigger value="entities">Por Entidad</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="volume">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Volumen de Menciones</CardTitle>
+                  <CardDescription>
+                    Evolución del número de menciones a lo largo del tiempo
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={trendData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorMenciones" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="5%"
+                              stopColor="hsl(var(--primary))"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="hsl(var(--primary))"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis
+                          dataKey="date"
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <YAxis
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px",
+                          }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="menciones"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorMenciones)"
+                          name="Menciones"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="sentiment">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Evolución de Sentimiento</CardTitle>
+                  <CardDescription>
+                    Distribución de menciones por tipo de sentimiento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={trendData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis
+                          dataKey="date"
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <YAxis
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px",
+                          }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="positivo"
+                          stroke="#22c55e"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Positivo"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="neutral"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Neutral"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="negativo"
+                          stroke="#ef4444"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Negativo"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="sinAnalizar"
+                          stroke="#94a3b8"
+                          strokeWidth={1}
+                          strokeDasharray="5 5"
+                          dot={false}
+                          name="Sin analizar"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="entities">
+              <EntityTrendsChart entities={entityBreakdown} />
+            </TabsContent>
+          </Tabs>
+
+          {/* Info Banner if no sentiment analyzed */}
+          {summary.sentimentBreakdown.sinAnalizar > 0 && (
+            <Card className="border-dashed bg-muted/30">
+              <CardContent className="flex items-center gap-4 py-4">
+                <div className="rounded-full bg-amber-500/10 p-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {summary.sentimentBreakdown.sinAnalizar} menciones sin analizar
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Ejecuta un análisis semántico para clasificar el sentimiento de las
+                    menciones.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate("/semantica")}>
+                  Ir a Semántica
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -378,29 +394,42 @@ const TendenciasPage = () => {
 interface MetricCardProps {
   title: string;
   value: string;
-  change: number;
+  change?: number;
   subtitle: string;
-  isScore?: boolean;
+  variant?: "default" | "positive" | "neutral" | "negative";
 }
 
-const MetricCard = ({ title, value, change, subtitle, isScore }: MetricCardProps) => {
-  const isPositive = change > 0;
+const MetricCard = ({
+  title,
+  value,
+  change,
+  subtitle,
+  variant = "default",
+}: MetricCardProps) => {
+  const isPositive = change !== undefined && change > 0;
   const isNeutral = change === 0;
 
+  const variantStyles = {
+    default: "",
+    positive: "border-l-4 border-l-green-500",
+    neutral: "border-l-4 border-l-blue-500",
+    negative: "border-l-4 border-l-red-500",
+  };
+
   return (
-    <Card>
+    <Card className={variantStyles[variant]}>
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{title}</p>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="text-2xl font-bold">{value}</span>
-          {!isScore && (
+          {change !== undefined && (
             <span
               className={`flex items-center text-xs font-medium ${
                 isNeutral
                   ? "text-muted-foreground"
                   : isPositive
-                    ? "text-green-600"
-                    : "text-red-600"
+                  ? "text-green-600"
+                  : "text-red-600"
               }`}
             >
               {isNeutral ? (
@@ -418,13 +447,6 @@ const MetricCard = ({ title, value, change, subtitle, isScore }: MetricCardProps
       </CardContent>
     </Card>
   );
-};
-
-// Helper function
-const formatNumber = (num: number): string => {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
 };
 
 export default TendenciasPage;
