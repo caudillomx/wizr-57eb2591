@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { useEntities, EntityType } from "@/hooks/useEntities";
 import { useMentions, useMentionStats } from "@/hooks/useMentions";
@@ -38,12 +38,16 @@ import {
   Eye,
   Archive,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 type SearchMode = "manual" | "entities";
 type ViewMode = "search" | "history";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuentesPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
@@ -69,6 +73,10 @@ const FuentesPage = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedEntityIds, setSelectedEntityIds] = useState<Set<string>>(new Set());
   const [showEntityForm, setShowEntityForm] = useState(false);
+  
+  // Pagination state
+  const [searchPage, setSearchPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
 
   // Auto-select all entities when they load
   useEffect(() => {
@@ -82,7 +90,25 @@ const FuentesPage = () => {
     setResults([]);
     setHasSearched(false);
     setSearchQuery(selectedProject?.nombre || "");
+    setSearchPage(1);
+    setHistoryPage(1);
   }, [selectedProject]);
+
+  // Paginated results
+  const paginatedResults = useMemo(() => {
+    const startIndex = (searchPage - 1) * ITEMS_PER_PAGE;
+    return results.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [results, searchPage]);
+
+  const totalSearchPages = Math.ceil(results.length / ITEMS_PER_PAGE);
+
+  // Paginated mentions
+  const paginatedMentions = useMemo(() => {
+    const startIndex = (historyPage - 1) * ITEMS_PER_PAGE;
+    return mentions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [mentions, historyPage]);
+
+  const totalHistoryPages = Math.ceil(mentions.length / ITEMS_PER_PAGE);
 
   const handleToggleEntity = (entityId: string) => {
     const newSelected = new Set(selectedEntityIds);
@@ -114,6 +140,7 @@ const FuentesPage = () => {
 
     setIsSearching(true);
     setHasSearched(true);
+    setSearchPage(1); // Reset to first page on new search
 
     try {
       const response = await firecrawlApi.searchNews(searchQuery, timeRange, 15);
@@ -157,6 +184,7 @@ const FuentesPage = () => {
 
     setIsSearching(true);
     setHasSearched(true);
+    setSearchPage(1); // Reset to first page on new search
 
     try {
       const selectedEntities: EntityForSearch[] = entities
@@ -542,12 +570,19 @@ const FuentesPage = () => {
             </Card>
           ) : results.length > 0 ? (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {results.length} menciones encontradas ({TIME_RANGE_LABELS[timeRange]})
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {results.length} menciones encontradas ({TIME_RANGE_LABELS[timeRange]})
+                </p>
+                {totalSearchPages > 1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Página {searchPage} de {totalSearchPages}
+                  </p>
+                )}
+              </div>
 
-              {results.map((result, index) => (
-                <Card key={index} className="overflow-hidden transition-shadow hover:shadow-md">
+              {paginatedResults.map((result, index) => (
+                <Card key={`${searchPage}-${index}`} className="overflow-hidden transition-shadow hover:shadow-md">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <div className="rounded-lg bg-primary/10 p-2">
@@ -590,6 +625,55 @@ const FuentesPage = () => {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Search Pagination Controls */}
+              {totalSearchPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSearchPage((p) => Math.max(1, p - 1))}
+                    disabled={searchPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalSearchPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalSearchPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (searchPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (searchPage >= totalSearchPages - 2) {
+                        pageNum = totalSearchPages - 4 + i;
+                      } else {
+                        pageNum = searchPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={searchPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          className="w-9"
+                          onClick={() => setSearchPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSearchPage((p) => Math.min(totalSearchPages, p + 1))}
+                    disabled={searchPage === totalSearchPages}
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
             </div>
           ) : hasSearched ? (
             <Card className="border-dashed">
@@ -626,7 +710,18 @@ const FuentesPage = () => {
             </div>
           ) : mentions.length > 0 ? (
             <div className="space-y-4">
-              {mentions.map((mention) => (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {mentions.length} menciones guardadas
+                </p>
+                {totalHistoryPages > 1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Página {historyPage} de {totalHistoryPages}
+                  </p>
+                )}
+              </div>
+
+              {paginatedMentions.map((mention) => (
                 <Card 
                   key={mention.id} 
                   className={`overflow-hidden transition-shadow hover:shadow-md ${
@@ -686,6 +781,55 @@ const FuentesPage = () => {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* History Pagination Controls */}
+              {totalHistoryPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                    disabled={historyPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalHistoryPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalHistoryPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (historyPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (historyPage >= totalHistoryPages - 2) {
+                        pageNum = totalHistoryPages - 4 + i;
+                      } else {
+                        pageNum = historyPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={historyPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          className="w-9"
+                          onClick={() => setHistoryPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                    disabled={historyPage === totalHistoryPages}
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <Card className="border-dashed">
