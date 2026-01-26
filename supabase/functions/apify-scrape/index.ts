@@ -6,20 +6,25 @@ const corsHeaders = {
 };
 
 // Apify Actor IDs for different platforms
-const ACTOR_IDS = {
+// Using well-maintained actors from Apify Store
+const ACTOR_IDS: Record<string, string> = {
   twitter: "apidojo/tweet-scraper",
   facebook: "apify/facebook-posts-scraper",
   tiktok: "clockworks/tiktok-scraper",
   instagram: "apify/instagram-scraper",
   linkedin: "anchor/linkedin-scraper",
+  youtube: "streamers/youtube-scraper",
+  reddit: "trudax/reddit-scraper",
 };
 
 interface ScrapeRequest {
-  platform: "twitter" | "facebook" | "tiktok" | "instagram" | "linkedin";
+  platform: "twitter" | "facebook" | "tiktok" | "instagram" | "linkedin" | "youtube" | "reddit";
   query?: string;
   username?: string;
   hashtag?: string;
   companyUrl?: string;
+  channelUrl?: string;
+  subreddit?: string;
   maxResults?: number;
 }
 
@@ -34,13 +39,22 @@ serve(async (req) => {
       throw new Error("APIFY_API_TOKEN is not configured");
     }
 
-    const { platform, query, username, hashtag, companyUrl, maxResults = 50 }: ScrapeRequest = await req.json();
+    const { 
+      platform, 
+      query, 
+      username, 
+      hashtag, 
+      companyUrl, 
+      channelUrl,
+      subreddit,
+      maxResults = 50 
+    }: ScrapeRequest = await req.json();
 
     if (!platform) {
       throw new Error("Platform is required");
     }
 
-    const actorId = ACTOR_IDS[platform as keyof typeof ACTOR_IDS];
+    const actorId = ACTOR_IDS[platform];
     if (!actorId) {
       throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -58,6 +72,7 @@ serve(async (req) => {
           scrapeTweetReplies: false,
         };
         break;
+        
       case "facebook":
         input = {
           startUrls: username ? [`https://www.facebook.com/${username}`] : [],
@@ -65,6 +80,7 @@ serve(async (req) => {
           maxPosts: maxResults,
         };
         break;
+        
       case "tiktok":
         input = {
           hashtags: hashtag ? [hashtag] : [],
@@ -73,6 +89,7 @@ serve(async (req) => {
           resultsPerPage: maxResults,
         };
         break;
+        
       case "instagram":
         input = {
           directUrls: username ? [`https://www.instagram.com/${username}/`] : [],
@@ -80,12 +97,53 @@ serve(async (req) => {
           resultsLimit: maxResults,
         };
         break;
+        
       case "linkedin":
         input = {
           urls: companyUrl ? [companyUrl] : [],
           searchTerms: query ? [query] : [],
           maxResults: maxResults,
         };
+        break;
+        
+      case "youtube":
+        // YouTube scraper configuration
+        if (channelUrl) {
+          input = {
+            startUrls: [{ url: channelUrl }],
+            maxResults: maxResults,
+            maxResultsShorts: 0,
+            maxResultStreams: 0,
+          };
+        } else if (query) {
+          input = {
+            searchKeywords: [query],
+            maxResults: maxResults,
+            maxResultsShorts: 0,
+            maxResultStreams: 0,
+          };
+        }
+        break;
+        
+      case "reddit":
+        // Reddit scraper configuration
+        if (subreddit) {
+          input = {
+            startUrls: [`https://www.reddit.com/r/${subreddit}/`],
+            maxItems: maxResults,
+            maxPostCount: maxResults,
+            maxComments: 0,
+            sort: "hot",
+          };
+        } else if (query) {
+          input = {
+            searches: [query],
+            maxItems: maxResults,
+            maxPostCount: maxResults,
+            maxComments: 0,
+            sort: "relevance",
+          };
+        }
         break;
     }
 
