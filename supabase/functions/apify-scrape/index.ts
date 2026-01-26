@@ -7,14 +7,14 @@ const corsHeaders = {
 };
 
 // Apify Actor IDs for different platforms
-// Using well-maintained actors from Apify Store
+// Using well-maintained actors from Apify Store (verified Jan 2026)
 const ACTOR_IDS: Record<string, string> = {
   twitter: "apidojo/tweet-scraper",
   facebook: "apify/facebook-posts-scraper",
   tiktok: "clockworks/tiktok-scraper",
   instagram: "apify/instagram-scraper",
-  linkedin: "anchor/linkedin-scraper",
-  youtube: "streamers/youtube-scraper",
+  linkedin: "scrapier/linkedin-jobs-scraper", // Updated: anchor/linkedin-scraper no longer exists
+  youtube: "ultimate/youtube-scraper", // Updated: streamers/youtube-scraper no longer exists
   reddit: "trudax/reddit-scraper",
 };
 
@@ -103,30 +103,35 @@ serve(async (req) => {
         break;
         
       case "linkedin":
+        // LinkedIn Jobs Scraper - requires search terms or job URLs
         input = {
-          urls: companyUrl ? [companyUrl] : [],
           searchTerms: query ? [query] : [],
           maxResults: maxResults,
         };
         break;
         
       case "youtube":
-        // YouTube scraper configuration
-        if (channelUrl) {
-          input = {
-            startUrls: [{ url: channelUrl }],
-            maxResults: maxResults,
-            maxResultsShorts: 0,
-            maxResultStreams: 0,
-          };
-        } else if (query) {
-          input = {
-            searchKeywords: [query],
-            maxResults: maxResults,
-            maxResultsShorts: 0,
-            maxResultStreams: 0,
-          };
-        }
+        // YouTube Ultimate Scraper configuration
+        input = {
+          discovery: {
+            searchQueries: query ? [query] : [],
+            urls: channelUrl ? [channelUrl] : [],
+            videoIds: [],
+            channelIds: [],
+            hashtags: [],
+            ignoreIds: [],
+          },
+          crawling: {
+            limits: {
+              maxGlobalSearchResults: maxResults,
+              maxChannelVideos: maxResults,
+              maxChannelShorts: 0,
+              maxChannelStreams: 0,
+              maxVideoComments: 0,
+              maxCommentReplies: 0,
+            },
+          },
+        };
         break;
         
       case "reddit":
