@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Database,
   FileBarChart,
+  FileText,
   FolderOpen,
   Settings,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const analysisViews = [
   { title: "Tendencias", url: "/dashboard/tendencias", icon: TrendingUp, tourId: "nav-tendencias" },
   { title: "Fuentes", url: "/dashboard/fuentes", icon: Database, tourId: "nav-fuentes" },
   { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart, tourId: "nav-reportes" },
+  { title: "Fichas", url: "/dashboard/fichas", icon: FileText, tourId: "nav-fichas" },
 ];
 
 const managementItems = [
