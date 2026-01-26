@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   AlertCircle,
   Plus,
@@ -18,6 +20,8 @@ import {
   BellOff,
   Settings,
   CheckCheck,
+  RefreshCw,
+  Clock,
 } from "lucide-react";
 
 const AlertasPage = () => {
@@ -25,6 +29,7 @@ const AlertasPage = () => {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<AlertConfig | null>(null);
+  const [isRunningMonitoring, setIsRunningMonitoring] = useState(false);
 
   const { entities } = useEntities(selectedProject?.id);
   const {
@@ -45,9 +50,43 @@ const AlertasPage = () => {
     markAsRead,
     dismiss,
     markAllAsRead,
+    refetch: refetchNotifications,
   } = useAlertNotifications(selectedProject?.id);
 
   const loading = projectLoading || configsLoading || notificationsLoading;
+
+  const handleRunMonitoring = async () => {
+    setIsRunningMonitoring(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('scheduled-monitoring', {
+        body: { manual: true },
+      });
+
+      if (error) {
+        toast.error('Error al ejecutar monitoreo', {
+          description: error.message,
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast.success('Monitoreo completado', {
+          description: `Procesados: ${data.processed.entities} entidades, ${data.processed.newMentions} menciones nuevas, ${data.processed.alertsTriggered} alertas activadas`,
+        });
+        refetchNotifications();
+      } else {
+        toast.error('Error en monitoreo', {
+          description: data?.error || 'Error desconocido',
+        });
+      }
+    } catch (err) {
+      toast.error('Error de conexión', {
+        description: 'No se pudo conectar con el servidor',
+      });
+    } finally {
+      setIsRunningMonitoring(false);
+    }
+  };
 
   const handleOpenCreate = () => {
     setEditingConfig(null);
@@ -119,10 +158,35 @@ const AlertasPage = () => {
           </p>
         </div>
 
-        <Button onClick={handleOpenCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Alerta
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRunMonitoring}
+            disabled={isRunningMonitoring}
+          >
+            {isRunningMonitoring ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {isRunningMonitoring ? "Buscando..." : "Buscar Ahora"}
+          </Button>
+          <Button onClick={handleOpenCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Alerta
+          </Button>
+        </div>
+      </div>
+
+      {/* Cron Status Banner */}
+      <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-4 py-2 text-sm">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="text-muted-foreground">
+          Monitoreo automático activo — búsqueda cada hora
+        </span>
+        <Badge variant="secondary" className="ml-auto">
+          Programado
+        </Badge>
       </div>
 
       {/* Stats Cards */}

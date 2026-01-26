@@ -272,5 +272,6 @@ export function useAlertNotifications(projectId: string | undefined) {
     markAsRead: markAsReadMutation.mutate,
     dismiss: dismissMutation.mutate,
     markAllAsRead: markAllAsReadMutation.mutate,
+    refetch: notificationsQuery.refetch,
   };
 }

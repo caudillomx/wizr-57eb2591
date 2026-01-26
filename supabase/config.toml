@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.analyze-semantics]
 verify_jwt = false
+
+[functions.scheduled-monitoring]
+verify_jwt = false
