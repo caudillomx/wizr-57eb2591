@@ -363,6 +363,56 @@ export type Database = {
         }
         Relationships: []
       }
+      thematic_cards: {
+        Row: {
+          card_type: string
+          content: Json
+          created_at: string
+          id: string
+          mention_ids: string[] | null
+          period_end: string | null
+          period_start: string | null
+          project_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          card_type: string
+          content?: Json
+          created_at?: string
+          id?: string
+          mention_ids?: string[] | null
+          period_end?: string | null
+          period_start?: string | null
+          project_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          card_type?: string
+          content?: Json
+          created_at?: string
+          id?: string
+          mention_ids?: string[] | null
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thematic_cards_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
