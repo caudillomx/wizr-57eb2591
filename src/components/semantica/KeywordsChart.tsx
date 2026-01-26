@@ -10,6 +10,7 @@ import type { KeywordAnalysis } from "@/hooks/useSemanticAnalysis";
 interface KeywordsChartProps {
   keywords: KeywordAnalysis[];
   maxKeywords?: number;
+  onKeywordClick?: (keyword: string) => void;
 }
 
 const sentimentColors = {
@@ -36,7 +37,7 @@ const chartConfig: ChartConfig = {
   },
 };
 
-export function KeywordsChart({ keywords, maxKeywords = 12 }: KeywordsChartProps) {
+export function KeywordsChart({ keywords, maxKeywords = 12, onKeywordClick }: KeywordsChartProps) {
   const displayKeywords = keywords.slice(0, maxKeywords);
 
   if (displayKeywords.length === 0) {
@@ -53,10 +54,25 @@ export function KeywordsChart({ keywords, maxKeywords = 12 }: KeywordsChartProps
     sentiment: kw.sentiment,
   }));
 
+  const handleClick = (entry: { word: string }) => {
+    if (onKeywordClick) {
+      onKeywordClick(entry.word);
+    }
+  };
+
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 20, right: 20 }}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ left: 20, right: 20 }}
+          onClick={(state) => {
+            if (state?.activePayload?.[0]?.payload) {
+              handleClick(state.activePayload[0].payload);
+            }
+          }}
+        >
           <XAxis type="number" hide />
           <YAxis
             type="category"
@@ -73,11 +89,16 @@ export function KeywordsChart({ keywords, maxKeywords = 12 }: KeywordsChartProps
               props.payload.sentiment,
             ]}
           />
-          <Bar dataKey="frequency" radius={[0, 4, 4, 0]}>
+          <Bar
+            dataKey="frequency"
+            radius={[0, 4, 4, 0]}
+            style={{ cursor: onKeywordClick ? "pointer" : "default" }}
+          >
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={sentimentColors[entry.sentiment]}
+                className="hover:opacity-80 transition-opacity"
               />
             ))}
           </Bar>

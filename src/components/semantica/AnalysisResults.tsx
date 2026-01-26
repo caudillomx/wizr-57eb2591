@@ -1,17 +1,21 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { RefreshCw, Save, TrendingUp, Hash, PieChart, FileText } from "lucide-react";
+import { RefreshCw, Save, TrendingUp, Hash, PieChart, FileText, MousePointerClick } from "lucide-react";
 import { TopicsCloud } from "./TopicsCloud";
 import { KeywordsChart } from "./KeywordsChart";
 import { SentimentPieChart } from "./SentimentPieChart";
+import { MentionsDrawer, type MentionsFilter } from "./MentionsDrawer";
 import type { SemanticAnalysisResult } from "@/hooks/useSemanticAnalysis";
+import type { Mention } from "@/hooks/useMentions";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface AnalysisResultsProps {
   result: SemanticAnalysisResult;
+  mentions: Mention[];
   onSaveSentiments: () => void;
   isSaving: boolean;
   onReanalyze: () => void;
@@ -20,11 +24,31 @@ interface AnalysisResultsProps {
 
 export function AnalysisResults({
   result,
+  mentions,
   onSaveSentiments,
   isSaving,
   onReanalyze,
   isAnalyzing,
 }: AnalysisResultsProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState<MentionsFilter | null>(null);
+
+  const handleTopicClick = (topicName: string) => {
+    setCurrentFilter({ type: "topic", value: topicName, label: topicName });
+    setDrawerOpen(true);
+  };
+
+  const handleSentimentClick = (sentiment: "positivo" | "neutral" | "negativo") => {
+    const labels = { positivo: "Positivo", neutral: "Neutral", negativo: "Negativo" };
+    setCurrentFilter({ type: "sentiment", value: sentiment, label: labels[sentiment] });
+    setDrawerOpen(true);
+  };
+
+  const handleKeywordClick = (keyword: string) => {
+    setCurrentFilter({ type: "keyword", value: keyword, label: keyword });
+    setDrawerOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with actions */}
@@ -57,6 +81,12 @@ export function AnalysisResults({
         </div>
       </div>
 
+      {/* Tip */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
+        <MousePointerClick className="h-4 w-4" />
+        <span>Haz click en cualquier tema, segmento o barra para ver las menciones asociadas</span>
+      </div>
+
       {/* Summary Card */}
       <Card>
         <CardHeader className="pb-3">
@@ -84,7 +114,7 @@ export function AnalysisResults({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <TopicsCloud topics={result.topics} />
+            <TopicsCloud topics={result.topics} onTopicClick={handleTopicClick} />
           </CardContent>
         </Card>
 
@@ -100,7 +130,10 @@ export function AnalysisResults({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SentimentPieChart distribution={result.sentimentDistribution} />
+            <SentimentPieChart
+              distribution={result.sentimentDistribution}
+              onSentimentClick={handleSentimentClick}
+            />
           </CardContent>
         </Card>
       </div>
@@ -117,7 +150,7 @@ export function AnalysisResults({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <KeywordsChart keywords={result.keywords} />
+          <KeywordsChart keywords={result.keywords} onKeywordClick={handleKeywordClick} />
           <Separator className="my-4" />
           <div className="flex items-center justify-center gap-4 text-sm">
             <div className="flex items-center gap-1.5">
@@ -171,6 +204,15 @@ export function AnalysisResults({
           </CardContent>
         </Card>
       )}
+
+      {/* Mentions Drawer */}
+      <MentionsDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        filter={currentFilter}
+        mentions={mentions}
+        mentionSentiments={result.mentionSentiments}
+      />
     </div>
   );
 }
