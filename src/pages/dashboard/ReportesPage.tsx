@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { useReportData } from "@/hooks/useReportData";
 import { useSemanticAnalysis, SemanticAnalysisResult } from "@/hooks/useSemanticAnalysis";
@@ -6,11 +6,11 @@ import { useMentions } from "@/hooks/useMentions";
 import { generatePDFReport, ChartImages } from "@/lib/reports/pdfGenerator";
 import { generateExcelReport } from "@/lib/reports/excelGenerator";
 import { ChartRenderer, ChartRendererHandle } from "@/components/reports/ChartRenderer";
+import { DateRangeSelector, DateRangeConfig, calculateDateRange } from "@/components/reports/DateRangeSelector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   FileBarChart,
@@ -22,17 +22,17 @@ import {
   Users,
   MessageSquare,
   Brain,
-  Calendar,
   CheckCircle2,
   AlertCircle,
   BarChart3,
 } from "lucide-react";
 
-type TimeRange = "7d" | "30d" | "90d";
-
 const ReportesPage = () => {
   const { selectedProject } = useProject();
-  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [dateConfig, setDateConfig] = useState<DateRangeConfig>({
+    type: "30d",
+    cutoffHour: 8,
+  });
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
   const [semanticResult, setSemanticResult] = useState<SemanticAnalysisResult | null>(null);
@@ -40,11 +40,13 @@ const ReportesPage = () => {
 
   const chartRendererRef = useRef<ChartRendererHandle>(null);
 
+  const dateRange = useMemo(() => calculateDateRange(dateConfig), [dateConfig]);
+
   const { mentions } = useMentions(selectedProject?.id, { isArchived: false });
   const { analyze, isAnalyzing, result: latestSemanticResult } = useSemanticAnalysis(selectedProject?.id);
   const { reportData, isLoading, error } = useReportData(
     selectedProject?.id,
-    timeRange,
+    dateRange,
     semanticResult || latestSemanticResult
   );
 
@@ -158,19 +160,7 @@ const ReportesPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
-            <SelectTrigger className="w-[160px]">
-              <Calendar className="mr-2 h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Últimos 7 días</SelectItem>
-              <SelectItem value="30d">Últimos 30 días</SelectItem>
-              <SelectItem value="90d">Últimos 90 días</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <DateRangeSelector value={dateConfig} onChange={setDateConfig} />
       </div>
 
       {/* Error state */}
