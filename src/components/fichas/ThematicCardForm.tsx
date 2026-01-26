@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useMentions, Mention } from "@/hooks/useMentions";
+import { useMentions } from "@/hooks/useMentions";
 import { useThematicCards, CardType, ConversationAnalysisContent, InformativeContent } from "@/hooks/useThematicCards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, subDays } from "date-fns";
@@ -24,7 +23,9 @@ import {
   Sparkles,
   Check,
   X,
+  Pencil,
 } from "lucide-react";
+import { ContentEditor } from "./ContentEditor";
 
 interface ThematicCardFormProps {
   projectId: string;
@@ -386,118 +387,31 @@ export function ThematicCardForm({ projectId, onSuccess, onCancel }: ThematicCar
     );
   }
 
-  // Step 4: Review and save
+  // Step 4: Review and edit
   if (step === "review" && generatedContent) {
+    const dateRangeLabel = `${format(dateRange.start, "d MMM", { locale: es })} - ${format(dateRange.end, "d MMM yyyy", { locale: es })}`;
+
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Revisar Borrador</h2>
+          <div className="flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-primary" />
+            <h2 className="text-lg font-semibold">Editar Borrador</h2>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Revisa el contenido generado. Podrás editarlo después de guardar.
+            Haz clic en cualquier campo para editarlo antes de guardar
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>
-              {format(dateRange.start, "d MMM", { locale: es })} -{" "}
-              {format(dateRange.end, "d MMM yyyy", { locale: es })} •{" "}
-              {selectedMentionIds.size} menciones
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-4 pr-4">
-                {"executiveSummary" in generatedContent && (
-                  <div>
-                    <h4 className="font-medium mb-2">Resumen Ejecutivo</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {generatedContent.executiveSummary}
-                    </p>
-                  </div>
-                )}
-
-                <Separator />
-
-                {cardType === "conversation_analysis" &&
-                  "volumeByChannel" in generatedContent && (
-                    <>
-                      <div>
-                        <h4 className="font-medium mb-2">Volumen por Canal</h4>
-                        <div className="grid grid-cols-3 gap-2 text-sm">
-                          {Object.entries(generatedContent.volumeByChannel).map(
-                            ([channel, count]) =>
-                              count > 0 && (
-                                <div key={channel} className="flex justify-between">
-                                  <span className="capitalize">{channel}:</span>
-                                  <span className="font-medium">{count}</span>
-                                </div>
-                              )
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium mb-2">Narrativas Principales</h4>
-                        <div className="space-y-2">
-                          {generatedContent.mainNarratives.map((n, i) => (
-                            <div key={i} className="text-sm">
-                              <span className="font-medium">{n.narrative}</span>
-                              <span className="text-muted-foreground ml-2">
-                                ({n.percentage}%)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium mb-2">Recomendaciones</h4>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                          {generatedContent.recommendations.map((r, i) => (
-                            <li key={i}>{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
-                  )}
-
-                {cardType === "informative" && "whatIsHappening" in generatedContent && (
-                  <>
-                    <div>
-                      <h4 className="font-medium mb-2">¿Qué está pasando?</h4>
-                      <div className="space-y-3">
-                        {generatedContent.whatIsHappening.map((item, i) => (
-                          <div key={i}>
-                            <p className="text-sm font-medium">{item.title}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Implicaciones</h4>
-                      <div className="space-y-3">
-                        {generatedContent.localImplications.map((item, i) => (
-                          <div key={i}>
-                            <p className="text-sm font-medium">{item.title}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <ContentEditor
+          cardType={cardType}
+          content={generatedContent}
+          title={title}
+          dateRangeLabel={dateRangeLabel}
+          mentionCount={selectedMentionIds.size}
+          onContentChange={setGeneratedContent}
+          onTitleChange={setTitle}
+        />
 
         <div className="flex justify-between">
           <Button variant="outline" onClick={() => setStep("generate")}>
@@ -513,7 +427,7 @@ export function ThematicCardForm({ projectId, onSuccess, onCancel }: ThematicCar
             ) : (
               <>
                 <Check className="mr-2 h-4 w-4" />
-                Guardar Borrador
+                Guardar Ficha
               </>
             )}
           </Button>
