@@ -123,19 +123,27 @@ export function useSemanticAnalysis(projectId: string | undefined) {
 
   const updateMentionsSentiment = useMutation({
     mutationFn: async (sentiments: MentionSentiment[]) => {
-      // Update sentiments in batch
-      const updates = sentiments.map((s) =>
-        supabase
-          .from("mentions")
-          .update({ sentiment: s.sentiment })
-          .eq("id", s.id)
-      );
-
-      const results = await Promise.all(updates);
-      const errors = results.filter((r) => r.error);
+      if (!sentiments.length) return 0;
       
-      if (errors.length > 0) {
-        throw new Error(`${errors.length} actualizaciones fallaron`);
+      // Update sentiments in batch
+      const results = await Promise.all(
+        sentiments.map(async (s) => {
+          const { error, count } = await supabase
+            .from("mentions")
+            .update({ sentiment: s.sentiment })
+            .eq("id", s.id);
+          
+          return { id: s.id, sentiment: s.sentiment, error, count };
+        })
+      );
+      
+      const failed = results.filter((r) => r.error);
+      
+      if (failed.length > 0) {
+        console.error("Sentiment update failures:", failed);
+        throw new Error(
+          `${failed.length} actualizaciones fallaron: ${failed.map(f => f.error?.message || "Error desconocido").join(", ")}`
+        );
       }
 
       return sentiments.length;
