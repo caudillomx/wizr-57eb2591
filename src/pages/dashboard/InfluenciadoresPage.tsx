@@ -83,6 +83,7 @@ const InfluenciadoresPage = () => {
     totalMentions,
     uniqueSources,
     entities,
+    rawMentions,
     isLoading,
   } = useInfluencersData(selectedProject?.id, daysRange, selectedEntityIds);
 
@@ -347,7 +348,7 @@ const InfluenciadoresPage = () => {
               )}
             </div>
           ) : (
-            <InfluencerTable influencers={filteredInfluencers} maxMentions={maxMentions} />
+            <InfluencerTable influencers={filteredInfluencers} maxMentions={maxMentions} mentions={rawMentions} />
           )}
         </>
       )}
