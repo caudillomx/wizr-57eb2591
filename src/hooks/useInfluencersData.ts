@@ -43,6 +43,9 @@ export function useInfluencersData(
         .from("mentions")
         .select(`
           id,
+          title,
+          description,
+          url,
           source_domain,
           sentiment,
           matched_keywords,
@@ -199,8 +202,23 @@ export function useInfluencersData(
     };
   }, [mentionsQuery.data, timeRangeDays]);
 
+  // Format raw mentions for table consumption
+  const rawMentions = useMemo(() => {
+    return (mentionsQuery.data || []).map((m) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      url: m.url,
+      source_domain: m.source_domain,
+      sentiment: m.sentiment,
+      created_at: m.created_at,
+      matched_keywords: m.matched_keywords || [],
+    }));
+  }, [mentionsQuery.data]);
+
   return {
     ...processedData,
+    rawMentions,
     entities: entitiesQuery.data || [],
     isLoading: mentionsQuery.isLoading || entitiesQuery.isLoading,
     error: mentionsQuery.error || entitiesQuery.error,

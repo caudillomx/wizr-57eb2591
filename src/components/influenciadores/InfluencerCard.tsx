@@ -55,18 +55,31 @@ export function InfluencerCard({ influencer, rank, maxMentions }: InfluencerCard
     return "text-yellow-500";
   };
 
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+
+  // Check if sentiment has been analyzed
+  const hasSentimentData = sentiment.positivo > 0 || sentiment.neutral > 0 || sentiment.negativo > 0;
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
-              {rank}
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted overflow-hidden">
+              <img 
+                src={faviconUrl} 
+                alt="" 
+                className="h-6 w-6"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement!.innerHTML = `<span class="font-bold text-sm text-primary">${rank}</span>`;
+                }}
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold">{domain}</span>
+                <Badge variant="outline" className="text-xs">#{rank}</Badge>
               </div>
               {lastMentionDate && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -101,31 +114,44 @@ export function InfluencerCard({ influencer, rank, maxMentions }: InfluencerCard
         </div>
 
         {/* Sentiment breakdown */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-2">
-            <ThumbsUp className="h-4 w-4 mx-auto text-green-500 mb-1" />
-            <p className="text-lg font-bold text-green-600">{sentiment.positivo}</p>
-            <p className="text-xs text-muted-foreground">Positivo</p>
-          </div>
-          <div className="rounded-lg bg-gray-50 dark:bg-gray-800/30 p-2">
-            <Minus className="h-4 w-4 mx-auto text-gray-500 mb-1" />
-            <p className="text-lg font-bold text-gray-600">{sentiment.neutral}</p>
-            <p className="text-xs text-muted-foreground">Neutral</p>
-          </div>
-          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-2">
-            <ThumbsDown className="h-4 w-4 mx-auto text-red-500 mb-1" />
-            <p className="text-lg font-bold text-red-600">{sentiment.negativo}</p>
-            <p className="text-xs text-muted-foreground">Negativo</p>
-          </div>
-        </div>
+        {hasSentimentData ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-2">
+                <ThumbsUp className="h-4 w-4 mx-auto text-green-500 mb-1" />
+                <p className="text-lg font-bold text-green-600">{sentiment.positivo}</p>
+                <p className="text-xs text-muted-foreground">Positivo</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-800/30 p-2">
+                <Minus className="h-4 w-4 mx-auto text-gray-500 mb-1" />
+                <p className="text-lg font-bold text-gray-600">{sentiment.neutral}</p>
+                <p className="text-xs text-muted-foreground">Neutral</p>
+              </div>
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-2">
+                <ThumbsDown className="h-4 w-4 mx-auto text-red-500 mb-1" />
+                <p className="text-lg font-bold text-red-600">{sentiment.negativo}</p>
+                <p className="text-xs text-muted-foreground">Negativo</p>
+              </div>
+            </div>
 
-        {/* Sentiment score */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Score de sentimiento</span>
-          <span className={`font-semibold ${getSentimentColor(sentimentScore)}`}>
-            {sentimentScore > 0 ? "+" : ""}{(sentimentScore * 100).toFixed(0)}%
-          </span>
-        </div>
+            {/* Sentiment score */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Score de sentimiento</span>
+              <span className={`font-semibold ${getSentimentColor(sentimentScore)}`}>
+                {sentimentScore > 0 ? "+" : ""}{(sentimentScore * 100).toFixed(0)}%
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg bg-muted/50 p-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sentimiento pendiente de análisis
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ve a Semántica para ejecutar el análisis
+            </p>
+          </div>
+        )}
 
         {/* Entities */}
         {entities.length > 0 && (
