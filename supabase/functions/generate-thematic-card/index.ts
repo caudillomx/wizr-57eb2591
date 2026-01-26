@@ -75,16 +75,31 @@ serve(async (req) => {
   }
 
   try {
-    const { cardType, mentions, title, additionalContext } = await req.json() as {
+    const body = await req.json();
+    const { cardType, mentions, title, additionalContext, regenerateSection, currentContent } = body as {
       cardType: "conversation_analysis" | "informative";
       mentions: MentionInput[];
       title: string;
       additionalContext?: string;
+      regenerateSection?: string; // e.g., "recommendations", "risks", "executiveSummary", etc.
+      currentContent?: any; // Current content for context when regenerating
     };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Handle section regeneration
+    if (regenerateSection && currentContent) {
+      return await handleSectionRegeneration(
+        regenerateSection,
+        cardType,
+        mentions,
+        title,
+        currentContent,
+        LOVABLE_API_KEY
+      );
     }
 
     let systemPrompt: string;
@@ -347,3 +362,279 @@ ${mentionsContent}`;
     );
   }
 });
+
+// Handle regeneration of specific sections
+async function handleSectionRegeneration(
+  section: string,
+  cardType: string,
+  mentions: MentionInput[],
+  title: string,
+  currentContent: any,
+  apiKey: string
+): Promise<Response> {
+  const sectionConfig = getSectionConfig(section, cardType);
+  if (!sectionConfig) {
+    return new Response(
+      JSON.stringify({ error: `Unknown section: ${section}` }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const mentionsContext = mentions.slice(0, 10).map((m, i) => {
+    const parts = [`[${i + 1}]`];
+    if (m.title) parts.push(m.title.substring(0, 150));
+    if (m.description) parts.push(m.description.substring(0, 200));
+    if (m.source_domain) parts.push(`(${m.source_domain})`);
+    return parts.join(" - ");
+  }).join("\n");
+
+  const currentSectionContent = JSON.stringify(currentContent[section] || "");
+
+  const systemPrompt = `Eres un analista experto de comunicación y monitoreo de medios. Tu tarea es regenerar UNA SECCIÓN ESPECÍFICA de una ficha temática, manteniéndola coherente con el resto del análisis.`;
+
+  const userPrompt = `Ficha: "${title}"
+
+Contenido actual de la sección "${sectionConfig.label}":
+${currentSectionContent}
+
+Contexto del análisis completo:
+- Resumen actual: ${currentContent.executiveSummary || "No disponible"}
+${cardType === "conversation_analysis" && currentContent.mainNarratives ? 
+  `- Narrativas: ${currentContent.mainNarratives.map((n: any) => n.narrative).join(", ")}` : ""}
+
+Menciones analizadas:
+${mentionsContext}
+
+INSTRUCCIÓN: Regenera SOLO la sección "${sectionConfig.label}" con contenido fresco y diferente, pero manteniéndolo coherente con el contexto. ${sectionConfig.instruction}`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [sectionConfig.tool],
+      tool_choice: { type: "function", function: { name: sectionConfig.tool.function.name } },
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (response.status === 402) {
+      return new Response(
+        JSON.stringify({ error: "Payment required. Please add credits to your workspace." }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const errorText = await response.text();
+    console.error("AI gateway error:", response.status, errorText);
+    throw new Error(`AI gateway error: ${response.status}`);
+  }
+
+  const aiResponse = await response.json();
+  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (!toolCall) {
+    throw new Error("Invalid AI response structure");
+  }
+
+  const regeneratedContent = JSON.parse(toolCall.function.arguments);
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      section,
+      content: regeneratedContent[section] || regeneratedContent.value 
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+function getSectionConfig(section: string, cardType: string): { label: string; instruction: string; tool: any } | null {
+  const configs: Record<string, { label: string; instruction: string; tool: any }> = {
+    executiveSummary: {
+      label: "Resumen Ejecutivo",
+      instruction: "Genera un resumen ejecutivo conciso de 2-3 oraciones que capture los puntos más importantes.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_executive_summary",
+          parameters: {
+            type: "object",
+            properties: { value: { type: "string" } },
+            required: ["value"],
+          },
+        },
+      },
+    },
+    recommendations: {
+      label: "Recomendaciones",
+      instruction: "Genera 3-5 recomendaciones estratégicas accionables basadas en el análisis.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_recommendations",
+          parameters: {
+            type: "object",
+            properties: { recommendations: { type: "array", items: { type: "string" } } },
+            required: ["recommendations"],
+          },
+        },
+      },
+    },
+    risks: {
+      label: "Riesgos",
+      instruction: "Genera 3-5 riesgos reputacionales o comunicacionales identificados.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_risks",
+          parameters: {
+            type: "object",
+            properties: { risks: { type: "array", items: { type: "string" } } },
+            required: ["risks"],
+          },
+        },
+      },
+    },
+    mainNarratives: {
+      label: "Narrativas Principales",
+      instruction: "Genera 3-5 narrativas principales identificadas en la conversación, con porcentaje estimado.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_narratives",
+          parameters: {
+            type: "object",
+            properties: {
+              mainNarratives: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    narrative: { type: "string" },
+                    volume: { type: "number" },
+                    percentage: { type: "number" },
+                  },
+                  required: ["narrative", "volume", "percentage"],
+                },
+              },
+            },
+            required: ["mainNarratives"],
+          },
+        },
+      },
+    },
+    relevantActors: {
+      label: "Actores Relevantes",
+      instruction: "Genera 3-5 actores relevantes mencionados o involucrados en la conversación.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_actors",
+          parameters: {
+            type: "object",
+            properties: {
+              relevantActors: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    type: { type: "string" },
+                    mentions: { type: "number" },
+                    description: { type: "string" },
+                  },
+                  required: ["name", "type", "mentions", "description"],
+                },
+              },
+            },
+            required: ["relevantActors"],
+          },
+        },
+      },
+    },
+    context: {
+      label: "Contexto",
+      instruction: "Genera un contexto claro y conciso que explique la situación.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_context",
+          parameters: {
+            type: "object",
+            properties: { value: { type: "string" } },
+            required: ["value"],
+          },
+        },
+      },
+    },
+    whatIsHappening: {
+      label: "¿Qué está pasando?",
+      instruction: "Genera 3-5 puntos clave que expliquen qué está sucediendo.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_what_is_happening",
+          parameters: {
+            type: "object",
+            properties: {
+              whatIsHappening: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                  },
+                  required: ["title", "description"],
+                },
+              },
+            },
+            required: ["whatIsHappening"],
+          },
+        },
+      },
+    },
+    localImplications: {
+      label: "Implicaciones Locales",
+      instruction: "Genera 3-5 implicaciones locales o relevantes del tema.",
+      tool: {
+        type: "function",
+        function: {
+          name: "regenerate_implications",
+          parameters: {
+            type: "object",
+            properties: {
+              localImplications: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                  },
+                  required: ["title", "description"],
+                },
+              },
+            },
+            required: ["localImplications"],
+          },
+        },
+      },
+    },
+  };
+
+  return configs[section] || null;
+}

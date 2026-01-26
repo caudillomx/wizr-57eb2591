@@ -135,6 +135,54 @@ export function useThematicCards(projectId: string | undefined) {
     },
   });
 
+  // Regenerate a specific section with AI
+  const regenerateSectionMutation = useMutation({
+    mutationFn: async ({
+      section,
+      cardType,
+      mentions,
+      title,
+      currentContent,
+    }: {
+      section: string;
+      cardType: CardType;
+      mentions: Mention[];
+      title: string;
+      currentContent: ConversationAnalysisContent | InformativeContent;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("generate-thematic-card", {
+        body: {
+          cardType,
+          title,
+          regenerateSection: section,
+          currentContent,
+          mentions: mentions.map(m => ({
+            id: m.id,
+            title: m.title?.substring(0, 450),
+            description: m.description?.substring(0, 450),
+            url: m.url,
+            source_domain: m.source_domain,
+            sentiment: m.sentiment,
+            created_at: m.created_at,
+            matched_keywords: m.matched_keywords || [],
+          })),
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Failed to regenerate section");
+      
+      return { section: data.section, content: data.content };
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al regenerar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create a new thematic card
   const createMutation = useMutation({
     mutationFn: async ({
@@ -246,6 +294,8 @@ export function useThematicCards(projectId: string | undefined) {
     error,
     generate: generateMutation.mutateAsync,
     isGenerating: generateMutation.isPending,
+    regenerateSection: regenerateSectionMutation.mutateAsync,
+    isRegenerating: regenerateSectionMutation.isPending,
     create: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
     update: updateMutation.mutateAsync,

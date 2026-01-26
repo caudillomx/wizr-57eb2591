@@ -46,9 +46,10 @@ export function ThematicCardForm({ projectId, onSuccess, onCancel }: ThematicCar
   const [generatedContent, setGeneratedContent] = useState<
     ConversationAnalysisContent | InformativeContent | null
   >(null);
+  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
 
   const { mentions } = useMentions(projectId, { isArchived: false });
-  const { generate, isGenerating, create, isCreating } = useThematicCards(projectId);
+  const { generate, isGenerating, regenerateSection, isRegenerating, create, isCreating } = useThematicCards(projectId);
 
   const selectedMentions = mentions.filter((m) => selectedMentionIds.has(m.id));
 
@@ -102,6 +103,31 @@ export function ThematicCardForm({ projectId, onSuccess, onCancel }: ThematicCar
       onSuccess();
     } catch (error) {
       console.error("Error saving card:", error);
+    }
+  };
+
+  const handleRegenerateSection = async (section: string) => {
+    if (!generatedContent) return;
+    
+    setRegeneratingSection(section);
+    try {
+      const result = await regenerateSection({
+        section,
+        cardType,
+        mentions: selectedMentions,
+        title,
+        currentContent: generatedContent,
+      });
+      
+      // Update the content with the regenerated section
+      setGeneratedContent(prev => {
+        if (!prev) return prev;
+        return { ...prev, [result.section]: result.content };
+      });
+    } catch (error) {
+      console.error("Error regenerating section:", error);
+    } finally {
+      setRegeneratingSection(null);
     }
   };
 
@@ -411,6 +437,9 @@ export function ThematicCardForm({ projectId, onSuccess, onCancel }: ThematicCar
           mentionCount={selectedMentionIds.size}
           onContentChange={setGeneratedContent}
           onTitleChange={setTitle}
+          onRegenerateSection={handleRegenerateSection}
+          isRegenerating={isRegenerating}
+          regeneratingSection={regeneratingSection}
         />
 
         <div className="flex justify-between">
