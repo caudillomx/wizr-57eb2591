@@ -60,10 +60,9 @@ export default {
         // Wizr Brand Colors
         wizr: {
           violet: "hsl(var(--wizr-violet))",
-          mint: "hsl(var(--wizr-mint))",
           orange: "hsl(var(--wizr-orange))",
           dark: "hsl(var(--wizr-dark))",
-          darker: "hsl(var(--wizr-darker))",
+          light: "hsl(var(--wizr-light))",
         },
       },
       borderRadius: {

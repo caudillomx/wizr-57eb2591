@@ -10,11 +10,9 @@ import {
   FileBarChart,
   FolderOpen,
   Settings,
-  ChevronLeft,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import wizrLogo from "@/assets/wizr-logo.png";
-import wizrWordmark from "@/assets/wizr-wordmark.png";
+import wizrLogoIcon from "@/assets/wizr-logo-icon.png";
 
 import {
   Sidebar,
@@ -54,12 +52,23 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="border-b border-border p-4">
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <img src={wizrLogo} alt="Wizr" className="h-8 w-8" />
+          <img 
+            src={wizrLogoIcon} 
+            alt="Wizr" 
+            className="h-10 w-10 object-contain"
+          />
           {!collapsed && (
-            <img src={wizrWordmark} alt="Wizr" className="h-5 w-auto" />
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-sidebar-foreground tracking-tight">
+                WIZR
+              </span>
+              <span className="text-[10px] text-sidebar-foreground/70 uppercase tracking-widest">
+                Análisis Estratégico
+              </span>
+            </div>
           )}
         </div>
       </SidebarHeader>
@@ -67,7 +76,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2 py-4">
         {/* Analysis Views */}
         <SidebarGroup>
-          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
             {!collapsed ? "Análisis" : ""}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -81,8 +90,8 @@ export function AppSidebar() {
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
@@ -96,7 +105,7 @@ export function AppSidebar() {
 
         {/* Management */}
         <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
             {!collapsed ? "Gestión" : ""}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -110,8 +119,8 @@ export function AppSidebar() {
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
@@ -124,9 +133,9 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border p-2">
+      <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
-          <p className="px-2 text-xs text-muted-foreground">
+          <p className="px-2 text-xs text-sidebar-foreground/50">
             Wizr Intelligence Platform
           </p>
         )}

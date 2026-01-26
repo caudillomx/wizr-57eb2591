@@ -24,7 +24,7 @@ const DashboardContent = () => {
         return "bg-accent text-accent-foreground";
       case "analista":
       default:
-        return "bg-secondary text-secondary-foreground";
+        return "bg-muted text-muted-foreground";
     }
   };
 
