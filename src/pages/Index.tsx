@@ -72,6 +72,21 @@ const Index = () => {
             transition={{ duration: 0.6 }}
             className="text-center space-y-8"
           >
+            {/* Large Brand Logo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative inline-block"
+            >
+              <img 
+                src={wizrLogoFull} 
+                alt="Wizr" 
+                className="h-24 sm:h-32 lg:h-40 w-auto mx-auto drop-shadow-2xl" 
+              />
+              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-accent/10 to-primary/20 blur-2xl opacity-50 -z-10 rounded-full" />
+            </motion.div>
+
             {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary">
               <Sparkles size={16} />
@@ -228,7 +243,16 @@ const Index = () => {
             <img src={wizrLogoFull} alt="Wizr" className="h-6 w-auto opacity-70" />
           </div>
           <p className="text-sm text-muted-foreground">
-            Un producto de <span className="text-primary font-medium">Kimedia</span> • {new Date().getFullYear()}
+            Un producto de{" "}
+            <a 
+              href="https://kimedia.mx/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-medium hover:underline transition-colors"
+            >
+              KiMedia
+            </a>{" "}
+            • {new Date().getFullYear()}
           </p>
         </div>
       </footer>
