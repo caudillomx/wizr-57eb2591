@@ -11,13 +11,15 @@ const ACTOR_IDS = {
   facebook: "apify/facebook-posts-scraper",
   tiktok: "clockworks/tiktok-scraper",
   instagram: "apify/instagram-scraper",
+  linkedin: "anchor/linkedin-scraper",
 };
 
 interface ScrapeRequest {
-  platform: "twitter" | "facebook" | "tiktok" | "instagram";
+  platform: "twitter" | "facebook" | "tiktok" | "instagram" | "linkedin";
   query?: string;
   username?: string;
   hashtag?: string;
+  companyUrl?: string;
   maxResults?: number;
 }
 
@@ -32,13 +34,13 @@ serve(async (req) => {
       throw new Error("APIFY_API_TOKEN is not configured");
     }
 
-    const { platform, query, username, hashtag, maxResults = 50 }: ScrapeRequest = await req.json();
+    const { platform, query, username, hashtag, companyUrl, maxResults = 50 }: ScrapeRequest = await req.json();
 
     if (!platform) {
       throw new Error("Platform is required");
     }
 
-    const actorId = ACTOR_IDS[platform];
+    const actorId = ACTOR_IDS[platform as keyof typeof ACTOR_IDS];
     if (!actorId) {
       throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -76,6 +78,13 @@ serve(async (req) => {
           directUrls: username ? [`https://www.instagram.com/${username}/`] : [],
           hashtags: hashtag ? [hashtag] : [],
           resultsLimit: maxResults,
+        };
+        break;
+      case "linkedin":
+        input = {
+          urls: companyUrl ? [companyUrl] : [],
+          searchTerms: query ? [query] : [],
+          maxResults: maxResults,
         };
         break;
     }
