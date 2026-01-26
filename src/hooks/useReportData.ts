@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
-import { subDays, startOfDay, eachDayOfInterval, format } from "date-fns";
+import { subDays, startOfDay, eachDayOfInterval, format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Mention, SentimentType } from "./useMentions";
 import type { InfluencerMetrics } from "./useInfluencersData";
@@ -27,17 +27,25 @@ export interface ReportData {
   semanticAnalysis: SemanticAnalysisResult | null;
   generatedAt: Date;
   timeRange: string;
+  dateRange: {
+    startDate: Date;
+    endDate: Date;
+  };
 }
 
-type TimeRange = "7d" | "30d" | "90d";
+export interface CustomDateRange {
+  startDate: Date;
+  endDate: Date;
+  label: string;
+}
 
 export function useReportData(
   projectId: string | undefined,
-  timeRange: TimeRange = "30d",
+  dateRange: CustomDateRange,
   semanticResult: SemanticAnalysisResult | null = null
 ) {
-  const days = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
-  const startDate = useMemo(() => subDays(new Date(), days), [days]);
+  const { startDate, endDate, label: timeRangeLabel } = dateRange;
+  const days = useMemo(() => Math.max(1, differenceInDays(endDate, startDate)), [startDate, endDate]);
 
   // Fetch project info
   const projectQuery = useQuery({
@@ -59,7 +67,7 @@ export function useReportData(
 
   // Fetch all mentions for the time range
   const mentionsQuery = useQuery({
-    queryKey: ["report-mentions", projectId, timeRange],
+    queryKey: ["report-mentions", projectId, startDate.toISOString(), endDate.toISOString()],
     queryFn: async () => {
       if (!projectId) return [];
 
@@ -236,10 +244,6 @@ export function useReportData(
   const reportData = useMemo<ReportData | null>(() => {
     if (!projectQuery.data) return null;
 
-    const timeRangeLabel =
-      timeRange === "7d" ? "Últimos 7 días" :
-      timeRange === "30d" ? "Últimos 30 días" : "Últimos 90 días";
-
     return {
       project: projectQuery.data,
       mentions: mentionsQuery.data || [],
@@ -248,8 +252,12 @@ export function useReportData(
       semanticAnalysis: semanticResult,
       generatedAt: new Date(),
       timeRange: timeRangeLabel,
+      dateRange: {
+        startDate,
+        endDate,
+      },
     };
-  }, [projectQuery.data, mentionsQuery.data, influencers, trends, semanticResult, timeRange]);
+  }, [projectQuery.data, mentionsQuery.data, influencers, trends, semanticResult, timeRangeLabel, startDate, endDate]);
 
   return {
     reportData,
