@@ -10,8 +10,8 @@ const corsHeaders = {
 const ACTOR_IDS: Record<string, string> = {
   // Twitter/X: powerai/twitter-search-scraper (rented, $4.99/1000 results)
   twitter: "powerai/twitter-search-scraper",
-  // Facebook: using search scraper for third-party mentions (not just pages)
-  facebook: "easyapi/facebook-posts-search-scraper",
+  // Facebook: powerai/facebook-post-search-scraper (5.0 rating, $9.99/1000 results)
+  facebook: "powerai/facebook-post-search-scraper",
   // Facebook page-specific scraper (fallback for username searches)
   facebook_page: "apify/facebook-posts-scraper",
   // TikTok: clockworks scraper (free tier available)
@@ -103,14 +103,15 @@ serve(async (req) => {
         break;
         
       case "facebook":
-        // Facebook: Use search scraper for general queries (third-party mentions)
+        // Facebook: Use powerai/facebook-post-search-scraper for keyword queries
         // Use page scraper only for specific username/page searches
         if (query) {
-          // Use Facebook Posts Search Scraper for keyword queries
-          actorId = ACTOR_IDS.facebook; // easyapi/facebook-posts-search-scraper
+          // Use Facebook Post Search Scraper (powerai - 5.0 rating, better reliability)
+          actorId = ACTOR_IDS.facebook; // powerai/facebook-post-search-scraper
           input = {
-            searchQuery: query,
+            query: query, // This actor uses 'query' not 'searchQuery'
             maxResults: maxResults,
+            recent_posts: true, // Focus on recent posts for monitoring
           };
         } else if (username) {
           // Fallback to page scraper for specific pages
