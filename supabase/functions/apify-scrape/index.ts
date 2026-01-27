@@ -16,8 +16,8 @@ const ACTOR_IDS: Record<string, string> = {
   facebook_page: "apify/facebook-posts-scraper",
   // TikTok: clockworks scraper (free tier available)
   tiktok: "clockworks/tiktok-scraper",
-  // Instagram: apify's scraper
-  instagram: "apify/instagram-scraper",
+  // Instagram: apify/instagram-hashtag-scraper ($2.30/1000 results, maintained by Apify)
+  instagram: "apify/instagram-hashtag-scraper",
   // YouTube: scraper_one/youtube-search-scraper (reliable, well-maintained)
   youtube: "scraper_one/youtube-search-scraper",
   // Reddit: lite variant for less restrictions
@@ -138,13 +138,40 @@ serve(async (req) => {
         break;
         
       case "instagram":
-        // Instagram: Reduce parameters to speed up - only fetch posts, no stories/reels extras
+        // Instagram: apify/instagram-hashtag-scraper - uses 'hashtags' array
+        // Extract hashtags from query, username, or hashtag field
+        const igSearchTerms: string[] = [];
+        
+        // Process query - split by comma and clean each term
+        if (query) {
+          query.split(",").forEach((term: string) => {
+            const cleaned = term.trim().replace(/^[@#]/, "").toLowerCase();
+            if (cleaned) igSearchTerms.push(cleaned);
+          });
+        }
+        
+        // Add username (without @)
+        if (username) {
+          const cleanUsername = username.replace(/^@/, "").toLowerCase();
+          if (cleanUsername) igSearchTerms.push(cleanUsername);
+        }
+        
+        // Add hashtag (without #)
+        if (hashtag) {
+          const cleanHashtag = hashtag.replace(/^#/, "").toLowerCase();
+          if (cleanHashtag) igSearchTerms.push(cleanHashtag);
+        }
+        
+        // Remove duplicates
+        const uniqueIgTerms = [...new Set(igSearchTerms)];
+        
+        if (uniqueIgTerms.length === 0) {
+          throw new Error("Instagram requires at least one search term (hashtag, username, or query).");
+        }
+        
         input = {
-          directUrls: username ? [`https://www.instagram.com/${username}/`] : [],
-          hashtags: hashtag ? [hashtag] : [],
-          resultsLimit: Math.min(maxResults, 20), // Limit to prevent long runs
-          addParentData: false,
-          searchType: "hashtag", // Faster mode
+          hashtags: uniqueIgTerms, // Array of hashtags to search
+          resultsLimit: Math.min(maxResults, 50), // Results per hashtag
         };
         break;
         
@@ -188,9 +215,34 @@ serve(async (req) => {
         
       case "linkedin":
         // harvestapi/linkedin-post-search - no cookies required
+        // Uses 'searchQueries' (array) NOT 'search' (string)
+        const linkedinQueries: string[] = [];
+        
+        if (query) {
+          // Split by comma and add each as a separate query
+          query.split(",").forEach((term: string) => {
+            const cleaned = term.trim();
+            if (cleaned) linkedinQueries.push(cleaned);
+          });
+        }
+        
+        if (companyUrl) {
+          // Extract company name from URL for search
+          const companyName = companyUrl
+            .replace(/.*linkedin\.com\/company\//, "")
+            .replace(/\/.*/, "")
+            .replace(/-/g, " ");
+          if (companyName) linkedinQueries.push(companyName);
+        }
+        
+        if (linkedinQueries.length === 0) {
+          throw new Error("LinkedIn requires a search query or company URL.");
+        }
+        
         input = {
-          search: query || "",
+          searchQueries: linkedinQueries, // Array of search queries (required)
           maxPosts: maxResults,
+          sortBy: "date", // Sort by newest first
         };
         break;
     }
