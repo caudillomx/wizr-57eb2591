@@ -10,8 +10,8 @@ const corsHeaders = {
 // NOTE: Some actors are paid (require "rental") and will return 403 after trial.
 // We use free/community actors that don't require paid subscriptions.
 const ACTOR_IDS: Record<string, string> = {
-  // Twitter: using free tweet scraper - works without subscription
-  twitter: "coder_luffy/free-tweet-scraper",
+  // Twitter/X: using quacker/twitter-scraper (free, no rental required)
+  twitter: "quacker/twitter-scraper",
   // Facebook: using search scraper for third-party mentions (not just pages)
   facebook: "easyapi/facebook-posts-search-scraper",
   // Facebook page-specific scraper (fallback for username searches)
@@ -90,13 +90,12 @@ serve(async (req) => {
 
     switch (platform) {
       case "twitter":
-        // Free Tweet Scraper - uses searchTerms and handles
+        // quacker/twitter-scraper - uses searchTerms for keyword search
         input = {
           searchTerms: query ? query.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-          handles: username ? [username.replace("@", "")] : [],
+          twitterHandles: username ? [username.replace("@", "")] : [],
           maxTweets: maxResults,
-          // Get latest tweets first
-          sortBy: "Latest",
+          sort: "Latest",
         };
         break;
         
