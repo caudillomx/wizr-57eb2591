@@ -364,7 +364,7 @@ const TendenciasPage = () => {
                     menciones.
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => navigate("/semantica")}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/semantica")}>
                   Ir a Semántica
                 </Button>
               </CardContent>
