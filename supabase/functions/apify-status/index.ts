@@ -347,31 +347,72 @@ function normalizeInstagram(item: Record<string, unknown>, index: number): Norma
 }
 
 function normalizeLinkedIn(item: Record<string, unknown>, index: number): NormalizedResult {
+  // harvestapi/linkedin-post-search format
   const author = item.author as Record<string, unknown> | undefined;
-  const text = String(get(item, "text") || get(item, "commentary") || get(item, "postText") || "");
-  const authorName = String(get(author, "name") || get(item, "authorName") || get(item, "companyName") || "");
+  const engagement = item.engagement as Record<string, unknown> | undefined;
+  const postedAt = item.postedAt as Record<string, unknown> | undefined;
   
+  // Content from harvestapi format
+  const text = String(get(item, "content") || get(item, "text") || get(item, "commentary") || get(item, "postText") || "");
+  
+  // Author info - harvestapi uses nested 'author' object
+  const authorName = String(
+    get(author, "name") || 
+    get(item, "authorName") || 
+    get(item, "companyName") || 
+    ""
+  );
+  const authorUsername = String(
+    get(author, "publicIdentifier") || 
+    get(item, "authorUsername") || 
+    ""
+  );
+  const authorUrl = String(
+    get(author, "linkedinUrl") || 
+    get(author, "url") || 
+    get(item, "authorUrl") || 
+    ""
+  );
+  const avatarUrl = (() => {
+    const avatar = get(author, "avatar") as Record<string, unknown> | undefined;
+    return String(avatar?.url || get(author, "profilePicture") || get(author, "image") || "");
+  })();
+  
+  // Engagement metrics - harvestapi uses nested 'engagement' object
   const metrics = {
-    likes: Number(get(item, "numLikes") || get(item, "likes") || get(item, "likeCount") || 0),
-    comments: Number(get(item, "numComments") || get(item, "comments") || get(item, "commentCount") || 0),
-    shares: Number(get(item, "numShares") || get(item, "shares") || get(item, "repostCount") || 0),
+    likes: Number(get(engagement, "likes") || get(item, "numLikes") || get(item, "likes") || get(item, "likeCount") || 0),
+    comments: Number(get(engagement, "comments") || get(item, "numComments") || get(item, "comments") || get(item, "commentCount") || 0),
+    shares: Number(get(engagement, "shares") || get(item, "numShares") || get(item, "shares") || get(item, "repostCount") || 0),
   };
 
+  // Date - harvestapi uses nested 'postedAt' object with 'date' field
+  const publishedDate = postedAt 
+    ? parseDate(get(postedAt, "date") || get(postedAt, "timestamp"))
+    : parseDate(get(item, "postedAt") || get(item, "postedDate") || get(item, "publishedAt"));
+
+  // Post URL
+  const postUrl = String(
+    get(item, "linkedinUrl") || 
+    get(item, "url") || 
+    get(item, "postUrl") || 
+    ""
+  );
+
   return {
-    id: `linkedin-${get(item, "urn") || get(item, "id") || index}-${Date.now()}`,
+    id: `linkedin-${get(item, "id") || get(item, "urn") || index}-${Date.now()}`,
     platform: "linkedin",
     title: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
     description: text,
     author: {
       name: authorName,
-      username: String(get(author, "publicIdentifier") || get(item, "authorUsername") || ""),
-      url: String(get(author, "url") || get(item, "authorUrl") || ""),
-      avatarUrl: String(get(author, "profilePicture") || get(author, "image") || ""),
+      username: authorUsername,
+      url: authorUrl,
+      avatarUrl: avatarUrl,
       followers: Number(get(author, "followersCount") || 0),
     },
     metrics: { ...metrics, engagement: calculateEngagement(metrics) },
-    publishedAt: parseDate(get(item, "postedAt") || get(item, "postedDate") || get(item, "publishedAt")),
-    url: String(get(item, "url") || get(item, "postUrl") || ""),
+    publishedAt: publishedDate,
+    url: postUrl,
     contentType: get(item, "type") === "video" ? "video" : get(item, "type") === "article" ? "article" : "post",
     hashtags: extractHashtags(text),
     mentions: extractMentions(text),
