@@ -513,6 +513,13 @@ serve(async (req) => {
 
       if (datasetResponse.ok) {
         const rawItems = await datasetResponse.json();
+        
+        // Log raw item count and first item structure for debugging
+        console.log(`Dataset ${datasetId}: ${Array.isArray(rawItems) ? rawItems.length : 'non-array'} raw items for ${platform}`);
+        if (Array.isArray(rawItems) && rawItems.length > 0) {
+          console.log(`First raw item keys for ${platform}:`, Object.keys(rawItems[0]).slice(0, 15).join(', '));
+        }
+        
         let normalized = normalizeResults(rawItems, platform as Platform);
 
         // Filter by keyword if provided (for TikTok and Instagram to reduce false positives)
