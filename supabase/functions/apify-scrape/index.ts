@@ -7,19 +7,22 @@ const corsHeaders = {
 };
 
 // Apify Actor IDs for different platforms
-// NOTE: Some actors are paid (require “rental”) and will return 403 after trial.
+// NOTE: Some actors are paid (require "rental") and will return 403 after trial.
 // We prefer actors that are likely to work without rental.
 const ACTOR_IDS: Record<string, string> = {
   twitter: "apidojo/tweet-scraper",
   facebook: "apify/facebook-posts-scraper",
   tiktok: "clockworks/tiktok-scraper",
   instagram: "apify/instagram-scraper",
-  // LinkedIn: best-effort keyword search via LinkedIn content search URL.
-  linkedin: "curious_coder/linkedin-post-search-scraper",
   // YouTube: revert to previously working actor.
   youtube: "streamers/youtube-scraper",
   // Reddit: lite variant reduces risk of rental restrictions.
   reddit: "trudax/reddit-scraper-lite",
+};
+
+// Platforms that require paid subscriptions - return friendly error instead of 403
+const DISABLED_PLATFORMS: Record<string, string> = {
+  linkedin: "LinkedIn requiere una suscripción de pago en Apify. Esta plataforma está temporalmente deshabilitada.",
 };
 
 interface ScrapeRequest {
@@ -57,6 +60,18 @@ serve(async (req) => {
 
     if (!platform) {
       throw new Error("Platform is required");
+    }
+
+    // Check if platform is disabled
+    if (DISABLED_PLATFORMS[platform]) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: DISABLED_PLATFORMS[platform],
+          disabled: true,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const actorId = ACTOR_IDS[platform];
@@ -115,22 +130,6 @@ serve(async (req) => {
           resultsLimit: Math.min(maxResults, 20), // Limit to prevent long runs
           addParentData: false,
           searchType: "hashtag", // Faster mode
-        };
-        break;
-        
-      case "linkedin":
-        // LinkedIn post search scraper: keyword search is driven by a LinkedIn search URL.
-        input = {
-          urls: [
-            ...(companyUrl ? [companyUrl] : []),
-            ...(query
-              ? [
-                  `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(
-                    query
-                  )}&origin=FACETED_SEARCH`,
-                ]
-              : []),
-          ],
         };
         break;
         
