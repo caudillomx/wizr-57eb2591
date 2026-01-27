@@ -159,6 +159,7 @@ serve(async (req) => {
         input = {
           query: tiktokQuery,
           max_results: maxResults,
+          maxProfilesPerQuery: 1, // Required parameter - must be >= 1
           date_posted: "this-month",
           sort_by: "date",
         };
