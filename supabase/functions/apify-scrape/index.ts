@@ -108,10 +108,20 @@ serve(async (req) => {
         if (query) {
           // Use Facebook Post Search Scraper (powerai - 5.0 rating, better reliability)
           actorId = ACTOR_IDS.facebook; // powerai/facebook-post-search-scraper
+          
+          // Calculate date range: last 30 days to ensure recent posts
+          const today = new Date();
+          const thirtyDaysAgo = new Date(today);
+          thirtyDaysAgo.setDate(today.getDate() - 30);
+          
+          const formatDate = (d: Date) => d.toISOString().split("T")[0]; // yyyy-mm-dd
+          
           input = {
             query: query, // This actor uses 'query' not 'searchQuery'
             maxResults: maxResults,
             recent_posts: true, // Focus on recent posts for monitoring
+            start_date: formatDate(thirtyDaysAgo), // Filter posts from last 30 days
+            end_date: formatDate(today),
           };
         } else if (username) {
           // Fallback to page scraper for specific pages
