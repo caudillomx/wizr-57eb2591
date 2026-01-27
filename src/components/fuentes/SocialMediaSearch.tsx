@@ -34,6 +34,10 @@ import {
   ChevronDown,
   Info,
   CalendarIcon,
+  ThumbsUp,
+  ThumbsDown,
+  Eye,
+  EyeOff,
   Filter,
 } from "lucide-react";
 import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -252,18 +256,53 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
     minDateIso?: string;
     maxDateIso?: string;
   } | null>(null);
+  
+  // Curation state for manual relevance filtering
+  // Key = result.id, Value = "relevant" | "discarded" | undefined (not curated)
+  const [curationState, setCurationState] = useState<Record<string, "relevant" | "discarded" | undefined>>({});
+  const [showDiscarded, setShowDiscarded] = useState(false);
 
   const config = PLATFORM_CONFIG[platform];
   const PlatformIcon = config.icon;
 
-  // With strict date filtering applied during fetch, filteredResults = results
-  // This memo now only exists for backward compatibility and any edge cases
-  // where the date filter is toggled after fetch (which won't re-filter saved data)
+  // Curated results: filter out discarded items unless showDiscarded is true
+  const curatedResults = useMemo(() => {
+    return results.filter((r) => {
+      const state = curationState[r.id];
+      if (state === "discarded" && !showDiscarded) return false;
+      return true;
+    });
+  }, [results, curationState, showDiscarded]);
+  
+  // Count stats for curation UI
+  const curationStats = useMemo(() => {
+    const relevant = results.filter(r => curationState[r.id] === "relevant").length;
+    const discarded = results.filter(r => curationState[r.id] === "discarded").length;
+    const pending = results.length - relevant - discarded;
+    return { relevant, discarded, pending };
+  }, [results, curationState]);
+
+  // With strict date filtering applied during fetch, filteredResults = curatedResults
   const filteredResults = useMemo(() => {
-    // Since strict filtering is applied at fetch time, we just return results as-is
-    // The date filter was already applied before saving to `results` state
-    return results;
-  }, [results]);
+    return curatedResults;
+  }, [curatedResults]);
+  
+  // Curation handlers
+  const handleMarkRelevant = useCallback((id: string) => {
+    setCurationState(prev => ({ ...prev, [id]: "relevant" }));
+  }, []);
+  
+  const handleMarkDiscarded = useCallback((id: string) => {
+    setCurationState(prev => ({ ...prev, [id]: "discarded" }));
+  }, []);
+  
+  const handleClearCuration = useCallback((id: string) => {
+    setCurationState(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
   // Results are now normalized by the backend - sort chronologically
   const processBackendResults = (items: SocialSearchResult[]): SocialSearchResult[] => {
@@ -550,11 +589,21 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   };
 
   const handleSaveResults = async () => {
-    if (filteredResults.length === 0) return;
+    // Only save results that are NOT marked as discarded
+    const resultsToSave = filteredResults.filter(r => curationState[r.id] !== "discarded");
+    
+    if (resultsToSave.length === 0) {
+      toast({
+        title: "Sin resultados para guardar",
+        description: "Marca al menos un resultado como relevante o deja algunos sin curar",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Convert normalized results to mentions format (use filtered results)
-      const mentions = filteredResults.map((result) => ({
+      const mentions = resultsToSave.map((result) => ({
         project_id: projectId,
         url: result.url || `https://${platform}.com`,
         title: result.title || result.description?.substring(0, 200) || "Sin título",
@@ -577,6 +626,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
           contentType: result.contentType,
           hashtags: result.hashtags || [],
           mentions: result.mentions || [],
+          curationStatus: curationState[result.id] || "pending", // Track curation status
         })),
       }));
 
@@ -584,9 +634,10 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
 
       if (error) throw error;
 
+      const discardedCount = results.length - resultsToSave.length;
       toast({
         title: "Guardado exitoso",
-        description: `${filteredResults.length} menciones guardadas de ${config.label}`,
+        description: `${resultsToSave.length} menciones guardadas de ${config.label}${discardedCount > 0 ? ` (${discardedCount} descartadas)` : ""}`,
       });
 
       onResultsSaved?.();
@@ -607,6 +658,8 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
     setRunId(null);
     setIsSearching(false);
     setLastStrictDateDiscard(null);
+    setCurationState({});
+    setShowDiscarded(false);
   };
 
   return (
@@ -971,6 +1024,41 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         {/* Results */}
         {filteredResults.length > 0 ? (
           <div className="space-y-3">
+            {/* Curation toolbar - only show when there are results */}
+            {results.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-muted-foreground">Curación:</span>
+                  <span className="flex items-center gap-1.5">
+                    <ThumbsUp className="h-3.5 w-3.5 text-green-600" />
+                    <span className="font-medium text-green-600">{curationStats.relevant}</span>
+                    <span className="text-muted-foreground">relevantes</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <ThumbsDown className="h-3.5 w-3.5 text-red-500" />
+                    <span className="font-medium text-red-500">{curationStats.discarded}</span>
+                    <span className="text-muted-foreground">descartados</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    ({curationStats.pending} sin curar)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {curationStats.discarded > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowDiscarded(!showDiscarded)}
+                      className="gap-1.5 text-xs"
+                    >
+                      {showDiscarded ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {showDiscarded ? "Ocultar descartados" : "Ver descartados"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 {filteredResults.length} resultados de {config.label}
@@ -980,8 +1068,20 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
 
             <ScrollArea className="h-[400px]">
               <div className="space-y-3 pr-4">
-                {filteredResults.map((result) => (
-                  <Card key={result.id} className="overflow-hidden">
+                {filteredResults.map((result) => {
+                  const curation = curationState[result.id];
+                  const isDiscarded = curation === "discarded";
+                  const isRelevant = curation === "relevant";
+                  
+                  return (
+                  <Card 
+                    key={result.id} 
+                    className={cn(
+                      "overflow-hidden transition-all",
+                      isDiscarded && "opacity-50 border-red-200 dark:border-red-900",
+                      isRelevant && "border-green-300 dark:border-green-800 bg-green-50/30 dark:bg-green-950/10"
+                    )}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         <div className={`rounded-full p-2 ${config.color}`}>
@@ -1083,11 +1183,41 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                               </a>
                             )}
                           </div>
+                          
+                          {/* Curation Buttons */}
+                          <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                            <span className="text-xs text-muted-foreground mr-2">Curación:</span>
+                            <Button
+                              variant={isRelevant ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => isRelevant ? handleClearCuration(result.id) : handleMarkRelevant(result.id)}
+                              className={cn(
+                                "gap-1.5 h-7 text-xs",
+                                isRelevant && "bg-green-600 hover:bg-green-700"
+                              )}
+                            >
+                              <ThumbsUp className="h-3 w-3" />
+                              {isRelevant ? "Relevante ✓" : "Relevante"}
+                            </Button>
+                            <Button
+                              variant={isDiscarded ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => isDiscarded ? handleClearCuration(result.id) : handleMarkDiscarded(result.id)}
+                              className={cn(
+                                "gap-1.5 h-7 text-xs",
+                                isDiscarded && "bg-red-600 hover:bg-red-700"
+                              )}
+                            >
+                              <ThumbsDown className="h-3 w-3" />
+                              {isDiscarded ? "Descartado ✗" : "Descartar"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
