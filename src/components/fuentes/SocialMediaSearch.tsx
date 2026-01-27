@@ -137,6 +137,7 @@ const PLATFORM_CONFIG: Record<Platform, {
   placeholder: string;
   searchTypes: { value: string; label: string; tooltip: string }[];
   helpText: string;
+  disabled?: boolean;
 }> = {
   twitter: {
     label: "X (Twitter)",
@@ -187,12 +188,13 @@ const PLATFORM_CONFIG: Record<Platform, {
     label: "LinkedIn",
     icon: LinkedInIcon,
     color: "bg-blue-700 text-white",
-    placeholder: "Ej: Actinver, fintech México",
+    placeholder: "⚠️ Plataforma temporalmente deshabilitada",
     searchTypes: [
-      { value: "query", label: "Búsqueda general", tooltip: "Busca publicaciones públicas que contengan los términos especificados. Genera automáticamente una URL de búsqueda de LinkedIn." },
-      { value: "companyUrl", label: "Por empresa (URL)", tooltip: "Requiere la URL completa del perfil de la empresa. Ejemplo: https://www.linkedin.com/company/microsoft/" },
+      { value: "query", label: "Búsqueda general", tooltip: "Busca publicaciones públicas que contengan los términos especificados." },
+      { value: "companyUrl", label: "Por empresa (URL)", tooltip: "Requiere la URL completa del perfil de la empresa." },
     ],
-    helpText: "✅ LinkedIn ahora soporta búsqueda por palabras clave. Ingresa términos como 'Actinver' o 'fintech México' para encontrar publicaciones relevantes.",
+    helpText: "⚠️ LinkedIn está temporalmente deshabilitado debido a restricciones de la API. Por favor utiliza otra plataforma.",
+    disabled: true,
   },
   youtube: {
     label: "YouTube",
@@ -565,21 +567,33 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
           {(Object.keys(PLATFORM_CONFIG) as Platform[]).map((plat) => {
             const cfg = PLATFORM_CONFIG[plat];
             const Icon = cfg.icon;
+            const isDisabled = cfg.disabled;
             return (
-              <Button
-                key={plat}
-                variant={platform === plat ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setPlatform(plat);
-                  setSearchType(cfg.searchTypes[0].value);
-                  resetSearch();
-                }}
-                className={`flex flex-col h-auto py-2 gap-1 ${platform === plat ? cfg.color : ""}`}
-              >
-                <Icon />
-                <span className="text-xs">{cfg.label.split(" ")[0]}</span>
-              </Button>
+              <Tooltip key={plat}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={platform === plat ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setPlatform(plat);
+                      setSearchType(cfg.searchTypes[0].value);
+                      resetSearch();
+                    }}
+                    className={`flex flex-col h-auto py-2 gap-1 relative ${platform === plat ? cfg.color : ""} ${isDisabled ? "opacity-60" : ""}`}
+                  >
+                    <Icon />
+                    <span className="text-xs">{cfg.label.split(" ")[0]}</span>
+                    {isDisabled && (
+                      <span className="absolute -top-1 -right-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1">⚠️</span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                {isDisabled && (
+                  <TooltipContent side="bottom" className="max-w-[200px]">
+                    <p>Temporalmente deshabilitado por restricciones de API</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
             );
           })}
         </div>
@@ -653,10 +667,15 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         <div className="flex gap-2">
           <Button 
             onClick={handleSearch} 
-            disabled={isSearching || jobStatus === "running"}
+            disabled={isSearching || jobStatus === "running" || config.disabled}
             className={config.color}
           >
-            {isSearching || jobStatus === "running" ? (
+            {config.disabled ? (
+              <>
+                <XCircle className="mr-2 h-4 w-4" />
+                Plataforma no disponible
+              </>
+            ) : isSearching || jobStatus === "running" ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                 Buscando...
