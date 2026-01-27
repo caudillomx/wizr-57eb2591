@@ -565,15 +565,21 @@ serve(async (req) => {
         
         let normalized = normalizeResults(rawItems, platform as Platform);
 
-        // Filter by keyword if provided (for TikTok, Instagram, and Facebook to reduce false positives)
-        if (keywordLower && (platform === "tiktok" || platform === "instagram" || platform === "facebook")) {
+        // Filter by keyword for ALL platforms to reduce false positives
+        // Apify actors often return noisy/irrelevant results
+        if (keywordLower) {
           const beforeCount = normalized.length;
+          
+          // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
+          const searchTerms: string[] = keywordLower.split(",").map((t: string) => t.trim().replace(/^@/, "")).filter(Boolean);
+          
           normalized = normalized.filter((item) => {
-            // Check title, description/content, hashtags, and author name
-            const text = `${item.title} ${item.description} ${(item.hashtags || []).join(" ")} ${item.author?.name || ""}`.toLowerCase();
-            return text.includes(keywordLower);
+            // Check title, description/content, hashtags, author username and name
+            const text = `${item.title} ${item.description} ${(item.hashtags || []).join(" ")} ${item.author?.name || ""} ${item.author?.username || ""}`.toLowerCase();
+            // Match if ANY of the search terms is found
+            return searchTerms.some((term: string) => text.includes(term));
           });
-          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keyword: ${keywordLower}`);
+          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}`);
         }
 
         // Sort all results chronologically (newest first)
