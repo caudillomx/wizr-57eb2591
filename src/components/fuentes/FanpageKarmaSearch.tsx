@@ -211,7 +211,7 @@ export const FanpageKarmaSearch = ({ projectId, onResultsSaved }: FanpageKarmaSe
             id="filterKeywords"
             value={filterKeywords}
             onChange={(e) => setFilterKeywords(e.target.value)}
-            placeholder="Ej: Timber, inversiones, nuevo producto"
+            placeholder="Ej: Actinver, inversiones, nuevo producto"
             disabled={isSearching}
           />
           <p className="text-xs text-muted-foreground">
