@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useMentions } from "@/hooks/useMentions";
 import { firecrawlApi, SearchResult } from "@/lib/api/firecrawl";
@@ -22,6 +24,8 @@ import {
   ChevronRight,
   Globe,
   Sparkles,
+  Filter,
+  AlertTriangle,
 } from "lucide-react";
 
 interface GoogleNewsSearchProps {
@@ -39,6 +43,81 @@ const TIME_RANGE_OPTIONS = [
   { value: "month", label: "Último mes" },
 ];
 
+// Social media domains to filter out from news results
+const SOCIAL_MEDIA_DOMAINS = [
+  "instagram.com",
+  "facebook.com",
+  "twitter.com",
+  "x.com",
+  "tiktok.com",
+  "linkedin.com",
+  "youtube.com",
+  "reddit.com",
+  "threads.net",
+];
+
+// Patterns that indicate false positive mentions (keyword appears only in UI context)
+const FALSE_POSITIVE_PATTERNS = [
+  /\bfollow\b/i,
+  /\bseguir\b/i,
+  /\bsigue a\b/i,
+  /\bfollow\.\s/i,
+  /\bprofile picture\b/i,
+  /\bfoto de perfil\b/i,
+  /\'s profile picture/i,
+];
+
+/**
+ * Check if a result is likely a false positive based on content patterns
+ */
+function isFalsePositive(result: SearchResult, searchKeyword: string): boolean {
+  const keyword = searchKeyword.toLowerCase().trim();
+  const title = (result.title || "").toLowerCase();
+  const description = (result.description || "").toLowerCase();
+  const fullText = `${title} ${description}`;
+  
+  // Check if the keyword appears only in false positive contexts
+  const keywordIndex = fullText.indexOf(keyword);
+  if (keywordIndex === -1) return true; // Keyword not found at all
+  
+  // Check surrounding context (50 chars before and after)
+  const contextStart = Math.max(0, keywordIndex - 50);
+  const contextEnd = Math.min(fullText.length, keywordIndex + keyword.length + 50);
+  const context = fullText.substring(contextStart, contextEnd);
+  
+  // If context matches false positive patterns, it's likely not a real mention
+  for (const pattern of FALSE_POSITIVE_PATTERNS) {
+    if (pattern.test(context)) {
+      // Verify the keyword isn't mentioned elsewhere in meaningful context
+      const textWithoutContext = fullText.replace(context, "");
+      if (!textWithoutContext.includes(keyword)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Get domain from URL
+ */
+function getDomainFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Check if URL is from a social media platform
+ */
+function isSocialMediaUrl(url: string): boolean {
+  const domain = getDomainFromUrl(url);
+  return SOCIAL_MEDIA_DOMAINS.some(sm => domain.includes(sm));
+}
+
 export function GoogleNewsSearch({ projectId, defaultKeywords = [] }: GoogleNewsSearchProps) {
   const { toast } = useToast();
   const { saveManyMentions, searchResultsToMentions, isSaving } = useMentions(projectId);
@@ -51,9 +130,42 @@ export function GoogleNewsSearch({ projectId, defaultKeywords = [] }: GoogleNews
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filter options
+  const [excludeSocialMedia, setExcludeSocialMedia] = useState(true);
+  const [excludeFalsePositives, setExcludeFalsePositives] = useState(true);
 
-  const totalPages = Math.ceil(results.length / ITEMS_PER_PAGE);
-  const paginatedResults = results.slice(
+  // Filter results based on settings
+  const { filteredResults, socialMediaCount, falsePositiveCount } = useMemo(() => {
+    let filtered = results;
+    let smCount = 0;
+    let fpCount = 0;
+    
+    // Count and optionally filter social media
+    results.forEach(r => {
+      if (isSocialMediaUrl(r.url)) smCount++;
+    });
+    if (excludeSocialMedia) {
+      filtered = filtered.filter(r => !isSocialMediaUrl(r.url));
+    }
+    
+    // Count and optionally filter false positives
+    filtered.forEach(r => {
+      if (isFalsePositive(r, searchQuery)) fpCount++;
+    });
+    if (excludeFalsePositives) {
+      filtered = filtered.filter(r => !isFalsePositive(r, searchQuery));
+    }
+    
+    return { 
+      filteredResults: filtered, 
+      socialMediaCount: smCount,
+      falsePositiveCount: fpCount
+    };
+  }, [results, excludeSocialMedia, excludeFalsePositives, searchQuery]);
+
+  const totalPages = Math.ceil(filteredResults.length / ITEMS_PER_PAGE);
+  const paginatedResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -103,22 +215,18 @@ export function GoogleNewsSearch({ projectId, defaultKeywords = [] }: GoogleNews
   }, [searchQuery, timeRange, toast]);
 
   const handleSaveResults = () => {
-    if (results.length === 0) return;
+    if (filteredResults.length === 0) return;
 
-    const mentionData = searchResultsToMentions(results, projectId);
+    const mentionData = searchResultsToMentions(filteredResults, projectId);
     saveManyMentions(mentionData);
     toast({
       title: "Guardando noticias",
-      description: `Guardando ${results.length} noticias de Google News`,
+      description: `Guardando ${filteredResults.length} noticias de Google News`,
     });
   };
 
   const getDomain = (url: string) => {
-    try {
-      return new URL(url).hostname.replace("www.", "");
-    } catch {
-      return "Fuente desconocida";
-    }
+    return getDomainFromUrl(url) || "Fuente desconocida";
   };
 
   return (
@@ -178,6 +286,49 @@ export function GoogleNewsSearch({ projectId, defaultKeywords = [] }: GoogleNews
             <Sparkles className="h-3 w-3" />
             <span>Los resultados incluyen noticias de múltiples fuentes para mayor cobertura</span>
           </div>
+
+          {/* Filter Options */}
+          {hasSearched && results.length > 0 && (
+            <div className="flex flex-wrap items-center gap-6 pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filtros:</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="exclude-social"
+                  checked={excludeSocialMedia}
+                  onCheckedChange={setExcludeSocialMedia}
+                />
+                <Label htmlFor="exclude-social" className="text-sm cursor-pointer">
+                  Excluir redes sociales
+                  {socialMediaCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {socialMediaCount}
+                    </Badge>
+                  )}
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="exclude-fp"
+                  checked={excludeFalsePositives}
+                  onCheckedChange={setExcludeFalsePositives}
+                />
+                <Label htmlFor="exclude-fp" className="text-sm cursor-pointer">
+                  Excluir falsos positivos
+                  {falsePositiveCount > 0 && (
+                    <Badge variant="outline" className="ml-2 text-xs gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {falsePositiveCount}
+                    </Badge>
+                  )}
+                </Label>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -198,13 +349,25 @@ export function GoogleNewsSearch({ projectId, defaultKeywords = [] }: GoogleNews
             </p>
           </CardContent>
         </Card>
-      ) : results.length > 0 ? (
+      ) : hasSearched && results.length > 0 && filteredResults.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Filter className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-lg font-medium">Resultados filtrados</p>
+            <p className="text-sm text-muted-foreground">
+              Se encontraron {results.length} resultados pero fueron filtrados.
+              <br />
+              Desactiva los filtros para verlos.
+            </p>
+          </CardContent>
+        </Card>
+      ) : filteredResults.length > 0 ? (
         <>
           {/* Results Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-normal">
-                {results.length} noticias encontradas
+                {filteredResults.length} de {results.length} noticias
               </Badge>
               <Badge variant="outline" className="font-normal">
                 Noticias Web
