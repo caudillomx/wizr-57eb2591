@@ -147,28 +147,31 @@ function normalizeTwitter(item: Record<string, unknown>, index: number): Normali
 }
 
 function normalizeFacebook(item: Record<string, unknown>, index: number): NormalizedResult {
-  // Handle both page scraper and search scraper formats
-  // Search scraper (easyapi/facebook-posts-search-scraper) uses different field names
+  // Handle powerai/facebook-post-search-scraper format (primary)
+  // and fallback for page scraper formats
+  const author = item.author as Record<string, unknown> | undefined;
+  
   const text = String(
+    get(item, "message") ||  // powerai format
     get(item, "text") || 
-    get(item, "message") || 
     get(item, "postText") || 
     get(item, "content") ||
     ""
   );
   
-  // Search scraper returns author info differently
+  // powerai format returns author object with id, name, url, profile_picture_url
   const authorName = String(
+    get(author, "name") ||
     get(item, "pageName") || 
     get(item, "page.name") || 
     get(item, "authorName") ||
     get(item, "user_name") ||
     get(item, "userName") ||
-    get(item, "name") ||
     ""
   );
   
   const authorUrl = String(
+    get(author, "url") ||
     get(item, "pageUrl") || 
     get(item, "page.url") || 
     get(item, "authorUrl") ||
@@ -177,10 +180,38 @@ function normalizeFacebook(item: Record<string, unknown>, index: number): Normal
     ""
   );
   
+  const authorAvatar = String(
+    get(author, "profile_picture_url") ||
+    get(item, "page.profilePicture") || 
+    get(item, "authorAvatar") || 
+    get(item, "profilePicture") || 
+    ""
+  );
+  
+  // powerai format uses reactions_count, comments_count, reshare_count
   const metrics = {
-    likes: Number(get(item, "likes") || get(item, "likesCount") || get(item, "reactions") || get(item, "reactionCount") || 0),
-    comments: Number(get(item, "comments") || get(item, "commentsCount") || get(item, "commentCount") || 0),
-    shares: Number(get(item, "shares") || get(item, "sharesCount") || get(item, "shareCount") || 0),
+    likes: Number(
+      get(item, "reactions_count") || // powerai format
+      get(item, "likes") || 
+      get(item, "likesCount") || 
+      get(item, "reactions") || 
+      get(item, "reactionCount") || 
+      0
+    ),
+    comments: Number(
+      get(item, "comments_count") || // powerai format
+      get(item, "comments") || 
+      get(item, "commentsCount") || 
+      get(item, "commentCount") || 
+      0
+    ),
+    shares: Number(
+      get(item, "reshare_count") || // powerai format
+      get(item, "shares") || 
+      get(item, "sharesCount") || 
+      get(item, "shareCount") || 
+      0
+    ),
   };
 
   // Handle various URL formats
@@ -190,9 +221,14 @@ function normalizeFacebook(item: Record<string, unknown>, index: number): Normal
     get(item, "link") ||
     ""
   );
+  
+  // powerai uses 'type' field and 'timestamp' (unix)
+  const postType = String(get(item, "type") || "post");
+  const hasVideo = Boolean(get(item, "video") || get(item, "video_files"));
+  const hasImage = Boolean(get(item, "image") || get(item, "album_preview"));
 
   return {
-    id: `facebook-${get(item, "id") || get(item, "postId") || get(item, "post_id") || index}-${Date.now()}`,
+    id: `facebook-${get(item, "post_id") || get(item, "id") || get(item, "postId") || index}-${Date.now()}`,
     platform: "facebook",
     title: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
     description: text,
@@ -200,13 +236,20 @@ function normalizeFacebook(item: Record<string, unknown>, index: number): Normal
       name: authorName,
       username: authorName.toLowerCase().replace(/\s+/g, ""),
       url: authorUrl,
-      avatarUrl: String(get(item, "page.profilePicture") || get(item, "authorAvatar") || get(item, "profilePicture") || ""),
+      avatarUrl: authorAvatar,
       followers: Number(get(item, "page.likes") || get(item, "followersCount") || 0),
     },
     metrics: { ...metrics, engagement: calculateEngagement(metrics) },
-    publishedAt: parseDate(get(item, "time") || get(item, "publishedAt") || get(item, "timestamp") || get(item, "date") || get(item, "createdAt")),
+    publishedAt: parseDate(
+      get(item, "timestamp") || // powerai uses unix timestamp
+      get(item, "time") || 
+      get(item, "publishedAt") || 
+      get(item, "date") || 
+      get(item, "createdAt") ||
+      get(item, "scrapedAt")
+    ),
     url: postUrl,
-    contentType: get(item, "type") === "video" ? "video" : get(item, "type") === "photo" ? "image" : "post",
+    contentType: hasVideo ? "video" : hasImage ? "image" : "post",
     hashtags: extractHashtags(text),
     mentions: extractMentions(text),
     raw: item,
