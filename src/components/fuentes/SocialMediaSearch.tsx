@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,9 @@ import { apifyApi } from "@/lib/api/apify";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { 
   Search, 
   RefreshCw, 
@@ -30,8 +33,10 @@ import {
   HelpCircle,
   ChevronDown,
   Info,
+  CalendarIcon,
+  Filter,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 // Platform icons using simple components
@@ -155,11 +160,12 @@ const PLATFORM_CONFIG: Record<Platform, {
     label: "Facebook",
     icon: FacebookIcon,
     color: "bg-blue-600 text-white",
-    placeholder: "Ej: ActinverMexico, CocaColaMexico",
+    placeholder: "Ej: Actinver, BBVA México, noticias financieras",
     searchTypes: [
-      { value: "username", label: "Por página", tooltip: "Requiere el nombre exacto de una página de Facebook. La búsqueda general no está soportada." },
+      { value: "query", label: "Búsqueda general", tooltip: "Busca menciones públicas de terceros que contengan los términos especificados. Ideal para encontrar qué dicen otros sobre tu marca." },
+      { value: "username", label: "Por página", tooltip: "Extrae contenido directamente de una página de Facebook específica. Requiere el nombre exacto de la página." },
     ],
-    helpText: "⚠️ Facebook solo permite extraer contenido de páginas específicas. Ingresa el nombre exacto de la página (sin espacios ni URL). Ejemplo: 'ActinverMexico'.",
+    helpText: "✅ Ahora soporta búsqueda de menciones de terceros. Usa 'Búsqueda general' para encontrar publicaciones públicas que mencionen tu marca.",
   },
   tiktok: {
     label: "TikTok",
@@ -233,9 +239,30 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   const [runId, setRunId] = useState<string | null>(null);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [results, setResults] = useState<SocialSearchResult[]>([]);
+  
+  // Date filter state
+  const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 7));
+  const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
 
   const config = PLATFORM_CONFIG[platform];
   const PlatformIcon = config.icon;
+
+  // Filter results by date range (client-side post-processing)
+  const filteredResults = useMemo(() => {
+    if (!dateFilterEnabled || !dateFrom || !dateTo) {
+      return results;
+    }
+    
+    const fromStart = startOfDay(dateFrom);
+    const toEnd = endOfDay(dateTo);
+    
+    return results.filter((r) => {
+      const pubDate = new Date(r.publishedAt);
+      if (isNaN(pubDate.getTime())) return true; // Keep items without valid date
+      return !isBefore(pubDate, fromStart) && !isAfter(pubDate, toEnd);
+    });
+  }, [results, dateFilterEnabled, dateFrom, dateTo]);
 
   // Results are now normalized by the backend - sort chronologically
   const processBackendResults = (items: SocialSearchResult[]): SocialSearchResult[] => {
@@ -459,11 +486,11 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   };
 
   const handleSaveResults = async () => {
-    if (results.length === 0) return;
+    if (filteredResults.length === 0) return;
 
     try {
-      // Convert normalized results to mentions format
-      const mentions = results.map((result) => ({
+      // Convert normalized results to mentions format (use filtered results)
+      const mentions = filteredResults.map((result) => ({
         project_id: projectId,
         url: result.url || `https://${platform}.com`,
         title: result.title || result.description?.substring(0, 200) || "Sin título",
@@ -495,7 +522,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
 
       toast({
         title: "Guardado exitoso",
-        description: `${results.length} menciones guardadas de ${config.label}`,
+        description: `${filteredResults.length} menciones guardadas de ${config.label}`,
       });
 
       onResultsSaved?.();
@@ -672,6 +699,91 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
           </div>
         </div>
 
+        {/* Date Filter Section */}
+        <div className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={dateFilterEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilterEnabled(!dateFilterEnabled)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtrar por fecha
+            </Button>
+          </div>
+          
+          {dateFilterEnabled && (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Desde</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[130px] justify-start text-left font-normal",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "d MMM yyyy", { locale: es }) : "Inicio"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover border shadow-lg z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={es}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Hasta</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[130px] justify-start text-left font-normal",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "d MMM yyyy", { locale: es }) : "Fin"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover border shadow-lg z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={es}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              {results.length > 0 && filteredResults.length !== results.length && (
+                <Badge variant="secondary" className="text-xs">
+                  Mostrando {filteredResults.length} de {results.length}
+                </Badge>
+              )}
+            </>
+          )}
+        </div>
+
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button 
@@ -697,9 +809,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
             )}
           </Button>
 
-          {results.length > 0 && (
+          {filteredResults.length > 0 && (
             <Button variant="secondary" onClick={handleSaveResults}>
-              Guardar ({results.length})
+              Guardar ({filteredResults.length})
             </Button>
           )}
 
@@ -743,19 +855,22 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         )}
 
         {/* Results */}
-        {results.length > 0 && (
+        {filteredResults.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                {results.length} resultados de {config.label}
+                {dateFilterEnabled && filteredResults.length !== results.length 
+                  ? `${filteredResults.length} de ${results.length} resultados (filtrado por fecha)`
+                  : `${filteredResults.length} resultados de ${config.label}`
+                }
                 <span className="text-xs">• Ordenados por fecha (más recientes primero)</span>
               </p>
             </div>
 
             <ScrollArea className="h-[400px]">
               <div className="space-y-3 pr-4">
-                {results.map((result) => (
+                {filteredResults.map((result) => (
                   <Card key={result.id} className="overflow-hidden">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
