@@ -712,9 +712,9 @@ serve(async (req) => {
         let normalized = normalizeResults(rawItems, platform as Platform);
         rawCount = normalized.length;
 
-        // Filter by keyword for ALL platforms to reduce false positives
-        // Apify actors often return noisy/irrelevant results
-        if (keywordLower) {
+        // Filter by keyword for platforms that need it (skip TikTok to show all results)
+        // TikTok actor already filters by keyword server-side; additional filter removes valid results
+        if (keywordLower && platform !== "tiktok") {
           const beforeCount = normalized.length;
           
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
