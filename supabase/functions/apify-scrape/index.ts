@@ -12,8 +12,10 @@ const corsHeaders = {
 const ACTOR_IDS: Record<string, string> = {
   // Twitter: using free tweet scraper - works without subscription
   twitter: "coder_luffy/free-tweet-scraper",
-  // Facebook: still using apify's scraper (only option for pages)
-  facebook: "apify/facebook-posts-scraper",
+  // Facebook: using search scraper for third-party mentions (not just pages)
+  facebook: "easyapi/facebook-posts-search-scraper",
+  // Facebook page-specific scraper (fallback for username searches)
+  facebook_page: "apify/facebook-posts-scraper",
   // TikTok: clockworks scraper (free tier available)
   tiktok: "clockworks/tiktok-scraper",
   // Instagram: apify's scraper
@@ -78,11 +80,11 @@ serve(async (req) => {
       );
     }
 
-    const actorId = ACTOR_IDS[platform];
+    let actorId = ACTOR_IDS[platform];
     if (!actorId) {
       throw new Error(`Unsupported platform: ${platform}`);
     }
-
+    
     // Build input based on platform
     let input: Record<string, unknown> = {};
 
@@ -99,14 +101,25 @@ serve(async (req) => {
         break;
         
       case "facebook":
-        // Facebook scraper REQUIRES startUrls - cannot search without page URLs
-        if (!username) {
-          throw new Error("Facebook requires a page username or URL. Search by keyword alone is not supported.");
+        // Facebook: Use search scraper for general queries (third-party mentions)
+        // Use page scraper only for specific username/page searches
+        if (query) {
+          // Use Facebook Posts Search Scraper for keyword queries
+          actorId = ACTOR_IDS.facebook; // easyapi/facebook-posts-search-scraper
+          input = {
+            searchQuery: query,
+            maxResults: maxResults,
+          };
+        } else if (username) {
+          // Fallback to page scraper for specific pages
+          actorId = ACTOR_IDS.facebook_page;
+          input = {
+            startUrls: [{ url: `https://www.facebook.com/${username}` }],
+            resultsLimit: maxResults,
+          };
+        } else {
+          throw new Error("Facebook requires a search query or page username.");
         }
-        input = {
-          startUrls: [{ url: `https://www.facebook.com/${username}` }],
-          resultsLimit: maxResults,
-        };
         break;
         
       case "tiktok":

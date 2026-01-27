@@ -147,30 +147,65 @@ function normalizeTwitter(item: Record<string, unknown>, index: number): Normali
 }
 
 function normalizeFacebook(item: Record<string, unknown>, index: number): NormalizedResult {
-  const text = String(get(item, "text") || get(item, "message") || get(item, "postText") || "");
-  const pageName = String(get(item, "pageName") || get(item, "page.name") || "");
+  // Handle both page scraper and search scraper formats
+  // Search scraper (easyapi/facebook-posts-search-scraper) uses different field names
+  const text = String(
+    get(item, "text") || 
+    get(item, "message") || 
+    get(item, "postText") || 
+    get(item, "content") ||
+    ""
+  );
+  
+  // Search scraper returns author info differently
+  const authorName = String(
+    get(item, "pageName") || 
+    get(item, "page.name") || 
+    get(item, "authorName") ||
+    get(item, "user_name") ||
+    get(item, "userName") ||
+    get(item, "name") ||
+    ""
+  );
+  
+  const authorUrl = String(
+    get(item, "pageUrl") || 
+    get(item, "page.url") || 
+    get(item, "authorUrl") ||
+    get(item, "user_url") ||
+    get(item, "profileUrl") ||
+    ""
+  );
   
   const metrics = {
-    likes: Number(get(item, "likes") || get(item, "likesCount") || get(item, "reactions") || 0),
-    comments: Number(get(item, "comments") || get(item, "commentsCount") || 0),
-    shares: Number(get(item, "shares") || get(item, "sharesCount") || 0),
+    likes: Number(get(item, "likes") || get(item, "likesCount") || get(item, "reactions") || get(item, "reactionCount") || 0),
+    comments: Number(get(item, "comments") || get(item, "commentsCount") || get(item, "commentCount") || 0),
+    shares: Number(get(item, "shares") || get(item, "sharesCount") || get(item, "shareCount") || 0),
   };
 
+  // Handle various URL formats
+  const postUrl = String(
+    get(item, "url") || 
+    get(item, "postUrl") || 
+    get(item, "link") ||
+    ""
+  );
+
   return {
-    id: `facebook-${get(item, "id") || get(item, "postId") || index}-${Date.now()}`,
+    id: `facebook-${get(item, "id") || get(item, "postId") || get(item, "post_id") || index}-${Date.now()}`,
     platform: "facebook",
     title: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
     description: text,
     author: {
-      name: pageName,
-      username: pageName.toLowerCase().replace(/\s+/g, ""),
-      url: String(get(item, "pageUrl") || get(item, "page.url") || ""),
-      avatarUrl: String(get(item, "page.profilePicture") || ""),
-      followers: Number(get(item, "page.likes") || 0),
+      name: authorName,
+      username: authorName.toLowerCase().replace(/\s+/g, ""),
+      url: authorUrl,
+      avatarUrl: String(get(item, "page.profilePicture") || get(item, "authorAvatar") || get(item, "profilePicture") || ""),
+      followers: Number(get(item, "page.likes") || get(item, "followersCount") || 0),
     },
     metrics: { ...metrics, engagement: calculateEngagement(metrics) },
-    publishedAt: parseDate(get(item, "time") || get(item, "publishedAt") || get(item, "timestamp")),
-    url: String(get(item, "url") || get(item, "postUrl") || ""),
+    publishedAt: parseDate(get(item, "time") || get(item, "publishedAt") || get(item, "timestamp") || get(item, "date") || get(item, "createdAt")),
+    url: postUrl,
     contentType: get(item, "type") === "video" ? "video" : get(item, "type") === "photo" ? "image" : "post",
     hashtags: extractHashtags(text),
     mentions: extractMentions(text),
