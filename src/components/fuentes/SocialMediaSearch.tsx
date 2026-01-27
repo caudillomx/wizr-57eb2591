@@ -448,10 +448,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
           },
         });
         
-        // Start polling for status - pass searchValue as filter keyword for platforms that need post-filtering
-        const needsFiltering = ["tiktok", "instagram", "facebook"].includes(platform);
-        const filterKw = needsFiltering ? searchValue : undefined;
-        setTimeout(() => checkJobStatus(data.runId!, filterKw), 3000);
+        // Start polling for status - pass searchValue as filter keyword for ALL platforms
+        // Most Apify actors return noisy results that need post-filtering by keyword
+        setTimeout(() => checkJobStatus(data.runId!, searchValue), 3000);
       } else {
         throw new Error(data.error || "Error al iniciar la búsqueda");
       }
