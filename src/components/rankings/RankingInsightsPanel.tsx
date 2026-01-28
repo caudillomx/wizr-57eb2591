@@ -326,7 +326,11 @@ export function RankingInsightsPanel({ profiles, kpis, isLoading }: RankingInsig
                   {insight.answer}
                 </p>
                 {insight.value && (
-                  <Badge variant="outline" className="text-xs font-bold flex-shrink-0">
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-bold flex-shrink-0 max-w-[120px] truncate"
+                    title={insight.value}
+                  >
                     {insight.value}
                   </Badge>
                 )}
