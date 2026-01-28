@@ -234,10 +234,10 @@ const PLATFORM_CONFIG: Record<SelectablePlatform, {
     placeholder: "Ej: término o r/subreddit",
     searchTypes: [
       { value: "query", label: "Búsqueda en posts", tooltip: "Busca posts que contengan los términos en título o cuerpo. Incluye comentarios del post." },
-      { value: "comments", label: "Búsqueda en comentarios", tooltip: "🔥 NUEVO: Busca DENTRO de comentarios. Encuentra menciones aunque el post no contenga tu keyword." },
+      { value: "comments", label: "Búsqueda en comentarios", tooltip: "Busca menciones DENTRO de comentarios. Muestra posts donde la keyword aparece en las discusiones, aunque el título no la contenga." },
       { value: "subreddit", label: "Por subreddit", tooltip: "Busca posts dentro de un subreddit específico. Ingresa sin el prefijo r/." },
     ],
-    helpText: "💡 Usa 'Búsqueda en comentarios' para encontrar menciones dentro de discusiones, no solo en títulos de posts.",
+    helpText: "💡 Usa 'Búsqueda en comentarios' para encontrar menciones dentro de discusiones. Extrae hasta 25 comentarios por post para buscar la keyword.",
   },
 };
 
