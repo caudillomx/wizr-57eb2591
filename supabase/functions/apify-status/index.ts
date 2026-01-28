@@ -1045,8 +1045,13 @@ serve(async (req) => {
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
           const searchTerms: string[] = keywordLower.split(",").map((t: string) => t.trim().replace(/^@/, "")).filter(Boolean);
           
-          // For reddit_comments: ONLY show posts where keyword appears in comments (not title/body)
+          // For reddit_comments: prefer showing only posts where keyword appears in comments.
+          // IMPORTANT: Some Reddit actors do NOT return comment bodies, even if maxComments is set.
+          // In that case, a strict comments-only filter would incorrectly drop everything to 0.
           const isCommentsOnlySearch = platform === "reddit_comments";
+          const commentsAvailable =
+            (platform === "reddit" || platform === "reddit_comments") &&
+            normalized.some((i) => Array.isArray((i as any)?.raw?._extractedComments) && ((i as any).raw._extractedComments?.length || 0) > 0);
           
           normalized = normalized.filter((item) => {
             // Check title, description/content, hashtags, author username and name
@@ -1072,9 +1077,16 @@ serve(async (req) => {
               }
             }
             
-            // For reddit_comments mode: ONLY include if keyword is in comments (even if also in title)
-            // For regular reddit: include if keyword is anywhere (title, body, OR comments)
+            // For reddit_comments mode:
+            // - If comments are available: ONLY include if keyword is in comments.
+            // - If comments are NOT available from the actor: fallback to main-text matching
+            //   and mark results so UI/diagnostics can explain the limitation.
+            // For regular reddit: include if keyword is anywhere (title/body OR comments)
             if (isCommentsOnlySearch) {
+              if (!commentsAvailable) {
+                item.raw = { ...(item.raw || {}), _commentsUnavailable: true };
+                return matchesMain;
+              }
               return matchesComment; // Only keep posts with comment matches
             }
             
@@ -1085,7 +1097,10 @@ serve(async (req) => {
           const commentMatches = normalized.filter((i) => i.raw?._matchedInComment).length;
           const logExtra = commentMatches > 0 ? ` (${commentMatches} matched in comments)` : "";
           const modeLabel = isCommentsOnlySearch ? " [COMMENTS-ONLY MODE]" : "";
-          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}${modeLabel}`);
+          const commentsNote = isCommentsOnlySearch && !commentsAvailable ? " [NO-COMMENTS-IN-DATASET → FALLBACK TO POST MATCH]" : "";
+          console.log(
+            `Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}${modeLabel}${commentsNote}`
+          );
         } else if (platform === "tiktok") {
           console.log(`Skipping keyword filter for TikTok - returning all ${normalized.length} results (user curates manually)`);
         } else if (useSoftFilter) {
