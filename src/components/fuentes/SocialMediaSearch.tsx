@@ -270,6 +270,8 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [rawResultsCount, setRawResultsCount] = useState<number>(0);
   const [filteredResultsCount, setFilteredResultsCount] = useState<number>(0);
+  // Count after backend keyword filtering (before strict date filtering)
+  const [keywordFilteredCount, setKeywordFilteredCount] = useState<number>(0);
   const [usedSoftFilter, setUsedSoftFilter] = useState<boolean>(false);
   const [lastStrictDateDiscard, setLastStrictDateDiscard] = useState<{
     discarded: number;
@@ -406,6 +408,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         setPollingStartTime(null); // Reset polling timer
         // Results are now pre-normalized by the backend
         let processed = processBackendResults((data.items || []) as SocialSearchResult[]);
+        // Backend already applied keyword filtering for some platforms (e.g., Reddit/TikTok).
+        // Keep this count to explain why rawCount != shownCount.
+        setKeywordFilteredCount(processed.length);
         
         // Capture filter stats from backend response if available
         if (data.rawCount !== undefined) {
@@ -779,6 +784,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
     setCurrentJobId(null);
     setRawResultsCount(0);
     setFilteredResultsCount(0);
+    setKeywordFilteredCount(0);
     setUsedSoftFilter(false);
     setYoutubeParallelRuns(null);
 
@@ -990,6 +996,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
     setLastStrictDateDiscard(null);
     setCurationState({});
     setShowDiscarded(false);
+    setKeywordFilteredCount(0);
     setCaptionFilter("");
   };
 
@@ -1438,10 +1445,16 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                   ¡Búsqueda completada!
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  {rawResultsCount > 0 && rawResultsCount !== results.length
-                    ? `${results.length} resultados relevantes de ${rawResultsCount} extraídos (filtrado por keywords)`
-                    : `${results.length} resultados de ${config.label}`
-                  }
+                  {rawResultsCount > 0 && rawResultsCount !== results.length ? (
+                    (() => {
+                      const discardedByKeywords = Math.max(rawResultsCount - (keywordFilteredCount || results.length), 0);
+                      const discardedByDate = dateFilterEnabled ? (lastStrictDateDiscard?.discarded || 0) : 0;
+                      const dateSuffix = discardedByDate > 0 ? `, ${discardedByDate} descartados por fecha` : "";
+                      return `${results.length} resultados relevantes de ${rawResultsCount} extraídos (≈${discardedByKeywords} descartados por keywords${dateSuffix})`;
+                    })()
+                  ) : (
+                    `${results.length} resultados de ${config.label}`
+                  )}
                 </p>
               </div>
             </div>
