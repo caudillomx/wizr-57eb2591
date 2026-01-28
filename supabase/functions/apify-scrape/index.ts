@@ -327,15 +327,19 @@ serve(async (req) => {
         break;
         
       case "reddit_comments":
-        // easyapi/reddit-comments-search-scraper - searches WITHIN comments, not just posts
-        // This actor finds comments containing the keyword, even if the post title doesn't mention it
+        // Use the same actor as regular reddit (trudax/reddit-scraper-lite) but with increased 
+        // maxComments. The filtering happens in apify-status where we check if keywords appear
+        // in the comments of each post. This avoids needing a paid actor rental.
+        actorId = ACTOR_IDS.reddit; // Use trudax/reddit-scraper-lite
         if (!query) {
           throw new Error("Reddit comments search requires a search query.");
         }
         input = {
-          keyword: query,
-          maxComments: Math.min(maxResults * 2, 200), // Get more since we filter later
-          sortType: "new", // newest comments first
+          searches: [query],
+          maxItems: Math.min(maxResults * 2, 100), // More posts to search through
+          maxPostCount: Math.min(maxResults * 2, 100),
+          maxComments: 25, // Increased: fetch more comments per post to search within
+          sort: "new",
         };
         break;
         

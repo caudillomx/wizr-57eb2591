@@ -869,7 +869,12 @@ function normalizeResults(items: unknown[], platform: Platform): NormalizedResul
       case "reddit":
         return normalizeReddit(data, index);
       case "reddit_comments":
-        return normalizeRedditComment(data, index);
+        // reddit_comments uses the same actor (trudax/reddit-scraper-lite) as regular reddit
+        // The difference is in post-processing: we'll filter to show only posts with keyword matches in comments
+        // Use normalizeReddit but mark it as reddit_comments platform for UI differentiation
+        const normalized = normalizeReddit(data, index);
+        normalized.platform = "reddit_comments" as Platform;
+        return normalized;
       default:
         return {
           id: `unknown-${index}-${Date.now()}`,
@@ -1040,6 +1045,9 @@ serve(async (req) => {
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
           const searchTerms: string[] = keywordLower.split(",").map((t: string) => t.trim().replace(/^@/, "")).filter(Boolean);
           
+          // For reddit_comments: ONLY show posts where keyword appears in comments (not title/body)
+          const isCommentsOnlySearch = platform === "reddit_comments";
+          
           normalized = normalized.filter((item) => {
             // Check title, description/content, hashtags, author username and name
             const mainText = `${item.title} ${item.description} ${(item.hashtags || []).join(" ")} ${item.author?.name || ""} ${item.author?.username || ""}`.toLowerCase();
@@ -1047,21 +1055,27 @@ serve(async (req) => {
             // Check if main content matches
             const matchesMain = searchTerms.some((term: string) => mainText.includes(term));
             
-            // For Reddit: ALSO check extracted comments for keyword matches
+            // For Reddit/reddit_comments: ALSO check extracted comments for keyword matches
             // This catches posts where "Actinver" is mentioned in comments but not in title/body
             let matchesComment = false;
-            if (platform === "reddit" && item.raw?._extractedComments) {
+            if ((platform === "reddit" || platform === "reddit_comments") && item.raw?._extractedComments) {
               const comments = item.raw._extractedComments as Array<{ body: string; author: string }>;
               const commentsText = comments.map((c) => `${c.body} ${c.author}`).join(" ").toLowerCase();
               matchesComment = searchTerms.some((term: string) => commentsText.includes(term));
               
-              if (matchesComment && !matchesMain) {
-                // Mark that this item matched via comment, not title/body
+              if (matchesComment) {
+                // Mark that this item matched via comment
                 item.raw._matchedInComment = true;
                 item.raw._matchingComments = comments.filter((c) => 
                   searchTerms.some((term: string) => c.body.toLowerCase().includes(term))
                 );
               }
+            }
+            
+            // For reddit_comments mode: ONLY include if keyword is in comments (even if also in title)
+            // For regular reddit: include if keyword is anywhere (title, body, OR comments)
+            if (isCommentsOnlySearch) {
+              return matchesComment; // Only keep posts with comment matches
             }
             
             return matchesMain || matchesComment;
@@ -1070,7 +1084,8 @@ serve(async (req) => {
           // Count how many matched via comments only
           const commentMatches = normalized.filter((i) => i.raw?._matchedInComment).length;
           const logExtra = commentMatches > 0 ? ` (${commentMatches} matched in comments)` : "";
-          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}`);
+          const modeLabel = isCommentsOnlySearch ? " [COMMENTS-ONLY MODE]" : "";
+          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}${modeLabel}`);
         } else if (platform === "tiktok") {
           console.log(`Skipping keyword filter for TikTok - returning all ${normalized.length} results (user curates manually)`);
         } else if (useSoftFilter) {
