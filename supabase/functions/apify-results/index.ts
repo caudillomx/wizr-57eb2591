@@ -403,6 +403,7 @@ function normalizeLinkedIn(item: Record<string, unknown>, index: number): Normal
 
 function normalizeYouTube(item: Record<string, unknown>, index: number): NormalizedResult {
   const channel = item.channel as Record<string, unknown> | undefined;
+  const aboutChannelInfo = item.aboutChannelInfo as Record<string, unknown> | undefined;
   const title = String(get(item, "title") || get(item, "text") || "");
   const description = String(get(item, "description") || get(item, "text") || title);
   
@@ -413,8 +414,39 @@ function normalizeYouTube(item: Record<string, unknown>, index: number): Normali
     views: Number(get(item, "viewCount") || get(item, "views") || 0),
   };
 
-  const channelName = String(get(channel, "name") || get(item, "channelName") || get(item, "uploader") || "");
-  const channelId = String(get(channel, "id") || get(item, "channelId") || "");
+  // streamers/youtube-scraper uses channelName and channelUsername directly on the item
+  // aboutChannelInfo contains additional channel details
+  const channelName = String(
+    get(item, "channelName") || 
+    get(channel, "name") || 
+    get(aboutChannelInfo, "channelName") ||
+    get(item, "uploader") || 
+    ""
+  );
+  
+  // Use channelUsername for display (e.g., "Apify"), fall back to channelName
+  const channelUsername = String(
+    get(item, "channelUsername") || 
+    get(aboutChannelInfo, "channelUsername") ||
+    get(channel, "username") || 
+    channelName
+  );
+  
+  const channelId = String(
+    get(item, "channelId") || 
+    get(channel, "id") || 
+    get(aboutChannelInfo, "channelId") ||
+    ""
+  );
+  
+  // Build channel URL - prefer channelUrl from item, then construct from username or id
+  const channelUrl = String(
+    get(item, "channelUrl") || 
+    get(channel, "url") || 
+    get(aboutChannelInfo, "channelUrl") ||
+    (channelUsername && channelUsername !== channelName ? `https://youtube.com/@${channelUsername}` : "") ||
+    (channelId ? `https://youtube.com/channel/${channelId}` : "")
+  );
 
   return {
     id: `youtube-${get(item, "id") || get(item, "videoId") || index}-${Date.now()}`,
@@ -423,11 +455,21 @@ function normalizeYouTube(item: Record<string, unknown>, index: number): Normali
     description: description,
     author: {
       name: channelName,
-      username: channelId,
-      url: String(get(item, "channelUrl") || get(channel, "url") || (channelId ? `https://youtube.com/channel/${channelId}` : "")),
-      avatarUrl: String(get(channel, "thumbnail") || get(item, "channelThumbnail") || ""),
-      verified: Boolean(get(channel, "verified")),
-      followers: Number(get(channel, "subscriberCount") || get(item, "channelSubscribers") || 0),
+      username: channelUsername, // Use readable username, not channel ID
+      url: channelUrl,
+      avatarUrl: String(
+        get(aboutChannelInfo, "channelAvatarUrl") ||
+        get(channel, "thumbnail") || 
+        get(item, "channelThumbnail") || 
+        ""
+      ),
+      verified: Boolean(get(aboutChannelInfo, "isChannelVerified") || get(channel, "verified")),
+      followers: Number(
+        get(aboutChannelInfo, "numberOfSubscribers") ||
+        get(channel, "subscriberCount") || 
+        get(item, "channelSubscribers") || 
+        0
+      ),
     },
     metrics: {
       ...metrics,
