@@ -986,11 +986,35 @@ serve(async (req) => {
           
           normalized = normalized.filter((item) => {
             // Check title, description/content, hashtags, author username and name
-            const text = `${item.title} ${item.description} ${(item.hashtags || []).join(" ")} ${item.author?.name || ""} ${item.author?.username || ""}`.toLowerCase();
-            // Match if ANY of the search terms is found
-            return searchTerms.some((term: string) => text.includes(term));
+            const mainText = `${item.title} ${item.description} ${(item.hashtags || []).join(" ")} ${item.author?.name || ""} ${item.author?.username || ""}`.toLowerCase();
+            
+            // Check if main content matches
+            const matchesMain = searchTerms.some((term: string) => mainText.includes(term));
+            
+            // For Reddit: ALSO check extracted comments for keyword matches
+            // This catches posts where "Actinver" is mentioned in comments but not in title/body
+            let matchesComment = false;
+            if (platform === "reddit" && item.raw?._extractedComments) {
+              const comments = item.raw._extractedComments as Array<{ body: string; author: string }>;
+              const commentsText = comments.map((c) => `${c.body} ${c.author}`).join(" ").toLowerCase();
+              matchesComment = searchTerms.some((term: string) => commentsText.includes(term));
+              
+              if (matchesComment && !matchesMain) {
+                // Mark that this item matched via comment, not title/body
+                item.raw._matchedInComment = true;
+                item.raw._matchingComments = comments.filter((c) => 
+                  searchTerms.some((term: string) => c.body.toLowerCase().includes(term))
+                );
+              }
+            }
+            
+            return matchesMain || matchesComment;
           });
-          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}`);
+          
+          // Count how many matched via comments only
+          const commentMatches = normalized.filter((i) => i.raw?._matchedInComment).length;
+          const logExtra = commentMatches > 0 ? ` (${commentMatches} matched in comments)` : "";
+          console.log(`Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}`);
         } else if (platform === "tiktok") {
           console.log(`Skipping keyword filter for TikTok - returning all ${normalized.length} results (user curates manually)`);
         } else if (useSoftFilter) {
