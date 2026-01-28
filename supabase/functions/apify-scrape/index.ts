@@ -366,8 +366,12 @@ serve(async (req) => {
     console.log(`Starting Apify actor ${actorId} with input:`, JSON.stringify(input));
 
     // Start the actor run
+    // Apify API URLs typically use the `owner~actor-name` form.
+    // Some actors may not resolve correctly via `owner/actor-name` in path segments.
+    const actorPathId = actorId.includes("/") ? actorId.replace("/", "~") : actorId;
+
     const runResponse = await fetch(
-      `https://api.apify.com/v2/acts/${encodeURIComponent(actorId)}/runs?token=${APIFY_API_TOKEN}`,
+      `https://api.apify.com/v2/acts/${encodeURIComponent(actorPathId)}/runs?token=${APIFY_API_TOKEN}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

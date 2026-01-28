@@ -691,8 +691,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       if (platform === "youtube") {
         setProgressMessage("Buscando videos y shorts en paralelo...");
         
-        // Start both searches simultaneously
-        const [videosResult, shortsResult] = await Promise.all([
+        // Start both searches simultaneously.
+        // IMPORTANT: Shorts can be unavailable (e.g. actor not rented). We should still proceed with videos.
+        const [videosSettled, shortsSettled] = await Promise.allSettled([
           apifyApi.startScrape({
             platform: "youtube",
             query: searchType === "query" ? searchValue : undefined,
@@ -707,12 +708,15 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
           }),
         ]);
 
+        const videosResult = videosSettled.status === "fulfilled" ? videosSettled.value : null;
+        const shortsResult = shortsSettled.status === "fulfilled" ? shortsSettled.value : null;
+
         // Initialize parallel tracking state
         const parallelState = {
-          videosRunId: videosResult.data?.runId || null,
-          shortsRunId: shortsResult.data?.runId || null,
-          videosComplete: !videosResult.data?.runId, // Mark as complete if failed
-          shortsComplete: !shortsResult.data?.runId,
+          videosRunId: videosResult?.data?.runId || null,
+          shortsRunId: shortsResult?.data?.runId || null,
+          videosComplete: !videosResult?.data?.runId, // Mark as complete if failed
+          shortsComplete: !shortsResult?.data?.runId,
           videosResults: [] as SocialSearchResult[],
           shortsResults: [] as SocialSearchResult[],
         };
@@ -726,7 +730,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
             id: job.id,
             updates: {
               run_id: parallelState.videosRunId,
-              dataset_id: videosResult.data?.datasetId,
+              dataset_id: videosResult?.data?.datasetId,
               status: "running",
             },
           });
@@ -736,7 +740,11 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         if (parallelState.videosRunId || parallelState.shortsRunId) {
           setTimeout(() => checkYouTubeParallelStatus(parallelState, searchValue), 3000);
         } else {
-          throw new Error("No se pudo iniciar ninguna búsqueda de YouTube");
+          const videoErr = videosResult?.error;
+          const shortsErr = shortsResult?.error;
+          throw new Error(
+            videoErr || shortsErr || "No se pudo iniciar ninguna búsqueda de YouTube"
+          );
         }
       } else {
         // STANDARD SINGLE PLATFORM SEARCH
