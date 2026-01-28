@@ -223,7 +223,7 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
         </TabsContent>
 
         <TabsContent value="config" className="mt-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-6">
             <RankingBatchForm rankingId={ranking.id} />
             <ProfilesList 
               profiles={profiles} 
