@@ -1580,9 +1580,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                                   )}
                                 </span>
                               )}
-                              {result.author.followers ? (
+                              {result.author.followers != null && result.author.followers > 0 ? (
                                 <span className="text-xs text-muted-foreground">
-                                  ({result.author.followers.toLocaleString()} seguidores)
+                                  ({(result.author.followers ?? 0).toLocaleString()} seguidores)
                                 </span>
                               ) : null}
                             </div>
@@ -1700,27 +1700,27 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
 
                           {/* Metrics */}
                           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            {result.metrics?.likes !== undefined && (
+                            {result.metrics?.likes != null && (
                               <span className="flex items-center gap-1">
                                 <Heart className="h-3 w-3" />
-                                {result.metrics.likes.toLocaleString()}
+                                {(result.metrics.likes ?? 0).toLocaleString()}
                               </span>
                             )}
-                            {result.metrics?.comments !== undefined && (
+                            {result.metrics?.comments != null && (
                               <span className="flex items-center gap-1">
                                 <MessageCircle className="h-3 w-3" />
-                                {result.metrics.comments.toLocaleString()}
+                                {(result.metrics.comments ?? 0).toLocaleString()}
                               </span>
                             )}
-                            {result.metrics?.shares !== undefined && result.metrics.shares > 0 && (
+                            {result.metrics?.shares != null && result.metrics.shares > 0 && (
                               <span className="flex items-center gap-1">
                                 <Share2 className="h-3 w-3" />
-                                {result.metrics.shares.toLocaleString()}
+                                {(result.metrics.shares ?? 0).toLocaleString()}
                               </span>
                             )}
-                            {result.metrics?.views !== undefined && result.metrics.views > 0 && (
+                            {result.metrics?.views != null && result.metrics.views > 0 && (
                               <span className="flex items-center gap-1">
-                                👁 {result.metrics.views.toLocaleString()}
+                                👁 {(result.metrics.views ?? 0).toLocaleString()}
                               </span>
                             )}
                             {result.metrics?.engagement !== undefined && result.metrics.engagement > 0 && (
