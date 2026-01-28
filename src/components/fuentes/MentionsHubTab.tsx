@@ -40,6 +40,8 @@ import {
   Eye,
   Archive,
   Trash2,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 
@@ -95,6 +97,8 @@ interface MentionsHubTabProps {
   isLoading: boolean;
   onUpdateMention: (params: { id: string; is_read?: boolean; is_archived?: boolean }) => void;
   onDeleteMention: (id: string) => void;
+  onAnalyzeUnanalyzed?: () => void;
+  isAnalyzing?: boolean;
 }
 
 export function MentionsHubTab({
@@ -103,6 +107,8 @@ export function MentionsHubTab({
   isLoading,
   onUpdateMention,
   onDeleteMention,
+  onAnalyzeUnanalyzed,
+  isAnalyzing,
 }: MentionsHubTabProps) {
   const navigate = useNavigate();
   
@@ -320,13 +326,38 @@ export function MentionsHubTab({
       {/* Sentiment Summary */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Resumen de Sentimiento
-          </CardTitle>
-          <CardDescription>
-            Distribución de las {filteredMentions.length} menciones filtradas
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Resumen de Sentimiento
+              </CardTitle>
+              <CardDescription>
+                Distribución de las {filteredMentions.length} menciones filtradas
+              </CardDescription>
+            </div>
+            {stats.bySentiment.unknown > 0 && onAnalyzeUnanalyzed && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onAnalyzeUnanalyzed}
+                disabled={isAnalyzing}
+                className="gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analizando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analizar {stats.bySentiment.unknown} pendientes
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
@@ -347,7 +378,8 @@ export function MentionsHubTab({
                     "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
                     selectedSentiment === key
                       ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border hover:border-primary/50"
+                      : "border-border hover:border-primary/50",
+                    key === "unknown" && count > 0 && "border-amber-300 bg-amber-50"
                   )}
                 >
                   <Icon className={cn("h-4 w-4", config.color)} />
