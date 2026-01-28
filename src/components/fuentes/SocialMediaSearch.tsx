@@ -961,9 +961,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
 
     try {
       // Convert normalized results to mentions format (use filtered results)
-      const mentions = resultsToSave.map((result) => ({
+      const mentions = resultsToSave.map((result, idx) => ({
         project_id: projectId,
-        url: result.url || `https://${platform}.com`,
+        url: result.url || `https://${platform}.com/post/${result.id}-${idx}`,
         title: result.title || result.description?.substring(0, 200) || "Sin título",
         description: result.description,
         source_domain: platform,
@@ -988,10 +988,20 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         })),
       }));
 
+      // Deduplicate mentions by (project_id + url) to prevent "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+      const uniqueMentionsMap = new Map<string, typeof mentions[0]>();
+      for (const m of mentions) {
+        const key = `${m.project_id}|${m.url}`;
+        if (!uniqueMentionsMap.has(key)) {
+          uniqueMentionsMap.set(key, m);
+        }
+      }
+      const dedupedMentions = Array.from(uniqueMentionsMap.values());
+
       // Use upsert to handle duplicates (same URL for same project)
       const { error } = await supabase
         .from("mentions")
-        .upsert(mentions, { 
+        .upsert(dedupedMentions, { 
           onConflict: "project_id,url"
         });
 
