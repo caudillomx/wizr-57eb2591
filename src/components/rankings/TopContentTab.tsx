@@ -43,7 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
+import { ContentAnalysisDisplay, type ContentAnalysisData } from "./ContentAnalysisDisplay";
 
 interface TopContentTabProps {
   profiles: FKProfile[];
@@ -185,7 +185,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
   
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ContentAnalysisData | null>(null);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   
   // State for on-demand search in "all profiles" mode
@@ -397,39 +397,28 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "Error en el análisis");
 
-      // Format the analysis result as readable text
+      // Store the structured analysis data directly
       const analysis = data.analysis;
-      let resultText = `## Resumen del Contenido\n\n${analysis.summary}\n\n`;
-      
-      resultText += `### Narrativas Principales\n\n`;
-      analysis.dominantNarratives?.forEach((n: { theme: string; description: string; frequency: number }, i: number) => {
-        resultText += `**${i + 1}. ${n.theme}** (${n.frequency}%)\n${n.description}\n\n`;
-      });
+      const structuredAnalysis: ContentAnalysisData = {
+        summary: analysis.summary || "",
+        dominantNarratives: (analysis.dominantNarratives || []).map((n: { theme: string; description: string; frequency: number }) => ({
+          theme: n.theme,
+          description: n.description,
+          frequency: n.frequency,
+        })),
+        toneAnalysis: {
+          overall: analysis.toneAnalysis?.overall || "mixed",
+          emotionalTone: analysis.toneAnalysis?.emotionalTone || "",
+          callToAction: analysis.toneAnalysis?.callToAction || false,
+        },
+        contentStrategy: {
+          primaryFocus: analysis.contentStrategy?.primaryFocus || "",
+          strengths: analysis.contentStrategy?.strengths || [],
+          opportunities: analysis.contentStrategy?.opportunities || [],
+        },
+      };
 
-      resultText += `### Tono de Comunicación\n\n`;
-      resultText += `- **Estilo**: ${analysis.toneAnalysis?.overall === "formal" ? "Formal" : analysis.toneAnalysis?.overall === "informal" ? "Informal" : "Mixto"}\n`;
-      resultText += `- **Tono emocional**: ${analysis.toneAnalysis?.emotionalTone || "No determinado"}\n`;
-      resultText += `- **Usa CTAs**: ${analysis.toneAnalysis?.callToAction ? "Sí" : "No"}\n\n`;
-
-      resultText += `### Estrategia de Contenido\n\n`;
-      resultText += `**Enfoque principal**: ${analysis.contentStrategy?.primaryFocus || "No determinado"}\n\n`;
-      
-      if (analysis.contentStrategy?.strengths?.length > 0) {
-        resultText += `**Fortalezas**:\n`;
-        analysis.contentStrategy.strengths.forEach((s: string) => {
-          resultText += `- ${s}\n`;
-        });
-        resultText += `\n`;
-      }
-
-      if (analysis.contentStrategy?.opportunities?.length > 0) {
-        resultText += `**Oportunidades de mejora**:\n`;
-        analysis.contentStrategy.opportunities.forEach((o: string) => {
-          resultText += `- ${o}\n`;
-        });
-      }
-
-      setAnalysisResult(resultText);
+      setAnalysisResult(structuredAnalysis);
       setShowAnalysisDialog(true);
     } catch (err) {
       console.error("Analysis error:", err);
@@ -771,7 +760,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
 
       {/* Analysis Result Dialog */}
       <Dialog open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -779,9 +768,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
             </DialogTitle>
           </DialogHeader>
           {analysisResult && (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{analysisResult}</ReactMarkdown>
-            </div>
+            <ContentAnalysisDisplay analysis={analysisResult} />
           )}
         </DialogContent>
       </Dialog>
