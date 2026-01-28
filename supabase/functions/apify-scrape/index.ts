@@ -47,6 +47,9 @@ interface ScrapeRequest {
   taggedUsername?: string; // Instagram: fetch posts where this user is tagged
   captionFilter?: string; // Instagram: filter results to only include posts mentioning this term
   maxResults?: number;
+  // YouTube-specific filters
+  youtubeUploadDate?: "lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear";
+  youtubeSortType?: "relevance" | "date" | "views" | "rating";
 }
 
 serve(async (req) => {
@@ -70,7 +73,9 @@ serve(async (req) => {
       subreddit,
       taggedUsername,
       captionFilter,
-      maxResults = 50 
+      maxResults = 50,
+      youtubeUploadDate,
+      youtubeSortType,
     }: ScrapeRequest = await req.json();
 
     if (!platform) {
@@ -277,8 +282,7 @@ serve(async (req) => {
         // - query (required)
         // - resultsCount (1..100)
         // - sortType: relevance|date|views|rating (default: relevance)
-        // NOTE: Using relevance (default) returns more varied results;
-        // client-side date filtering then narrows to the user's selected period.
+        // - uploadDate: lastHour|today|thisWeek|thisMonth|thisYear
         const youtubeResultsCount = Math.min(Math.max(maxResults, 1), 100);
 
         if (!query) {
@@ -288,8 +292,15 @@ serve(async (req) => {
         input = {
           query,
           resultsCount: youtubeResultsCount,
-          // Omit sortType/timeWindow to use relevance-based results (more varied)
         };
+        
+        // Add native YouTube filters if provided
+        if (youtubeUploadDate) {
+          (input as Record<string, unknown>).uploadDate = youtubeUploadDate;
+        }
+        if (youtubeSortType) {
+          (input as Record<string, unknown>).sortType = youtubeSortType;
+        }
         break;
         
       case "reddit":
