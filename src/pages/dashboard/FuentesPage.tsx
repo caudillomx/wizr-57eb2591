@@ -98,6 +98,8 @@ const FuentesPage = () => {
     searchResultsToMentions,
     updateMention,
     deleteMention,
+    analyzeUnanalyzed,
+    isAnalyzing,
   } = useMentions(selectedProject?.id, { isArchived: false });
   const { data: stats } = useMentionStats(selectedProject?.id);
   const navigate = useNavigate();
@@ -584,6 +586,8 @@ const FuentesPage = () => {
             isLoading={mentionsLoading}
             onUpdateMention={updateMention}
             onDeleteMention={deleteMention}
+            onAnalyzeUnanalyzed={analyzeUnanalyzed}
+            isAnalyzing={isAnalyzing}
           />
         </TabsContent>
 

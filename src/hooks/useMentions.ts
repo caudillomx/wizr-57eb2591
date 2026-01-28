@@ -255,6 +255,80 @@ export function useMentions(projectId: string | undefined, filters?: MentionFilt
     saveManyMentionsMutation.mutate({ mentions, analyzeSentiment });
   };
 
+  // Mutation to analyze unanalyzed mentions on demand
+  const analyzeUnanalyzedMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) return { analyzed: 0, errors: 0 };
+
+      // Get unanalyzed mentions
+      const unanalyzedMentions = (mentionsQuery.data || [])
+        .filter((m) => !m.sentiment)
+        .map((m) => ({
+          id: m.id,
+          title: m.title,
+          description: m.description,
+        }));
+
+      if (unanalyzedMentions.length === 0) {
+        return { analyzed: 0, errors: 0 };
+      }
+
+      let totalAnalyzed = 0;
+      let totalErrors = 0;
+      const BATCH_SIZE = 25;
+
+      // Process in batches
+      for (let i = 0; i < unanalyzedMentions.length; i += BATCH_SIZE) {
+        const batch = unanalyzedMentions.slice(i, i + BATCH_SIZE);
+        
+        try {
+          const response = await supabase.functions.invoke("analyze-sentiment", {
+            body: { mentions: batch },
+          });
+
+          if (response.data?.success && response.data.results) {
+            const updates = (response.data.results as Array<{ id: string; sentiment: string }>).map((r) =>
+              supabase
+                .from("mentions")
+                .update({ sentiment: r.sentiment })
+                .eq("id", r.id)
+            );
+            const results = await Promise.allSettled(updates);
+            totalAnalyzed += results.filter((r) => r.status === "fulfilled").length;
+            totalErrors += results.filter((r) => r.status === "rejected").length;
+          } else {
+            totalErrors += batch.length;
+          }
+        } catch (err) {
+          console.error("Batch sentiment analysis error:", err);
+          totalErrors += batch.length;
+        }
+
+        // Small delay between batches to avoid rate limiting
+        if (i + BATCH_SIZE < unanalyzedMentions.length) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      return { analyzed: totalAnalyzed, errors: totalErrors };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["mentions", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["mention-stats", projectId] });
+      toast({
+        title: "Análisis completado",
+        description: `Se analizaron ${result.analyzed} menciones${result.errors > 0 ? ` (${result.errors} errores)` : ""}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error en análisis",
+        description: `No se pudo completar el análisis: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     mentions: mentionsQuery.data || [],
     isLoading: mentionsQuery.isLoading,
@@ -265,6 +339,8 @@ export function useMentions(projectId: string | undefined, filters?: MentionFilt
     deleteMention: deleteMentionMutation.mutate,
     isSaving: saveMentionMutation.isPending || saveManyMentionsMutation.isPending,
     searchResultsToMentions,
+    analyzeUnanalyzed: analyzeUnanalyzedMutation.mutate,
+    isAnalyzing: analyzeUnanalyzedMutation.isPending,
   };
 }
 
