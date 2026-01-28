@@ -281,14 +281,14 @@ const FuentesPage = () => {
   };
 
   /**
-   * Auto-save results that match the configured rules
+   * Auto-save results that match the configured rules (triggered via useEffect)
    */
-  const handleAutoSaveResults = useCallback((searchResults: SearchResult[]) => {
-    if (!selectedProject || !autoSaveEnabled || searchResults.length === 0) return;
+  useEffect(() => {
+    if (!selectedProject || !autoSaveEnabled || results.length === 0 || !hasSearched) return;
 
     const toSave: SearchResult[] = [];
     
-    searchResults.forEach((result) => {
+    results.forEach((result) => {
       const text = [result.title, result.description].filter(Boolean).join(" ");
       const { shouldSave } = shouldAutoSave(text, result.matchedKeywords || []);
       
@@ -302,15 +302,12 @@ const FuentesPage = () => {
       saveManyMentions(mentionData);
       toast({
         title: "Auto-guardado",
-        description: `Se guardaron automáticamente ${toSave.length} de ${searchResults.length} resultados relevantes`,
-      });
-    } else {
-      toast({
-        title: "Auto-guardado",
-        description: `Ningún resultado cumplió con las reglas configuradas (0 de ${searchResults.length})`,
+        description: `Se guardaron automáticamente ${toSave.length} de ${results.length} resultados relevantes`,
       });
     }
-  }, [selectedProject, autoSaveEnabled, shouldAutoSave, searchResultsToMentions, saveManyMentions, toast]);
+    // Only run when results change after a search
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, hasSearched]);
 
   const handleManualSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
@@ -324,7 +321,7 @@ const FuentesPage = () => {
 
     setIsSearching(true);
     setHasSearched(true);
-    setSearchPage(1); // Reset to first page on new search
+    setSearchPage(1);
 
     try {
       const response = await firecrawlApi.searchNews(searchQuery, timeRange, 15);
@@ -335,8 +332,6 @@ const FuentesPage = () => {
           title: "Búsqueda completada",
           description: `Se encontraron ${response.data.length} resultados`,
         });
-        // Trigger auto-save if enabled
-        handleAutoSaveResults(response.data);
       } else {
         toast({
           title: "Error en la búsqueda",
@@ -356,7 +351,7 @@ const FuentesPage = () => {
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery, timeRange, toast, handleAutoSaveResults]);
+  }, [searchQuery, timeRange, toast]);
 
   const handleEntitySearch = useCallback(async () => {
     if (selectedEntityIds.size === 0) {
@@ -370,7 +365,7 @@ const FuentesPage = () => {
 
     setIsSearching(true);
     setHasSearched(true);
-    setSearchPage(1); // Reset to first page on new search
+    setSearchPage(1);
 
     try {
       const selectedEntities: EntityForSearch[] = entities
@@ -385,7 +380,7 @@ const FuentesPage = () => {
       const response = await firecrawlApi.searchMultipleEntities(
         selectedEntities,
         timeRange,
-        50 // Increased limit per entity for better coverage
+        50
       );
 
       if (response.success && response.data) {
@@ -394,8 +389,6 @@ const FuentesPage = () => {
           title: "Búsqueda completada",
           description: `Se encontraron ${response.data.length} menciones para ${selectedEntities.length} entidad(es)`,
         });
-        // Trigger auto-save if enabled
-        handleAutoSaveResults(response.data);
       } else {
         toast({
           title: "Error en la búsqueda",
@@ -415,7 +408,7 @@ const FuentesPage = () => {
     } finally {
       setIsSearching(false);
     }
-  }, [entities, selectedEntityIds, timeRange, toast, handleAutoSaveResults]);
+  }, [entities, selectedEntityIds, timeRange, toast]);
 
   const handleSearch = () => {
     if (searchMode === "manual") {
