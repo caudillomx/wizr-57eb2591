@@ -11,6 +11,7 @@ import {
   FileText,
   FolderOpen,
   Settings,
+  Trophy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import wizrIcon from "@/assets/wizr-icon-transparent.png";
@@ -37,6 +38,7 @@ const analysisViews = [
   { title: "Alertas", url: "/dashboard/alertas", icon: Bell, tourId: "nav-alertas" },
   { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users, tourId: "nav-influenciadores" },
   { title: "Tendencias", url: "/dashboard/tendencias", icon: TrendingUp, tourId: "nav-tendencias" },
+  { title: "Rankings", url: "/dashboard/rankings", icon: Trophy, tourId: "nav-rankings" },
   { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart, tourId: "nav-reportes" },
   { title: "Fichas", url: "/dashboard/fichas", icon: FileText, tourId: "nav-fichas" },
 ];
