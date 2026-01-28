@@ -1576,14 +1576,14 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                                   rel="noopener noreferrer"
                                   className="text-sm font-medium hover:text-primary flex items-center gap-1"
                                 >
-                                  @{result.author.username || result.author.name}
+                                  {result.author.name || `@${result.author.username}`}
                                   {result.author.verified && (
                                     <CheckCircle2 className="h-3 w-3 text-blue-500" />
                                   )}
                                 </a>
                               ) : (
                                 <span className="text-sm font-medium flex items-center gap-1">
-                                  @{result.author.username || result.author.name}
+                                  {result.author.name || `@${result.author.username}`}
                                   {result.author.verified && (
                                     <CheckCircle2 className="h-3 w-3 text-blue-500" />
                                   )}
