@@ -27,6 +27,7 @@ import ReportesPage from "./pages/dashboard/ReportesPage";
 import ProjectsPage from "./pages/dashboard/ProjectsPage";
 import ConfiguracionPage from "./pages/dashboard/ConfiguracionPage";
 import FichasPage from "./pages/dashboard/FichasPage";
+import RankingsPage from "./pages/dashboard/RankingsPage";
 
 import { Loader2 } from "lucide-react";
 
@@ -124,6 +125,7 @@ const AppRoutes = () => {
         <Route path="alertas" element={<AlertasPage />} />
         <Route path="influenciadores" element={<InfluenciadoresPage />} />
         <Route path="tendencias" element={<TendenciasPage />} />
+        <Route path="rankings" element={<RankingsPage />} />
         <Route path="fuentes" element={<FuentesPage />} />
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="fichas" element={<FichasPage />} />

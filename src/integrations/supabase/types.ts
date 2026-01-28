@@ -213,6 +213,112 @@ export type Database = {
           },
         ]
       }
+      fk_profile_kpis: {
+        Row: {
+          engagement_rate: number | null
+          fetched_at: string
+          fk_profile_id: string
+          follower_growth_percent: number | null
+          followers: number | null
+          id: string
+          impressions_per_interaction: number | null
+          page_performance_index: number | null
+          period_end: string
+          period_start: string
+          posts_per_day: number | null
+          raw_data: Json | null
+          reach_per_day: number | null
+        }
+        Insert: {
+          engagement_rate?: number | null
+          fetched_at?: string
+          fk_profile_id: string
+          follower_growth_percent?: number | null
+          followers?: number | null
+          id?: string
+          impressions_per_interaction?: number | null
+          page_performance_index?: number | null
+          period_end: string
+          period_start: string
+          posts_per_day?: number | null
+          raw_data?: Json | null
+          reach_per_day?: number | null
+        }
+        Update: {
+          engagement_rate?: number | null
+          fetched_at?: string
+          fk_profile_id?: string
+          follower_growth_percent?: number | null
+          followers?: number | null
+          id?: string
+          impressions_per_interaction?: number | null
+          page_performance_index?: number | null
+          period_end?: string
+          period_start?: string
+          posts_per_day?: number | null
+          raw_data?: Json | null
+          reach_per_day?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_profile_kpis_fk_profile_id_fkey"
+            columns: ["fk_profile_id"]
+            isOneToOne: false
+            referencedRelation: "fk_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fk_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          is_active: boolean
+          is_own_profile: boolean
+          last_synced_at: string | null
+          network: string
+          profile_id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_own_profile?: boolean
+          last_synced_at?: string | null
+          network: string
+          profile_id: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_own_profile?: boolean
+          last_synced_at?: string | null
+          network?: string
+          profile_id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentions: {
         Row: {
           created_at: string
