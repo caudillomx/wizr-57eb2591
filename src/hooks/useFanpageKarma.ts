@@ -274,7 +274,8 @@ export function useSyncFKProfile() {
           // Fanpage Karma returns metrics as objects with { title, value, formatted_value }
           // Field names differ by network:
           // - Facebook/LinkedIn: page_* (page_follower, page_engagement, page_posts_per_day)
-          // - Instagram/TikTok/Twitter/YouTube/Threads: profile_* (profile_followers, profile_engagement)
+          // - Instagram/Twitter/Threads/TikTok: profile_* (profile_followers, profile_engagement)
+          // - YouTube: channel_* (channel_subscribers_count, channel_video_interaction)
           const extractValue = (key: string): number | null => {
             const metric = kpiData[key];
             if (metric && typeof metric === 'object' && 'value' in metric) {
@@ -283,28 +284,34 @@ export function useSyncFKProfile() {
             return null;
           };
 
-          // Networks that use "profile_*" field naming (vs "page_*" for Facebook/LinkedIn)
-          const usesProfilePrefix = ['instagram', 'tiktok', 'twitter', 'youtube', 'threads'].includes(profile.network);
-          
-          const followers = usesProfilePrefix 
-            ? extractValue('profile_followers') 
-            : (extractValue('page_follower') || extractValue('page_fans'));
-          
-          const followerGrowth = usesProfilePrefix
-            ? extractValue('profile_followers_growth_percent')
-            : extractValue('page_fans_growth_percent');
-          
-          const engagement = usesProfilePrefix
-            ? (extractValue('profile_engagement') || extractValue('profile_media_interaction') || extractValue('profile_post_interaction'))
-            : (extractValue('page_engagement') || extractValue('page_post_interaction'));
-          
-          const postsPerDay = usesProfilePrefix
-            ? (extractValue('profile_posts_per_day') || extractValue('profile_media_per_day') || extractValue('profile_videos_per_day'))
-            : extractValue('page_posts_per_day');
-          
-          const performanceIndex = usesProfilePrefix
-            ? extractValue('profile_performance_index')
-            : extractValue('page_performance_index');
+          let followers: number | null = null;
+          let followerGrowth: number | null = null;
+          let engagement: number | null = null;
+          let postsPerDay: number | null = null;
+          let performanceIndex: number | null = null;
+
+          if (profile.network === 'youtube') {
+            // YouTube uses channel_* prefix
+            followers = extractValue('channel_subscribers_count');
+            followerGrowth = extractValue('channel_subscribers_growth');
+            engagement = extractValue('channel_video_interaction');
+            postsPerDay = extractValue('channel_videos_per_day');
+            performanceIndex = null; // YouTube doesn't have performance index
+          } else if (['instagram', 'tiktok', 'twitter', 'threads'].includes(profile.network)) {
+            // These networks use profile_* prefix
+            followers = extractValue('profile_followers');
+            followerGrowth = extractValue('profile_followers_growth_percent');
+            engagement = extractValue('profile_engagement') || extractValue('profile_media_interaction') || extractValue('profile_post_interaction');
+            postsPerDay = extractValue('profile_posts_per_day') || extractValue('profile_media_per_day') || extractValue('profile_videos_per_day');
+            performanceIndex = extractValue('profile_performance_index');
+          } else {
+            // Facebook/LinkedIn use page_* prefix
+            followers = extractValue('page_follower') || extractValue('page_fans');
+            followerGrowth = extractValue('page_fans_growth_percent');
+            engagement = extractValue('page_engagement') || extractValue('page_post_interaction');
+            postsPerDay = extractValue('page_posts_per_day');
+            performanceIndex = extractValue('page_performance_index');
+          }
 
       const { error: insertError } = await supabase
         .from("fk_profile_kpis")
@@ -387,28 +394,34 @@ export function useSyncAllProfiles() {
             return null;
           };
 
-          // Networks that use "profile_*" field naming (vs "page_*" for Facebook/LinkedIn)
-          const usesProfilePrefix = ['instagram', 'tiktok', 'twitter', 'youtube', 'threads'].includes(profile.network);
+          let followers: number | null = null;
+          let followerGrowth: number | null = null;
+          let engagement: number | null = null;
+          let postsPerDay: number | null = null;
+          let performanceIndex: number | null = null;
 
-          const followers = usesProfilePrefix
-            ? extractValue('profile_followers')
-            : (extractValue('page_follower') || extractValue('page_fans'));
-
-          const followerGrowth = usesProfilePrefix
-            ? extractValue('profile_followers_growth_percent')
-            : extractValue('page_fans_growth_percent');
-
-          const engagement = usesProfilePrefix
-            ? (extractValue('profile_engagement') || extractValue('profile_media_interaction') || extractValue('profile_post_interaction'))
-            : (extractValue('page_engagement') || extractValue('page_post_interaction'));
-
-          const postsPerDay = usesProfilePrefix
-            ? (extractValue('profile_posts_per_day') || extractValue('profile_media_per_day') || extractValue('profile_videos_per_day'))
-            : extractValue('page_posts_per_day');
-
-          const performanceIndex = usesProfilePrefix
-            ? extractValue('profile_performance_index')
-            : extractValue('page_performance_index');
+          if (profile.network === 'youtube') {
+            // YouTube uses channel_* prefix
+            followers = extractValue('channel_subscribers_count');
+            followerGrowth = extractValue('channel_subscribers_growth');
+            engagement = extractValue('channel_video_interaction');
+            postsPerDay = extractValue('channel_videos_per_day');
+            performanceIndex = null;
+          } else if (['instagram', 'tiktok', 'twitter', 'threads'].includes(profile.network)) {
+            // These networks use profile_* prefix
+            followers = extractValue('profile_followers');
+            followerGrowth = extractValue('profile_followers_growth_percent');
+            engagement = extractValue('profile_engagement') || extractValue('profile_media_interaction') || extractValue('profile_post_interaction');
+            postsPerDay = extractValue('profile_posts_per_day') || extractValue('profile_media_per_day') || extractValue('profile_videos_per_day');
+            performanceIndex = extractValue('profile_performance_index');
+          } else {
+            // Facebook/LinkedIn use page_* prefix
+            followers = extractValue('page_follower') || extractValue('page_fans');
+            followerGrowth = extractValue('page_fans_growth_percent');
+            engagement = extractValue('page_engagement') || extractValue('page_post_interaction');
+            postsPerDay = extractValue('page_posts_per_day');
+            performanceIndex = extractValue('page_performance_index');
+          }
 
            const { error: upsertError } = await supabase
             .from("fk_profile_kpis")
