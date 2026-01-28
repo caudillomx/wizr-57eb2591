@@ -284,6 +284,10 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   
   // Instagram caption filter for hybrid search
   const [captionFilter, setCaptionFilter] = useState("");
+  
+  // YouTube native filters (server-side)
+  const [youtubeUploadDate, setYoutubeUploadDate] = useState<"lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear" | "__any__" | "">("");
+  const [youtubeSortType, setYoutubeSortType] = useState<"relevance" | "date" | "views" | "rating">("date");
 
   const config = PLATFORM_CONFIG[platform];
   const PlatformIcon = config.icon;
@@ -794,11 +798,20 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       if (platform === "youtube") {
         setProgressMessage("Buscando videos y shorts...");
         
+        // Determine valid YouTube upload date filter
+        const validUploadDates = ["lastHour", "today", "thisWeek", "thisMonth", "thisYear"] as const;
+        const uploadDateValue = validUploadDates.includes(youtubeUploadDate as typeof validUploadDates[number])
+          ? (youtubeUploadDate as typeof validUploadDates[number])
+          : undefined;
+        
         const result = await apifyApi.startScrape({
           platform: "youtube",
           query: searchType === "query" ? searchValue : undefined,
           channelUrl: searchType === "channelUrl" ? searchValue : undefined,
           maxResults,
+          // Pass native YouTube filters
+          youtubeUploadDate: uploadDateValue,
+          youtubeSortType: youtubeSortType || undefined,
         });
 
         if (!result.success || !result.data) {
@@ -1155,6 +1168,63 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                 className="bg-background"
               />
             </div>
+          )}
+          
+          {/* YouTube Native Filters */}
+          {platform === "youtube" && (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label>Fecha de subida</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[280px]">
+                      <p>Filtro nativo de YouTube para obtener solo videos subidos en el período seleccionado.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={youtubeUploadDate} onValueChange={(v) => setYoutubeUploadDate(v as typeof youtubeUploadDate)}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Cualquier fecha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="__any__">Cualquier fecha</SelectItem>
+                    <SelectItem value="lastHour">Última hora</SelectItem>
+                    <SelectItem value="today">Hoy</SelectItem>
+                    <SelectItem value="thisWeek">Esta semana</SelectItem>
+                    <SelectItem value="thisMonth">Este mes</SelectItem>
+                    <SelectItem value="thisYear">Este año</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label>Ordenar por</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[280px]">
+                      <p>Criterio de ordenamiento de resultados. "Fecha" muestra los más recientes primero.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={youtubeSortType} onValueChange={(v) => setYoutubeSortType(v as typeof youtubeSortType)}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="date">Fecha (más recientes)</SelectItem>
+                    <SelectItem value="relevance">Relevancia</SelectItem>
+                    <SelectItem value="views">Vistas</SelectItem>
+                    <SelectItem value="rating">Valoración</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
           )}
         </div>
 
