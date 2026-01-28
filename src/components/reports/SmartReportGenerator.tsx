@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +15,20 @@ import {
   GitCompare,
   Loader2,
   Copy,
-  Download,
   MessageCircle,
   Globe,
   CheckCircle2,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, ReportType, ReportExtension, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
+
+interface Entity {
+  id: string;
+  nombre: string;
+}
 
 interface SmartReportGeneratorProps {
   mentions: Mention[];
@@ -31,6 +36,7 @@ interface SmartReportGeneratorProps {
   projectAudience: string;
   projectObjective: string;
   entityNames?: string[];
+  entities?: Entity[];
   dateRange: {
     start: string;
     end: string;
@@ -51,12 +57,41 @@ const EXTENSIONS: { value: ReportExtension; label: string; description: string }
   { value: "medium", label: "Medio", description: "2-3 páginas • Análisis detallado" },
 ];
 
+// Source type definitions
+const SOURCE_TYPES = [
+  { value: "__all__", label: "Todas las fuentes" },
+  { value: "twitter", label: "Twitter/X" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "reddit", label: "Reddit" },
+  { value: "news", label: "Medios Digitales" },
+];
+
+// Helper to categorize source by domain
+function getSourceType(domain: string | null | undefined): string {
+  if (!domain) return "other";
+  const d = domain.toLowerCase();
+  if (d.includes("twitter") || d.includes("x.com")) return "twitter";
+  if (d.includes("facebook") || d.includes("fb.com")) return "facebook";
+  if (d.includes("instagram")) return "instagram";
+  if (d.includes("tiktok")) return "tiktok";
+  if (d.includes("youtube") || d.includes("youtu.be")) return "youtube";
+  if (d.includes("linkedin")) return "linkedin";
+  if (d.includes("reddit")) return "reddit";
+  // News sites typically have varied domains
+  return "news";
+}
+
 export function SmartReportGenerator({
   mentions,
   projectName,
   projectAudience,
   projectObjective,
   entityNames,
+  entities = [],
   dateRange,
 }: SmartReportGeneratorProps) {
   const { toast } = useToast();
@@ -66,6 +101,35 @@ export function SmartReportGenerator({
   const [extension, setExtension] = useState<ReportExtension>("short");
   const [selectedTemplate, setSelectedTemplate] = useState<"executive" | "technical" | "public">("executive");
   const [editedTemplates, setEditedTemplates] = useState<SmartReportContent["templates"] | null>(null);
+  
+  // Source and entity filters
+  const [sourceFilter, setSourceFilter] = useState<string>("__all__");
+  const [entityFilter, setEntityFilter] = useState<string>("__all__");
+
+  // Filter mentions based on selected filters
+  const filteredMentions = useMemo(() => {
+    return mentions.filter((m) => {
+      // Source filter
+      if (sourceFilter !== "__all__") {
+        const mentionSource = getSourceType(m.source_domain);
+        if (mentionSource !== sourceFilter) return false;
+      }
+      
+      // Entity filter
+      if (entityFilter !== "__all__") {
+        if (m.entity_id !== entityFilter) return false;
+      }
+      
+      return true;
+    });
+  }, [mentions, sourceFilter, entityFilter]);
+
+  // Get filtered entity names for the report
+  const filteredEntityNames = useMemo(() => {
+    if (entityFilter === "__all__") return entityNames;
+    const entity = entities.find(e => e.id === entityFilter);
+    return entity ? [entity.nombre] : entityNames;
+  }, [entityFilter, entities, entityNames]);
 
   const handleGenerate = async () => {
     const config: SmartReportConfig = {
@@ -74,7 +138,7 @@ export function SmartReportGenerator({
       projectName,
       projectAudience,
       projectObjective,
-      entityNames,
+      entityNames: filteredEntityNames,
       dateRange: {
         start: dateRange.start,
         end: dateRange.end,
@@ -82,7 +146,7 @@ export function SmartReportGenerator({
       },
     };
 
-    const result = await generateReport(mentions, config);
+    const result = await generateReport(filteredMentions, config);
     if (result) {
       setEditedTemplates(result.templates);
     }
@@ -184,19 +248,73 @@ export function SmartReportGenerator({
               </Select>
             </div>
 
+            {/* Filters Section */}
+            <div className="space-y-3 p-4 rounded-lg border border-dashed bg-muted/30">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                Filtrar Menciones
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Source/Platform Filter */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Fuente / Plataforma</Label>
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOURCE_TYPES.map((source) => (
+                        <SelectItem key={source.value} value={source.value}>
+                          {source.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Entity Filter */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Entidad</Label>
+                  <Select value={entityFilter} onValueChange={setEntityFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todas las entidades</SelectItem>
+                      {entities.map((entity) => (
+                        <SelectItem key={entity.id} value={entity.id}>
+                          {entity.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Data Summary */}
             <div className="flex flex-wrap gap-2 text-sm">
-              <Badge variant="outline">{mentions.length} menciones</Badge>
+              <Badge variant={filteredMentions.length < mentions.length ? "default" : "outline"}>
+                {filteredMentions.length} menciones
+                {filteredMentions.length < mentions.length && ` (de ${mentions.length})`}
+              </Badge>
               <Badge variant="outline">{dateRange.label}</Badge>
-              {entityNames && entityNames.length > 0 && (
-                <Badge variant="outline">{entityNames.length} entidades</Badge>
+              {sourceFilter !== "__all__" && (
+                <Badge variant="secondary">
+                  {SOURCE_TYPES.find(s => s.value === sourceFilter)?.label}
+                </Badge>
+              )}
+              {entityFilter !== "__all__" && (
+                <Badge variant="secondary">
+                  {entities.find(e => e.id === entityFilter)?.nombre}
+                </Badge>
               )}
             </div>
 
             <Button
               className="w-full"
               onClick={handleGenerate}
-              disabled={isGenerating || mentions.length === 0}
+              disabled={isGenerating || filteredMentions.length === 0}
             >
               {isGenerating ? (
                 <>
@@ -206,7 +324,7 @@ export function SmartReportGenerator({
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generar Reporte
+                  Generar Reporte ({filteredMentions.length} menciones)
                 </>
               )}
             </Button>
