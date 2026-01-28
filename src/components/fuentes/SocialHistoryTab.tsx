@@ -483,7 +483,7 @@ export function SocialHistoryTab({ projectId }: SocialHistoryTabProps) {
                                                   {result.published_at && (
                                                     <span className="flex items-center gap-1">
                                                       <Clock className="h-3 w-3" />
-                                                      {format(new Date(result.published_at), "d MMM yyyy", { locale: es })}
+                                                      {format(new Date(result.published_at), "d MMM yyyy HH:mm", { locale: es })}
                                                     </span>
                                                   )}
                                                   {result.url && (
