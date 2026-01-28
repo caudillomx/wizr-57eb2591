@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.fanpage-karma]
 verify_jwt = false
+
+[functions.ranking-ai-chat]
+verify_jwt = false
+
+[functions.generate-thematic-card]
+verify_jwt = false

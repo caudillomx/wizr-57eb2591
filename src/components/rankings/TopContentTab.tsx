@@ -13,16 +13,21 @@ import {
   RefreshCw,
   Image as ImageIcon,
   Video,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ArrowUpDown,
+  Flame
 } from "lucide-react";
 import { FKProfile, useFetchProfilePosts, FKPost } from "@/hooks/useFanpageKarma";
-import { format } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface TopContentTabProps {
   profiles: FKProfile[];
   isLoading: boolean;
+  dateRange?: { from: Date; to: Date };
 }
+
+type SortBy = "engagement" | "likes" | "comments" | "shares" | "date";
 
 const formatNumber = (num: number | null | undefined): string => {
   if (num === null || num === undefined) return "0";
@@ -34,6 +39,7 @@ const formatNumber = (num: number | null | undefined): string => {
 const getContentTypeIcon = (type?: string) => {
   switch (type?.toLowerCase()) {
     case "video":
+    case "reel":
       return <Video className="h-4 w-4" />;
     case "photo":
     case "image":
@@ -45,14 +51,26 @@ const getContentTypeIcon = (type?: string) => {
   }
 };
 
-function PostCard({ post, profileName }: { post: FKPost; profileName: string }) {
+function PostCard({ post, profileName, rank }: { post: FKPost; profileName: string; rank: number }) {
+  const totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+  
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
+          {/* Rank indicator */}
+          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+            rank === 1 ? "bg-amber-100 text-amber-700" :
+            rank === 2 ? "bg-gray-100 text-gray-700" :
+            rank === 3 ? "bg-orange-100 text-orange-700" :
+            "bg-muted text-muted-foreground"
+          }`}>
+            {rank}
+          </div>
+
           {/* Thumbnail if available */}
           {post.image_url && (
-            <div className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-muted">
+            <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-muted">
               <img 
                 src={post.image_url} 
                 alt="" 
@@ -66,7 +84,7 @@ function PostCard({ post, profileName }: { post: FKPost; profileName: string }) 
           
           <div className="flex-1 min-w-0">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Badge variant="secondary" className="text-xs">
                 @{profileName}
               </Badge>
@@ -77,7 +95,7 @@ function PostCard({ post, profileName }: { post: FKPost; profileName: string }) 
                 </Badge>
               )}
               {post.published_at && (
-                <span className="text-xs text-muted-foreground ml-auto">
+                <span className="text-xs text-muted-foreground">
                   {format(new Date(post.published_at), "dd MMM yyyy", { locale: es })}
                 </span>
               )}
@@ -89,28 +107,31 @@ function PostCard({ post, profileName }: { post: FKPost; profileName: string }) 
             </p>
             
             {/* Metrics */}
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1 text-rose-600">
                 <Heart className="h-4 w-4" />
-                <span>{formatNumber(post.likes)}</span>
+                <span className="font-medium">{formatNumber(post.likes)}</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-blue-600">
                 <MessageCircle className="h-4 w-4" />
-                <span>{formatNumber(post.comments)}</span>
+                <span className="font-medium">{formatNumber(post.comments)}</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-emerald-600">
                 <Share2 className="h-4 w-4" />
-                <span>{formatNumber(post.shares)}</span>
+                <span className="font-medium">{formatNumber(post.shares)}</span>
+              </div>
+              <div className="flex items-center gap-1 text-orange-600 ml-auto">
+                <Flame className="h-4 w-4" />
+                <span className="font-medium">{formatNumber(totalEngagement)}</span>
               </div>
               {post.url && (
                 <a 
                   href={post.url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="ml-auto text-primary hover:underline flex items-center gap-1"
+                  className="text-primary hover:underline flex items-center gap-1"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  Ver post
                 </a>
               )}
             </div>
@@ -121,8 +142,9 @@ function PostCard({ post, profileName }: { post: FKPost; profileName: string }) 
   );
 }
 
-export function TopContentTab({ profiles, isLoading: profilesLoading }: TopContentTabProps) {
+export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange }: TopContentTabProps) {
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [sortBy, setSortBy] = useState<SortBy>("engagement");
   
   const selectedProfile = profiles.find(p => p.id === selectedProfileId) || profiles[0];
   
@@ -132,6 +154,37 @@ export function TopContentTab({ profiles, isLoading: profilesLoading }: TopConte
     refetch,
     isFetching 
   } = useFetchProfilePosts(selectedProfile);
+
+  // Filter posts by date range if provided
+  const filteredPosts = dateRange 
+    ? posts.filter(post => {
+        if (!post.published_at) return true; // Include posts without date
+        const postDate = new Date(post.published_at);
+        return isWithinInterval(postDate, { start: dateRange.from, end: dateRange.to });
+      })
+    : posts;
+
+  // Sort posts
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    switch (sortBy) {
+      case "engagement":
+        const engA = (a.likes || 0) + (a.comments || 0) + (a.shares || 0);
+        const engB = (b.likes || 0) + (b.comments || 0) + (b.shares || 0);
+        return engB - engA;
+      case "likes":
+        return (b.likes || 0) - (a.likes || 0);
+      case "comments":
+        return (b.comments || 0) - (a.comments || 0);
+      case "shares":
+        return (b.shares || 0) - (a.shares || 0);
+      case "date":
+        const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+        const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+        return dateB - dateA;
+      default:
+        return 0;
+    }
+  });
 
   if (profilesLoading) {
     return (
@@ -180,6 +233,22 @@ export function TopContentTab({ profiles, isLoading: profilesLoading }: TopConte
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">Ordenar por:</span>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="engagement">Total Engagement</SelectItem>
+              <SelectItem value="likes">Likes</SelectItem>
+              <SelectItem value="comments">Comentarios</SelectItem>
+              <SelectItem value="shares">Compartidos</SelectItem>
+              <SelectItem value="date">Más reciente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         
         <Button 
           variant="outline" 
@@ -195,13 +264,27 @@ export function TopContentTab({ profiles, isLoading: profilesLoading }: TopConte
       {/* Posts list */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Contenido Top de @{selectedProfile?.profile_id}
-          </CardTitle>
-          <CardDescription>
-            Los posts con mejor engagement del perfil seleccionado
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-orange-500" />
+                Contenido Top de @{selectedProfile?.profile_id}
+              </CardTitle>
+              <CardDescription>
+                Los posts con mejor engagement ordenados por {
+                  sortBy === "engagement" ? "total de interacciones" :
+                  sortBy === "likes" ? "likes" :
+                  sortBy === "comments" ? "comentarios" :
+                  sortBy === "shares" ? "compartidos" : "fecha"
+                }
+              </CardDescription>
+            </div>
+            {sortedPosts.length > 0 && (
+              <Badge variant="secondary">
+                {sortedPosts.length} posts
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {postsLoading ? (
@@ -210,7 +293,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading }: TopConte
                 <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
-          ) : posts.length === 0 ? (
+          ) : sortedPosts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p>No hay posts disponibles para este perfil.</p>
@@ -220,11 +303,12 @@ export function TopContentTab({ profiles, isLoading: profilesLoading }: TopConte
             </div>
           ) : (
             <div className="space-y-4">
-              {posts.map((post, index) => (
+              {sortedPosts.map((post, index) => (
                 <PostCard 
                   key={post.id || index} 
                   post={post} 
                   profileName={selectedProfile?.profile_id || ""} 
+                  rank={index + 1}
                 />
               ))}
             </div>
