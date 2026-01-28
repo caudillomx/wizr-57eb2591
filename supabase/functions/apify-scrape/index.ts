@@ -21,8 +21,8 @@ const ACTOR_IDS: Record<string, string> = {
   instagram: "apify/instagram-hashtag-scraper",
   // Instagram profile scraper for username-based searches (scrapes posts from specific profiles)
   instagram_profile: "apify/instagram-profile-scraper",
-  // YouTube Videos: scraper_one/youtube-search-scraper (reliable, well-maintained)
-  youtube: "scraper_one/youtube-search-scraper",
+  // YouTube Videos: scrapesmith/free-youtube-search-scraper (FREE, no rental required)
+  youtube: "scrapesmith/free-youtube-search-scraper",
   // YouTube Shorts: newbs/youtube-shorts (specialized for Shorts content)
   youtube_shorts: "newbs/youtube-shorts",
   // Reddit: lite variant for less restrictions
@@ -271,27 +271,21 @@ serve(async (req) => {
         break;
         
       case "youtube":
-        // scraper_one/youtube-search-scraper - correct parameter names per Apify docs:
-        // sortType options: "relevance" (default), "date", "views", "rating"
-        // uploadDate options: "lastHour", "today", "thisWeek", "thisMonth", "thisYear"
-        // NOTE: Use "thisMonth" to capture more results; frontend date filter will narrow down.
+        // scrapesmith/free-youtube-search-scraper - FREE actor, no rental required
+        // Uses 'searchQueries' (array) parameter, not 'query' (string)
         // Request more results than maxResults to have headroom after keyword filtering.
         const youtubeResultsCount = Math.max(maxResults * 3, 75);
         if (channelUrl) {
           // For channel URLs, search by channel name extracted from URL
           const channelName = channelUrl.replace(/.*@/, "").replace(/.*\/channel\//, "").replace(/.*\/c\//, "");
           input = {
-            query: channelName,
-            resultsCount: youtubeResultsCount,
-            sortType: "date", // Sort by newest first for monitoring
-            uploadDate: "thisMonth", // Broader range; frontend filters by user dates
+            searchQueries: [channelName],
+            maxResults: youtubeResultsCount,
           };
         } else if (query) {
           input = {
-            query: query,
-            resultsCount: youtubeResultsCount,
-            sortType: "date", // Sort by newest first for monitoring
-            uploadDate: "thisMonth", // Broader range; frontend filters by user dates
+            searchQueries: [query],
+            maxResults: youtubeResultsCount,
           };
         }
         break;
