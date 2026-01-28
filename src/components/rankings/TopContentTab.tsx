@@ -156,6 +156,10 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
   const [filterNetwork, setFilterNetwork] = useState<FKNetwork | "all">("all");
   const [sortBy, setSortBy] = useState<SortBy>("engagement");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // State for on-demand search in "all profiles" mode
+  const [allProfilesSearchTriggered, setAllProfilesSearchTriggered] = useState(false);
+  const [pendingSearchQuery, setPendingSearchQuery] = useState("");
 
   // Filter profiles by network
   const filteredProfiles = filterNetwork === "all" 
@@ -167,12 +171,18 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
     ? undefined 
     : (filteredProfiles.find(p => p.id === selectedProfileId) || filteredProfiles[0]);
 
-  // Reset selection when filter changes and current selection is filtered out
+  // Reset selection and search state when filter changes
   useEffect(() => {
     if (selectedProfileId !== "__all__" && selectedProfileId && !filteredProfiles.find(p => p.id === selectedProfileId)) {
       setSelectedProfileId("__all__");
     }
   }, [filterNetwork, filteredProfiles, selectedProfileId]);
+
+  // Reset all-profiles search when switching profile selection
+  useEffect(() => {
+    setAllProfilesSearchTriggered(false);
+    setPendingSearchQuery("");
+  }, [selectedProfileId]);
   
   // Fetch posts for single profile (when not "all")
   const { 
@@ -182,18 +192,18 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
     isFetching: isFetchingSingle 
   } = useFetchProfilePosts(selectedProfile);
 
-  // Fetch posts for ALL profiles when "all" is selected
+  // Fetch posts for ALL profiles ONLY when search is triggered (on-demand)
   const allProfileQueries = useFetchMultipleProfilePosts(
-    isAllProfiles ? filteredProfiles : []
+    isAllProfiles && allProfilesSearchTriggered ? filteredProfiles : []
   );
 
   const allProfilesPosts: FKPostWithProfile[] = useMemo(() => {
-    if (!isAllProfiles) return [];
+    if (!isAllProfiles || !allProfilesSearchTriggered) return [];
     return allProfileQueries.flatMap(q => q.posts);
-  }, [isAllProfiles, allProfileQueries]);
+  }, [isAllProfiles, allProfilesSearchTriggered, allProfileQueries]);
 
-  const allProfilesLoading = isAllProfiles && allProfileQueries.some(q => q.isLoading);
-  const allProfilesFetching = isAllProfiles && allProfileQueries.some(q => q.isFetching);
+  const allProfilesLoading = isAllProfiles && allProfilesSearchTriggered && allProfileQueries.some(q => q.isLoading);
+  const allProfilesFetching = isAllProfiles && allProfilesSearchTriggered && allProfileQueries.some(q => q.isFetching);
 
   // Select the appropriate posts based on mode
   const posts: FKPostWithProfile[] = isAllProfiles 
@@ -204,9 +214,19 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
 
   const refetch = () => {
     if (isAllProfiles) {
-      allProfileQueries.forEach(q => q.refetch());
+      if (allProfilesSearchTriggered) {
+        allProfileQueries.forEach(q => q.refetch());
+      }
     } else {
       refetchSingle();
+    }
+  };
+
+  // Handler for triggering the search in "all profiles" mode
+  const handleAllProfilesSearch = () => {
+    if (pendingSearchQuery.trim()) {
+      setSearchQuery(pendingSearchQuery);
+      setAllProfilesSearchTriggered(true);
     }
   };
 
@@ -335,23 +355,80 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
       </div>
 
       {/* Keyword Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={isAllProfiles 
-            ? "Buscar por palabras clave en todos los perfiles..." 
-            : "Buscar por palabras clave en el contenido..."
-          }
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-        {searchQuery && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-            {sortedPosts.length} resultados
-          </span>
-        )}
-      </div>
+      {isAllProfiles ? (
+        // On-demand search for "all profiles" mode
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Escribe una palabra clave para buscar en todos los perfiles..."
+                value={pendingSearchQuery}
+                onChange={(e) => setPendingSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pendingSearchQuery.trim()) {
+                    handleAllProfilesSearch();
+                  }
+                }}
+                className="pl-10"
+              />
+            </div>
+            <Button 
+              onClick={handleAllProfilesSearch}
+              disabled={!pendingSearchQuery.trim() || isFetching}
+            >
+              {isFetching ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar
+                </>
+              )}
+            </Button>
+          </div>
+          {allProfilesSearchTriggered && searchQuery && (
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="outline">
+                Buscando: "{searchQuery}"
+              </Badge>
+              <span className="text-muted-foreground">
+                {sortedPosts.length} resultados en {filteredProfiles.length} perfiles
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setAllProfilesSearchTriggered(false);
+                  setSearchQuery("");
+                  setPendingSearchQuery("");
+                }}
+              >
+                Limpiar
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Instant search for single profile mode
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por palabras clave en el contenido..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          {searchQuery && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              {sortedPosts.length} resultados
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Posts list */}
       <Card>
@@ -395,18 +472,25 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
           ) : sortedPosts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
-              <p>
-                {searchQuery 
-                  ? `No se encontraron posts con "${searchQuery}".`
-                  : isAllProfiles 
-                    ? "No hay posts disponibles. Haz clic en 'Actualizar' para cargar."
-                    : "No hay posts disponibles para este perfil."
-                }
-              </p>
-              {!searchQuery && (
-                <p className="text-sm mt-1">
-                  Haz clic en "Actualizar" para obtener los posts más recientes.
-                </p>
+              {isAllProfiles && !allProfilesSearchTriggered ? (
+                // All profiles mode - waiting for search
+                <>
+                  <p className="font-medium mb-1">Búsqueda en todos los perfiles</p>
+                  <p className="text-sm">
+                    Escribe una palabra clave arriba y presiona "Buscar" para encontrar contenido en los {filteredProfiles.length} perfiles.
+                  </p>
+                </>
+              ) : searchQuery ? (
+                // Has search query but no results
+                <p>No se encontraron posts con "{searchQuery}".</p>
+              ) : (
+                // Single profile mode with no posts
+                <>
+                  <p>No hay posts disponibles para este perfil.</p>
+                  <p className="text-sm mt-1">
+                    Haz clic en "Actualizar" para obtener los posts más recientes.
+                  </p>
+                </>
               )}
             </div>
           ) : (
