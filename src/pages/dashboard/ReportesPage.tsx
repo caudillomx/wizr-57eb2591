@@ -74,6 +74,7 @@ const ReportesPage = () => {
           projectAudience={selectedProject.audiencia}
           projectObjective={selectedProject.objetivo}
           entityNames={entityNames}
+          entities={entities}
           dateRange={{
             start: dateRange.startDate.toISOString(),
             end: dateRange.endDate.toISOString(),
