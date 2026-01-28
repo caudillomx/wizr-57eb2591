@@ -122,7 +122,14 @@ interface SocialSearchResult {
   };
   hashtags?: string[];
   mentions?: string[];
-  raw?: Record<string, unknown> & { _isShort?: boolean; _durationSeconds?: number };
+  raw?: Record<string, unknown> & { 
+    _isShort?: boolean; 
+    _durationSeconds?: number;
+    _extractedComments?: Array<{ author: string; body: string; upVotes: number }>;
+    _matchingComments?: Array<{ author: string; body: string; upVotes: number }>;
+    _matchedInComment?: boolean;
+    _commentsCount?: number;
+  };
 }
 
 interface AggregateMetrics {
@@ -1583,36 +1590,78 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                               </Badge>
                             ) : null}
                             
+                            {/* Reddit: "Matched in comment" badge - this post matched because keyword was found in a comment */}
+                            {result.platform === "reddit" && result.raw?._matchedInComment && (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
+                                💬 Mención en comentario
+                              </Badge>
+                            )}
+                            
                             {/* Reddit comments badge */}
-                            {result.platform === "reddit" && typeof result.raw?._commentsCount === "number" && result.raw._commentsCount > 0 && (
+                            {result.platform === "reddit" && typeof result.raw?._commentsCount === "number" && result.raw._commentsCount > 0 && !result.raw?._matchedInComment && (
                               <Badge variant="secondary" className="text-xs">
-                                💬 {result.raw._commentsCount} comentarios capturados
+                                💬 {result.raw._commentsCount} comentarios
                               </Badge>
                             )}
                           </div>
                           
                           {/* Reddit extracted comments preview */}
-                          {result.platform === "reddit" && Array.isArray(result.raw?._extractedComments) && result.raw._extractedComments.length > 0 && (
-                            <Collapsible className="mt-2">
+                          {/* Reddit extracted comments preview - show matching comments first if matched in comment */}
+                          {result.platform === "reddit" && (
+                            (Array.isArray(result.raw?._matchingComments) && result.raw._matchingComments.length > 0) ||
+                            (Array.isArray(result.raw?._extractedComments) && result.raw._extractedComments.length > 0)
+                          ) && (
+                            <Collapsible className="mt-2" defaultOpen={!!result.raw?._matchedInComment}>
                               <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground">
+                                <Button variant="ghost" size="sm" className={cn(
+                                  "h-6 text-xs gap-1 hover:text-foreground",
+                                  result.raw?._matchedInComment 
+                                    ? "text-amber-700 dark:text-amber-400" 
+                                    : "text-muted-foreground"
+                                )}>
                                   <ChevronDown className="h-3 w-3" />
-                                  Ver comentarios ({(result.raw._extractedComments as Array<unknown>).length})
+                                  {result.raw?._matchedInComment 
+                                    ? `Ver comentarios con mención (${(result.raw._matchingComments as Array<unknown>)?.length || 0})` 
+                                    : `Ver comentarios (${(result.raw._extractedComments as Array<unknown>).length})`
+                                  }
                                 </Button>
                               </CollapsibleTrigger>
-                              <CollapsibleContent className="mt-2 space-y-2 pl-4 border-l-2 border-muted">
-                                {(result.raw._extractedComments as Array<{author: string; body: string; upVotes: number}>)
-                                  .slice(0, 5)
-                                  .map((comment, idx) => (
-                                    <div key={idx} className="text-xs space-y-0.5">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-muted-foreground">u/{comment.author}</span>
-                                        <span className="text-muted-foreground/60">• {comment.upVotes} pts</span>
+                              <CollapsibleContent className={cn(
+                                "mt-2 space-y-2 pl-4 border-l-2",
+                                result.raw?._matchedInComment ? "border-amber-300 dark:border-amber-700" : "border-muted"
+                              )}>
+                                {/* Show matching comments first (highlighted) */}
+                                {Array.isArray(result.raw?._matchingComments) && 
+                                  (result.raw._matchingComments as Array<{author: string; body: string; upVotes: number}>)
+                                    .slice(0, 5)
+                                    .map((comment, idx) => (
+                                      <div key={`match-${idx}`} className="text-xs space-y-0.5 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-amber-700 dark:text-amber-400">u/{comment.author}</span>
+                                          <span className="text-muted-foreground/60">• {comment.upVotes} pts</span>
+                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300">
+                                            mención
+                                          </Badge>
+                                        </div>
+                                        <p className="text-foreground/80 line-clamp-3">{comment.body}</p>
                                       </div>
-                                      <p className="text-foreground/80 line-clamp-2">{comment.body}</p>
-                                    </div>
-                                  ))}
-                                {(result.raw._extractedComments as Array<unknown>).length > 5 && (
+                                    ))
+                                }
+                                {/* Then show other comments if not a "matched in comment" result */}
+                                {!result.raw?._matchedInComment && Array.isArray(result.raw?._extractedComments) &&
+                                  (result.raw._extractedComments as Array<{author: string; body: string; upVotes: number}>)
+                                    .slice(0, 5)
+                                    .map((comment, idx) => (
+                                      <div key={idx} className="text-xs space-y-0.5">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-muted-foreground">u/{comment.author}</span>
+                                          <span className="text-muted-foreground/60">• {comment.upVotes} pts</span>
+                                        </div>
+                                        <p className="text-foreground/80 line-clamp-2">{comment.body}</p>
+                                      </div>
+                                    ))
+                                }
+                                {!result.raw?._matchedInComment && (result.raw._extractedComments as Array<unknown>)?.length > 5 && (
                                   <p className="text-xs text-muted-foreground">
                                     +{(result.raw._extractedComments as Array<unknown>).length - 5} comentarios más...
                                   </p>
