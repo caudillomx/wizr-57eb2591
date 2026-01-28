@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, BarChart3, Settings, Trophy, TrendingUp, FileText } from "lucide-react";
+import { ArrowLeft, BarChart3, Settings, Trophy, TrendingUp, FileText, Sparkles, MessageCircle } from "lucide-react";
 import { Ranking } from "@/hooks/useRankings";
 import { useFKProfilesByRanking, useFKProfileKPIs, useFKAllKPIs } from "@/hooks/useFanpageKarma";
 import { RankingBatchForm } from "./RankingBatchForm";
@@ -10,8 +10,11 @@ import { ProfilesList } from "./ProfilesList";
 import { RankingTable } from "./RankingTable";
 import { TrendsTab } from "./TrendsTab";
 import { TopContentTab } from "./TopContentTab";
-
-type SortMetric = "followers" | "engagement_rate" | "follower_growth_percent" | "posts_per_day";
+import { RankingInsightsPanel } from "./RankingInsightsPanel";
+import { RankingQuestionsPanel } from "./RankingQuestionsPanel";
+import { RankingAIChat } from "./RankingAIChat";
+import { RankingDateFilter, DateRangePreset, getDateRangeFromPreset } from "./RankingDateFilter";
+import { DateRange } from "react-day-picker";
 
 interface RankingDetailProps {
   ranking: Ranking;
@@ -19,7 +22,10 @@ interface RankingDetailProps {
 }
 
 export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
-  const [activeTab, setActiveTab] = useState<"ranking" | "config" | "trends" | "content">("ranking");
+  const [activeTab, setActiveTab] = useState<"ranking" | "insights" | "trends" | "content" | "ai" | "config">("ranking");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("28d");
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
+  const [aiInitialQuestion, setAiInitialQuestion] = useState<string>("");
 
   const { data: profiles = [], isLoading: loadingProfiles } = useFKProfilesByRanking(ranking.id);
   const profileIds = profiles.map((p) => p.id);
@@ -27,6 +33,14 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
 
   const syncedCount = profiles.filter((p) => p.last_synced_at).length;
+
+  const handleAskAI = (question: string) => {
+    setAiInitialQuestion(question);
+    setActiveTab("ai");
+  };
+
+  // Get the current date range
+  const dateRange = getDateRangeFromPreset(datePreset, customDateRange);
 
   return (
     <div className="space-y-6">
@@ -58,12 +72,26 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
         </div>
       </div>
 
+      {/* Date filter - shown on all data tabs */}
+      {activeTab !== "config" && profiles.length > 0 && (
+        <RankingDateFilter
+          preset={datePreset}
+          customRange={customDateRange}
+          onPresetChange={setDatePreset}
+          onCustomRangeChange={setCustomDateRange}
+        />
+      )}
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="ranking">
             <BarChart3 className="h-4 w-4 mr-2" />
             Ranking
+          </TabsTrigger>
+          <TabsTrigger value="insights" disabled={profiles.length === 0}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            Insights
           </TabsTrigger>
           <TabsTrigger value="trends" disabled={profiles.length === 0}>
             <TrendingUp className="h-4 w-4 mr-2" />
@@ -72,6 +100,10 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
           <TabsTrigger value="content" disabled={profiles.length === 0}>
             <FileText className="h-4 w-4 mr-2" />
             Contenido Top
+          </TabsTrigger>
+          <TabsTrigger value="ai" disabled={profiles.length === 0}>
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Preguntar IA
           </TabsTrigger>
           <TabsTrigger value="config">
             <Settings className="h-4 w-4 mr-2" />
@@ -93,14 +125,40 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
               </Button>
             </div>
           ) : (
-            <RankingTable 
-              profiles={profiles} 
-              kpis={kpis} 
-              isLoading={loadingProfiles || loadingKPIs}
-              sortBy="engagement_rate"
-              filterNetwork="all"
-            />
+            <div className="space-y-6">
+              {/* Quick insights at the top */}
+              <RankingInsightsPanel 
+                profiles={profiles} 
+                kpis={kpis} 
+                isLoading={loadingProfiles || loadingKPIs}
+              />
+              
+              {/* Ranking table */}
+              <RankingTable 
+                profiles={profiles} 
+                kpis={kpis} 
+                isLoading={loadingProfiles || loadingKPIs}
+                sortBy="engagement_rate"
+                filterNetwork="all"
+              />
+            </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="insights" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RankingQuestionsPanel
+              profiles={profiles}
+              kpis={kpis}
+              isLoading={loadingProfiles || loadingKPIs}
+              onAskAI={handleAskAI}
+            />
+            <RankingAIChat
+              profiles={profiles}
+              kpis={kpis}
+              rankingName={ranking.name}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="trends" className="mt-6">
@@ -114,8 +172,20 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
         <TabsContent value="content" className="mt-6">
           <TopContentTab 
             profiles={profiles} 
-            isLoading={loadingProfiles} 
+            isLoading={loadingProfiles}
+            dateRange={dateRange}
           />
+        </TabsContent>
+
+        <TabsContent value="ai" className="mt-6">
+          <div className="max-w-2xl mx-auto">
+            <RankingAIChat
+              profiles={profiles}
+              kpis={kpis}
+              rankingName={ranking.name}
+              initialQuestion={aiInitialQuestion}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="config" className="mt-6">
