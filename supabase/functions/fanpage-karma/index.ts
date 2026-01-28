@@ -74,59 +74,83 @@ serve(async (req) => {
 
       console.log(`Calling Fanpage Karma: ${network}/${profileId}/${body.action}`);
 
-      // Add timeout to fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      // Retry logic for incomplete responses
+      const maxRetries = 3;
+      let lastError: Error | null = null;
       
-      let response;
-      try {
-        response = await fetch(url, { signal: controller.signal });
-      } catch (fetchErr) {
-        clearTimeout(timeoutId);
-        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
-          throw new Error(`Request timeout for ${profileId}. The API took too long to respond.`);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Add timeout to fetch request
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          
+          let response;
+          try {
+            response = await fetch(url, { signal: controller.signal });
+          } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+              throw new Error(`Request timeout for ${profileId}. The API took too long to respond.`);
+            }
+            throw fetchErr;
+          }
+          clearTimeout(timeoutId);
+          
+          const text = await response.text();
+          console.log(`Attempt ${attempt}: Response length: ${text.length}, ends with: ${text.slice(-20)}`);
+          
+          // Check if response looks complete (should end with })
+          const trimmedText = text.trim();
+          if (!trimmedText.endsWith('}')) {
+            console.error(`Attempt ${attempt}: Incomplete JSON response, length: ${text.length}`);
+            if (attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 1000 * attempt)); // Exponential backoff
+              continue;
+            }
+            throw new Error(`Incomplete response from Fanpage Karma API for ${profileId} after ${maxRetries} attempts. The profile may not be registered in your Fanpage Karma dashboard.`);
+          }
+          
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (parseErr) {
+            console.error(`Attempt ${attempt}: JSON parse error:`, parseErr);
+            if (attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 1000 * attempt));
+              continue;
+            }
+            throw new Error(`Invalid JSON from Fanpage Karma API for ${profileId}. Please verify the profile exists in your dashboard.`);
+          }
+
+          if (!response.ok) {
+            console.error("Fanpage Karma API error:", data);
+            const errMsg = data.metadata?.message || 
+              data.error || 
+              data.message ||
+              `API error: ${response.status}. Make sure the profile "${profileId}" is added to your Fanpage Karma dashboard.`;
+            throw new Error(errMsg);
+          }
+
+          console.log(`Fanpage Karma response for ${profileId}:`, JSON.stringify(data.metadata || {}).slice(0, 200));
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              data: data.data,
+              metadata: data.metadata
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+          
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          if (attempt === maxRetries) {
+            throw lastError;
+          }
         }
-        throw fetchErr;
-      }
-      clearTimeout(timeoutId);
-      
-      const text = await response.text();
-      console.log(`Fanpage Karma raw response length: ${text.length}, starts: ${text.slice(0, 200)}`);
-      
-      // Check if response looks complete (should end with })
-      const trimmedText = text.trim();
-      if (!trimmedText.endsWith('}')) {
-        console.error("Incomplete JSON response detected, length:", text.length, "ends with:", trimmedText.slice(-50));
-        throw new Error(`Incomplete response from API for ${profileId}. Response length: ${text.length}. Please try again.`);
       }
       
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        console.error("JSON parse error:", parseErr, "Response length:", text.length);
-        throw new Error(`Invalid JSON from API for ${profileId}. Response may be corrupted. Please retry.`);
-      }
-
-      if (!response.ok) {
-        console.error("Fanpage Karma API error:", data);
-        const errMsg = data.metadata?.message || 
-          data.error || 
-          data.message ||
-          `API error: ${response.status}. Make sure the profile is added to your Fanpage Karma dashboard.`;
-        throw new Error(errMsg);
-      }
-
-      console.log(`Fanpage Karma response for ${profileId}:`, JSON.stringify(data.metadata || {}).slice(0, 200));
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: data.data,
-          metadata: data.metadata
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw lastError || new Error("Unknown error during API request");
     }
 
     throw new Error(`Unknown action: ${(body as any).action}`);
