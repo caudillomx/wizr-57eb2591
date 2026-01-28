@@ -276,9 +276,9 @@ serve(async (req) => {
         // OpenAPI input uses:
         // - query (required)
         // - resultsCount (1..100)
-        // - sortType: relevance|date|views|rating
-        // - timeWindow (days) works only when sortType='date'
-        // NOTE: This actor is search-based (no channelUrl input in schema).
+        // - sortType: relevance|date|views|rating (default: relevance)
+        // NOTE: Using relevance (default) returns more varied results;
+        // client-side date filtering then narrows to the user's selected period.
         const youtubeResultsCount = Math.min(Math.max(maxResults, 1), 100);
 
         if (!query) {
@@ -288,9 +288,7 @@ serve(async (req) => {
         input = {
           query,
           resultsCount: youtubeResultsCount,
-          sortType: "date", // Ensure newest-first results
-          // Keep this generous so monitoring windows like 7/30/90d work without changing the query.
-          timeWindow: 365,
+          // Omit sortType/timeWindow to use relevance-based results (more varied)
         };
         break;
         
