@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sparkles,
   FileText,
@@ -19,6 +21,7 @@ import {
   CheckCircle2,
   Trophy,
   FileDown,
+  Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -68,6 +71,7 @@ export function RankingReportGenerator({
   const [selectedTemplate, setSelectedTemplate] = useState<"executive" | "technical" | "public">("executive");
   const [editedTemplates, setEditedTemplates] = useState<RankingReportContent["templates"] | null>(null);
   const [filterNetwork, setFilterNetwork] = useState<FKNetwork | "all">("all");
+  const [selectedProfileIds, setSelectedProfileIds] = useState<Set<string>>(new Set(profiles.map(p => p.id)));
 
   // Get unique networks from profiles
   const profileNetworks = useMemo(() => 
@@ -75,16 +79,56 @@ export function RankingReportGenerator({
     [profiles]
   );
 
-  // Filter profiles and KPIs by network
+  // Filter profiles by network first, then by selection
+  const networkFilteredProfiles = useMemo(() => {
+    if (filterNetwork === "all") return profiles;
+    return profiles.filter(p => p.network === filterNetwork);
+  }, [profiles, filterNetwork]);
+
+  // Final filtered data (by network + selection)
   const filteredData = useMemo(() => {
-    if (filterNetwork === "all") {
-      return { profiles, kpis, count: profiles.length };
-    }
-    const filteredProfiles = profiles.filter(p => p.network === filterNetwork);
-    const profileIds = new Set(filteredProfiles.map(p => p.id));
+    const selectedProfiles = networkFilteredProfiles.filter(p => selectedProfileIds.has(p.id));
+    const profileIds = new Set(selectedProfiles.map(p => p.id));
     const filteredKpis = kpis.filter(k => profileIds.has(k.fk_profile_id));
-    return { profiles: filteredProfiles, kpis: filteredKpis, count: filteredProfiles.length };
-  }, [profiles, kpis, filterNetwork]);
+    return { profiles: selectedProfiles, kpis: filteredKpis, count: selectedProfiles.length };
+  }, [networkFilteredProfiles, kpis, selectedProfileIds]);
+
+  // Toggle all profiles in current network filter
+  const handleToggleAll = () => {
+    const networkProfileIds = new Set(networkFilteredProfiles.map(p => p.id));
+    const allSelected = networkFilteredProfiles.every(p => selectedProfileIds.has(p.id));
+    
+    if (allSelected) {
+      // Deselect all in current network view
+      setSelectedProfileIds(prev => {
+        const next = new Set(prev);
+        networkProfileIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      // Select all in current network view
+      setSelectedProfileIds(prev => {
+        const next = new Set(prev);
+        networkProfileIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const handleToggleProfile = (profileId: string) => {
+    setSelectedProfileIds(prev => {
+      const next = new Set(prev);
+      if (next.has(profileId)) {
+        next.delete(profileId);
+      } else {
+        next.add(profileId);
+      }
+      return next;
+    });
+  };
+
+  const allCurrentSelected = networkFilteredProfiles.length > 0 && 
+    networkFilteredProfiles.every(p => selectedProfileIds.has(p.id));
 
   const handleGenerate = async () => {
     const config: RankingReportConfig = {
@@ -159,6 +203,61 @@ export function RankingReportGenerator({
                 selected={filterNetwork}
                 onChange={setFilterNetwork}
               />
+            </div>
+
+            {/* Profile Selection */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Perfiles a Incluir
+                </Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleToggleAll}
+                  className="h-7 text-xs"
+                >
+                  {allCurrentSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                </Button>
+              </div>
+              <ScrollArea className="h-40 rounded-md border p-3">
+                <div className="space-y-2">
+                  {networkFilteredProfiles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay perfiles en esta red
+                    </p>
+                  ) : (
+                    networkFilteredProfiles.map((profile) => (
+                      <label
+                        key={profile.id}
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={selectedProfileIds.has(profile.id)}
+                          onCheckedChange={() => handleToggleProfile(profile.id)}
+                        />
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Badge variant="outline" className="shrink-0 text-[10px]">
+                            {getNetworkLabel(profile.network as FKNetwork)}
+                          </Badge>
+                          <span className="font-medium truncate">
+                            @{profile.profile_id}
+                          </span>
+                          {profile.display_name && profile.display_name !== profile.profile_id && (
+                            <span className="text-muted-foreground text-xs truncate">
+                              ({profile.display_name})
+                            </span>
+                          )}
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                {filteredData.count} de {profiles.length} perfiles seleccionados
+              </p>
             </div>
 
             {/* Report Type Selection */}
