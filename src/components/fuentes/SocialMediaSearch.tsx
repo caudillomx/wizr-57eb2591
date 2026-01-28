@@ -988,7 +988,13 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         })),
       }));
 
-      const { error } = await supabase.from("mentions").insert(mentions);
+      // Use upsert to handle duplicates (same URL for same project)
+      const { error } = await supabase
+        .from("mentions")
+        .upsert(mentions, { 
+          onConflict: "project_id,url",
+          ignoreDuplicates: false // Update existing records
+        });
 
       if (error) throw error;
 
