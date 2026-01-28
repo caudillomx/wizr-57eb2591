@@ -696,8 +696,35 @@ serve(async (req) => {
     // Normalize filterKeyword for case-insensitive matching
     const keywordLower = (filterKeyword || "").toLowerCase().trim();
 
-    // Get run status
-    const statusResponse = await fetch(
+    // Get run status with retry logic for transient failures (502, 503, 504)
+    const fetchWithRetry = async (url: string, retries = 3, delay = 1000): Promise<Response> => {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const response = await fetch(url);
+          
+          // Retry on transient server errors
+          if (response.status >= 500 && response.status < 600 && attempt < retries) {
+            console.log(`Apify API returned ${response.status}, retrying (attempt ${attempt}/${retries})...`);
+            await new Promise(resolve => setTimeout(resolve, delay * attempt));
+            continue;
+          }
+          
+          return response;
+        } catch (networkError) {
+          // Retry on network errors
+          if (attempt < retries) {
+            console.log(`Network error, retrying (attempt ${attempt}/${retries}):`, networkError);
+            await new Promise(resolve => setTimeout(resolve, delay * attempt));
+            continue;
+          }
+          throw networkError;
+        }
+      }
+      // This shouldn't be reached, but TypeScript needs it
+      throw new Error("Max retries exceeded");
+    };
+
+    const statusResponse = await fetchWithRetry(
       `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_API_TOKEN}`
     );
 
