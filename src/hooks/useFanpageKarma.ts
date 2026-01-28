@@ -637,7 +637,37 @@ export function useFetchProfilePosts(profile: FKProfile | undefined) {
       
       // Transform Fanpage Karma posts format - map their field names to ours
       return postsData.slice(0, 100).map((post: Record<string, unknown>, index: number) => {
-        // Fanpage Karma uses direct values, not nested objects for posts
+        // Fanpage Karma returns engagement metrics inside a nested 'kpi' object
+        // Each metric is an object with { title, value, formatted_value }
+        const kpi = (post.kpi as Record<string, { title?: string; value?: number; formatted_value?: string }>) || {};
+        
+        // Extract KPI values - these are nested inside the kpi object
+        const extractKpiValue = (key: string): number => {
+          const metric = kpi[key];
+          if (metric && typeof metric === 'object' && 'value' in metric) {
+            return Number(metric.value) || 0;
+          }
+          return 0;
+        };
+        
+        // Different networks may use different field names for the same metrics
+        const likes = extractKpiValue('page_posts_likes_count') || 
+                      extractKpiValue('profile_post_likes_count') ||
+                      extractKpiValue('page_posts_reactions') ||
+                      Number(post.likes) || 0;
+                      
+        const comments = extractKpiValue('page_posts_comments_count') || 
+                         extractKpiValue('profile_post_comments_count') ||
+                         Number(post.comments) || 0;
+                         
+        const shares = extractKpiValue('page_posts_shares_count') || 
+                       extractKpiValue('profile_post_shares_count') ||
+                       Number(post.shares) || 0;
+                       
+        const totalEngagement = extractKpiValue('page_total_engagement_count') ||
+                                extractKpiValue('profile_total_engagement_count') ||
+                                (likes + comments + shares);
+        
         return {
           id: (post.id as string) || `${profile.id}-${index}`,
           url: (post.link as string) || (post.url as string) || null,
@@ -646,10 +676,10 @@ export function useFetchProfilePosts(profile: FKProfile | undefined) {
           content_type: (post.type as string) || (post.content_type as string) || 'post',
           image_url: (post.image as string) || (post.picture as string) || null,
           published_at: (post.date as string) || (post.created_time as string) || null,
-          likes: Number(post.likes) || Number(post.reactions) || 0,
-          comments: Number(post.comments) || 0,
-          shares: Number(post.shares) || 0,
-          engagement: Number(post.interaction) || Number(post.engagement) || 0,
+          likes,
+          comments,
+          shares,
+          engagement: totalEngagement,
         };
       });
     },
