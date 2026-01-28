@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BookOpen, 
   RefreshCw, 
@@ -14,13 +16,15 @@ import {
   Minus,
   Quote,
   Hash,
-  Target
+  Target,
+  Users,
+  GitCompare,
+  Lightbulb
 } from "lucide-react";
-import { FKProfile, useFetchProfilePosts, FKPost, FKNetwork } from "@/hooks/useFanpageKarma";
+import { FKProfile, useFetchProfilePosts, FKPost, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NetworkFilter } from "./NetworkFilter";
-import { ProfileSelectGrouped } from "./ProfileSelectGrouped";
 
 interface NarrativesAnalysisPanelProps {
   profiles: FKProfile[];
@@ -53,6 +57,29 @@ interface NarrativeAnalysis {
   summary: string;
 }
 
+interface ProfileAnalysis {
+  profileId: string;
+  profileName: string;
+  network: string;
+  analysis: NarrativeAnalysis;
+}
+
+interface ComparativeResult {
+  profiles: ProfileAnalysis[];
+  comparison?: {
+    commonThemes: string[];
+    differentiators: Array<{
+      profileName: string;
+      uniqueAspect: string;
+    }>;
+    leaderInEngagement?: string;
+    mostFormalTone?: string;
+    overallInsight: string;
+  };
+}
+
+const MAX_PROFILES = 5;
+
 const getSentimentIcon = (sentiment: string) => {
   switch (sentiment) {
     case "positive":
@@ -64,69 +91,137 @@ const getSentimentIcon = (sentiment: string) => {
   }
 };
 
-const getSentimentLabel = (sentiment: string) => {
-  switch (sentiment) {
-    case "positive": return "Positivo";
-    case "negative": return "Negativo";
-    default: return "Neutral";
-  }
-};
-
 export function NarrativesAnalysisPanel({ profiles, isLoading: profilesLoading, dateRange }: NarrativesAnalysisPanelProps) {
-  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [selectedProfileIds, setSelectedProfileIds] = useState<Set<string>>(new Set());
   const [filterNetwork, setFilterNetwork] = useState<FKNetwork | "all">("all");
-  const [analysis, setAnalysis] = useState<NarrativeAnalysis | null>(null);
+  const [comparativeResult, setComparativeResult] = useState<ComparativeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [profilePosts, setProfilePosts] = useState<Map<string, FKPost[]>>(new Map());
+  const [activeProfileTab, setActiveProfileTab] = useState<string>("");
 
   // Filter profiles by network
-  const filteredProfiles = filterNetwork === "all" 
-    ? profiles 
-    : profiles.filter(p => p.network === filterNetwork);
+  const filteredProfiles = useMemo(() => 
+    filterNetwork === "all" 
+      ? profiles 
+      : profiles.filter(p => p.network === filterNetwork),
+    [profiles, filterNetwork]
+  );
 
-  const selectedProfile = filteredProfiles.find(p => p.id === selectedProfileId) || filteredProfiles[0];
+  // Selected profiles data
+  const selectedProfiles = useMemo(() => 
+    profiles.filter(p => selectedProfileIds.has(p.id)),
+    [profiles, selectedProfileIds]
+  );
 
   // Reset selection when filter changes
   useEffect(() => {
-    if (selectedProfileId && !filteredProfiles.find(p => p.id === selectedProfileId)) {
-      setSelectedProfileId(filteredProfiles[0]?.id || "");
-    }
-  }, [filterNetwork, filteredProfiles, selectedProfileId]);
+    const validIds = new Set(filteredProfiles.map(p => p.id));
+    setSelectedProfileIds(prev => {
+      const next = new Set<string>();
+      prev.forEach(id => {
+        if (validIds.has(id)) next.add(id);
+      });
+      return next;
+    });
+  }, [filteredProfiles]);
 
-  const { 
-    data: posts = [], 
-    isLoading: postsLoading,
-    refetch: refetchPosts
-  } = useFetchProfilePosts(selectedProfile);
+  // Set first profile as active tab when results arrive
+  useEffect(() => {
+    if (comparativeResult?.profiles.length && !activeProfileTab) {
+      setActiveProfileTab(comparativeResult.profiles[0].profileId);
+    }
+  }, [comparativeResult, activeProfileTab]);
+
+  const handleToggleProfile = (profileId: string) => {
+    setSelectedProfileIds(prev => {
+      const next = new Set(prev);
+      if (next.has(profileId)) {
+        next.delete(profileId);
+      } else if (next.size < MAX_PROFILES) {
+        next.add(profileId);
+      } else {
+        toast.warning(`Máximo ${MAX_PROFILES} perfiles permitidos`);
+        return prev;
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const toSelect = filteredProfiles.slice(0, MAX_PROFILES);
+    setSelectedProfileIds(new Set(toSelect.map(p => p.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProfileIds(new Set());
+  };
+
+  const fetchPostsForProfiles = async (profilesToFetch: FKProfile[]) => {
+    setLoadingPosts(true);
+    const newPosts = new Map<string, FKPost[]>();
+
+    for (const profile of profilesToFetch) {
+      try {
+        const { data, error } = await supabase.functions.invoke("fanpage-karma", {
+          body: {
+            action: "posts",
+            profileId: profile.profile_id,
+            network: profile.network,
+          },
+        });
+
+        if (error) throw error;
+        if (data.success && data.posts) {
+          newPosts.set(profile.id, data.posts);
+        }
+      } catch (err) {
+        console.error(`Error fetching posts for ${profile.profile_id}:`, err);
+      }
+    }
+
+    setProfilePosts(newPosts);
+    setLoadingPosts(false);
+    return newPosts;
+  };
 
   const analyzeNarratives = async () => {
-    if (!selectedProfile || posts.length === 0) {
-      toast.error("No hay posts disponibles para analizar");
+    if (selectedProfiles.length === 0) {
+      toast.error("Selecciona al menos un perfil para analizar");
       return;
     }
 
     setIsAnalyzing(true);
-    setAnalysis(null);
+    setComparativeResult(null);
 
     try {
-      // Prepare content for analysis
-      const postsContent = posts.map(post => ({
-        message: post.message || post.title || "",
-        contentType: post.content_type || "post",
-        engagement: (post.likes || 0) + (post.comments || 0) + (post.shares || 0),
-        date: post.published_at
-      })).filter(p => p.message.trim().length > 0);
+      // Fetch posts for selected profiles
+      const posts = await fetchPostsForProfiles(selectedProfiles);
 
-      if (postsContent.length === 0) {
-        toast.error("Los posts no tienen contenido textual para analizar");
+      // Build profiles array for API
+      const profilesData = selectedProfiles.map(profile => {
+        const profilePostsData = posts.get(profile.id) || [];
+        return {
+          profileName: profile.display_name || profile.profile_id,
+          network: profile.network,
+          posts: profilePostsData.map(post => ({
+            message: post.message || post.title || "",
+            contentType: post.content_type || "post",
+            engagement: (post.likes || 0) + (post.comments || 0) + (post.shares || 0),
+            date: post.published_at
+          })).filter(p => p.message.trim().length > 0)
+        };
+      }).filter(p => p.posts.length > 0);
+
+      if (profilesData.length === 0) {
+        toast.error("No hay posts con contenido para analizar");
         setIsAnalyzing(false);
         return;
       }
 
       const { data, error } = await supabase.functions.invoke("analyze-narratives", {
         body: {
-          profileName: selectedProfile.display_name || selectedProfile.profile_id,
-          network: selectedProfile.network,
-          posts: postsContent,
+          profiles: profilesData,
           dateRange: dateRange ? {
             from: dateRange.from.toISOString(),
             to: dateRange.to.toISOString()
@@ -137,8 +232,24 @@ export function NarrativesAnalysisPanel({ profiles, isLoading: profilesLoading, 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "Error al analizar narrativas");
 
-      setAnalysis(data.analysis);
-      toast.success("Análisis de narrativas completado");
+      if (data.comparative) {
+        setComparativeResult(data.comparative);
+        setActiveProfileTab(data.comparative.profiles[0]?.profileId || "");
+      } else if (data.analysis) {
+        // Single profile fallback
+        const singleResult: ComparativeResult = {
+          profiles: [{
+            profileId: selectedProfiles[0].profile_id,
+            profileName: selectedProfiles[0].display_name || selectedProfiles[0].profile_id,
+            network: selectedProfiles[0].network,
+            analysis: data.analysis
+          }]
+        };
+        setComparativeResult(singleResult);
+        setActiveProfileTab(singleResult.profiles[0].profileId);
+      }
+
+      toast.success(`Análisis completado para ${profilesData.length} perfil(es)`);
     } catch (err) {
       console.error("Error analyzing narratives:", err);
       toast.error(`Error: ${(err as Error).message}`);
@@ -181,41 +292,103 @@ export function NarrativesAnalysisPanel({ profiles, isLoading: profilesLoading, 
         onChange={setFilterNetwork}
       />
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">Perfil:</span>
-          <ProfileSelectGrouped
-            profiles={profiles}
-            value={selectedProfileId || selectedProfile?.id || ""}
-            onValueChange={setSelectedProfileId}
-            filterNetwork={filterNetwork}
-          />
-        </div>
-
-        <Button 
-          onClick={analyzeNarratives}
-          disabled={isAnalyzing || postsLoading || posts.length === 0}
-        >
-          {isAnalyzing ? (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Analizando...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Analizar Narrativas
-            </>
-          )}
-        </Button>
-
-        {posts.length > 0 && (
-          <Badge variant="secondary">
-            {posts.length} posts disponibles
-          </Badge>
-        )}
-      </div>
+      {/* Profile Selection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5" />
+              Seleccionar Perfiles (máx. {MAX_PROFILES})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={handleSelectAll} disabled={selectedProfileIds.size >= MAX_PROFILES}>
+                Seleccionar {Math.min(MAX_PROFILES, filteredProfiles.length)}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleClearSelection} disabled={selectedProfileIds.size === 0}>
+                Limpiar
+              </Button>
+            </div>
+          </div>
+          <CardDescription>
+            Selecciona hasta {MAX_PROFILES} perfiles de cualquier red para análisis comparativo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-48">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProfiles.map((profile) => {
+                const isSelected = selectedProfileIds.has(profile.id);
+                const isDisabled = !isSelected && selectedProfileIds.size >= MAX_PROFILES;
+                
+                return (
+                  <label
+                    key={profile.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      isSelected 
+                        ? "border-primary bg-primary/5" 
+                        : isDisabled 
+                          ? "opacity-50 cursor-not-allowed border-muted" 
+                          : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => handleToggleProfile(profile.id)}
+                      disabled={isDisabled}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          {getNetworkLabel(profile.network as FKNetwork)}
+                        </Badge>
+                      </div>
+                      <p className="font-medium text-sm truncate mt-1">
+                        @{profile.profile_id}
+                      </p>
+                      {profile.display_name && profile.display_name !== profile.profile_id && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {profile.display_name}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </ScrollArea>
+          
+          {/* Selection Summary & Analyze Button */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-4 border-t">
+            <div className="flex flex-wrap gap-2">
+              {selectedProfiles.map(p => (
+                <Badge key={p.id} variant="secondary" className="text-xs">
+                  @{p.profile_id} ({getNetworkLabel(p.network as FKNetwork)})
+                </Badge>
+              ))}
+              {selectedProfiles.length === 0 && (
+                <span className="text-sm text-muted-foreground">Ningún perfil seleccionado</span>
+              )}
+            </div>
+            
+            <Button 
+              onClick={analyzeNarratives}
+              disabled={isAnalyzing || loadingPosts || selectedProfiles.length === 0}
+            >
+              {isAnalyzing || loadingPosts ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {loadingPosts ? "Cargando posts..." : "Analizando..."}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analizar {selectedProfiles.length > 1 ? `${selectedProfiles.length} Perfiles` : "Narrativas"}
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Analysis Results */}
       {isAnalyzing && (
@@ -227,179 +400,231 @@ export function NarrativesAnalysisPanel({ profiles, isLoading: profilesLoading, 
         </div>
       )}
 
-      {analysis && !isAnalyzing && (
+      {comparativeResult && !isAnalyzing && (
         <div className="space-y-6">
-          {/* Summary */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquareText className="h-5 w-5 text-primary" />
-                Resumen de Narrativas - @{selectedProfile?.profile_id}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed">{analysis.summary}</p>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Dominant Narratives */}
-            <Card>
+          {/* Comparison Card (if multiple profiles) */}
+          {comparativeResult.comparison && (
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Narrativas Dominantes
+                  <GitCompare className="h-5 w-5 text-primary" />
+                  Análisis Comparativo
                 </CardTitle>
                 <CardDescription>
-                  Los temas principales que caracterizan el contenido
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-64">
-                  <div className="space-y-4">
-                    {analysis.dominantNarratives.map((narrative, index) => (
-                      <div key={index} className="border rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium">{narrative.theme}</h4>
-                          <div className="flex items-center gap-2">
-                            {getSentimentIcon(narrative.sentiment)}
-                            <Badge variant="outline" className="text-xs">
-                              {narrative.frequency}%
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {narrative.description}
-                        </p>
-                        {narrative.examplePosts.length > 0 && (
-                          <div className="mt-2 pt-2 border-t">
-                            <p className="text-xs text-muted-foreground mb-1">Ejemplos:</p>
-                            {narrative.examplePosts.slice(0, 2).map((example, i) => (
-                              <div key={i} className="flex items-start gap-1 text-xs text-muted-foreground">
-                                <Quote className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                                <span className="line-clamp-2">{example}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Content Strategy */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Estrategia de Contenido
-                </CardTitle>
-                <CardDescription>
-                  Análisis del enfoque y oportunidades
+                  Comparación entre {comparativeResult.profiles.length} perfiles
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium mb-1">Enfoque Principal</p>
-                  <p className="text-sm text-muted-foreground">
-                    {analysis.contentStrategy.primaryFocus}
-                  </p>
+                {/* Overall Insight */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-background border">
+                  <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-sm">{comparativeResult.comparison.overallInsight}</p>
                 </div>
 
-                <div>
-                  <p className="text-sm font-medium mb-2">Fortalezas</p>
-                  <div className="flex flex-wrap gap-1">
-                    {analysis.contentStrategy.strengths.map((strength, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {strength}
-                      </Badge>
-                    ))}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Common Themes */}
+                  <div>
+                    <p className="text-sm font-medium mb-2">Temas en Común</p>
+                    <div className="flex flex-wrap gap-1">
+                      {comparativeResult.comparison.commonThemes.map((theme, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {theme}
+                        </Badge>
+                      ))}
+                      {comparativeResult.comparison.commonThemes.length === 0 && (
+                        <span className="text-xs text-muted-foreground">Sin temas comunes identificados</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Differentiators */}
+                  <div>
+                    <p className="text-sm font-medium mb-2">Diferenciadores</p>
+                    <div className="space-y-1">
+                      {comparativeResult.comparison.differentiators.map((diff, i) => (
+                        <div key={i} className="text-xs">
+                          <span className="font-medium">@{diff.profileName}:</span>{" "}
+                          <span className="text-muted-foreground">{diff.uniqueAspect}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-sm font-medium mb-2">Oportunidades</p>
-                  <div className="flex flex-wrap gap-1">
-                    {analysis.contentStrategy.opportunities.map((opp, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {opp}
-                      </Badge>
-                    ))}
+                {/* Leaders */}
+                {(comparativeResult.comparison.leaderInEngagement || comparativeResult.comparison.mostFormalTone) && (
+                  <div className="flex flex-wrap gap-4 text-xs pt-2 border-t">
+                    {comparativeResult.comparison.leaderInEngagement && (
+                      <div>
+                        <span className="text-muted-foreground">Mejor engagement:</span>{" "}
+                        <span className="font-medium">@{comparativeResult.comparison.leaderInEngagement}</span>
+                      </div>
+                    )}
+                    {comparativeResult.comparison.mostFormalTone && (
+                      <div>
+                        <span className="text-muted-foreground">Más institucional:</span>{" "}
+                        <span className="font-medium">@{comparativeResult.comparison.mostFormalTone}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
+          )}
 
-            {/* Tone Analysis */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Análisis de Tono</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tono General</p>
-                    <p className="font-medium capitalize">{analysis.toneAnalysis.overall}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tono Emocional</p>
-                    <p className="font-medium">{analysis.toneAnalysis.emotionalTone}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Call to Action</p>
-                    <Badge variant={analysis.toneAnalysis.callToAction ? "default" : "secondary"}>
-                      {analysis.toneAnalysis.callToAction ? "Frecuente" : "Poco frecuente"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Top Hashtags */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Hash className="h-4 w-4" />
-                  Hashtags Principales
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {analysis.topHashtags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="text-sm">
-                      #{tag.tag}
-                      <span className="ml-1 text-xs text-muted-foreground">({tag.count})</span>
-                    </Badge>
+          {/* Individual Profile Analyses */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Análisis Individual por Perfil
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab}>
+                <TabsList className="flex-wrap h-auto gap-1 mb-4">
+                  {comparativeResult.profiles.map(p => (
+                    <TabsTrigger key={p.profileId} value={p.profileId} className="text-xs">
+                      @{p.profileName}
+                      <Badge variant="outline" className="ml-1 text-[9px]">
+                        {getNetworkLabel(p.network as FKNetwork)}
+                      </Badge>
+                    </TabsTrigger>
                   ))}
-                  {analysis.topHashtags.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No se identificaron hashtags frecuentes
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </TabsList>
+
+                {comparativeResult.profiles.map(profileData => (
+                  <TabsContent key={profileData.profileId} value={profileData.profileId}>
+                    <div className="space-y-4">
+                      {/* Summary */}
+                      <div className="p-4 rounded-lg bg-muted/50">
+                        <p className="text-sm">{profileData.analysis.summary}</p>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Narratives */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <MessageSquareText className="h-4 w-4" />
+                            Narrativas Dominantes
+                          </h4>
+                          <ScrollArea className="h-52">
+                            <div className="space-y-3 pr-3">
+                              {profileData.analysis.dominantNarratives.map((narrative, i) => (
+                                <div key={i} className="border rounded-lg p-3">
+                                  <div className="flex items-start justify-between mb-1">
+                                    <h5 className="font-medium text-sm">{narrative.theme}</h5>
+                                    <div className="flex items-center gap-1">
+                                      {getSentimentIcon(narrative.sentiment)}
+                                      <Badge variant="outline" className="text-xs">
+                                        {narrative.frequency}%
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">{narrative.description}</p>
+                                  {narrative.examplePosts.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t">
+                                      {narrative.examplePosts.slice(0, 1).map((ex, j) => (
+                                        <div key={j} className="flex items-start gap-1 text-xs text-muted-foreground">
+                                          <Quote className="h-3 w-3 mt-0.5 shrink-0" />
+                                          <span className="line-clamp-2">{ex}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+
+                        {/* Strategy */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            Estrategia de Contenido
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs font-medium mb-1">Enfoque Principal</p>
+                              <p className="text-sm text-muted-foreground">
+                                {profileData.analysis.contentStrategy.primaryFocus}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium mb-1">Fortalezas</p>
+                              <div className="flex flex-wrap gap-1">
+                                {profileData.analysis.contentStrategy.strengths.map((s, i) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {s}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium mb-1">Oportunidades</p>
+                              <div className="flex flex-wrap gap-1">
+                                {profileData.analysis.contentStrategy.opportunities.map((o, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {o}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Tone & Hashtags */}
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Tono</p>
+                              <p className="text-sm font-medium capitalize">
+                                {profileData.analysis.toneAnalysis.overall} • {profileData.analysis.toneAnalysis.emotionalTone}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">CTA</p>
+                              <Badge variant={profileData.analysis.toneAnalysis.callToAction ? "default" : "secondary"} className="text-xs">
+                                {profileData.analysis.toneAnalysis.callToAction ? "Frecuente" : "Poco frecuente"}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {profileData.analysis.topHashtags.length > 0 && (
+                            <div className="pt-3 border-t">
+                              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                Top Hashtags
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {profileData.analysis.topHashtags.slice(0, 6).map((tag, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    #{tag.tag} ({tag.count})
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Empty state */}
-      {!analysis && !isAnalyzing && (
+      {!comparativeResult && !isAnalyzing && (
         <Card className="py-12">
           <CardContent className="text-center">
             <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Análisis de Narrativas</h3>
+            <h3 className="text-lg font-medium mb-2">Análisis de Narrativas Comparativo</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-4">
-              Descubre las narrativas dominantes, tono y estrategia de contenido de cada perfil. 
-              Selecciona un perfil y haz clic en "Analizar Narrativas".
+              Selecciona hasta {MAX_PROFILES} perfiles de cualquier red social para comparar sus narrativas, 
+              tono y estrategia de contenido.
             </p>
-            {posts.length === 0 && selectedProfile && (
-              <p className="text-sm text-amber-600">
-                Haz clic en "Contenido Top" primero para cargar los posts del perfil.
-              </p>
-            )}
           </CardContent>
         </Card>
       )}
