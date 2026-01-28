@@ -435,30 +435,27 @@ export function useFetchProfilePosts(profile: FKProfile | undefined) {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "Error al obtener posts");
 
-      const postsData = data.data || [];
+      // Fanpage Karma returns posts inside data.data.posts array
+      const rawData = data.data || {};
+      const postsData = Array.isArray(rawData) ? rawData : (rawData.posts || []);
       
-      // Transform Fanpage Karma posts format
-      return postsData.slice(0, 10).map((post: Record<string, unknown>, index: number) => {
-        const extractValue = (key: string): unknown => {
-          const metric = post[key];
-          if (metric && typeof metric === 'object' && 'value' in (metric as object)) {
-            return (metric as { value: unknown }).value;
-          }
-          return metric;
-        };
-
+      console.log("Posts data received:", postsData.length, "posts");
+      
+      // Transform Fanpage Karma posts format - map their field names to ours
+      return postsData.slice(0, 50).map((post: Record<string, unknown>, index: number) => {
+        // Fanpage Karma uses direct values, not nested objects for posts
         return {
-          id: `${profile.id}-${index}`,
-          url: extractValue('post_link') as string || extractValue('url') as string,
-          title: extractValue('post_title') as string,
-          message: extractValue('post_message') as string || extractValue('message') as string,
-          content_type: extractValue('post_type') as string || extractValue('content_type') as string,
-          image_url: extractValue('post_picture') as string || extractValue('image') as string,
-          published_at: extractValue('post_created') as string || extractValue('created_time') as string,
-          likes: Number(extractValue('post_likes')) || 0,
-          comments: Number(extractValue('post_comments')) || 0,
-          shares: Number(extractValue('post_shares')) || 0,
-          engagement: Number(extractValue('post_interaction')) || 0,
+          id: (post.id as string) || `${profile.id}-${index}`,
+          url: (post.link as string) || (post.url as string) || null,
+          title: (post.title as string) || null,
+          message: (post.message as string) || (post.description as string) || null,
+          content_type: (post.type as string) || (post.content_type as string) || 'post',
+          image_url: (post.image as string) || (post.picture as string) || null,
+          published_at: (post.date as string) || (post.created_time as string) || null,
+          likes: Number(post.likes) || Number(post.reactions) || 0,
+          comments: Number(post.comments) || 0,
+          shares: Number(post.shares) || 0,
+          engagement: Number(post.interaction) || Number(post.engagement) || 0,
         };
       });
     },
