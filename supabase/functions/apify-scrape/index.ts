@@ -272,21 +272,24 @@ serve(async (req) => {
         // scraper_one/youtube-search-scraper - correct parameter names per Apify docs:
         // sortType options: "relevance" (default), "date", "views", "rating"
         // uploadDate options: "lastHour", "today", "thisWeek", "thisMonth", "thisYear"
+        // NOTE: Use "thisMonth" to capture more results; frontend date filter will narrow down.
+        // Request more results than maxResults to have headroom after keyword filtering.
+        const youtubeResultsCount = Math.max(maxResults * 3, 75);
         if (channelUrl) {
           // For channel URLs, search by channel name extracted from URL
           const channelName = channelUrl.replace(/.*@/, "").replace(/.*\/channel\//, "").replace(/.*\/c\//, "");
           input = {
             query: channelName,
-            resultsCount: maxResults,
+            resultsCount: youtubeResultsCount,
             sortType: "date", // Sort by newest first for monitoring
-            uploadDate: "thisWeek", // Only videos from last 7 days
+            uploadDate: "thisMonth", // Broader range; frontend filters by user dates
           };
         } else if (query) {
           input = {
             query: query,
-            resultsCount: maxResults,
+            resultsCount: youtubeResultsCount,
             sortType: "date", // Sort by newest first for monitoring
-            uploadDate: "thisWeek", // Only videos from last 7 days
+            uploadDate: "thisMonth", // Broader range; frontend filters by user dates
           };
         }
         break;
