@@ -90,7 +90,25 @@ export function useInfluencersData(
     const mentions = mentionsQuery.data || [];
     const sevenDaysAgo = subDays(new Date(), 7);
 
-    // Group by domain
+    // Normalize domain function - convert to consistent format
+    const normalizeDomain = (domain: string): string => {
+      if (!domain) return "unknown";
+      const lower = domain.toLowerCase().trim();
+      
+      // Handle variants of the same platform
+      if (lower === "linkedin" || lower.includes("linkedin.com")) return "linkedin";
+      if (lower === "twitter" || lower === "x.com" || lower.includes("twitter.com")) return "twitter";
+      if (lower === "facebook" || lower.includes("facebook.com")) return "facebook";
+      if (lower === "instagram" || lower.includes("instagram.com")) return "instagram";
+      if (lower === "youtube" || lower.includes("youtube.com")) return "youtube";
+      if (lower === "tiktok" || lower.includes("tiktok.com")) return "tiktok";
+      if (lower.includes("threads.")) return "threads";
+      
+      // For other domains, use the base domain
+      return lower.replace(/^www\./, "").split("/")[0];
+    };
+
+    // Group by normalized domain
     const domainMap = new Map<string, {
       mentions: typeof mentions;
       keywords: Set<string>;
@@ -98,7 +116,7 @@ export function useInfluencersData(
     }>();
 
     mentions.forEach((mention) => {
-      const domain = mention.source_domain || "unknown";
+      const domain = normalizeDomain(mention.source_domain || "unknown");
       
       if (!domainMap.has(domain)) {
         domainMap.set(domain, {
@@ -172,54 +190,39 @@ export function useInfluencersData(
     const topInfluencersList = influencers.slice(0, 5);
     const topDomains = topInfluencersList.map((i) => i.domain);
     
-    // Create simplified domain names for chart display
-    const domainLabels: Record<string, string> = {};
-    topDomains.forEach((domain) => {
-      // Simplify domain for display: "elfinanciero.com.mx" -> "elfinanciero"
-      const simplified = domain
-        .replace(/^www\./, "")
-        .split(".")[0]
-        .substring(0, 15);
-      domainLabels[domain] = simplified;
-    });
-    
+    // Build daily map with all dates filled
     const dailyMap = new Map<string, Record<string, number>>();
-
-    // Generate all dates in range to avoid gaps
     for (let i = 0; i < timeRangeDays; i++) {
       const date = subDays(new Date(), timeRangeDays - 1 - i);
       const dateStr = date.toISOString().split("T")[0];
-      dailyMap.set(dateStr, {});
+      const initialData: Record<string, number> = {};
+      topDomains.forEach(d => { initialData[d] = 0; });
+      dailyMap.set(dateStr, initialData);
     }
 
+    // Count mentions per day per domain
     mentions.forEach((mention) => {
-      const domain = mention.source_domain || "unknown";
+      const domain = normalizeDomain(mention.source_domain || "unknown");
       if (!topDomains.includes(domain)) return;
 
       const date = new Date(mention.created_at).toISOString().split("T")[0];
       
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, {});
+      if (dailyMap.has(date)) {
+        const dayData = dailyMap.get(date)!;
+        dayData[domain] = (dayData[domain] || 0) + 1;
       }
-      
-      const dayData = dailyMap.get(date)!;
-      const label = domainLabels[domain] || domain;
-      dayData[label] = (dayData[label] || 0) + 1;
     });
-
-    // Convert domain labels for the chart
-    const chartDomains = topDomains.map(d => domainLabels[d] || d);
 
     const dailyTrends: DailyInfluencerData[] = Array.from(dailyMap.entries())
       .map(([date, domains]) => ({
         date,
-        ...chartDomains.reduce((acc, label) => ({ ...acc, [label]: domains[label] || 0 }), {}),
+        ...domains,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
       influencers,
-      topDomains: chartDomains,
+      topDomains,
       dailyTrends,
       totalMentions: mentions.length,
       uniqueSources: influencers.length,
