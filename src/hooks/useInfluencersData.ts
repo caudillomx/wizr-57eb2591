@@ -169,8 +169,28 @@ export function useInfluencersData(
     influencers.sort((a, b) => b.totalMentions - a.totalMentions);
 
     // Daily data for trend chart (top 5 domains)
-    const topDomains = influencers.slice(0, 5).map((i) => i.domain);
+    const topInfluencersList = influencers.slice(0, 5);
+    const topDomains = topInfluencersList.map((i) => i.domain);
+    
+    // Create simplified domain names for chart display
+    const domainLabels: Record<string, string> = {};
+    topDomains.forEach((domain) => {
+      // Simplify domain for display: "elfinanciero.com.mx" -> "elfinanciero"
+      const simplified = domain
+        .replace(/^www\./, "")
+        .split(".")[0]
+        .substring(0, 15);
+      domainLabels[domain] = simplified;
+    });
+    
     const dailyMap = new Map<string, Record<string, number>>();
+
+    // Generate all dates in range to avoid gaps
+    for (let i = 0; i < timeRangeDays; i++) {
+      const date = subDays(new Date(), timeRangeDays - 1 - i);
+      const dateStr = date.toISOString().split("T")[0];
+      dailyMap.set(dateStr, {});
+    }
 
     mentions.forEach((mention) => {
       const domain = mention.source_domain || "unknown";
@@ -183,19 +203,23 @@ export function useInfluencersData(
       }
       
       const dayData = dailyMap.get(date)!;
-      dayData[domain] = (dayData[domain] || 0) + 1;
+      const label = domainLabels[domain] || domain;
+      dayData[label] = (dayData[label] || 0) + 1;
     });
+
+    // Convert domain labels for the chart
+    const chartDomains = topDomains.map(d => domainLabels[d] || d);
 
     const dailyTrends: DailyInfluencerData[] = Array.from(dailyMap.entries())
       .map(([date, domains]) => ({
         date,
-        ...topDomains.reduce((acc, d) => ({ ...acc, [d]: domains[d] || 0 }), {}),
+        ...chartDomains.reduce((acc, label) => ({ ...acc, [label]: domains[label] || 0 }), {}),
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
       influencers,
-      topDomains,
+      topDomains: chartDomains,
       dailyTrends,
       totalMentions: mentions.length,
       uniqueSources: influencers.length,
