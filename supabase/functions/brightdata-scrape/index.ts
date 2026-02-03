@@ -95,9 +95,14 @@ serve(async (req) => {
 
     switch (platform) {
       case "tiktok":
-        // TikTok - need to confirm exact field names from curl example
-        // For now, skip TikTok until we have the correct format
-        throw new Error("TikTok via Bright Data is being configured. Please use Apify for now.");
+        // TikTok uses 'search_keyword' and 'country' (no num_of_posts)
+        // Based on curl: {"input":[{"search_keyword":"#artist","country":""}]}
+        if (hashtag) {
+          inputPayload = [{ search_keyword: hashtag.startsWith('#') ? hashtag : `#${hashtag}`, country: "" }];
+        } else if (query) {
+          inputPayload = [{ search_keyword: query, country: "" }];
+        }
+        break;
 
       case "youtube":
       case "youtube_shorts":
