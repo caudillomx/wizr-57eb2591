@@ -90,10 +90,11 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Daily activity
+    // Daily activity - include today in the range
+    const today = new Date();
     const dateRange = eachDayOfInterval({
       start: startOfDay(startDate),
-      end: startOfDay(new Date()),
+      end: startOfDay(today),
     });
 
     const dailyMap = new Map<string, number>();

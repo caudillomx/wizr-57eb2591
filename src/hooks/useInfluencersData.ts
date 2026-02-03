@@ -210,10 +210,12 @@ export function useInfluencersData(
       chartLabelByKey[key] = d;
     });
     
-    // Build daily map with all dates filled
+    // Build daily map with all dates filled (including today)
     const dailyMap = new Map<string, Record<string, number>>();
-    for (let i = 0; i < timeRangeDays; i++) {
-      const date = subDays(new Date(), timeRangeDays - 1 - i);
+    // timeRangeDays days ago to today = timeRangeDays + 1 entries, but we want exactly timeRangeDays
+    // So we go from (timeRangeDays - 1) days ago up to today (i=0)
+    for (let i = timeRangeDays - 1; i >= 0; i--) {
+      const date = subDays(new Date(), i);
       // IMPORTANT: Use the same date key logic as the mention bucketing below.
       // Using toISOString() can shift the day depending on timezone and cause
       // mismatches (all zeros) when dailyMap doesn't contain the mention date key.
