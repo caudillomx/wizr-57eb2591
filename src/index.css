@@ -160,3 +160,17 @@ Wizr Brand: Purple (#5A2FBA), Orange (#FF6B35), with light theme as default.
     box-shadow: 0 0 0 6px hsl(260 60% 45% / 0.4), 0 0 30px hsl(260 60% 45% / 0.3);
   }
 }
+
+/* Utility for text overflow control */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Prose text overflow fix for AI chat */
+.prose p,
+.prose li,
+.prose span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
