@@ -9,7 +9,7 @@ export interface DateRange {
 
 const DEFAULT_CUTOFF_HOUR = 8;
 
-export function useDateRangeFilter(defaultPreset: TimeRangePreset = "30d") {
+export function useDateRangeFilter(defaultPreset: TimeRangePreset = "day") {
   const [dateConfig, setDateConfig] = useState<DateRangeConfig>({
     type: defaultPreset,
     customDate: new Date(),

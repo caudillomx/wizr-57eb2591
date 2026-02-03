@@ -43,7 +43,7 @@ import {
 const TendenciasPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
-  const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("30d");
+  const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("day");
   const timeRange = dateConfig.type === "7d" ? "7d" : dateConfig.type === "90d" ? "90d" : "30d";
   const [selectedEntityId, setSelectedEntityId] = useState<string>("all");
 
