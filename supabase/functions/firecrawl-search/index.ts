@@ -1,6 +1,6 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req) => {
@@ -27,30 +27,65 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Searching news:', query);
+    console.log('Searching:', query, 'Options:', JSON.stringify(options || {}));
 
-    // NOTE: Firecrawl search can become slow/unreliable if we always scrape full content
-    // for every result (markdown/html). That often triggers client-side timeouts.
-    // We only request scrapeOptions when the caller explicitly asks for it.
-    const response = await fetch('https://api.firecrawl.dev/v1/search', {
+    // Build request body - NOTE: tbs temporal filter often returns 0 results in Firecrawl
+    // We request more results and let the client filter by date if needed
+    const requestBody: Record<string, unknown> = {
+      query,
+      limit: Math.min((options?.limit || 15) * 2, 50), // Request extra to compensate for client-side filtering
+      lang: options?.lang || 'es',
+      country: options?.country || 'MX',
+    };
+
+    // Only add tbs if explicitly requested, but warn that it may not work reliably
+    if (options?.tbs) {
+      console.log('Warning: tbs temporal filter may return 0 results. Using fallback strategy.');
+      // Try with tbs first, but we'll retry without it if we get 0 results
+    }
+
+    // Scrape options if requested
+    if (options?.scrapeOptions) {
+      requestBody.scrapeOptions = options.scrapeOptions;
+    }
+
+    // First attempt: try with tbs if provided
+    let response = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query,
-        limit: options?.limit || 10,
-        lang: options?.lang || 'es',
-        country: options?.country || 'MX',
-        tbs: options?.tbs, // Time filter: qdr:h, qdr:d, qdr:w, qdr:m
-        ...(options?.scrapeOptions
-          ? { scrapeOptions: options.scrapeOptions }
-          : {}),
+        ...requestBody,
+        ...(options?.tbs ? { tbs: options.tbs } : {}),
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // If tbs was used and returned 0 results, retry without tbs
+    if (options?.tbs && response.ok && (!data.data || data.data.length === 0)) {
+      console.log('tbs filter returned 0 results, retrying without temporal filter...');
+      
+      response = await fetch('https://api.firecrawl.dev/v1/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      data = await response.json();
+      
+      if (data.data && data.data.length > 0) {
+        console.log('Fallback successful, found', data.data.length, 'results (without temporal filter)');
+        // Add a warning so the client knows temporal filtering wasn't applied server-side
+        data.warning = 'Temporal filter not applied server-side. Results may include older content.';
+        data.tbsFallbackUsed = true;
+      }
+    }
 
     if (!response.ok) {
       console.error('Firecrawl API error:', data);
