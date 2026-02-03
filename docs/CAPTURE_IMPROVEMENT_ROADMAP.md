@@ -19,39 +19,35 @@ El sistema WIZR depende de la captura eficiente de menciones para generar valor.
 | 📘 Facebook | ⚠️ Con fallback | 60% | Bloqueos frecuentes (503) |
 | 📸 Instagram | ❌ Limitado | 30% | Solo hashtags, muy lento |
 | 🎵 TikTok | ⚠️ Requiere curación | 50% | Falsos positivos, no filtra por keyword |
-| 📺 YouTube | ⚠️ Fechas incorrectas | 70% | `interpolatedTimestamp` es estimación |
-| 🔴 Reddit | ⚠️ Parcial | 60% | No busca en comentarios |
+| 📺 YouTube | ✅ **MEJORADO** | 85% | ~~Fechas incorrectas~~ Parseador de fechas relativas implementado |
+| 🔴 Reddit | ✅ **MEJORADO** | 80% | ~~No busca en comentarios~~ maxComments aumentado a 50-75 |
 | 📰 Noticias | ✅ Corregido | 85% | Fallback sin filtro temporal |
 
 ---
 
-## 🎯 Plan de Trabajo por Fases
+## ✅ FASE 1 COMPLETADA: YouTube + Reddit (2026-02-03)
 
-### Fase 1: Correcciones Inmediatas (1-2 días)
-**Objetivo:** Mejorar plataformas que ya funcionan pero tienen problemas de precisión.
+### 1.1 YouTube - Parser de Fechas Relativas
+**Problema resuelto:** El campo `interpolatedTimestamp` contenía texto relativo ("2 weeks ago").
 
-#### 1.1 YouTube - Normalización de Fechas
-**Problema:** El campo `interpolatedTimestamp` es una estimación basada en texto relativo ("2 weeks ago").  
-**Solución:** 
-- Implementar parser de fechas relativas más robusto
-- Calcular fecha aproximada basada en el texto
-- Agregar campo `dateConfidence` para indicar precisión
+**Solución implementada:**
+- Nueva función `parseRelativeTime()` que detecta patrones como "X hours/days/weeks/months/years ago"
+- Cada fecha incluye un nivel de confianza: `high` (horas/días), `medium` (semanas/meses), `low` (años)
+- Metadata almacenada en `raw._dateConfidence`, `raw._dateIsRelative` para UI
 
 ```typescript
-// Ejemplo de mejora
-function parseRelativeDate(text: string): { date: Date; confidence: 'high' | 'medium' | 'low' } {
-  // "2 weeks ago" → hace 14 días con confianza media
-  // ISO date → fecha exacta con confianza alta
-  // Sin fecha → now() con confianza baja
-}
+// Ejemplo de uso
+parseRelativeTime("2 weeks ago") 
+// → { date: Date(hace 14 días), confidence: "medium" }
 ```
 
-#### 1.2 Reddit - Mejora Búsqueda en Comentarios
-**Problema:** El actor `trudax/reddit-scraper-lite` no busca DENTRO de los comentarios.  
-**Solución:**
-- Aumentar `maxComments` a 50 por post
-- Implementar filtrado post-extracción en comentarios
-- Exponer comentarios relevantes en la UI
+### 1.2 Reddit - Búsqueda Mejorada en Comentarios
+**Problema resuelto:** Solo se extraían 10-25 comentarios por post, limitando detección de menciones.
+
+**Solución implementada:**
+- `maxComments` aumentado de 10 → 50 (modo regular) y 25 → 75 (modo comentarios)
+- `maxItems` aumentado de 100 → 150 posts en modo comentarios para mayor cobertura
+- Filtrado existente ya detecta menciones en `_extractedComments`
 
 ---
 

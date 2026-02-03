@@ -147,23 +147,84 @@ function get(obj: unknown, path: string, defaultValue: unknown = undefined): unk
   return current ?? defaultValue;
 }
 
-// Helper to parse dates from various formats
-function parseDate(value: unknown): string {
-  if (!value) return new Date().toISOString();
+// Helper to parse relative time expressions (e.g., "2 weeks ago", "3 days ago")
+// Returns { date: Date, confidence: "high" | "medium" | "low" }
+function parseRelativeTime(text: string): { date: Date; confidence: "high" | "medium" | "low" } | null {
+  if (!text || typeof text !== "string") return null;
   
-  if (typeof value === "number") {
-    const timestamp = value > 1e12 ? value : value * 1000;
-    return new Date(timestamp).toISOString();
-  }
+  const now = new Date();
+  const lowerText = text.toLowerCase().trim();
   
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString();
+  // Patterns for relative time expressions
+  const patterns: Array<{ regex: RegExp; getMs: (n: number) => number; confidence: "high" | "medium" | "low" }> = [
+    // Hours
+    { regex: /(\d+)\s*hour(?:s)?\s*ago/i, getMs: (n) => n * 60 * 60 * 1000, confidence: "high" },
+    // Days
+    { regex: /(\d+)\s*day(?:s)?\s*ago/i, getMs: (n) => n * 24 * 60 * 60 * 1000, confidence: "high" },
+    // Weeks
+    { regex: /(\d+)\s*week(?:s)?\s*ago/i, getMs: (n) => n * 7 * 24 * 60 * 60 * 1000, confidence: "medium" },
+    // Months (approximate as 30 days)
+    { regex: /(\d+)\s*month(?:s)?\s*ago/i, getMs: (n) => n * 30 * 24 * 60 * 60 * 1000, confidence: "medium" },
+    // Years (approximate as 365 days)
+    { regex: /(\d+)\s*year(?:s)?\s*ago/i, getMs: (n) => n * 365 * 24 * 60 * 60 * 1000, confidence: "low" },
+    // Special cases
+    { regex: /yesterday/i, getMs: () => 24 * 60 * 60 * 1000, confidence: "high" },
+    { regex: /today|just now|moments? ago/i, getMs: () => 0, confidence: "high" },
+  ];
+  
+  for (const { regex, getMs, confidence } of patterns) {
+    const match = lowerText.match(regex);
+    if (match) {
+      const value = match[1] ? parseInt(match[1], 10) : 1;
+      const msAgo = getMs(value);
+      const date = new Date(now.getTime() - msAgo);
+      return { date, confidence };
     }
   }
   
-  return new Date().toISOString();
+  return null;
+}
+
+// Helper to parse dates from various formats
+// Returns an object with date and optional confidence level
+interface ParsedDate {
+  isoString: string;
+  confidence?: "high" | "medium" | "low";
+  isRelative?: boolean;
+}
+
+function parseDateWithConfidence(value: unknown): ParsedDate {
+  if (!value) return { isoString: new Date().toISOString(), confidence: "low" };
+  
+  if (typeof value === "number") {
+    const timestamp = value > 1e12 ? value : value * 1000;
+    return { isoString: new Date(timestamp).toISOString(), confidence: "high" };
+  }
+  
+  if (typeof value === "string") {
+    // First try to parse as ISO date
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) {
+      return { isoString: parsed.toISOString(), confidence: "high" };
+    }
+    
+    // Try to parse relative time expressions (e.g., "2 weeks ago")
+    const relativeResult = parseRelativeTime(value);
+    if (relativeResult) {
+      return {
+        isoString: relativeResult.date.toISOString(),
+        confidence: relativeResult.confidence,
+        isRelative: true,
+      };
+    }
+  }
+  
+  return { isoString: new Date().toISOString(), confidence: "low" };
+}
+
+// Backwards-compatible helper
+function parseDate(value: unknown): string {
+  return parseDateWithConfidence(value).isoString;
 }
 
 function extractHashtags(text: string): string[] {
@@ -680,9 +741,14 @@ function normalizeYouTube(item: Record<string, unknown>, index: number): Normali
   const videoId = String(get(item, "id") || get(item, "videoId") || "");
 
   // Handle interpolatedTimestamp from free-youtube-search-scraper
-  const publishedAt = get(item, "interpolatedTimestamp") 
-    ? parseDate(get(item, "interpolatedTimestamp"))
-    : parseDate(get(item, "publishedAt") || get(item, "publishedTimeText") || get(item, "date") || get(item, "uploadDate"));
+  // This field often contains relative text like "2 weeks ago" which we parse with confidence levels
+  const rawDateValue = get(item, "interpolatedTimestamp") || 
+    get(item, "publishedAt") || 
+    get(item, "publishedTimeText") || 
+    get(item, "date") || 
+    get(item, "uploadDate");
+  
+  const parsedDate = parseDateWithConfidence(rawDateValue);
 
   return {
     id: `youtube-${videoId || index}-${Date.now()}`,
@@ -699,7 +765,7 @@ function normalizeYouTube(item: Record<string, unknown>, index: number): Normali
       followers: Number(get(channel, "subscriberCount") || get(item, "channelSubscribers") || 0),
     },
     metrics: { ...metrics, engagement: calculateEngagement(metrics) },
-    publishedAt: publishedAt,
+    publishedAt: parsedDate.isoString,
     url: String(get(item, "url") || (videoId ? `https://youtube.com/watch?v=${videoId}` : "")),
     contentType: "video",
     media: {
@@ -708,8 +774,14 @@ function normalizeYouTube(item: Record<string, unknown>, index: number): Normali
       thumbnailUrl: String(get(item, "thumbnailUrl") || get(item, "thumbnail") || ""),
     },
     hashtags: (get(item, "hashtags") as string[]) || extractHashtags(description),
-    // Store raw item with searchable text for debugging
-    raw: { ...item, _searchableText: allTextForSearch },
+    // Store raw item with date metadata for debugging and UI display
+    raw: { 
+      ...item, 
+      _searchableText: allTextForSearch,
+      _dateConfidence: parsedDate.confidence,
+      _dateIsRelative: parsedDate.isRelative,
+      _rawDateValue: rawDateValue,
+    },
   };
 }
 
