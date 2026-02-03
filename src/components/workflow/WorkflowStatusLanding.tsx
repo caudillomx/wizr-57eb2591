@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { useWorkflowState, type StepState } from "@/hooks/useWorkflowState";
 import { useProject } from "@/contexts/ProjectContext";
 import { cn } from "@/lib/utils";
+import { DailyIntelligenceSummary } from "@/components/dashboard/DailyIntelligenceSummary";
 
 const stepIcons: Record<string, typeof Settings> = {
   define: Settings,
@@ -202,6 +203,12 @@ export function WorkflowStatusLanding() {
           <Progress value={progress} className="h-2" />
         </CardContent>
       </Card>
+
+      {/* Daily Intelligence Summary */}
+      <DailyIntelligenceSummary 
+        projectId={selectedProject.id} 
+        projectName={selectedProject.nombre} 
+      />
 
       {/* Step Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2">
