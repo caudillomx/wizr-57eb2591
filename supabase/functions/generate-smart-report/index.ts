@@ -403,29 +403,69 @@ Responde en formato JSON con esta estructura exacta:
       throw new Error("No content in AI response");
     }
 
-    // Parse JSON from response
+    // Parse JSON from response - robust extraction
     let reportContent: Partial<ReportContent>;
     try {
       // First, clean the content - remove markdown code blocks if present
       let cleanedContent = content;
       
-      // Remove ```json ... ``` blocks
-      const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (codeBlockMatch) {
-        cleanedContent = codeBlockMatch[1].trim();
-      }
+      // Remove ```json ... ``` blocks (handle both single and multiple)
+      cleanedContent = cleanedContent.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
       
-      // Extract JSON object from cleaned content
-      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        // Additional cleanup: remove any trailing text after the JSON
-        const jsonStr = jsonMatch[0];
-        reportContent = JSON.parse(jsonStr);
+      // Find the JSON object by matching balanced braces
+      const extractBalancedJSON = (str: string): string | null => {
+        const startIndex = str.indexOf('{');
+        if (startIndex === -1) return null;
+        
+        let braceCount = 0;
+        let inString = false;
+        let escapeNext = false;
+        
+        for (let i = startIndex; i < str.length; i++) {
+          const char = str[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\' && inString) {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{') braceCount++;
+            if (char === '}') braceCount--;
+            
+            if (braceCount === 0) {
+              return str.substring(startIndex, i + 1);
+            }
+          }
+        }
+        return null;
+      };
+      
+      const jsonStr = extractBalancedJSON(cleanedContent);
+      if (jsonStr) {
+        // Sanitize control characters that break JSON parsing
+        const sanitized = jsonStr
+          .replace(/[\x00-\x1F\x7F]/g, (match) => {
+            // Keep newlines and tabs within strings, escape others
+            if (match === '\n' || match === '\r' || match === '\t') return match;
+            return '';
+          });
+        reportContent = JSON.parse(sanitized);
       } else {
-        throw new Error("No JSON found in response");
+        throw new Error("No valid JSON object found in response");
       }
     } catch (parseError) {
-      console.error("JSON parse error:", parseError, "Content:", content.substring(0, 500));
+      console.error("JSON parse error:", parseError, "Content:", content.substring(0, 800));
       // Fallback: create structure from raw text (without the code block markers)
       const cleanText = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
       reportContent = {
