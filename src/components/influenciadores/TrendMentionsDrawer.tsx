@@ -19,6 +19,7 @@ interface Mention {
   source_domain: string | null;
   sentiment: string | null;
   created_at: string;
+  published_at?: string | null;
   matched_keywords: string[];
 }
 
@@ -40,12 +41,13 @@ export function TrendMentionsDrawer({
   mentions,
 }: TrendMentionsDrawerProps) {
   // Filter mentions by the selected date and source domain
-  // Use sourceLabel (the original domain name) for comparison, not sourceDomain (the chart key)
+  // Use published_at (preferred) or created_at as fallback for date matching
+  // Use sourceLabel (the original domain name) for comparison
   const filteredMentions = mentions.filter((m) => {
-    const mentionDate = format(new Date(m.created_at), "yyyy-MM-dd");
+    // Use published_at if available, otherwise fall back to created_at
+    const effectiveDate = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
+    const mentionDate = format(effectiveDate, "yyyy-MM-dd");
     const normalizedMentionDomain = normalizeDomain(m.source_domain || "");
-    // sourceLabel contains the original domain (e.g., "msn.com", "linkedin")
-    // which matches what normalizeDomain returns
     const normalizedFilterDomain = normalizeDomain(sourceLabel || sourceDomain || "");
     
     return mentionDate === date && normalizedMentionDomain === normalizedFilterDomain;
@@ -179,9 +181,14 @@ export function TrendMentionsDrawer({
                   <div className="flex items-center justify-between mt-3 pt-2 border-t">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {format(new Date(mention.created_at), "d MMM yyyy HH:mm", {
-                        locale: es,
-                      })}
+                      {format(
+                        new Date(mention.published_at || mention.created_at), 
+                        "d MMM yyyy HH:mm", 
+                        { locale: es }
+                      )}
+                      {!mention.published_at && (
+                        <span className="text-muted-foreground/60">(captura)</span>
+                      )}
                     </span>
                     <button
                       onClick={(e) => {
