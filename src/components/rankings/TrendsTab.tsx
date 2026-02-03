@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { TrendingUp, ChevronDown, ChevronUp, Users } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -57,6 +59,7 @@ const formatValue = (value: number | null, metric: MetricType): string => {
 export function TrendsTab({ profiles, kpis, isLoading }: TrendsTabProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("engagement_rate");
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
+  const [isProfilesOpen, setIsProfilesOpen] = useState(false);
 
   // Group KPIs by date and profile
   const chartData = useMemo(() => {
@@ -158,25 +161,69 @@ export function TrendsTab({ profiles, kpis, isLoading }: TrendsTabProps) {
         </div>
       </div>
 
-      {/* Profile selection */}
-      <div className="flex flex-wrap gap-2">
-        <span className="text-sm text-muted-foreground mr-2 self-center">Perfiles:</span>
-        {profiles.map((profile, index) => {
-          const isSelected = selectedProfiles.length === 0 
-            ? index < 5 
-            : selectedProfiles.includes(profile.id);
-          return (
-            <Badge
-              key={profile.id}
-              variant={isSelected ? "default" : "outline"}
-              className="cursor-pointer transition-colors"
-              onClick={() => toggleProfile(profile.id)}
-            >
-              @{profile.profile_id}
-            </Badge>
-          );
-        })}
-      </div>
+      {/* Profile selection - Collapsible */}
+      <Collapsible open={isProfilesOpen} onOpenChange={setIsProfilesOpen}>
+        <div className="flex items-center gap-3">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span>Perfiles</span>
+              <Badge variant="secondary" className="ml-1">
+                {selectedProfiles.length > 0 ? selectedProfiles.length : Math.min(5, profiles.length)} de {profiles.length}
+              </Badge>
+              {isProfilesOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          
+          {/* Show selected profiles as chips when collapsed */}
+          {!isProfilesOpen && selectedProfiles.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {profiles
+                .filter(p => selectedProfiles.includes(p.id))
+                .slice(0, 5)
+                .map((profile) => (
+                  <Badge key={profile.id} variant="default" className="text-xs">
+                    @{profile.profile_id}
+                  </Badge>
+                ))}
+              {selectedProfiles.length > 5 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{selectedProfiles.length - 5} más
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <CollapsibleContent className="mt-3">
+          <div className="p-3 border rounded-lg bg-muted/30">
+            <div className="flex flex-wrap gap-2">
+              {profiles.map((profile, index) => {
+                const isSelected = selectedProfiles.length === 0 
+                  ? index < 5 
+                  : selectedProfiles.includes(profile.id);
+                return (
+                  <Badge
+                    key={profile.id}
+                    variant={isSelected ? "default" : "outline"}
+                    className="cursor-pointer transition-colors hover:opacity-80"
+                    onClick={() => toggleProfile(profile.id)}
+                  >
+                    @{profile.profile_id}
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Haz clic en los perfiles para seleccionar/deseleccionar. Máximo 8 perfiles.
+            </p>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Chart */}
       <Card>
