@@ -47,7 +47,7 @@ const ComparativaPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
-  const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("30d");
+  const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("day");
 
   const { entities, comparativeData, isLoading } = useComparativeData(
     selectedProject?.id,

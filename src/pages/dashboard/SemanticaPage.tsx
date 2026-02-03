@@ -23,7 +23,7 @@ import {
 const SemanticaPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
-  const { dateConfig, setDateConfig, startDate, endDate } = useDateRangeFilter("30d");
+  const { dateConfig, setDateConfig, startDate, endDate } = useDateRangeFilter("day");
 
   const { mentions, isLoading: mentionsLoading } = useMentions(
     selectedProject?.id,

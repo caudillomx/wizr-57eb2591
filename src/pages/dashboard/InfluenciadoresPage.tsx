@@ -64,7 +64,7 @@ const NEWS_KEYWORDS = [
 
 const InfluenciadoresPage = () => {
   const { selectedProject } = useProject();
-  const { dateConfig, setDateConfig, daysRange } = useDateRangeFilter("30d");
+  const { dateConfig, setDateConfig, daysRange } = useDateRangeFilter("day");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [sourceTypeFilter, setSourceTypeFilter] = useState<SourceType>("all");
