@@ -40,10 +40,13 @@ export function TrendMentionsDrawer({
   mentions,
 }: TrendMentionsDrawerProps) {
   // Filter mentions by the selected date and source domain
+  // Use sourceLabel (the original domain name) for comparison, not sourceDomain (the chart key)
   const filteredMentions = mentions.filter((m) => {
     const mentionDate = format(new Date(m.created_at), "yyyy-MM-dd");
     const normalizedMentionDomain = normalizeDomain(m.source_domain || "");
-    const normalizedFilterDomain = normalizeDomain(sourceDomain || "");
+    // sourceLabel contains the original domain (e.g., "msn.com", "linkedin")
+    // which matches what normalizeDomain returns
+    const normalizedFilterDomain = normalizeDomain(sourceLabel || sourceDomain || "");
     
     return mentionDate === date && normalizedMentionDomain === normalizedFilterDomain;
   });
