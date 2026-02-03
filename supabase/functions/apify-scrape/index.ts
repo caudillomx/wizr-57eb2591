@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,21 +9,112 @@ const corsHeaders = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// =============================================================================
+// META RESILIENCE SYSTEM - Multi-actor rotation with cooldowns
+// =============================================================================
+
+// Actor configuration with priority, cooldown, and success tracking
+interface ActorConfig {
+  id: string;
+  name: string;
+  priority: number; // Lower = higher priority
+  cooldownMinutes: number; // How long to wait after failure before retry
+  lastFailure?: number; // Timestamp of last failure
+  consecutiveFailures?: number;
+}
+
+// Facebook actors pool (ordered by priority)
+const FACEBOOK_ACTORS_POOL: ActorConfig[] = [
+  { id: "powerai/facebook-post-search-scraper", name: "powerai", priority: 1, cooldownMinutes: 30 },
+  { id: "scraper_one/facebook-posts-search", name: "scraper_one", priority: 2, cooldownMinutes: 15 },
+  { id: "microworlds/facebook-post-search-scraper", name: "microworlds", priority: 3, cooldownMinutes: 20 },
+];
+
+// Instagram actors pool (ordered by priority)
+const INSTAGRAM_ACTORS_POOL: ActorConfig[] = [
+  { id: "apify/instagram-scraper", name: "apify_scraper", priority: 1, cooldownMinutes: 30 },
+  { id: "apify/instagram-hashtag-scraper", name: "apify_hashtag", priority: 2, cooldownMinutes: 20 },
+  { id: "microworlds/instagram-scraper", name: "microworlds", priority: 3, cooldownMinutes: 15 },
+];
+
+// In-memory cooldown tracker (resets on cold start, but sufficient for short-term rotation)
+// Format: { "actor_id": { lastFailure: timestamp, consecutiveFailures: number } }
+const actorCooldowns: Map<string, { lastFailure: number; consecutiveFailures: number }> = new Map();
+
+// Check if an actor is in cooldown
+function isActorInCooldown(actor: ActorConfig): boolean {
+  const cooldownData = actorCooldowns.get(actor.id);
+  if (!cooldownData) return false;
+  
+  const cooldownMs = actor.cooldownMinutes * 60 * 1000;
+  const timeSinceFailure = Date.now() - cooldownData.lastFailure;
+  
+  // Exponential backoff: double cooldown for each consecutive failure (max 4x)
+  const multiplier = Math.min(Math.pow(2, cooldownData.consecutiveFailures - 1), 4);
+  const effectiveCooldown = cooldownMs * multiplier;
+  
+  return timeSinceFailure < effectiveCooldown;
+}
+
+// Mark actor as failed
+function markActorFailed(actorId: string): void {
+  const existing = actorCooldowns.get(actorId);
+  actorCooldowns.set(actorId, {
+    lastFailure: Date.now(),
+    consecutiveFailures: (existing?.consecutiveFailures || 0) + 1,
+  });
+  console.log(`Actor ${actorId} marked as failed. Consecutive failures: ${actorCooldowns.get(actorId)?.consecutiveFailures}`);
+}
+
+// Mark actor as successful (reset cooldown)
+function markActorSuccess(actorId: string): void {
+  actorCooldowns.delete(actorId);
+  console.log(`Actor ${actorId} succeeded, cooldown reset.`);
+}
+
+// Get next available actor from pool (respecting cooldowns and priority)
+function getNextAvailableActor(pool: ActorConfig[]): ActorConfig | null {
+  // Sort by priority and filter out those in cooldown
+  const available = pool
+    .filter(actor => !isActorInCooldown(actor))
+    .sort((a, b) => a.priority - b.priority);
+  
+  if (available.length > 0) {
+    console.log(`Available actors: ${available.map(a => a.name).join(", ")}`);
+    return available[0];
+  }
+  
+  // All actors in cooldown - return the one with shortest remaining cooldown
+  const byRemainingCooldown = pool
+    .map(actor => {
+      const data = actorCooldowns.get(actor.id);
+      if (!data) return { actor, remaining: 0 };
+      const cooldownMs = actor.cooldownMinutes * 60 * 1000;
+      const multiplier = Math.min(Math.pow(2, data.consecutiveFailures - 1), 4);
+      const remaining = (data.lastFailure + cooldownMs * multiplier) - Date.now();
+      return { actor, remaining: Math.max(0, remaining) };
+    })
+    .sort((a, b) => a.remaining - b.remaining);
+  
+  console.warn(`All actors in cooldown. Forcing use of ${byRemainingCooldown[0].actor.name} (${Math.round(byRemainingCooldown[0].remaining / 1000)}s remaining)`);
+  return byRemainingCooldown[0].actor;
+}
+
 // Apify Actor IDs for different platforms
 const ACTOR_IDS: Record<string, string> = {
   // Twitter/X: powerai/twitter-search-scraper (rented, $4.99/1000 results)
   twitter: "powerai/twitter-search-scraper",
-  // Facebook: powerai/facebook-post-search-scraper (5.0 rating, $9.99/1000 results)
-  facebook: "powerai/facebook-post-search-scraper",
-  // Facebook fallback: scraper_one/facebook-posts-search (4.4 rating, more reliable)
+  // Facebook: handled by META_RESILIENCE system
+  facebook: "__META_RESILIENCE_FACEBOOK__",
+  // Facebook fallback markers (for backwards compatibility)
   facebook_fallback: "scraper_one/facebook-posts-search",
   // Facebook page-specific scraper (fallback for username searches)
   facebook_page: "apify/facebook-posts-scraper",
   // TikTok: powerai/tiktok-videos-search-scraper
   tiktok: "powerai/tiktok-videos-search-scraper",
-  // Instagram: apify/instagram-hashtag-scraper ($2.30/1000 results, maintained by Apify)
-  instagram: "apify/instagram-hashtag-scraper",
-  // Instagram profile scraper for username-based searches (scrapes posts from specific profiles)
+  // Instagram: handled by META_RESILIENCE system
+  instagram: "__META_RESILIENCE_INSTAGRAM__",
+  // Instagram profile scraper for username-based searches (direct, no rotation)
   instagram_profile: "apify/instagram-profile-scraper",
   // YouTube: scraper_one/youtube-search-scraper (better results quality, sorted by upload_date)
   youtube: "scraper_one/youtube-search-scraper",
@@ -36,7 +128,7 @@ const ACTOR_IDS: Record<string, string> = {
   linkedin: "harvestapi/linkedin-post-search",
 };
 
-// Facebook-specific fallback actors (tried in order)
+// Legacy Facebook actors array (kept for backwards compatibility)
 const FACEBOOK_ACTORS = [
   { id: "powerai/facebook-post-search-scraper", name: "powerai" },
   { id: "scraper_one/facebook-posts-search", name: "scraper_one" },
@@ -247,10 +339,10 @@ serve(async (req) => {
             resultsType: "posts", // Get posts from profiles
           };
         }
-        // CASE 3: Hashtag-based search with optional caption filter
+        // CASE 3: Hashtag-based search with optional caption filter - USE META RESILIENCE
         else if (hashtag || query) {
-          // Use Instagram Hashtag Scraper
-          actorId = ACTOR_IDS.instagram; // apify/instagram-hashtag-scraper
+          // Use Meta Resilience system for hashtag searches
+          actorId = "__META_RESILIENCE_INSTAGRAM__";
           
           const igHashtags: string[] = [];
           
@@ -273,7 +365,7 @@ serve(async (req) => {
           // Remove duplicates
           const uniqueHashtags = [...new Set(igHashtags)];
           
-          console.log(`Instagram hashtag search: ${JSON.stringify(uniqueHashtags)}${captionFilter ? ` with caption filter: ${captionFilter}` : ""}`);
+          console.log(`Instagram hashtag search (META_RESILIENCE): ${JSON.stringify(uniqueHashtags)}${captionFilter ? ` with caption filter: ${captionFilter}` : ""}`);
           
           if (uniqueHashtags.length === 0) {
             throw new Error("Instagram requires at least one valid hashtag.");
@@ -281,7 +373,8 @@ serve(async (req) => {
           
           input = {
             hashtags: uniqueHashtags,
-            resultsLimit: Math.min(maxResults, 100), // Get more results for post-filtering
+            resultsLimit: Math.min(maxResults, 100),
+            _igHashtags: uniqueHashtags, // Store for resilience handler
           };
         }
         else {
@@ -392,9 +485,16 @@ serve(async (req) => {
 
     console.log(`Starting Apify actor ${actorId} with input:`, JSON.stringify(input));
 
-    // Special handling for Facebook with automatic fallback
+    // Special handling for Facebook with automatic fallback (Meta Resilience)
     if (actorId === "__FACEBOOK_WITH_FALLBACK__") {
       return await handleFacebookWithFallback(APIFY_API_TOKEN, input, query || "");
+    }
+    
+    // Special handling for Instagram hashtag search with Meta Resilience
+    if (actorId === "__META_RESILIENCE_INSTAGRAM__") {
+      const igHashtags = (input._igHashtags as string[]) || [];
+      delete input._igHashtags; // Clean up internal field
+      return await handleInstagramWithResilience(APIFY_API_TOKEN, input, igHashtags);
     }
 
     // Start the actor run
@@ -457,35 +557,46 @@ serve(async (req) => {
   }
 });
 
-// Facebook fallback handler with automatic retry on different actors
-async function handleFacebookWithFallback(
+// =============================================================================
+// META RESILIENCE HANDLERS - Facebook and Instagram with smart rotation
+// =============================================================================
+
+// Generic Meta platform handler with cooldown-aware rotation
+async function handleMetaWithResilience(
   apiToken: string,
+  platform: "facebook" | "instagram",
   primaryInput: Record<string, unknown>,
-  query: string
+  query: string,
+  searchContext: { hashtags?: string[]; username?: string }
 ): Promise<Response> {
-  const errors: Array<{ actor: string; status: number; error: string }> = [];
+  const pool = platform === "facebook" ? FACEBOOK_ACTORS_POOL : INSTAGRAM_ACTORS_POOL;
+  const errors: Array<{ actor: string; status: number; error: string; inCooldown: boolean }> = [];
+  const triedActors: string[] = [];
   
-  for (const actor of FACEBOOK_ACTORS) {
-    console.log(`Trying Facebook actor: ${actor.name} (${actor.id})`);
+  // Get actors sorted by availability (not in cooldown first, then by priority)
+  const sortedActors = [...pool].sort((a, b) => {
+    const aInCooldown = isActorInCooldown(a);
+    const bInCooldown = isActorInCooldown(b);
+    if (aInCooldown !== bInCooldown) return aInCooldown ? 1 : -1;
+    return a.priority - b.priority;
+  });
+  
+  console.log(`[META_RESILIENCE] Starting ${platform} search with ${sortedActors.length} available actors`);
+  console.log(`[META_RESILIENCE] Actor order: ${sortedActors.map(a => `${a.name}${isActorInCooldown(a) ? " (cooldown)" : ""}`).join(", ")}`);
+  
+  for (const actor of sortedActors) {
+    const inCooldown = isActorInCooldown(actor);
+    if (inCooldown && triedActors.length < sortedActors.length - 1) {
+      // Skip actors in cooldown if we have alternatives
+      console.log(`[META_RESILIENCE] Skipping ${actor.name} - in cooldown`);
+      continue;
+    }
+    
+    triedActors.push(actor.id);
+    console.log(`[META_RESILIENCE] Trying ${platform} actor: ${actor.name} (${actor.id})${inCooldown ? " [FORCED - all in cooldown]" : ""}`);
     
     // Build input based on actor type
-    let input: Record<string, unknown>;
-    
-    if (actor.name === "powerai") {
-      // powerai uses: query, maxResults, recent_posts, start_date, end_date
-      input = primaryInput;
-    } else if (actor.name === "scraper_one") {
-      // scraper_one/facebook-posts-search: schema differs across versions; some require `query`.
-      // Send both to be safe.
-      input = {
-        query,
-        searchQueries: [query],
-        maxPosts: primaryInput.maxResults || 50,
-        maxResults: primaryInput.maxResults || 50,
-      };
-    } else {
-      input = primaryInput;
-    }
+    const input = buildActorInput(platform, actor, primaryInput, query, searchContext);
     
     const actorPathId = actor.id.replace("/", "~");
     
@@ -504,27 +615,29 @@ async function handleFacebookWithFallback(
         const runId = runData.data.id;
         const datasetId = runData.data.defaultDatasetId;
 
-        // IMPORTANT: Facebook actors sometimes "start OK" but fail quickly inside the run
-        // with a transient 5xx (e.g., "API request failed with status 503").
-        // In that case we want to auto-fallback to the next actor *without*
-        // changing the frontend flow.
-        const failFast = await detectFacebookFastFail(apiToken, runId);
+        // Check for fast-fail (run starts but fails quickly due to block)
+        const failFast = await detectMetaFastFail(apiToken, runId, platform);
         if (failFast.isFastFail) {
-          console.warn(
-            `Facebook actor ${actor.name} fast-failed (runId=${runId}). Reason: ${failFast.reason}`
-          );
+          console.warn(`[META_RESILIENCE] ${platform} actor ${actor.name} fast-failed (runId=${runId}). Reason: ${failFast.reason}`);
+          
+          // Mark actor as failed with cooldown
+          markActorFailed(actor.id);
 
           errors.push({
             actor: actor.id,
             status: failFast.statusCode ?? 503,
             error: (failFast.reason || "Fast fail").substring(0, 200),
+            inCooldown: true,
           });
 
           // Try next actor
           continue;
         }
 
-        console.log(`Facebook actor ${actor.name} started successfully. Run ID: ${runId}`);
+        // Success! Reset cooldown for this actor
+        markActorSuccess(actor.id);
+        
+        console.log(`[META_RESILIENCE] ${platform} actor ${actor.name} started successfully. Run ID: ${runId}`);
 
         return new Response(
           JSON.stringify({
@@ -533,41 +646,50 @@ async function handleFacebookWithFallback(
             datasetId,
             status: runData.data.status,
             actorUsed: actor.id,
-            fallbackUsed: actor.name !== "powerai",
+            actorName: actor.name,
+            fallbackUsed: actor.priority > 1,
             previousErrors: errors.length > 0 ? errors : undefined,
+            cooldownStatus: getCooldownStatus(pool),
             message:
               errors.length > 0
-                ? `Actor primario falló. Usando fallback: ${actor.name}`
+                ? `Actor primario falló. Usando: ${actor.name}`
                 : "Scraping job started. Use the status endpoint to check progress.",
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      // Actor failed - record error and try next
+      // Actor failed - record error, mark cooldown, and try next
       const errorText = await runResponse.text();
-      console.error(`Facebook actor ${actor.name} failed:`, runResponse.status, errorText);
+      console.error(`[META_RESILIENCE] ${platform} actor ${actor.name} failed:`, runResponse.status, errorText);
+      
+      // Only mark as failed for 5xx errors (not for 4xx which are usually config issues)
+      if (runResponse.status >= 500) {
+        markActorFailed(actor.id);
+      }
       
       errors.push({
         actor: actor.id,
         status: runResponse.status,
-        error: errorText.substring(0, 200), // Truncate for response size
+        error: errorText.substring(0, 200),
+        inCooldown: runResponse.status >= 500,
       });
       
-      // Only retry on 5xx errors (service unavailable, etc.)
-      // For 4xx errors (invalid input, not rented), don't retry
-      if (runResponse.status < 500) {
-        console.log(`Actor ${actor.name} returned ${runResponse.status} - not retrying`);
-        break;
+      // For 4xx errors (invalid input, not rented), don't retry with same input
+      if (runResponse.status >= 400 && runResponse.status < 500) {
+        console.log(`[META_RESILIENCE] Actor ${actor.name} returned ${runResponse.status} - not retrying (client error)`);
+        // Don't break - try other actors with potentially different input formats
       }
       
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Network error";
-      console.error(`Facebook actor ${actor.name} network error:`, errorMsg);
+      console.error(`[META_RESILIENCE] ${platform} actor ${actor.name} network error:`, errorMsg);
+      markActorFailed(actor.id);
       errors.push({
         actor: actor.id,
         status: 0,
         error: errorMsg,
+        inCooldown: true,
       });
     }
   }
@@ -577,11 +699,13 @@ async function handleFacebookWithFallback(
   return new Response(
     JSON.stringify({
       success: false,
-      error: `Todos los actores de Facebook fallaron. Último error: ${lastError?.error || "Unknown"}`,
+      error: `Todos los actores de ${platform} fallaron. Último error: ${lastError?.error || "Unknown"}`,
       errorCode: lastError?.status || 503,
       errorDetails: errors,
-      platform: "facebook",
+      platform,
+      cooldownStatus: getCooldownStatus(pool),
       retriable: true,
+      retryAfterSeconds: getMinCooldownRemaining(pool),
     }),
     { 
       status: lastError?.status || 503, 
@@ -590,19 +714,127 @@ async function handleFacebookWithFallback(
   );
 }
 
-type FacebookFastFailResult = {
+// Build actor-specific input based on platform and actor type
+function buildActorInput(
+  platform: "facebook" | "instagram",
+  actor: ActorConfig,
+  primaryInput: Record<string, unknown>,
+  query: string,
+  context: { hashtags?: string[]; username?: string }
+): Record<string, unknown> {
+  if (platform === "facebook") {
+    switch (actor.name) {
+      case "powerai":
+        return primaryInput;
+      case "scraper_one":
+        return {
+          query,
+          searchQueries: [query],
+          maxPosts: primaryInput.maxResults || 50,
+          maxResults: primaryInput.maxResults || 50,
+        };
+      case "microworlds":
+        return {
+          searchQuery: query,
+          maxPosts: primaryInput.maxResults || 50,
+        };
+      default:
+        return primaryInput;
+    }
+  } else {
+    // Instagram
+    switch (actor.name) {
+      case "apify_scraper":
+        // apify/instagram-scraper - general purpose
+        return {
+          hashtags: context.hashtags || [],
+          resultsLimit: Math.min((primaryInput.resultsLimit as number) || 50, 100),
+          searchType: "hashtag",
+        };
+      case "apify_hashtag":
+        // apify/instagram-hashtag-scraper - hashtag focused
+        return {
+          hashtags: context.hashtags || [],
+          resultsLimit: Math.min((primaryInput.resultsLimit as number) || 50, 100),
+        };
+      case "microworlds":
+        // microworlds/instagram-scraper
+        return {
+          hashtags: context.hashtags || [],
+          maxPosts: Math.min((primaryInput.resultsLimit as number) || 50, 100),
+        };
+      default:
+        return primaryInput;
+    }
+  }
+}
+
+// Get cooldown status for all actors in a pool
+function getCooldownStatus(pool: ActorConfig[]): Record<string, { inCooldown: boolean; remainingSeconds: number; consecutiveFailures: number }> {
+  const status: Record<string, { inCooldown: boolean; remainingSeconds: number; consecutiveFailures: number }> = {};
+  
+  for (const actor of pool) {
+    const data = actorCooldowns.get(actor.id);
+    if (!data) {
+      status[actor.name] = { inCooldown: false, remainingSeconds: 0, consecutiveFailures: 0 };
+    } else {
+      const cooldownMs = actor.cooldownMinutes * 60 * 1000;
+      const multiplier = Math.min(Math.pow(2, data.consecutiveFailures - 1), 4);
+      const remaining = Math.max(0, (data.lastFailure + cooldownMs * multiplier) - Date.now());
+      status[actor.name] = {
+        inCooldown: remaining > 0,
+        remainingSeconds: Math.round(remaining / 1000),
+        consecutiveFailures: data.consecutiveFailures,
+      };
+    }
+  }
+  
+  return status;
+}
+
+// Get minimum cooldown remaining across all actors
+function getMinCooldownRemaining(pool: ActorConfig[]): number {
+  let minRemaining = Infinity;
+  
+  for (const actor of pool) {
+    const data = actorCooldowns.get(actor.id);
+    if (!data) return 0; // At least one actor available immediately
+    
+    const cooldownMs = actor.cooldownMinutes * 60 * 1000;
+    const multiplier = Math.min(Math.pow(2, data.consecutiveFailures - 1), 4);
+    const remaining = Math.max(0, (data.lastFailure + cooldownMs * multiplier) - Date.now());
+    minRemaining = Math.min(minRemaining, remaining);
+  }
+  
+  return Math.round(minRemaining / 1000);
+}
+
+// Legacy handler - redirects to new resilience system
+async function handleFacebookWithFallback(
+  apiToken: string,
+  primaryInput: Record<string, unknown>,
+  query: string
+): Promise<Response> {
+  return handleMetaWithResilience(apiToken, "facebook", primaryInput, query, {});
+}
+
+// Instagram resilience handler
+async function handleInstagramWithResilience(
+  apiToken: string,
+  primaryInput: Record<string, unknown>,
+  hashtags: string[]
+): Promise<Response> {
+  return handleMetaWithResilience(apiToken, "instagram", primaryInput, hashtags.join(" "), { hashtags });
+}
+
+type MetaFastFailResult = {
   isFastFail: boolean;
   statusCode?: number;
   reason?: string;
 };
 
-// Detects the common case where the run starts but immediately FAILS due to transient upstream 5xx.
-// We only use this to decide whether to auto-fallback to the next actor.
-async function detectFacebookFastFail(apiToken: string, runId: string): Promise<FacebookFastFailResult> {
-  // A few short polls (<= ~10s) to avoid delaying the UI too much.
-  // NOTE: Sometimes Apify marks the run as FAILED before logs are fully available.
-  // In that case, we retry fetching logs briefly and still fall back if the run failed
-  // very quickly (strong signal of transient upstream blocks for Facebook).
+// Detects fast-fail for both Facebook and Instagram
+async function detectMetaFastFail(apiToken: string, runId: string, platform: string): Promise<MetaFastFailResult> {
   const delays = [800, 1500, 2000, 2500, 3000];
   const startedAt = Date.now();
 
@@ -619,11 +851,10 @@ async function detectFacebookFastFail(apiToken: string, runId: string): Promise<
       const exitCode = json?.data?.exitCode;
 
       if (status === "FAILED" || status === "ABORTED" || status === "TIMED-OUT") {
-        // Try to fetch last logs tail to identify 5xx cause.
         const logTail = await fetchApifyLogTail(apiToken, runId, { retries: 3, retryDelayMs: 600 });
         const combined = `${logTail || ""}`.toLowerCase();
 
-        // Match known transient upstream errors.
+        // Match known transient upstream errors
         const is503 =
           combined.includes("status 503") ||
           combined.includes("api request failed with status 503") ||
@@ -635,36 +866,45 @@ async function detectFacebookFastFail(apiToken: string, runId: string): Promise<
           combined.includes("status 500") ||
           combined.includes("status 504") ||
           combined.includes("api request failed with status 5");
+        
+        // Platform-specific error patterns
+        const isMetaBlock = 
+          combined.includes("rate limit") ||
+          combined.includes("too many requests") ||
+          combined.includes("blocked") ||
+          combined.includes("checkpoint") ||
+          combined.includes("login required");
 
-        if (is5xx) {
+        if (is5xx || isMetaBlock) {
           return {
             isFastFail: true,
             statusCode: is503 ? 503 : 502,
-            reason: `Run ${status} (exitCode=${exitCode ?? "n/a"}). ${logTail ? logTail.split("\n").slice(-6).join("\n") : ""}`,
+            reason: `Run ${status} (exitCode=${exitCode ?? "n/a"}, platform=${platform}). ${logTail ? logTail.split("\n").slice(-6).join("\n") : ""}`,
           };
         }
 
-        // If logs are not available yet but the run failed very quickly, treat as fast-fail.
-        // This is primarily to improve reliability for Facebook blocks where the primary actor
-        // fails within seconds and the fallback actor typically succeeds.
         const elapsedMs = Date.now() - startedAt;
         if (!logTail && elapsedMs <= 12_000) {
           return {
             isFastFail: true,
             statusCode: 503,
-            reason: `Run ${status} quickly (exitCode=${exitCode ?? "n/a"}) but logs not yet available; assuming transient upstream block and falling back.`,
+            reason: `Run ${status} quickly (exitCode=${exitCode ?? "n/a"}) but logs not yet available; assuming transient ${platform} block.`,
           };
         }
 
-        // Non-transient failure: don't treat as fast-fail.
         return { isFastFail: false };
       }
     } catch {
-      // Ignore and keep polling.
+      // Ignore and keep polling
     }
   }
 
   return { isFastFail: false };
+}
+
+// Legacy alias for backwards compatibility
+async function detectFacebookFastFail(apiToken: string, runId: string): Promise<MetaFastFailResult> {
+  return detectMetaFastFail(apiToken, runId, "facebook");
 }
 
 async function fetchApifyLogTail(
@@ -677,8 +917,6 @@ async function fetchApifyLogTail(
 
   try {
     for (let attempt = 0; attempt <= retries; attempt++) {
-      // Build log is usually enough for a diagnostic like "API request failed with status 503".
-      // We keep it small to reduce payload.
       const res = await fetch(
         `https://api.apify.com/v2/actor-runs/${encodeURIComponent(runId)}/log?token=${apiToken}&stream=false`
       );
