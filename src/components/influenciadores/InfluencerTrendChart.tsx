@@ -4,6 +4,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { DailyInfluencerData } from "@/hooks/useInfluencersData";
 import { TrendMentionsDrawer } from "./TrendMentionsDrawer";
 
+function dateKeyToLocalDate(dateKey: string): Date {
+  // IMPORTANT: A "YYYY-MM-DD" string is parsed as UTC by Date(), which shifts the day
+  // for many timezones. Build a local Date instead.
+  const [y, m, d] = dateKey.split("-").map((n) => Number(n));
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
 interface Mention {
   id: string;
   title: string | null;
@@ -81,7 +88,7 @@ export function InfluencerTrendChart({ data, domains, labels, mentions = [] }: I
                 dataKey="date"
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => {
-                  const date = new Date(value);
+                  const date = dateKeyToLocalDate(String(value));
                   return `${date.getDate()}/${date.getMonth() + 1}`;
                 }}
                 className="text-muted-foreground"
@@ -94,7 +101,7 @@ export function InfluencerTrendChart({ data, domains, labels, mentions = [] }: I
                   borderRadius: "8px",
                 }}
                 labelFormatter={(value) => {
-                  const date = new Date(value as string);
+                  const date = dateKeyToLocalDate(String(value));
                   return date.toLocaleDateString("es-MX", {
                     day: "numeric",
                     month: "long",

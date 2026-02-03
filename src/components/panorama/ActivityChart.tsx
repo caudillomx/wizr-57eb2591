@@ -2,6 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { MousePointer2 } from "lucide-react";
 
+function dateKeyToLocalDate(dateKey: string): Date {
+  // IMPORTANT: A "YYYY-MM-DD" string is parsed as UTC by Date(), which shifts the day
+  // for many timezones. Build a local Date instead.
+  const [y, m, d] = dateKey.split("-").map((n) => Number(n));
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
 interface ActivityChartProps {
   data: { date: string; count: number }[];
   onDateClick?: (date: string, label: string) => void;
@@ -24,7 +31,7 @@ export function ActivityChart({ data, onDateClick }: ActivityChartProps) {
 
   const formattedData = data.map((d) => ({
     ...d,
-    label: new Date(d.date).toLocaleDateString("es-MX", { day: "numeric", month: "short" }),
+    label: dateKeyToLocalDate(d.date).toLocaleDateString("es-MX", { day: "numeric", month: "short" }),
   }));
 
   const handleClick = (data: any) => {
@@ -73,7 +80,7 @@ export function ActivityChart({ data, onDateClick }: ActivityChartProps) {
               }}
               labelFormatter={(_, payload) => {
                 if (payload && payload[0]) {
-                  const date = new Date(payload[0].payload.date);
+                  const date = dateKeyToLocalDate(payload[0].payload.date);
                   return date.toLocaleDateString("es-MX", {
                     weekday: "long",
                     day: "numeric",
