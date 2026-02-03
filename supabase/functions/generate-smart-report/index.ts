@@ -51,9 +51,9 @@ interface ReportContent {
 }
 
 const EXTENSION_TOKENS = {
-  micro: 500,
-  short: 1200,
-  medium: 2500,
+  micro: 1200,
+  short: 2000,
+  medium: 3500,
 };
 
 const REPORT_TYPE_PROMPTS = {
@@ -403,13 +403,11 @@ Responde en formato JSON con esta estructura exacta:
       throw new Error("No content in AI response");
     }
 
-    // Parse JSON from response - robust extraction
+    // Parse JSON from response - robust extraction with partial JSON recovery
     let reportContent: Partial<ReportContent>;
     try {
       // First, clean the content - remove markdown code blocks if present
       let cleanedContent = content;
-      
-      // Remove ```json ... ``` blocks (handle both single and multiple)
       cleanedContent = cleanedContent.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
       
       // Find the JSON object by matching balanced braces
@@ -448,35 +446,80 @@ Responde en formato JSON con esta estructura exacta:
             }
           }
         }
+        // If we didn't find balanced braces, return what we have (truncated)
         return null;
       };
       
-      const jsonStr = extractBalancedJSON(cleanedContent);
-      if (jsonStr) {
+      let jsonStr = extractBalancedJSON(cleanedContent);
+      
+      // If no balanced JSON, try to recover truncated response
+      if (!jsonStr) {
+        console.log("Attempting to recover truncated JSON response");
+        const startIndex = cleanedContent.indexOf('{');
+        if (startIndex !== -1) {
+          // Try to extract key fields from incomplete JSON
+          const partialContent = cleanedContent.substring(startIndex);
+          
+          // Extract title
+          const titleMatch = partialContent.match(/"title"\s*:\s*"([^"]+)"/);
+          const summaryMatch = partialContent.match(/"summary"\s*:\s*"([^"]+)"/);
+          
+          // Try to extract keyFindings array items
+          const keyFindingsMatch = partialContent.match(/"keyFindings"\s*:\s*\[([\s\S]*?)(?:\]|$)/);
+          let keyFindings: string[] = [];
+          if (keyFindingsMatch) {
+            const findingsStr = keyFindingsMatch[1];
+            const findingMatches = findingsStr.match(/"([^"]+)"/g);
+            if (findingMatches) {
+              keyFindings = findingMatches.map((f: string) => f.replace(/"/g, '')).filter((f: string) => f.length > 10);
+            }
+          }
+          
+          if (titleMatch || summaryMatch) {
+            reportContent = {
+              title: titleMatch?.[1] || `Reporte de ${reportType === "brief" ? "Monitoreo" : reportType === "crisis" ? "Crisis" : reportType === "thematic" ? "Análisis Temático" : "Comparativa"}`,
+              summary: summaryMatch?.[1] || "Resumen generado parcialmente debido a límites de respuesta.",
+              keyFindings: keyFindings.length > 0 ? keyFindings : ["Reporte generado con información parcial"],
+              recommendations: ["Intenta generar el reporte con extensión 'short' o 'medium' para más detalle"],
+              templates: {
+                executive: summaryMatch?.[1] || "",
+                technical: summaryMatch?.[1] || "",
+                public: `📊 ${titleMatch?.[1] || "Reporte"}`,
+              },
+            };
+            console.log("Recovered partial report from truncated response");
+          } else {
+            throw new Error("No valid JSON object found in response");
+          }
+        } else {
+          throw new Error("No valid JSON object found in response");
+        }
+      } else {
         // Sanitize control characters that break JSON parsing
         const sanitized = jsonStr
           .replace(/[\x00-\x1F\x7F]/g, (match) => {
-            // Keep newlines and tabs within strings, escape others
             if (match === '\n' || match === '\r' || match === '\t') return match;
             return '';
           });
         reportContent = JSON.parse(sanitized);
-      } else {
-        throw new Error("No valid JSON object found in response");
       }
     } catch (parseError) {
       console.error("JSON parse error:", parseError, "Content:", content.substring(0, 800));
-      // Fallback: create structure from raw text (without the code block markers)
       const cleanText = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+      
+      // Last resort: try to extract any useful text
+      const titleMatch = cleanText.match(/"title"\s*:\s*"([^"]+)"/);
+      const summaryMatch = cleanText.match(/"summary"\s*:\s*"([^"]+)"/);
+      
       reportContent = {
-        title: `Reporte de ${reportType === "brief" ? "Monitoreo" : reportType === "crisis" ? "Crisis" : reportType === "thematic" ? "Análisis Temático" : "Comparativa"}`,
-        summary: cleanText.substring(0, 500),
-        keyFindings: ["Análisis en proceso - hubo un error al procesar la respuesta de IA"],
-        recommendations: ["Intenta generar el reporte nuevamente", "Si persiste el error, reduce la cantidad de menciones"],
+        title: titleMatch?.[1] || `Reporte de ${reportType === "brief" ? "Monitoreo" : reportType === "crisis" ? "Crisis" : reportType === "thematic" ? "Análisis Temático" : "Comparativa"}`,
+        summary: summaryMatch?.[1] || cleanText.substring(0, 500),
+        keyFindings: ["Reporte generado con información parcial"],
+        recommendations: ["Intenta generar con extensión 'short' o 'medium'"],
         templates: {
-          executive: cleanText.substring(0, 400),
+          executive: summaryMatch?.[1] || cleanText.substring(0, 400),
           technical: cleanText.substring(0, 500),
-          public: "📊 Reporte en proceso. Por favor, intenta generar nuevamente.",
+          public: `📊 ${titleMatch?.[1] || "Reporte generado"}`,
         },
       };
     }
