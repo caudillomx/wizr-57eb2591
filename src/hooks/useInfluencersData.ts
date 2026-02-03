@@ -51,6 +51,7 @@ export function useInfluencersData(
           matched_keywords,
           entity_id,
           created_at,
+          published_at,
           entity:entities(id, nombre)
         `)
         .eq("project_id", projectId)
@@ -89,6 +90,11 @@ export function useInfluencersData(
   const processedData = useMemo(() => {
     const mentions = mentionsQuery.data || [];
     const sevenDaysAgo = subDays(new Date(), 7);
+
+    // Helper to get the effective date for a mention (published_at preferred, fallback to created_at)
+    const getEffectiveDate = (mention: { published_at?: string | null; created_at: string }) => {
+      return mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
+    };
 
     // Normalize domain function - convert to consistent format
     const normalizeDomain = (domain: string): string => {
@@ -152,9 +158,9 @@ export function useInfluencersData(
         ? (sentiment.positivo - sentiment.negativo) / total
         : 0;
 
-      // Recent mentions (last 7 days)
+      // Recent mentions (last 7 days) - use effective date
       const recentMentions = data.mentions.filter(
-        (m) => new Date(m.created_at) > sevenDaysAgo
+        (m) => getEffectiveDate(m) > sevenDaysAgo
       ).length;
 
       // Trend calculation
@@ -164,11 +170,14 @@ export function useInfluencersData(
       if (recentMentions > avgOlder * 1.2) trend = "up";
       else if (recentMentions < avgOlder * 0.8) trend = "down";
 
-      // Last mention date
+      // Last mention date - use effective date
       const sortedMentions = [...data.mentions].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => getEffectiveDate(b).getTime() - getEffectiveDate(a).getTime()
       );
-      const lastMentionDate = sortedMentions[0]?.created_at || null;
+      const lastMention = sortedMentions[0];
+      const lastMentionDate = lastMention 
+        ? (lastMention.published_at || lastMention.created_at) 
+        : null;
 
       influencers.push({
         domain,
@@ -216,15 +225,19 @@ export function useInfluencersData(
       dailyMap.set(dateStr, initialData);
     }
 
-    // Count mentions per day per domain
+    // Count mentions per day per domain - use effective date (published_at or created_at)
     mentions.forEach((mention) => {
       const domain = normalizeDomain(mention.source_domain || "unknown");
       if (!topDomains.includes(domain)) return;
 
-      const date = format(new Date(mention.created_at), "yyyy-MM-dd");
+      // Use published_at if available, otherwise fall back to created_at
+      const effectiveDate = mention.published_at 
+        ? new Date(mention.published_at) 
+        : new Date(mention.created_at);
+      const dateKey = format(effectiveDate, "yyyy-MM-dd");
       
-      if (dailyMap.has(date)) {
-        const dayData = dailyMap.get(date)!;
+      if (dailyMap.has(dateKey)) {
+        const dayData = dailyMap.get(dateKey)!;
         const key = chartKeyByDomain[domain];
         dayData[key] = (dayData[key] || 0) + 1;
       }
@@ -257,6 +270,7 @@ export function useInfluencersData(
       source_domain: m.source_domain,
       sentiment: m.sentiment,
       created_at: m.created_at,
+      published_at: m.published_at,
       matched_keywords: m.matched_keywords || [],
     }));
   }, [mentionsQuery.data]);
