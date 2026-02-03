@@ -319,38 +319,39 @@ serve(async (req) => {
         
       case "reddit":
         // Reddit scraper configuration - includes comments, sorted by NEW for chronological order
+        // Increased maxComments to capture more mentions within discussions
         if (subreddit) {
           input = {
             startUrls: [{ url: `https://www.reddit.com/r/${subreddit}/new/` }],
             maxItems: maxResults,
             maxPostCount: maxResults,
-            maxComments: 10, // Include top 10 comments per post
-            sort: "new", // Changed to new for chronological order
+            maxComments: 50, // Increased from 10 to capture more comment mentions
+            sort: "new", // Chronological order
           };
         } else if (query) {
           input = {
             searches: [query],
             maxItems: maxResults,
             maxPostCount: maxResults,
-            maxComments: 10, // Include top 10 comments per post
-            sort: "new", // Changed to new for chronological order
+            maxComments: 50, // Increased from 10 to capture more comment mentions
+            sort: "new", // Chronological order
           };
         }
         break;
         
       case "reddit_comments":
         // Use the same actor as regular reddit (trudax/reddit-scraper-lite) but with increased 
-        // maxComments. The filtering happens in apify-status where we check if keywords appear
-        // in the comments of each post. This avoids needing a paid actor rental.
+        // maxComments and more posts. The filtering happens in apify-status where we check if keywords
+        // appear in the comments of each post. This avoids needing a paid actor rental.
         actorId = ACTOR_IDS.reddit; // Use trudax/reddit-scraper-lite
         if (!query) {
           throw new Error("Reddit comments search requires a search query.");
         }
         input = {
           searches: [query],
-          maxItems: Math.min(maxResults * 2, 100), // More posts to search through
-          maxPostCount: Math.min(maxResults * 2, 100),
-          maxComments: 25, // Increased: fetch more comments per post to search within
+          maxItems: Math.min(maxResults * 3, 150), // More posts to search through
+          maxPostCount: Math.min(maxResults * 3, 150),
+          maxComments: 75, // Significantly increased: fetch many comments per post to find mentions
           sort: "new",
         };
         break;
