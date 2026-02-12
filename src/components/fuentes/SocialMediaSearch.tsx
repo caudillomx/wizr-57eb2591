@@ -1480,9 +1480,11 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {dataProvider === "apify" 
-                  ? "Apify: Proveedor actual, estable y probado" 
-                  : "Bright Data: Nuevo proveedor en pruebas, mayor cobertura potencial"}
+                {!["tiktok", "youtube"].includes(platform)
+                  ? "Bright Data solo disponible para TikTok y YouTube"
+                  : dataProvider === "apify" 
+                    ? "Apify: Proveedor actual, estable y probado" 
+                    : "Bright Data: Nuevo proveedor en pruebas, mayor cobertura potencial"}
               </p>
             </div>
           </div>
@@ -1494,7 +1496,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
               id="provider-toggle"
               checked={dataProvider === "brightdata"}
               onCheckedChange={(checked) => setDataProvider(checked ? "brightdata" : "apify")}
-              disabled={isSearching}
+              disabled={isSearching || !["tiktok", "youtube"].includes(platform)}
             />
             <span className={cn("text-xs", dataProvider === "brightdata" ? "font-medium" : "text-muted-foreground")}>
               Bright Data
@@ -1518,6 +1520,10 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                       setPlatform(plat);
                       setSearchType(cfg.searchTypes[0].value);
                       resetSearch();
+                      // Auto-reset to Apify if platform doesn't support Bright Data
+                      if (!["tiktok", "youtube"].includes(plat)) {
+                        setDataProvider("apify");
+                      }
                     }}
                     className={`flex flex-col h-auto py-2 gap-1 relative ${platform === plat ? cfg.color : ""} ${isDisabled ? "opacity-60" : ""}`}
                   >
