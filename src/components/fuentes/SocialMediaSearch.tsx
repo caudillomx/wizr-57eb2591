@@ -1063,9 +1063,12 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       setCurrentJobId(job.id);
 
       // =====================================================
-      // BRIGHT DATA FLOW
+      // BRIGHT DATA FLOW (only TikTok & YouTube supported)
       // =====================================================
-      if (dataProvider === "brightdata") {
+      const brightDataSupported = ["tiktok", "youtube"].includes(platform);
+      const effectiveProvider = (dataProvider === "brightdata" && brightDataSupported) ? "brightdata" : "apify";
+
+      if (effectiveProvider === "brightdata") {
         const effectivePlatform = (platform === "reddit" && searchType === "comments") 
           ? "reddit_comments" 
           : platform;
@@ -1164,9 +1167,9 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
         }
       }
       // =====================================================
-      // APIFY FLOW (original)
+      // APIFY FLOW (original or fallback from unsupported Bright Data platform)
       // =====================================================
-      else if (platform === "youtube") {
+      else if (effectiveProvider === "apify" && platform === "youtube") {
         // YOUTUBE SEARCH: streamers/youtube-scraper handles BOTH videos AND shorts in one run
         setProgressMessage("Buscando videos y shorts...");
         
