@@ -14,6 +14,7 @@ import RestablecerContrasena from "./pages/RestablecerContrasena";
 import SolicitarAcceso from "./pages/SolicitarAcceso";
 import ProjectSpecBuilder from "./pages/ProjectSpecBuilder";
 import NotFound from "./pages/NotFound";
+import LiderazgosPresentation from "./pages/LiderazgosPresentation";
 
 // Dashboard pages
 import InsightsPage from "./pages/dashboard/InsightsPage";
@@ -88,6 +89,14 @@ const AppRoutes = () => {
           <AuthRoute>
             <SolicitarAcceso />
           </AuthRoute>
+        }
+      />
+      <Route
+        path="/liderazgos"
+        element={
+          <ProtectedRoute>
+            <LiderazgosPresentation />
+          </ProtectedRoute>
         }
       />
       <Route
