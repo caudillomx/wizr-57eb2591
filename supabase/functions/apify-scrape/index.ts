@@ -152,7 +152,7 @@ interface ScrapeRequest {
   maxResults?: number;
   // YouTube-specific filters
   youtubeUploadDate?: "lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear";
-  youtubeSortType?: "relevance" | "date" | "views" | "rating";
+  youtubeSortType?: "relevance" | "popularity";
 }
 
 serve(async (req) => {

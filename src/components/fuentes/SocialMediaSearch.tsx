@@ -312,7 +312,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   
   // YouTube native filters (server-side)
   const [youtubeUploadDate, setYoutubeUploadDate] = useState<"lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear" | "__any__" | "">("");
-  const [youtubeSortType, setYoutubeSortType] = useState<"relevance" | "date" | "views" | "rating">("date");
+  const [youtubeSortType, setYoutubeSortType] = useState<"relevance" | "popularity">("relevance");
 
   const config = PLATFORM_CONFIG[platform];
   const PlatformIcon = config.icon;
@@ -1678,10 +1678,8 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="date">Fecha (más recientes)</SelectItem>
                     <SelectItem value="relevance">Relevancia</SelectItem>
-                    <SelectItem value="views">Vistas</SelectItem>
-                    <SelectItem value="rating">Valoración</SelectItem>
+                    <SelectItem value="popularity">Popularidad</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

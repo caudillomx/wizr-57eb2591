@@ -112,7 +112,7 @@ export const apifyApi = {
     maxResults?: number;
     // YouTube-specific native filters
     youtubeUploadDate?: "lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear";
-    youtubeSortType?: "relevance" | "date" | "views" | "rating";
+    youtubeSortType?: "relevance" | "popularity";
   }): Promise<ApifyResponse<ScrapeStartResponse>> {
     const result = await invokeEdgeFunction<ScrapeStartResponse>("apify-scrape", params, 45000);
 
