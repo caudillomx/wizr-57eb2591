@@ -8,8 +8,6 @@ import wizrIcon from "@/assets/wizr-icon-transparent.png";
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
-//comentario de control
-
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
