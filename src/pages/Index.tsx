@@ -78,13 +78,13 @@ const Index = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
               className="inline-block mb-6"
             >
-              <img 
-                src={wizrLogoFull} 
-                alt="Wizr - Análisis Estratégico" 
-                className="h-40 sm:h-52 lg:h-64 w-auto mx-auto" 
+              <img
+                src={wizrLogoFull}
+                alt="Wizr - Análisis Estratégico"
+                className="h-40 sm:h-52 lg:h-64 w-auto mx-auto"
               />
             </motion.div>
             {/* Headline */}
@@ -97,8 +97,8 @@ const Index = () => {
 
             {/* Subheadline */}
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Sistema de lectura estratégica diseñado para transformar menciones, 
-              tendencias y sentimiento en decisiones informadas.
+              Sistema de lectura estratégica diseñado para transformar menciones, tendencias y sentimiento en decisiones
+              informadas.
             </p>
 
             {/* CTA */}
@@ -153,12 +153,10 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-4">
-              Todo lo que necesitas para monitorear tu marca
-            </h2>
+            <h2 className="text-3xl font-bold text-foreground mb-4">Todo lo que necesitas para monitorear tu marca</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Herramientas poderosas diseñadas para equipos que necesitan 
-              entender y actuar sobre la conversación pública.
+              Herramientas poderosas diseñadas para equipos que necesitan entender y actuar sobre la conversación
+              pública.
             </p>
           </motion.div>
 
@@ -177,12 +175,8 @@ const Index = () => {
                     <feature.icon size={24} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {feature.description}
-                    </p>
+                    <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -206,20 +200,13 @@ const Index = () => {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 space-y-6">
-              <h2 className="text-3xl sm:text-4xl font-bold">
-                ¿Listo para transformar tu estrategia?
-              </h2>
+              <h2 className="text-3xl sm:text-4xl font-bold">¿Listo para transformar tu estrategia?</h2>
               <p className="text-white/80 max-w-xl mx-auto">
-                Únete a los equipos que ya utilizan Wizr para tomar decisiones 
-                basadas en inteligencia estratégica.
+                Únete a los equipos que ya utilizan Wizr para tomar decisiones basadas en inteligencia estratégica.
               </p>
               {!loading && !user && (
                 <Link to="/solicitar-acceso">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="bg-white text-primary hover:bg-white/90 gap-2"
-                  >
+                  <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 gap-2">
                     Solicitar acceso ahora
                     <ArrowRight size={18} />
                   </Button>
@@ -239,9 +226,9 @@ const Index = () => {
           </div>
           <p className="text-sm text-muted-foreground">
             Un producto de{" "}
-            <a 
-              href="https://kimedia.mx/" 
-              target="_blank" 
+            <a
+              href="https://kimedia.mx/"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary font-medium hover:underline transition-colors"
             >
