@@ -247,7 +247,7 @@ const Index = () => {
             >
               KiMedia
             </a>{" "}
-            • {new Date().getFullYear()}
+            • © 2026 Wizr. Todos los derechos reservados.
           </p>
         </div>
       </footer>
