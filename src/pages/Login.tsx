@@ -8,6 +8,8 @@ import wizrIcon from "@/assets/wizr-icon-transparent.png";
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
+//comentario de control
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -47,7 +49,7 @@ const Login = () => {
           <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-white/20 blur-3xl" />
           <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-accent/30 blur-3xl" />
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -61,21 +63,18 @@ const Login = () => {
                 Inteligencia Estratégica
               </span>
             </div>
-            
+
             <h1 className="text-4xl xl:text-5xl font-bold leading-tight">
-              Convierte la conversación pública en{" "}
-              <span className="text-accent">conocimiento</span> utilizable
+              Convierte la conversación pública en <span className="text-accent">conocimiento</span> utilizable
             </h1>
-            
+
             <p className="text-lg text-white/80 max-w-md">
               Metodología académica + Magia analítica + Producto operativo
             </p>
 
             <div className="flex items-center gap-4 pt-6">
               <div className="h-1 w-16 bg-accent rounded-full" />
-              <span className="text-sm text-white/60">
-                Wizard → Wise → Structure + Insight
-              </span>
+              <span className="text-sm text-white/60">Wizard → Wise → Structure + Insight</span>
             </div>
           </motion.div>
         </div>
@@ -92,17 +91,11 @@ const Login = () => {
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
             <Link to="/">
-              <img
-                src={wizrIcon}
-                alt="Wizr"
-                className="h-20 w-auto transition-transform hover:scale-105"
-              />
+              <img src={wizrIcon} alt="Wizr" className="h-20 w-auto transition-transform hover:scale-105" />
             </Link>
             <div className="text-center">
               <h2 className="text-xl font-semibold text-foreground">Bienvenido de nuevo</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ingresa tus credenciales para continuar
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Ingresa tus credenciales para continuar</p>
             </div>
           </div>
 
@@ -133,10 +126,7 @@ const Login = () => {
                   <Label htmlFor="password" className="text-sm font-medium">
                     Contraseña
                   </Label>
-                  <Link
-                    to="/recuperar-contrasena"
-                    className="text-xs text-primary hover:underline"
-                  >
+                  <Link to="/recuperar-contrasena" className="text-xs text-primary hover:underline">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
@@ -191,9 +181,7 @@ const Login = () => {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-background px-2 text-muted-foreground">
-                  ¿No tienes acceso?
-                </span>
+                <span className="bg-background px-2 text-muted-foreground">¿No tienes acceso?</span>
               </div>
             </div>
 
