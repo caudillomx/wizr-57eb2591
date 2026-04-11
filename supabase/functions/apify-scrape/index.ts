@@ -30,11 +30,11 @@ const FACEBOOK_ACTORS_POOL: ActorConfig[] = [
   { id: "microworlds/facebook-post-search-scraper", name: "microworlds", priority: 3, cooldownMinutes: 20 },
 ];
 
-// Instagram actors pool (ordered by priority)
+// Instagram actors pool (ordered by priority - microworlds first for speed)
 const INSTAGRAM_ACTORS_POOL: ActorConfig[] = [
-  { id: "apify/instagram-scraper", name: "apify_scraper", priority: 1, cooldownMinutes: 30 },
+  { id: "microworlds/instagram-scraper", name: "microworlds", priority: 1, cooldownMinutes: 15 },
   { id: "apify/instagram-hashtag-scraper", name: "apify_hashtag", priority: 2, cooldownMinutes: 20 },
-  { id: "microworlds/instagram-scraper", name: "microworlds", priority: 3, cooldownMinutes: 15 },
+  { id: "apify/instagram-scraper", name: "apify_scraper", priority: 3, cooldownMinutes: 30 },
 ];
 
 // In-memory cooldown tracker (resets on cold start, but sufficient for short-term rotation)
