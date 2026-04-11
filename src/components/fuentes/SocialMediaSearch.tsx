@@ -269,6 +269,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
   const [pollingStartTime, setPollingStartTime] = useState<number | null>(null);
   
   // Data provider toggle - Apify (stable) vs Bright Data (experimental)
+  // TikTok defaults to Bright Data (better relevance and speed)
   const [dataProvider, setDataProvider] = useState<DataProvider>("apify");
   
   // Maximum polling duration: 3 minutes (180 seconds) to prevent infinite loops
@@ -1534,8 +1535,10 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                       setPlatform(plat);
                       setSearchType(cfg.searchTypes[0].value);
                       resetSearch();
-                      // Auto-reset to Apify if platform doesn't support Bright Data
-                      if (!["tiktok", "youtube"].includes(plat)) {
+                      // Auto-select Bright Data for TikTok (primary provider)
+                      if (plat === "tiktok") {
+                        setDataProvider("brightdata");
+                      } else if (!["youtube"].includes(plat)) {
                         setDataProvider("apify");
                       }
                     }}
