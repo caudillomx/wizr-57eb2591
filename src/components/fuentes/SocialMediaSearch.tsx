@@ -1535,8 +1535,10 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
                       setPlatform(plat);
                       setSearchType(cfg.searchTypes[0].value);
                       resetSearch();
-                      // Auto-reset to Apify if platform doesn't support Bright Data
-                      if (!["tiktok", "youtube"].includes(plat)) {
+                      // Auto-select Bright Data for TikTok (primary provider)
+                      if (plat === "tiktok") {
+                        setDataProvider("brightdata");
+                      } else if (!["youtube"].includes(plat)) {
                         setDataProvider("apify");
                       }
                     }}
