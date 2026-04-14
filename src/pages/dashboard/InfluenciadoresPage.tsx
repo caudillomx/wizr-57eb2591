@@ -239,7 +239,7 @@ const InfluenciadoresPage = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fuentes Únicas</CardTitle>
+            <CardTitle className="text-sm font-medium">Perfiles Únicos</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -249,7 +249,7 @@ const InfluenciadoresPage = () => {
               <div className="text-2xl font-bold">{uniqueSources}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              Dominios identificados
+              Autores identificados
             </p>
           </CardContent>
         </Card>
