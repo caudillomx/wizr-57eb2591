@@ -5,7 +5,7 @@ import { subDays, format, eachDayOfInterval, startOfDay } from "date-fns";
 
 export interface PanoramaMetrics {
   totalMentions: number;
-  recentMentions: number; // last 7 days
+  recentMentions: number;
   sentimentBreakdown: {
     positivo: number;
     neutral: number;
@@ -17,11 +17,24 @@ export interface PanoramaMetrics {
   trend: "up" | "down" | "stable";
 }
 
-export function usePanoramaData(projectId: string | undefined, daysRange: number = 30) {
-  const startDate = useMemo(() => subDays(new Date(), daysRange), [daysRange]);
+export function usePanoramaData(
+  projectId: string | undefined,
+  daysRange: number = 30,
+  startDate?: Date,
+  endDate?: Date
+) {
+  // Use explicit dates if provided, otherwise fall back to daysRange from now
+  const effectiveStart = useMemo(
+    () => startDate || subDays(new Date(), daysRange),
+    [startDate, daysRange]
+  );
+  const effectiveEnd = useMemo(
+    () => endDate || new Date(),
+    [endDate]
+  );
 
   const { data: mentions, isLoading } = useQuery({
-    queryKey: ["panorama-mentions", projectId, daysRange],
+    queryKey: ["panorama-mentions", projectId, effectiveStart.toISOString(), effectiveEnd.toISOString()],
     queryFn: async () => {
       if (!projectId) return [];
 
@@ -33,11 +46,11 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      
-      // Filter by effective date (published_at or created_at)
-      return (data || []).filter(m => {
-        const effectiveDate = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-        return effectiveDate >= startDate;
+
+      // Filter by effective date (published_at or created_at) within the range
+      return (data || []).filter((m) => {
+        const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
+        return d >= effectiveStart && d <= effectiveEnd;
       });
     },
     enabled: !!projectId,
@@ -57,14 +70,7 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
 
     const sevenDaysAgo = subDays(new Date(), 7);
 
-    // Sentiment breakdown
-    const sentimentBreakdown = {
-      positivo: 0,
-      neutral: 0,
-      negativo: 0,
-      sinAnalizar: 0,
-    };
-
+    const sentimentBreakdown = { positivo: 0, neutral: 0, negativo: 0, sinAnalizar: 0 };
     mentions.forEach((m) => {
       const s = m.sentiment?.toLowerCase();
       if (s === "positivo" || s === "positive") sentimentBreakdown.positivo++;
@@ -73,13 +79,11 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
       else sentimentBreakdown.sinAnalizar++;
     });
 
-    // Recent mentions (last 7 days based on effective date)
     const recentMentions = mentions.filter((m) => {
-      const effectiveDate = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-      return effectiveDate > sevenDaysAgo;
+      const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
+      return d > sevenDaysAgo;
     }).length;
 
-    // Top sources
     const sourceMap = new Map<string, number>();
     mentions.forEach((m) => {
       const domain = m.source_domain || "desconocido";
@@ -90,18 +94,15 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Daily activity - include today in the range
-    const today = new Date();
     const dateRange = eachDayOfInterval({
-      start: startOfDay(startDate),
-      end: startOfDay(today),
+      start: startOfDay(effectiveStart),
+      end: startOfDay(effectiveEnd),
     });
 
     const dailyMap = new Map<string, number>();
     mentions.forEach((m) => {
-      // Use published_at if available, otherwise created_at
-      const effectiveDate = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-      const dateKey = format(effectiveDate, "yyyy-MM-dd");
+      const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
+      const dateKey = format(d, "yyyy-MM-dd");
       dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + 1);
     });
 
@@ -110,7 +111,6 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
       count: dailyMap.get(format(d, "yyyy-MM-dd")) || 0,
     }));
 
-    // Trend calculation
     const olderMentions = mentions.length - recentMentions;
     const avgOlder = olderMentions / Math.max(1, (daysRange - 7) / 7);
     let trend: "up" | "down" | "stable" = "stable";
@@ -125,10 +125,7 @@ export function usePanoramaData(projectId: string | undefined, daysRange: number
       dailyActivity,
       trend,
     };
-  }, [mentions, startDate, daysRange]);
+  }, [mentions, effectiveStart, effectiveEnd, daysRange]);
 
-  return {
-    metrics,
-    isLoading,
-  };
+  return { metrics, isLoading };
 }
