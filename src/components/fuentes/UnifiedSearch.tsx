@@ -368,19 +368,21 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             if (statusData.status === "SUCCEEDED" || statusData.status === "completed") {
               results = (statusData.items || []).map((r: Record<string, unknown>) => {
                 const item = r as Record<string, unknown>;
+                const authorObj = item.author as Record<string, unknown> | undefined;
+                const metricsObj = item.metrics as Record<string, unknown> | undefined;
                 return {
-                  url: (item.url as string) || "",
-                  title: (item.title as string) || undefined,
-                  description: (item.description as string) || (item.text as string) || undefined,
+                  url: String(item.url || ""),
+                  title: item.title ? String(item.title) : undefined,
+                  description: item.description ? String(item.description) : (item.text ? String(item.text) : undefined),
                   source_domain: job.platform,
-                  published_at: (item.publishedAt as string) || (item.timestamp as string) || undefined,
-                  author: (item.author_name as string) || (item.authorName as string) || undefined,
-                  authorUsername: (item.author_username as string) || (item.authorUsername as string) || undefined,
-                  authorUrl: (item.author_url as string) || (item.authorUrl as string) || undefined,
-                  likes: (item.likes as number) || undefined,
-                  comments: (item.comments as number) || undefined,
-                  shares: (item.shares as number) || undefined,
-                  views: (item.views as number) || undefined,
+                  published_at: item.publishedAt ? String(item.publishedAt) : (item.timestamp ? String(item.timestamp) : undefined),
+                  author: authorObj?.name ? String(authorObj.name) : undefined,
+                  authorUsername: authorObj?.username ? String(authorObj.username) : undefined,
+                  authorUrl: authorObj?.url ? String(authorObj.url) : undefined,
+                  likes: Number(metricsObj?.likes || 0) || undefined,
+                  comments: Number(metricsObj?.comments || 0) || undefined,
+                  shares: Number(metricsObj?.shares || 0) || undefined,
+                  views: Number(metricsObj?.views || 0) || undefined,
                 };
               });
               break;
