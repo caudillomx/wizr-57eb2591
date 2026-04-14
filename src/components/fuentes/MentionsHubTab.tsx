@@ -872,14 +872,21 @@ export function MentionsHubTab({
                           </div>
 
                           {/* Engagement metrics for social */}
-                          {metrics && (
-                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                              {metrics.views > 0 && <span>👁 {metrics.views.toLocaleString()}</span>}
-                              {metrics.likes > 0 && <span>❤️ {metrics.likes.toLocaleString()}</span>}
-                              {metrics.comments > 0 && <span>💬 {metrics.comments.toLocaleString()}</span>}
-                              {metrics.shares > 0 && <span>🔄 {metrics.shares.toLocaleString()}</span>}
+                          {metrics ? (
+                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+                              <span className="font-semibold text-foreground">
+                                📊 {metrics.total.toLocaleString()} eng.
+                              </span>
+                              {metrics.views > 0 && <span className="text-muted-foreground">👁 {metrics.views.toLocaleString()}</span>}
+                              {metrics.likes > 0 && <span className="text-muted-foreground">❤️ {metrics.likes.toLocaleString()}</span>}
+                              {metrics.comments > 0 && <span className="text-muted-foreground">💬 {metrics.comments.toLocaleString()}</span>}
+                              {metrics.shares > 0 && <span className="text-muted-foreground">🔄 {metrics.shares.toLocaleString()}</span>}
                             </div>
-                          )}
+                          ) : isSocial ? (
+                            <p className="text-xs text-muted-foreground/60 mt-1.5 italic">
+                              Sin datos de engagement — recapturar desde Redes Sociales
+                            </p>
+                          ) : null}
 
                           {/* Keywords */}
                           {mention.matched_keywords && mention.matched_keywords.length > 0 && (
