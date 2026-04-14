@@ -244,10 +244,11 @@ export function SmartReportPDFGenerator({
         
         autoTable(doc, {
           startY: y,
-          head: [["#", "Perfil", "Plataforma", "Menciones", "Sentimiento", "Alcance"]],
+          head: [["#", "Perfil", "Usuario", "Plataforma", "Menciones", "Sentimiento", "Alcance"]],
           body: report.influencers.map((inf: InfluencerInfo, i: number) => [
             `${i + 1}`,
             inf.name,
+            inf.username ? `@${inf.username}` : "-",
             normalizePlatform(inf.platform),
             `${inf.mentions}`,
             inf.sentiment === "negativo" ? "Negativo" : inf.sentiment === "positivo" ? "Positivo" : "Mixto",
@@ -269,12 +270,13 @@ export function SmartReportPDFGenerator({
             fillColor: [...WIZR_VIOLET_LIGHT],
           },
           columnStyles: {
-            0: { halign: "center", cellWidth: 10 },
-            1: { cellWidth: 45 },
-            2: { halign: "center", cellWidth: 28 },
-            3: { halign: "center", cellWidth: 20 },
-            4: { halign: "center", cellWidth: 22 },
-            5: { cellWidth: "auto" },
+            0: { halign: "center", cellWidth: 8 },
+            1: { cellWidth: 38 },
+            2: { cellWidth: 30, fontSize: 7 },
+            3: { halign: "center", cellWidth: 24 },
+            4: { halign: "center", cellWidth: 18 },
+            5: { halign: "center", cellWidth: 20 },
+            6: { cellWidth: "auto" },
           },
           margin: { left: margin, right: margin },
         });

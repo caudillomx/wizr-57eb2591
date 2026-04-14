@@ -30,6 +30,8 @@ export interface SourceBreakdown {
 
 export interface InfluencerInfo {
   name: string;
+  username: string;
+  avatarUrl: string | null;
   platform: string;
   mentions: number;
   sentiment: string;
@@ -81,10 +83,23 @@ export function useSmartReport() {
 
   // Compute enriched analytics from mentions
   const computeAnalytics = (mentions: Mention[]) => {
-    // Source breakdown
+    // Source breakdown — normalize domains first
+    const normalizeDomain = (d: string): string => {
+      const map: Record<string, string> = {
+        "twitter": "twitter.com", "x.com": "twitter.com",
+        "facebook": "facebook.com", "www.facebook.com": "facebook.com",
+        "youtube": "youtube.com", "www.youtube.com": "youtube.com",
+        "instagram": "instagram.com", "www.instagram.com": "instagram.com",
+        "tiktok": "tiktok.com", "www.tiktok.com": "tiktok.com",
+        "reddit": "reddit.com", "www.reddit.com": "reddit.com",
+        "linkedin": "linkedin.com", "www.linkedin.com": "linkedin.com",
+      };
+      return map[d] || d.replace(/^www\./, "");
+    };
+
     const sourceMap: Record<string, { count: number; positive: number; negative: number; neutral: number }> = {};
     mentions.forEach(m => {
-      const src = m.source_domain || "desconocido";
+      const src = normalizeDomain(m.source_domain || "desconocido");
       if (!sourceMap[src]) sourceMap[src] = { count: 0, positive: 0, negative: 0, neutral: 0 };
       sourceMap[src].count++;
       if (m.sentiment === "positivo") sourceMap[src].positive++;
@@ -96,14 +111,17 @@ export function useSmartReport() {
       .sort((a, b) => b.count - a.count);
 
     // Influencers from raw_metadata
-    const authorMap: Record<string, { name: string; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
+    const authorMap: Record<string, { name: string; username: string; avatarUrl: string | null; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
     mentions.forEach(m => {
       const meta = m.raw_metadata as Record<string, unknown> | null;
       const authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
       if (!authorName) return;
-      const key = `${authorName}@${m.source_domain || "unknown"}`;
+      const normalizedPlatform = normalizeDomain(m.source_domain || "unknown");
+      const key = `${authorName}@${normalizedPlatform}`;
       if (!authorMap[key]) {
-        authorMap[key] = { name: authorName, platform: m.source_domain || "unknown", mentions: 0, sentiments: [], engagement: 0 };
+        const username = (meta?.authorUsername || meta?.author_username || "") as string;
+        const avatarUrl = (meta?.authorAvatarUrl || meta?.author_avatar_url || meta?.profileImageUrl || null) as string | null;
+        authorMap[key] = { name: authorName, username, avatarUrl, platform: normalizedPlatform, mentions: 0, sentiments: [], engagement: 0 };
       }
       authorMap[key].mentions++;
       if (m.sentiment) authorMap[key].sentiments.push(m.sentiment);
@@ -112,13 +130,15 @@ export function useSmartReport() {
     });
     const influencers: InfluencerInfo[] = Object.values(authorMap)
       .sort((a, b) => b.mentions - a.mentions)
-      .slice(0, 10)
+      .slice(0, 15)
       .map(a => {
         const negRatio = a.sentiments.filter(s => s === "negativo").length / (a.sentiments.length || 1);
         const posRatio = a.sentiments.filter(s => s === "positivo").length / (a.sentiments.length || 1);
         const sentiment = negRatio > 0.5 ? "negativo" : posRatio > 0.5 ? "positivo" : "mixto";
         return {
           name: a.name,
+          username: a.username,
+          avatarUrl: a.avatarUrl,
           platform: a.platform,
           mentions: a.mentions,
           sentiment,
