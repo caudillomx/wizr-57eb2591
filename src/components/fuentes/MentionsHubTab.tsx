@@ -48,6 +48,7 @@ import {
   Share2,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
+import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
 
 // Platform icons mapping
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
@@ -88,20 +89,7 @@ const getPlatformLabel = (domain: string | null): string => {
   return domain;
 };
 
-// Extract author info from raw_metadata
-const getAuthorInfo = (mention: Mention) => {
-  const meta = mention.raw_metadata as Record<string, unknown> | null;
-  if (!meta) return null;
-  const author = meta.author as string | undefined;
-  const authorUsername = meta.authorUsername as string | undefined;
-  const authorUrl = meta.authorUrl as string | undefined;
-  if (!author && !authorUsername) return null;
-  return {
-    name: author || authorUsername || "",
-    username: authorUsername || "",
-    url: authorUrl || "",
-  };
-};
+const getAuthorInfo = (mention: Mention) => getMentionAuthorInfo(mention);
 
 // Extract engagement metrics from raw_metadata
 const getEngagementMetrics = (mention: Mention) => {

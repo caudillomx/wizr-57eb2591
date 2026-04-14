@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 import { format, subDays } from "date-fns";
+import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
 
 export interface InfluencerMetrics {
-  authorKey: string; // unique identifier: "username@platform" or "name@platform"
+  authorKey: string;
   authorName: string;
   authorUsername: string;
   authorUrl: string;
@@ -24,7 +25,6 @@ export interface InfluencerMetrics {
   lastMentionDate: string | null;
   totalEngagement: number;
   totalViews: number;
-  // Legacy compat
   domain: string;
 }
 
@@ -60,10 +60,7 @@ export function useInfluencersData(
   timeRangeDays: number = 30,
   selectedEntityIds: string[] = []
 ) {
-  const startDate = useMemo(
-    () => subDays(new Date(), timeRangeDays),
-    [timeRangeDays]
-  );
+  const startDate = useMemo(() => subDays(new Date(), timeRangeDays), [timeRangeDays]);
 
   const mentionsQuery = useQuery({
     queryKey: ["influencers-mentions", projectId, timeRangeDays, selectedEntityIds],
@@ -120,11 +117,9 @@ export function useInfluencersData(
     const mentions = mentionsQuery.data || [];
     const sevenDaysAgo = subDays(new Date(), 7);
 
-    const getEffectiveDate = (mention: { published_at?: string | null; created_at: string }) => {
-      return mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
-    };
+    const getEffectiveDate = (mention: { published_at?: string | null; created_at: string }) =>
+      mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
 
-    // Group by author (only social mentions with author info)
     const authorMap = new Map<string, {
       authorName: string;
       authorUsername: string;
@@ -139,31 +134,24 @@ export function useInfluencersData(
     }>();
 
     mentions.forEach((mention) => {
-      const meta = mention.raw_metadata as Record<string, unknown> | null;
-      if (!meta) return;
-
       const domain = mention.source_domain || "";
-      // Only process social media mentions that have author info
       if (!isSocialDomain(domain)) return;
 
-      const authorName = (meta.author as string) || "";
-      const authorUsername = (meta.authorUsername as string) || "";
-      const authorUrl = (meta.authorUrl as string) || "";
-      const authorAvatarUrl = (meta.authorAvatarUrl as string) || "";
+      const authorInfo = getMentionAuthorInfo(mention);
+      if (!authorInfo) return;
+
+      const meta = (mention.raw_metadata && typeof mention.raw_metadata === "object" && !Array.isArray(mention.raw_metadata)
+        ? (mention.raw_metadata as Record<string, unknown>)
+        : null);
       const platform = normalizePlatform(domain);
-
-      // Need at least a name or username
-      if (!authorName && !authorUsername) return;
-
-      // Create unique key: username@platform or name@platform
-      const key = `${(authorUsername || authorName).toLowerCase()}@${platform.toLowerCase()}`;
+      const key = `${(authorInfo.username || authorInfo.name).toLowerCase()}@${platform.toLowerCase()}`;
 
       if (!authorMap.has(key)) {
         authorMap.set(key, {
-          authorName: authorName || authorUsername,
-          authorUsername,
-          authorUrl,
-          authorAvatarUrl,
+          authorName: authorInfo.name,
+          authorUsername: authorInfo.username,
+          authorUrl: authorInfo.url,
+          authorAvatarUrl: ((meta?.authorAvatarUrl as string) || (meta?.author_avatar_url as string) || ""),
           platform,
           mentions: [],
           keywords: new Set(),
@@ -176,17 +164,14 @@ export function useInfluencersData(
       const data = authorMap.get(key)!;
       data.mentions.push(mention);
 
-      const engagement = (meta.engagement as number) || ((meta.likes as number) || 0) + ((meta.comments as number) || 0) + ((meta.shares as number) || 0);
+      const engagement = Number(meta?.engagement || 0) || Number(meta?.likes || 0) + Number(meta?.comments || 0) + Number(meta?.shares || 0);
       data.totalEngagement += engagement;
-      data.totalViews += (meta.views as number) || 0;
+      data.totalViews += Number(meta?.views || 0);
 
       (mention.matched_keywords || []).forEach((kw: string) => data.keywords.add(kw));
-      if (mention.entity?.nombre) {
-        data.entities.add(mention.entity.nombre);
-      }
+      if (mention.entity?.nombre) data.entities.add(mention.entity.nombre);
     });
 
-    // Calculate metrics for each author
     const influencers: InfluencerMetrics[] = [];
 
     authorMap.forEach((data, key) => {
@@ -198,18 +183,14 @@ export function useInfluencersData(
       };
 
       const sentimentScore = total > 0 ? (sentiment.positivo - sentiment.negativo) / total : 0;
-
       const recentMentions = data.mentions.filter((m) => getEffectiveDate(m) > sevenDaysAgo).length;
-
       const olderMentions = total - recentMentions;
       const avgOlder = olderMentions / Math.max(1, (timeRangeDays - 7) / 7);
       let trend: "up" | "down" | "stable" = "stable";
       if (recentMentions > avgOlder * 1.2) trend = "up";
       else if (recentMentions < avgOlder * 0.8) trend = "down";
 
-      const sortedMentions = [...data.mentions].sort(
-        (a, b) => getEffectiveDate(b).getTime() - getEffectiveDate(a).getTime()
-      );
+      const sortedMentions = [...data.mentions].sort((a, b) => getEffectiveDate(b).getTime() - getEffectiveDate(a).getTime());
       const lastMention = sortedMentions[0];
       const lastMentionDate = lastMention ? (lastMention.published_at || lastMention.created_at) : null;
 
@@ -234,10 +215,8 @@ export function useInfluencersData(
       });
     });
 
-    // Sort by total engagement, then mentions
     influencers.sort((a, b) => (b.totalEngagement + b.totalMentions * 10) - (a.totalEngagement + a.totalMentions * 10));
 
-    // Daily data for trend chart (top 5 authors)
     const topInfluencersList = influencers.slice(0, 5);
     const toChartKey = (d: string) => d.replace(/[^a-z0-9]/gi, "_");
     const chartKeyByAuthor: Record<string, string> = {};
@@ -249,8 +228,8 @@ export function useInfluencersData(
     });
 
     const topKeys = topInfluencersList.map((i) => i.authorKey);
-
     const dailyMap = new Map<string, Record<string, number>>();
+
     for (let i = timeRangeDays - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, "yyyy-MM-dd");
@@ -260,25 +239,23 @@ export function useInfluencersData(
     }
 
     mentions.forEach((mention) => {
-      const meta = mention.raw_metadata as Record<string, unknown> | null;
-      if (!meta) return;
       const domain = mention.source_domain || "";
       if (!isSocialDomain(domain)) return;
-      const authorName = (meta.author as string) || "";
-      const authorUsername = (meta.authorUsername as string) || "";
-      if (!authorName && !authorUsername) return;
+
+      const authorInfo = getMentionAuthorInfo(mention);
+      if (!authorInfo) return;
+
       const platform = normalizePlatform(domain);
-      const authorKey = `${(authorUsername || authorName).toLowerCase()}@${platform.toLowerCase()}`;
+      const authorKey = `${(authorInfo.username || authorInfo.name).toLowerCase()}@${platform.toLowerCase()}`;
       if (!topKeys.includes(authorKey)) return;
 
       const effectiveDate = mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
       const dateKey = format(effectiveDate, "yyyy-MM-dd");
+      if (!dailyMap.has(dateKey)) return;
 
-      if (dailyMap.has(dateKey)) {
-        const dayData = dailyMap.get(dateKey)!;
-        const key = chartKeyByAuthor[authorKey];
-        dayData[key] = (dayData[key] || 0) + 1;
-      }
+      const dayData = dailyMap.get(dateKey)!;
+      const key = chartKeyByAuthor[authorKey];
+      dayData[key] = (dayData[key] || 0) + 1;
     });
 
     const dailyTrends: DailyInfluencerData[] = Array.from(dailyMap.entries())
