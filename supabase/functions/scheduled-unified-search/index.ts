@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { normalizeResults, toMentionRow, type NormalizedResult } from "../_shared/normalize.ts";
+import { normalizeResults as normalizeShared, toMentionRow, type NormalizedResult, type Platform } from "../_shared/normalize.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,6 +154,7 @@ serve(async (req) => {
                 description?: string;
                 source_domain?: string;
                 published_at?: string;
+                raw_metadata?: Record<string, unknown>;
               }> = [];
 
               if (platform === "news" && firecrawlKey) {
@@ -176,6 +177,7 @@ serve(async (req) => {
                     entity_id: entity.id,
                     matched_keywords: entity.palabras_clave || [],
                     published_at: r.published_at || null,
+                    raw_metadata: r.raw_metadata || {},
                   }));
 
                 if (mentionsToSave.length > 0) {
@@ -491,7 +493,7 @@ async function searchSocial(
   platform: string,
   query: string,
   maxResults: number
-): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; raw_metadata?: Record<string, unknown> }>> {
   const actorMap: Record<string, string> = {
     twitter: "powerai/twitter-search-scraper",
     facebook: "powerai/facebook-post-search-scraper",
@@ -586,8 +588,26 @@ async function searchSocial(
 
         if (!resultsResponse.ok) return [];
 
-        const resultsData = await resultsResponse.json();
-        return normalizeResults(platform, resultsData);
+        const rawItems = await resultsResponse.json();
+
+        // Use the shared canonical normalizer for rich metadata
+        const normalized = normalizeShared(rawItems, platform as Platform);
+
+        return normalized.filter(r => r.url).map(r => ({
+          url: r.url,
+          title: r.title,
+          description: r.description,
+          source_domain: r.platform,
+          published_at: r.publishedAt,
+          raw_metadata: {
+            author: r.author,
+            metrics: r.metrics,
+            contentType: r.contentType,
+            media: r.media,
+            hashtags: r.hashtags,
+            mentions: r.mentions,
+          },
+        }));
       }
 
       if (status === "FAILED" || status === "ABORTED" || status === "TIMED-OUT") {
@@ -604,64 +624,4 @@ async function searchSocial(
     console.error(`searchSocial error for ${platform}:`, error);
     return [];
   }
-}
-
-function normalizeResults(
-  platform: string,
-  results: Array<Record<string, unknown>>
-): Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }> {
-  return results.map(r => {
-    let url = "";
-    let title = "";
-    let description = "";
-    let publishedAt = "";
-
-    switch (platform) {
-      case "twitter":
-        url = r.tweet_url as string || r.url as string || "";
-        description = r.text as string || r.full_text as string || "";
-        publishedAt = r.created_at as string || "";
-        break;
-      case "facebook":
-        url = r.post_url as string || r.url as string || "";
-        description = r.message as string || r.text as string || "";
-        publishedAt = r.timestamp as string || r.postedAt as string || "";
-        break;
-      case "tiktok":
-        url = r.video_url as string || r.webVideoUrl as string || "";
-        description = r.description as string || r.text as string || "";
-        publishedAt = r.created_at as string || r.createTime as string || "";
-        break;
-      case "instagram":
-        url = r.url as string || `https://instagram.com/p/${r.shortCode}` || "";
-        description = r.caption as string || "";
-        publishedAt = r.timestamp as string || "";
-        break;
-      case "youtube":
-        url = r.url as string || `https://youtube.com/watch?v=${r.id}` || "";
-        title = r.title as string || "";
-        description = r.description as string || r.descriptionSnippet as string || "";
-        publishedAt = r.date as string || r.uploadDate as string || "";
-        break;
-      case "reddit":
-        url = r.url as string || "";
-        title = r.title as string || "";
-        description = r.body as string || r.selftext as string || "";
-        publishedAt = r.createdAt as string || "";
-        break;
-      case "linkedin":
-        url = r.postUrl as string || r.url as string || "";
-        description = r.text as string || r.commentary as string || "";
-        publishedAt = r.postedAt as string || r.postedDate as string || "";
-        break;
-    }
-
-    return {
-      url,
-      title,
-      description,
-      source_domain: platform,
-      published_at: publishedAt,
-    };
-  }).filter(r => r.url);
 }
