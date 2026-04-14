@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings, Plus, User, Building2, Briefcase, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,13 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useProject } from "@/contexts/ProjectContext";
 import { useEntities, EntityType } from "@/hooks/useEntities";
 import { EntityForm } from "@/components/entities/EntityForm";
 import { EntityList, Entity } from "@/components/entities/EntityList";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ConfiguracionPage = () => {
-  const { selectedProject } = useProject();
+  const { selectedProject, refreshProjects } = useProject();
+  const { toast } = useToast();
   const {
     entities,
     isLoading,
@@ -32,6 +36,30 @@ const ConfiguracionPage = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
   const [filterType, setFilterType] = useState<"all" | EntityType>("all");
+  const [strategicContext, setStrategicContext] = useState(selectedProject?.contexto_estrategico || "");
+  const [isSavingContext, setIsSavingContext] = useState(false);
+
+  useEffect(() => {
+    setStrategicContext(selectedProject?.contexto_estrategico || "");
+  }, [selectedProject?.id]);
+
+  const handleSaveStrategicContext = async () => {
+    if (!selectedProject) return;
+    setIsSavingContext(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ contexto_estrategico: strategicContext.trim() || null })
+        .eq("id", selectedProject.id);
+      if (error) throw error;
+      await refreshProjects();
+      toast({ title: "Guardado", description: "Contexto estratégico actualizado" });
+    } catch {
+      toast({ title: "Error", description: "No se pudo guardar", variant: "destructive" });
+    } finally {
+      setIsSavingContext(false);
+    }
+  };
 
   const handleCreateEntity = (data: {
     nombre: string;
@@ -232,10 +260,41 @@ const ConfiguracionPage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="preferences">
+        <TabsContent value="preferences" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Preferencias</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Contexto Estratégico
+              </CardTitle>
+              <CardDescription>
+                Define el contexto estratégico del proyecto. Esta información se usará automáticamente 
+                en todos los reportes para orientar el análisis de IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={strategicContext}
+                onChange={(e) => setStrategicContext(e.target.value)}
+                placeholder="Ej: Actinver está en un litigio activo con Rafael Zaga Tawil por fraude millonario al Infonavit. Todo el monitoreo debe evaluarse desde el impacto reputacional para Actinver y su posición en el caso legal."
+                className="min-h-[120px]"
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground max-w-md">
+                  Este contexto se incluye automáticamente en cada reporte generado. 
+                  Además, al generar un reporte puedes agregar un enfoque específico adicional.
+                </p>
+                <Button onClick={handleSaveStrategicContext} disabled={isSavingContext} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSavingContext ? "Guardando..." : "Guardar"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferencias Generales</CardTitle>
               <CardDescription>
                 Configuración general del proyecto
               </CardDescription>

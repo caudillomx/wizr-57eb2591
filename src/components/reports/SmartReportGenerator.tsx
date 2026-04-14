@@ -19,11 +19,13 @@ import {
   Globe,
   CheckCircle2,
   Filter,
+  Target,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, ReportType, ReportExtension, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
+import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 
 interface Entity {
   id: string;
@@ -35,6 +37,7 @@ interface SmartReportGeneratorProps {
   projectName: string;
   projectAudience: string;
   projectObjective: string;
+  strategicContext?: string;
   entityNames?: string[];
   entities?: Entity[];
   dateRange: {
@@ -57,7 +60,6 @@ const EXTENSIONS: { value: ReportExtension; label: string; description: string }
   { value: "medium", label: "Medio", description: "2-3 páginas • Análisis detallado" },
 ];
 
-// Source type definitions
 const SOURCE_TYPES = [
   { value: "__all__", label: "Todas las fuentes" },
   { value: "twitter", label: "Twitter/X" },
@@ -70,7 +72,6 @@ const SOURCE_TYPES = [
   { value: "news", label: "Medios Digitales" },
 ];
 
-// Helper to categorize source by domain
 function getSourceType(domain: string | null | undefined): string {
   if (!domain) return "other";
   const d = domain.toLowerCase();
@@ -81,7 +82,6 @@ function getSourceType(domain: string | null | undefined): string {
   if (d.includes("youtube") || d.includes("youtu.be")) return "youtube";
   if (d.includes("linkedin")) return "linkedin";
   if (d.includes("reddit")) return "reddit";
-  // News sites typically have varied domains
   return "news";
 }
 
@@ -90,6 +90,7 @@ export function SmartReportGenerator({
   projectName,
   projectAudience,
   projectObjective,
+  strategicContext,
   entityNames,
   entities = [],
   dateRange,
@@ -101,35 +102,41 @@ export function SmartReportGenerator({
   const [extension, setExtension] = useState<ReportExtension>("short");
   const [selectedTemplate, setSelectedTemplate] = useState<"executive" | "technical" | "public">("executive");
   const [editedTemplates, setEditedTemplates] = useState<SmartReportContent["templates"] | null>(null);
+  const [strategicFocus, setStrategicFocus] = useState("");
   
-  // Source and entity filters
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
 
-  // Filter mentions based on selected filters
   const filteredMentions = useMemo(() => {
     return mentions.filter((m) => {
-      // Source filter
       if (sourceFilter !== "__all__") {
         const mentionSource = getSourceType(m.source_domain);
         if (mentionSource !== sourceFilter) return false;
       }
-      
-      // Entity filter
       if (entityFilter !== "__all__") {
         if (m.entity_id !== entityFilter) return false;
       }
-      
       return true;
     });
   }, [mentions, sourceFilter, entityFilter]);
 
-  // Get filtered entity names for the report
   const filteredEntityNames = useMemo(() => {
     if (entityFilter === "__all__") return entityNames;
     const entity = entities.find(e => e.id === entityFilter);
     return entity ? [entity.nombre] : entityNames;
   }, [entityFilter, entities, entityNames]);
+
+  // Sentiment data for charts
+  const sentimentData = useMemo(() => {
+    const breakdown = { positivo: 0, negativo: 0, neutral: 0, sinAnalizar: 0 };
+    filteredMentions.forEach(m => {
+      if (m.sentiment === "positivo") breakdown.positivo++;
+      else if (m.sentiment === "negativo") breakdown.negativo++;
+      else if (m.sentiment === "neutral") breakdown.neutral++;
+      else breakdown.sinAnalizar++;
+    });
+    return breakdown;
+  }, [filteredMentions]);
 
   const handleGenerate = async () => {
     const config: SmartReportConfig = {
@@ -138,6 +145,8 @@ export function SmartReportGenerator({
       projectName,
       projectAudience,
       projectObjective,
+      strategicContext: strategicContext || undefined,
+      strategicFocus: strategicFocus.trim() || undefined,
       entityNames: filteredEntityNames,
       dateRange: {
         start: dateRange.start,
@@ -156,10 +165,7 @@ export function SmartReportGenerator({
     const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
     if (template) {
       navigator.clipboard.writeText(template);
-      toast({
-        title: "Copiado",
-        description: "Texto copiado al portapapeles",
-      });
+      toast({ title: "Copiado", description: "Texto copiado al portapapeles" });
     }
   };
 
@@ -167,17 +173,13 @@ export function SmartReportGenerator({
     const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
     if (template) {
       const encodedText = encodeURIComponent(template);
-      const whatsappUrl = `https://wa.me/?text=${encodedText}`;
-      window.open(whatsappUrl, "_blank");
+      window.open(`https://wa.me/?text=${encodedText}`, "_blank");
     }
   };
 
   const handleTemplateEdit = (value: string) => {
     if (editedTemplates) {
-      setEditedTemplates({
-        ...editedTemplates,
-        [selectedTemplate]: value,
-      });
+      setEditedTemplates({ ...editedTemplates, [selectedTemplate]: value });
     }
   };
 
@@ -217,9 +219,7 @@ export function SmartReportGenerator({
                     >
                       <Icon className={`h-5 w-5 mt-0.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                       <div>
-                        <div className={`font-medium text-sm ${isSelected ? "text-primary" : ""}`}>
-                          {type.label}
-                        </div>
+                        <div className={`font-medium text-sm ${isSelected ? "text-primary" : ""}`}>{type.label}</div>
                         <div className="text-xs text-muted-foreground">{type.description}</div>
                       </div>
                     </button>
@@ -248,6 +248,28 @@ export function SmartReportGenerator({
               </Select>
             </div>
 
+            {/* Strategic Focus */}
+            <div className="space-y-2 p-4 rounded-lg border border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                <Label className="font-medium">Enfoque Estratégico del Reporte</Label>
+              </div>
+              {strategicContext && (
+                <p className="text-xs text-muted-foreground">
+                  <strong>Contexto del proyecto:</strong> {strategicContext}
+                </p>
+              )}
+              <Textarea
+                value={strategicFocus}
+                onChange={(e) => setStrategicFocus(e.target.value)}
+                placeholder="Ej: Analizar cómo la detención de Rafael Zaga impacta la reputación de Actinver dado el litigio activo entre ambos. Evaluar si los medios vinculan directamente a Actinver con el caso."
+                className="text-sm min-h-[80px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Define el ángulo específico del análisis. La IA enfocará el reporte en este contexto.
+              </p>
+            </div>
+
             {/* Filters Section */}
             <div className="space-y-3 p-4 rounded-lg border border-dashed bg-muted/30">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -255,7 +277,6 @@ export function SmartReportGenerator({
                 Filtrar Menciones
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {/* Source/Platform Filter */}
                 <div className="space-y-1">
                   <Label className="text-xs">Fuente / Plataforma</Label>
                   <Select value={sourceFilter} onValueChange={setSourceFilter}>
@@ -264,15 +285,11 @@ export function SmartReportGenerator({
                     </SelectTrigger>
                     <SelectContent>
                       {SOURCE_TYPES.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
+                        <SelectItem key={source.value} value={source.value}>{source.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Entity Filter */}
                 <div className="space-y-1">
                   <Label className="text-xs">Entidad</Label>
                   <Select value={entityFilter} onValueChange={setEntityFilter}>
@@ -282,9 +299,7 @@ export function SmartReportGenerator({
                     <SelectContent>
                       <SelectItem value="__all__">Todas las entidades</SelectItem>
                       {entities.map((entity) => (
-                        <SelectItem key={entity.id} value={entity.id}>
-                          {entity.nombre}
-                        </SelectItem>
+                        <SelectItem key={entity.id} value={entity.id}>{entity.nombre}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -338,12 +353,21 @@ export function SmartReportGenerator({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">{report.title}</h3>
-                <Button variant="ghost" size="sm" onClick={clearReport}>
-                  Nuevo reporte
-                </Button>
+                <Button variant="ghost" size="sm" onClick={clearReport}>Nuevo reporte</Button>
               </div>
               <p className="text-muted-foreground">{report.summary}</p>
             </div>
+
+            {/* Visual Analytics */}
+            <ReportAnalyticsCharts
+              sourceBreakdown={report.sourceBreakdown}
+              influencers={report.influencers}
+              timeline={report.timeline}
+              sentimentData={sentimentData}
+              impactAssessment={report.impactAssessment}
+              sentimentAnalysis={report.sentimentAnalysis}
+              dateLabel={dateRange.label}
+            />
 
             {/* Key Findings & Recommendations */}
             <div className="grid md:grid-cols-2 gap-4">
@@ -382,15 +406,12 @@ export function SmartReportGenerator({
             {/* Output Channels */}
             <div className="space-y-4">
               <h4 className="font-medium">Canales de Salida</h4>
-              
-              {/* Template Selector */}
               <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as typeof selectedTemplate)}>
                 <TabsList className="grid grid-cols-3 w-full">
                   <TabsTrigger value="executive">Ejecutivo</TabsTrigger>
                   <TabsTrigger value="technical">Técnico</TabsTrigger>
                   <TabsTrigger value="public">Público</TabsTrigger>
                 </TabsList>
-                
                 <TabsContent value={selectedTemplate} className="mt-4">
                   <div className="space-y-3">
                     <Textarea
@@ -399,8 +420,6 @@ export function SmartReportGenerator({
                       className="min-h-[200px] font-sans"
                       placeholder="Contenido del mensaje..."
                     />
-                    
-                    {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
                         <Copy className="mr-2 h-4 w-4" />

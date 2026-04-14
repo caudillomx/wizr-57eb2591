@@ -13,7 +13,9 @@ interface Mention {
   source_domain: string | null;
   sentiment: string | null;
   created_at: string;
+  published_at: string | null;
   matched_keywords: string[];
+  raw_metadata: Record<string, unknown> | null;
 }
 
 interface ReportRequest {
@@ -23,6 +25,8 @@ interface ReportRequest {
   projectName: string;
   projectAudience: string;
   projectObjective: string;
+  strategicContext?: string;
+  strategicFocus?: string;
   entityNames?: string[];
   dateRange: {
     start: string;
@@ -36,6 +40,8 @@ interface ReportContent {
   summary: string;
   keyFindings: string[];
   recommendations: string[];
+  impactAssessment?: string;
+  sentimentAnalysis?: string;
   metrics: {
     totalMentions: number;
     positiveCount: number;
@@ -51,152 +57,60 @@ interface ReportContent {
 }
 
 const EXTENSION_TOKENS = {
-  micro: 1200,
-  short: 2000,
-  medium: 3500,
+  micro: 1500,
+  short: 3000,
+  medium: 5000,
 };
 
 const REPORT_TYPE_PROMPTS = {
-  brief: `Genera un BRIEF EJECUTIVO DE MONITOREO detallado y accionable. NO seas genérico.
+  brief: `Genera un BRIEF EJECUTIVO DE MONITOREO detallado y accionable.
 
-ESTRUCTURA TU ANÁLISIS:
+ESTRUCTURA:
+1. RESUMEN DEL PERÍODO - menciones totales, sentimiento cuantificado, eventos dominantes
+2. ANÁLISIS DE FUENTES - fuentes más relevantes, cuáles generan contenido negativo vs positivo
+3. TEMAS Y NARRATIVAS - 3-5 temas principales, narrativas a amplificar vs responder
+4. INFLUENCIADORES - quién habla, con qué alcance, tono
+5. ANÁLISIS DE SENTIMIENTO - distribución, tendencia, drivers de negatividad/positividad
+6. ALERTAS Y SEÑALES - atención inmediata, cambios significativos, oportunidades`,
 
-1. RESUMEN DEL PERÍODO
-   - ¿Cuántas menciones hubo y cómo se compara con lo esperado?
-   - ¿El sentimiento general es favorable o desfavorable? Cuantifica.
-   - ¿Hay algún evento o tema que dominó el período?
+  crisis: `Genera una ALERTA DE CRISIS profunda y operativa con URGENCIA y PRECISIÓN.
 
-2. ANÁLISIS DE FUENTES
-   - ¿De dónde provienen las menciones más relevantes?
-   - ¿Qué fuentes generan más contenido negativo vs positivo?
-   - ¿Hay nuevas fuentes que debamos monitorear?
+ESTRUCTURA:
+1. DESCRIPCIÓN DEL EVENTO CRÍTICO - qué pasó, detonante, plataformas/fuentes
+2. MAGNITUD E IMPACTO - menciones negativas, % del total, tendencia, alcance
+3. IMPACTO EN LA MARCA/ENTIDAD - cómo afecta directamente, riesgos reputacionales concretos
+4. ACTORES E INFLUENCIADORES - detractores, amplificadores, defensores (nombres y plataformas)
+5. NARRATIVA DE LA CRISIS - mensaje central, argumentos, desinformación
+6. ANÁLISIS DE MEDIOS - qué medios cubren, qué ángulo toman, cuáles son los más dañinos
+7. PLAN DE CONTENCIÓN (24h) - acciones inmediatas, mensajes de respuesta, canales prioritarios
+8. PLAN DE RECUPERACIÓN - estrategia, narrativas positivas, aliados`,
 
-3. TEMAS Y NARRATIVAS DETECTADAS
-   - Identifica 3-5 temas principales mencionados
-   - ¿Hay narrativas positivas que debamos amplificar?
-   - ¿Hay narrativas negativas que requieran respuesta?
+  thematic: `Genera un ANÁLISIS TEMÁTICO PROFUNDO.
 
-4. ANÁLISIS DE KEYWORDS
-   - ¿Qué keywords aparecen más frecuentemente?
-   - ¿Hay keywords nuevos o emergentes?
-   - ¿Los keywords negativos están asociados a algún tema específico?
+ESTRUCTURA:
+1. TEMA PRINCIPAL - definición, relevancia, estado
+2. SUBTEMAS Y NARRATIVAS - frecuencia, sentimiento, fuentes por cada uno
+3. EVOLUCIÓN TEMPORAL - origen, picos, tendencia
+4. ACTORES Y VOCES - influenciadores, líderes de opinión, medios
+5. IMPACTO EN LA MARCA/ENTIDAD - cómo afecta, oportunidades, riesgos
+6. PREDICCIÓN Y RECOMENDACIONES - hacia dónde va, qué hacer`,
 
-5. ALERTAS Y SEÑALES
-   - ¿Hay algo que requiera atención inmediata?
-   - ¿Cambios significativos vs períodos anteriores?
-   - ¿Oportunidades detectadas?`,
+  comparative: `Genera un ANÁLISIS COMPARATIVO entre entidades.
 
-  crisis: `Genera una ALERTA DE CRISIS profunda y operativa. Esto requiere URGENCIA y PRECISIÓN.
-
-ESTRUCTURA TU ANÁLISIS:
-
-1. DESCRIPCIÓN DEL EVENTO CRÍTICO
-   - ¿Qué pasó exactamente? Sé específico con fechas, fuentes, protagonistas
-   - ¿Cuál es el detonante de la crisis?
-   - ¿En qué fuentes/plataformas está concentrada?
-
-2. MAGNITUD E IMPACTO
-   - ¿Cuántas menciones negativas hay?
-   - ¿Qué porcentaje del total representan?
-   - ¿La crisis está creciendo, estable o decreciendo?
-   - ¿Qué alcance potencial tienen las fuentes que la reportan?
-
-3. ACTORES INVOLUCRADOS
-   - ¿Quiénes son los principales detractores/críticos?
-   - ¿Hay influenciadores amplificando la crisis?
-   - ¿Hay defensores o voces positivas?
-
-4. NARRATIVA DE LA CRISIS
-   - ¿Cuál es el mensaje central de la crítica?
-   - ¿Qué argumentos se usan en contra?
-   - ¿Hay información falsa o tergiversada?
-
-5. PLAN DE CONTENCIÓN (Inmediato)
-   - Acciones en las próximas 24 horas
-   - Mensajes sugeridos de respuesta
-   - Canales prioritarios para intervenir
-
-6. PLAN DE RECUPERACIÓN (Mediano plazo)
-   - Estrategia de comunicación sugerida
-   - Narrativas positivas a amplificar
-   - Aliados potenciales para movilizar`,
-
-  thematic: `Genera un ANÁLISIS TEMÁTICO PROFUNDO. Extrae INTELIGENCIA sobre un tema específico.
-
-ESTRUCTURA TU ANÁLISIS:
-
-1. TEMA PRINCIPAL IDENTIFICADO
-   - Define el tema central con precisión
-   - ¿Por qué es relevante para el proyecto?
-   - ¿Es un tema nuevo, recurrente, o en evolución?
-
-2. SUBTEMAS Y NARRATIVAS
-   - Identifica 3-5 subtemas relacionados
-   - Para cada subtema: frecuencia, sentimiento predominante, fuentes principales
-   - ¿Cómo se conectan los subtemas entre sí?
-
-3. EVOLUCIÓN TEMPORAL
-   - ¿Cuándo surgió o se intensificó este tema?
-   - ¿Hay picos o patrones temporales?
-   - ¿El interés está creciendo o decayendo?
-
-4. ACTORES Y VOCES
-   - ¿Quiénes hablan de este tema?
-   - ¿Hay líderes de opinión o influenciadores?
-   - ¿Hay instituciones o medios que lo cubren regularmente?
-
-5. CONTEXTO E IMPLICACIONES
-   - ¿Qué contexto externo explica este tema?
-   - ¿Cómo afecta a la marca/entidad monitoreada?
-   - ¿Qué oportunidades o riesgos representa?
-
-6. PREDICCIÓN Y RECOMENDACIONES
-   - ¿Hacia dónde va este tema?
-   - ¿Qué posicionamiento sugerimos?
-   - ¿Qué acciones concretas tomar?`,
-
-  comparative: `Genera un ANÁLISIS COMPARATIVO entre entidades. Identifica GANADORES, PERDEDORES Y OPORTUNIDADES.
-
-ESTRUCTURA TU ANÁLISIS:
-
-1. COMPARACIÓN DE VOLUMEN
-   - ¿Quién tiene más menciones? Lista de mayor a menor
-   - ¿Qué porcentaje del total representa cada entidad?
-   - ¿El volumen correlaciona con algo (tamaño, actividad, eventos)?
-
-2. COMPARACIÓN DE SENTIMIENTO
-   - ¿Quién tiene mejor ratio positivo/negativo?
-   - ¿Quién tiene más menciones negativas (en absoluto y porcentaje)?
-   - ¿Hay alguna entidad con sentimiento polarizado?
-
-3. ANÁLISIS DE FUENTES
-   - ¿Cada entidad tiene fuentes diferentes o similares?
-   - ¿Quién tiene mejor cobertura en medios tradicionales?
-   - ¿Quién domina en redes sociales?
-
-4. FORTALEZAS Y DEBILIDADES
-   - Para cada entidad: su principal fortaleza comunicacional
-   - Para cada entidad: su principal área de mejora
-   - Tabla comparativa implícita
-
-5. SHARE OF VOICE
-   - ¿Quién "domina la conversación"?
-   - ¿Hay entidades invisibilizadas que deberían tener más presencia?
-   - ¿Oportunidades de gap en la conversación?
-
-6. BENCHMARK Y OPORTUNIDADES
-   - ¿Quién es el líder a seguir y por qué?
-   - ¿Qué hace diferente al líder?
-   - ¿Qué oportunidades hay para mejorar posición?`,
+ESTRUCTURA:
+1. COMPARACIÓN DE VOLUMEN - ranking por menciones, %
+2. COMPARACIÓN DE SENTIMIENTO - ratio positivo/negativo por entidad
+3. ANÁLISIS DE FUENTES - cobertura por entidad, fortalezas de canal
+4. INFLUENCIADORES POR ENTIDAD - quién habla de cada uno
+5. SHARE OF VOICE - quién domina, brechas, oportunidades
+6. BENCHMARK - líder, diferenciadores, recomendaciones`,
 };
 
 function buildDetailedMentionAnalysis(mentions: Mention[]): string {
-  // Group by sentiment
   const positive = mentions.filter(m => m.sentiment === "positivo");
   const negative = mentions.filter(m => m.sentiment === "negativo");
   const neutral = mentions.filter(m => m.sentiment === "neutral");
 
-  // Group by source
   const bySource: Record<string, Mention[]> = {};
   mentions.forEach(m => {
     const source = m.source_domain || "desconocido";
@@ -204,36 +118,65 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
     bySource[source].push(m);
   });
 
-  // Get keyword frequency
   const keywordCount: Record<string, number> = {};
   mentions.forEach(m => {
     m.matched_keywords?.forEach(k => {
       keywordCount[k] = (keywordCount[k] || 0) + 1;
     });
   });
-  const topKeywords = Object.entries(keywordCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
+  const topKeywords = Object.entries(keywordCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  // Extract influencers from raw_metadata
+  const authorMap: Record<string, { name: string; platform: string; count: number; engagement: number; sentiment: string[] }> = {};
+  mentions.forEach(m => {
+    const meta = m.raw_metadata;
+    const authorName = (meta?.author_name || meta?.authorName || meta?.author_username) as string | undefined;
+    if (!authorName) return;
+    const key = `${authorName}@${m.source_domain || "unknown"}`;
+    if (!authorMap[key]) {
+      authorMap[key] = { name: authorName, platform: m.source_domain || "unknown", count: 0, engagement: 0, sentiment: [] };
+    }
+    authorMap[key].count++;
+    if (m.sentiment) authorMap[key].sentiment.push(m.sentiment);
+    const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0) + ((meta?.views as number) || 0);
+    authorMap[key].engagement += eng;
+  });
+  const topAuthors = Object.values(authorMap).sort((a, b) => b.count - a.count).slice(0, 10);
+
+  // Timeline analysis
+  const byDate: Record<string, number> = {};
+  mentions.forEach(m => {
+    const date = (m.published_at || m.created_at || "").split("T")[0];
+    if (date) byDate[date] = (byDate[date] || 0) + 1;
+  });
+  const sortedDates = Object.entries(byDate).sort((a, b) => a[0].localeCompare(b[0]));
 
   let analysis = "ANÁLISIS DETALLADO DE MENCIONES:\n\n";
 
-  // Sentiment breakdown
   analysis += "DISTRIBUCIÓN DE SENTIMIENTO:\n";
   analysis += `- Positivas: ${positive.length} (${(positive.length/mentions.length*100).toFixed(1)}%)\n`;
   analysis += `- Negativas: ${negative.length} (${(negative.length/mentions.length*100).toFixed(1)}%)\n`;
   analysis += `- Neutrales: ${neutral.length} (${(neutral.length/mentions.length*100).toFixed(1)}%)\n\n`;
 
-  // Source breakdown
   const sortedSources = Object.entries(bySource).sort((a, b) => b[1].length - a[1].length);
-  analysis += "TOP FUENTES:\n";
-  sortedSources.slice(0, 5).forEach(([source, items]) => {
+  analysis += "TOP FUENTES/MEDIOS:\n";
+  sortedSources.slice(0, 8).forEach(([source, items]) => {
     const posCount = items.filter(i => i.sentiment === "positivo").length;
     const negCount = items.filter(i => i.sentiment === "negativo").length;
-    analysis += `- ${source}: ${items.length} menciones (${posCount} pos, ${negCount} neg)\n`;
+    analysis += `- ${source}: ${items.length} menciones (${posCount} positivas, ${negCount} negativas)\n`;
   });
   analysis += "\n";
 
-  // Keywords
+  if (topAuthors.length > 0) {
+    analysis += "INFLUENCIADORES / AUTORES PRINCIPALES:\n";
+    topAuthors.forEach((a, i) => {
+      const negCount = a.sentiment.filter(s => s === "negativo").length;
+      const posCount = a.sentiment.filter(s => s === "positivo").length;
+      analysis += `${i+1}. ${a.name} [${a.platform}]: ${a.count} menciones, ${a.engagement > 0 ? a.engagement.toLocaleString() + " interacciones, " : ""}sentimiento ${negCount > posCount ? "mayormente negativo" : posCount > negCount ? "mayormente positivo" : "mixto"}\n`;
+    });
+    analysis += "\n";
+  }
+
   if (topKeywords.length > 0) {
     analysis += "KEYWORDS MÁS FRECUENTES:\n";
     topKeywords.forEach(([keyword, count]) => {
@@ -242,20 +185,28 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
     analysis += "\n";
   }
 
-  // Sample of negative mentions (important for crisis detection)
-  if (negative.length > 0) {
-    analysis += "MUESTRA DE MENCIONES NEGATIVAS:\n";
-    negative.slice(0, 5).forEach((m, i) => {
-      analysis += `${i+1}. [${m.source_domain}] ${m.title || ''}: ${(m.description || '').substring(0, 150)}...\n`;
+  if (sortedDates.length > 0) {
+    analysis += "ACTIVIDAD POR DÍA:\n";
+    sortedDates.forEach(([date, count]) => {
+      analysis += `- ${date}: ${count} menciones\n`;
     });
     analysis += "\n";
   }
 
-  // Sample of positive mentions
+  if (negative.length > 0) {
+    analysis += "MUESTRA DE MENCIONES NEGATIVAS:\n";
+    negative.slice(0, 8).forEach((m, i) => {
+      const meta = m.raw_metadata;
+      const author = (meta?.author_name || meta?.author_username || "") as string;
+      analysis += `${i+1}. [${m.source_domain}]${author ? " por " + author : ""} "${m.title || ''}": ${(m.description || '').substring(0, 200)}\n`;
+    });
+    analysis += "\n";
+  }
+
   if (positive.length > 0) {
     analysis += "MUESTRA DE MENCIONES POSITIVAS:\n";
-    positive.slice(0, 3).forEach((m, i) => {
-      analysis += `${i+1}. [${m.source_domain}] ${m.title || ''}: ${(m.description || '').substring(0, 150)}...\n`;
+    positive.slice(0, 5).forEach((m, i) => {
+      analysis += `${i+1}. [${m.source_domain}] ${m.title || ''}: ${(m.description || '').substring(0, 150)}\n`;
     });
   }
 
@@ -274,7 +225,7 @@ serve(async (req) => {
     }
 
     const body: ReportRequest = await req.json();
-    const { mentions, reportType, extension, projectName, projectAudience, projectObjective, entityNames, dateRange } = body;
+    const { mentions, reportType, extension, projectName, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, dateRange } = body;
 
     if (!mentions || mentions.length === 0) {
       return new Response(
@@ -283,7 +234,6 @@ serve(async (req) => {
       );
     }
 
-    // Calculate metrics
     const metrics = {
       totalMentions: mentions.length,
       positiveCount: mentions.filter(m => m.sentiment === "positivo").length,
@@ -292,42 +242,55 @@ serve(async (req) => {
       topSources: [...new Set(mentions.map(m => m.source_domain).filter(Boolean))].slice(0, 5) as string[],
     };
 
-    // Build detailed analysis
     const detailedAnalysis = buildDetailedMentionAnalysis(mentions);
 
-    // Prepare mentions summary for AI (more context per mention)
-    const mentionsSummary = mentions.slice(0, 40).map(m => ({
+    const mentionsSummary = mentions.slice(0, 50).map(m => ({
       title: m.title,
-      description: m.description?.substring(0, 200),
+      description: m.description?.substring(0, 250),
       source: m.source_domain,
       sentiment: m.sentiment,
       keywords: m.matched_keywords?.join(", "),
-      date: m.created_at?.split('T')[0],
+      date: (m.published_at || m.created_at)?.split('T')[0],
+      author: (m.raw_metadata?.author_name || m.raw_metadata?.author_username || null) as string | null,
     }));
 
     const maxTokens = EXTENSION_TOKENS[extension];
     const typePrompt = REPORT_TYPE_PROMPTS[reportType];
 
-    const systemPrompt = `Eres un ANALISTA SENIOR de inteligencia estratégica con experiencia en monitoreo de medios y reputación.
+    // Build strategic context block
+    let strategicBlock = "";
+    if (strategicContext || strategicFocus) {
+      strategicBlock = "\n=== CONTEXTO ESTRATÉGICO ===\n";
+      if (strategicContext) {
+        strategicBlock += `CONTEXTO DEL PROYECTO: ${strategicContext}\n`;
+      }
+      if (strategicFocus) {
+        strategicBlock += `ENFOQUE ESPECÍFICO DE ESTE REPORTE: ${strategicFocus}\n`;
+      }
+      strategicBlock += `\nIMPORTANTE: Todo tu análisis DEBE estar orientado por este contexto estratégico. No analices los datos de forma genérica. Evalúa cada hallazgo en función de cómo impacta a la marca/entidad principal según el contexto descrito. Incluye una sección de "Evaluación de Impacto" que analice específicamente cómo los eventos detectados afectan a la marca/entidad en el contexto estratégico descrito.\n`;
+    }
+
+    const systemPrompt = `Eres un ANALISTA SENIOR de inteligencia estratégica con experiencia en monitoreo de medios, gestión de crisis y reputación corporativa.
 
 TU AUDIENCIA: ${projectAudience}
 OBJETIVO DEL MONITOREO: ${projectObjective}
 
-PRINCIPIOS DE TU ANÁLISIS:
-1. ESPECIFICIDAD: Usa nombres de fuentes, títulos de notas, fechas. Nunca digas "varias fuentes" o "algunos medios".
-2. CUANTIFICACIÓN: Incluye números, porcentajes, comparaciones. No hables en términos vagos.
-3. CONTEXTO: Explica el "por qué" detrás de los datos. ¿Por qué es importante este hallazgo?
-4. ACCIONABILIDAD: Cada insight debe poder convertirse en una decisión o acción concreta.
-5. PRIORIZACIÓN: Lo más importante primero. Destaca lo crítico vs lo informativo.
+PRINCIPIOS:
+1. ESPECIFICIDAD: Usa nombres de fuentes, autores, fechas concretas. Nunca "varias fuentes" o "algunos medios".
+2. CUANTIFICACIÓN: Incluye números, porcentajes, comparaciones.
+3. CONTEXTO ESTRATÉGICO: Cada dato debe conectarse con el impacto en la marca/entidad monitoreada.
+4. ACCIONABILIDAD: Cada insight debe poder convertirse en una decisión concreta.
+5. INFLUENCIADORES: Identifica quién genera la conversación, con qué alcance y tono.
+6. MEDIOS: Detalla qué medios/plataformas cubren el tema y con qué ángulo.
 
 FORMATO:
-- Responde en español profesional
-- NO uses markdown, asteriscos, ni símbolos especiales (excepto en versión WhatsApp donde puedes usar emojis)
-- Cita fuentes específicas cuando menciones un hallazgo
+- Español profesional
+- NO uses markdown, asteriscos, ni símbolos especiales (excepto emojis en versión WhatsApp)
+- Cita fuentes y autores específicos
 - Usa números exactos`;
 
     const userPrompt = `${typePrompt}
-
+${strategicBlock}
 === CONTEXTO DEL PROYECTO ===
 PROYECTO: ${projectName}
 PERIODO ANALIZADO: ${dateRange.label} (${dateRange.start} a ${dateRange.end})
@@ -346,18 +309,20 @@ ${detailedAnalysis}
 ${JSON.stringify(mentionsSummary, null, 2)}
 
 === TU TAREA ===
-Analiza los datos y genera un reporte siguiendo la estructura indicada. Sé ESPECÍFICO y CUANTITATIVO.
+Analiza los datos y genera un reporte siguiendo la estructura indicada. Sé ESPECÍFICO, CUANTITATIVO y orientado al CONTEXTO ESTRATÉGICO.
 
 Responde en formato JSON con esta estructura exacta:
 {
-  "title": "string - título profesional que refleje el contenido del reporte",
-  "summary": "string - párrafo ejecutivo de 4-6 oraciones con los hallazgos críticos, mencionando fuentes y números específicos",
-  "keyFindings": ["string - hallazgo específico citando fuentes/datos", ...] - mínimo 4 hallazgos ordenados por importancia,
-  "recommendations": ["string - acción específica y priorizada", ...] - mínimo 3 recomendaciones concretas,
+  "title": "string - título profesional que refleje el contenido y ángulo estratégico del reporte",
+  "summary": "string - párrafo ejecutivo de 4-6 oraciones con hallazgos críticos, mencionando fuentes, autores y números específicos, y cómo impactan a la marca/entidad",
+  "impactAssessment": "string - párrafo evaluando específicamente cómo los eventos detectados afectan a la marca/entidad principal en el contexto estratégico. Si no hay contexto estratégico, evalúa el impacto reputacional general",
+  "sentimentAnalysis": "string - párrafo analizando la distribución de sentimiento, tendencias, y qué factores impulsan la negatividad o positividad",
+  "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...] - mínimo 4, ordenados por importancia,
+  "recommendations": ["string - acción específica y priorizada", ...] - mínimo 3 concretas,
   "templates": {
-    "executive": "string - 3-4 párrafos para directivos, enfoque en impacto de negocio y decisiones",
-    "technical": "string - 3-4 párrafos para analistas, con metodología y datos detallados", 
-    "public": "string - 2-3 párrafos con emojis apropiados para WhatsApp, resumen accesible"
+    "executive": "string - 3-4 párrafos para directivos: impacto de negocio, decisiones necesarias, contexto estratégico",
+    "technical": "string - 3-4 párrafos para analistas: metodología, datos detallados, influenciadores, medios",
+    "public": "string - 2-3 párrafos con emojis para WhatsApp: resumen accesible, cifras clave"
   }
 }`;
 
@@ -373,8 +338,8 @@ Responde en formato JSON con esta estructura exacta:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: maxTokens + 700,
-        temperature: 0.6,
+        max_tokens: maxTokens + 1000,
+        temperature: 0.5,
       }),
     });
 
@@ -403,14 +368,12 @@ Responde en formato JSON con esta estructura exacta:
       throw new Error("No content in AI response");
     }
 
-    // Parse JSON from response - robust extraction with partial JSON recovery
+    // Parse JSON from response
     let reportContent: Partial<ReportContent>;
     try {
-      // First, clean the content - remove markdown code blocks if present
       let cleanedContent = content;
       cleanedContent = cleanedContent.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
       
-      // Find the JSON object by matching balanced braces
       const extractBalancedJSON = (str: string): string | null => {
         const startIndex = str.indexOf('{');
         if (startIndex === -1) return null;
@@ -421,55 +384,33 @@ Responde en formato JSON con esta estructura exacta:
         
         for (let i = startIndex; i < str.length; i++) {
           const char = str[i];
-          
-          if (escapeNext) {
-            escapeNext = false;
-            continue;
-          }
-          
-          if (char === '\\' && inString) {
-            escapeNext = true;
-            continue;
-          }
-          
-          if (char === '"' && !escapeNext) {
-            inString = !inString;
-            continue;
-          }
-          
+          if (escapeNext) { escapeNext = false; continue; }
+          if (char === '\\' && inString) { escapeNext = true; continue; }
+          if (char === '"' && !escapeNext) { inString = !inString; continue; }
           if (!inString) {
             if (char === '{') braceCount++;
             if (char === '}') braceCount--;
-            
-            if (braceCount === 0) {
-              return str.substring(startIndex, i + 1);
-            }
+            if (braceCount === 0) return str.substring(startIndex, i + 1);
           }
         }
-        // If we didn't find balanced braces, return what we have (truncated)
         return null;
       };
       
       let jsonStr = extractBalancedJSON(cleanedContent);
       
-      // If no balanced JSON, try to recover truncated response
       if (!jsonStr) {
         console.log("Attempting to recover truncated JSON response");
         const startIndex = cleanedContent.indexOf('{');
         if (startIndex !== -1) {
-          // Try to extract key fields from incomplete JSON
           const partialContent = cleanedContent.substring(startIndex);
-          
-          // Extract title
           const titleMatch = partialContent.match(/"title"\s*:\s*"([^"]+)"/);
           const summaryMatch = partialContent.match(/"summary"\s*:\s*"([^"]+)"/);
+          const impactMatch = partialContent.match(/"impactAssessment"\s*:\s*"([^"]+)"/);
           
-          // Try to extract keyFindings array items
           const keyFindingsMatch = partialContent.match(/"keyFindings"\s*:\s*\[([\s\S]*?)(?:\]|$)/);
           let keyFindings: string[] = [];
           if (keyFindingsMatch) {
-            const findingsStr = keyFindingsMatch[1];
-            const findingMatches = findingsStr.match(/"([^"]+)"/g);
+            const findingMatches = keyFindingsMatch[1].match(/"([^"]+)"/g);
             if (findingMatches) {
               keyFindings = findingMatches.map((f: string) => f.replace(/"/g, '')).filter((f: string) => f.length > 10);
             }
@@ -477,49 +418,45 @@ Responde en formato JSON con esta estructura exacta:
           
           if (titleMatch || summaryMatch) {
             reportContent = {
-              title: titleMatch?.[1] || `Reporte de ${reportType === "brief" ? "Monitoreo" : reportType === "crisis" ? "Crisis" : reportType === "thematic" ? "Análisis Temático" : "Comparativa"}`,
-              summary: summaryMatch?.[1] || "Resumen generado parcialmente debido a límites de respuesta.",
+              title: titleMatch?.[1] || `Reporte de ${reportType}`,
+              summary: summaryMatch?.[1] || "Resumen generado parcialmente.",
+              impactAssessment: impactMatch?.[1] || undefined,
               keyFindings: keyFindings.length > 0 ? keyFindings : ["Reporte generado con información parcial"],
-              recommendations: ["Intenta generar el reporte con extensión 'short' o 'medium' para más detalle"],
+              recommendations: ["Intenta generar con extensión 'medium' para más detalle"],
               templates: {
                 executive: summaryMatch?.[1] || "",
                 technical: summaryMatch?.[1] || "",
                 public: `📊 ${titleMatch?.[1] || "Reporte"}`,
               },
             };
-            console.log("Recovered partial report from truncated response");
           } else {
-            throw new Error("No valid JSON object found in response");
+            throw new Error("No valid JSON object found");
           }
         } else {
-          throw new Error("No valid JSON object found in response");
+          throw new Error("No valid JSON object found");
         }
       } else {
-        // Sanitize control characters that break JSON parsing
-        const sanitized = jsonStr
-          .replace(/[\x00-\x1F\x7F]/g, (match) => {
-            if (match === '\n' || match === '\r' || match === '\t') return match;
-            return '';
-          });
+        const sanitized = jsonStr.replace(/[\x00-\x1F\x7F]/g, (match) => {
+          if (match === '\n' || match === '\r' || match === '\t') return match;
+          return '';
+        });
         reportContent = JSON.parse(sanitized);
       }
     } catch (parseError) {
       console.error("JSON parse error:", parseError, "Content:", content.substring(0, 800));
       const cleanText = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      
-      // Last resort: try to extract any useful text
       const titleMatch = cleanText.match(/"title"\s*:\s*"([^"]+)"/);
       const summaryMatch = cleanText.match(/"summary"\s*:\s*"([^"]+)"/);
       
       reportContent = {
-        title: titleMatch?.[1] || `Reporte de ${reportType === "brief" ? "Monitoreo" : reportType === "crisis" ? "Crisis" : reportType === "thematic" ? "Análisis Temático" : "Comparativa"}`,
+        title: titleMatch?.[1] || `Reporte de ${reportType}`,
         summary: summaryMatch?.[1] || cleanText.substring(0, 500),
         keyFindings: ["Reporte generado con información parcial"],
-        recommendations: ["Intenta generar con extensión 'short' o 'medium'"],
+        recommendations: ["Intenta generar con extensión 'medium'"],
         templates: {
           executive: summaryMatch?.[1] || cleanText.substring(0, 400),
           technical: cleanText.substring(0, 500),
-          public: `📊 ${titleMatch?.[1] || "Reporte generado"}`,
+          public: `📊 ${titleMatch?.[1] || "Reporte"}`,
         },
       };
     }
@@ -529,6 +466,8 @@ Responde en formato JSON con esta estructura exacta:
       summary: reportContent.summary || "",
       keyFindings: reportContent.keyFindings || [],
       recommendations: reportContent.recommendations || [],
+      impactAssessment: reportContent.impactAssessment || undefined,
+      sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
       metrics,
       templates: {
         executive: reportContent.templates?.executive || "",

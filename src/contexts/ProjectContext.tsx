@@ -16,6 +16,7 @@ export interface Project {
   sensibilidad: SensitivityLevel;
   alcance_temporal: TemporalScope;
   alcance_geografico: string[];
+  contexto_estrategico: string | null;
   version: number;
   activo: boolean;
   created_at: string;

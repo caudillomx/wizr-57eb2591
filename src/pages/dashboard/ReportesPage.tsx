@@ -254,6 +254,7 @@ const ReportesPage = () => {
           projectName={selectedProject.nombre}
           projectAudience={selectedProject.audiencia}
           projectObjective={selectedProject.objetivo}
+          strategicContext={selectedProject.contexto_estrategico || undefined}
           entityNames={entityNames}
           entities={entities}
           dateRange={{

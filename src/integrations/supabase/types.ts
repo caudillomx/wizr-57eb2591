@@ -669,6 +669,7 @@ export type Database = {
           alcance_geografico: string[]
           alcance_temporal: Database["public"]["Enums"]["temporal_scope"]
           audiencia: string
+          contexto_estrategico: string | null
           created_at: string
           descripcion: string | null
           id: string
@@ -685,6 +686,7 @@ export type Database = {
           alcance_geografico?: string[]
           alcance_temporal?: Database["public"]["Enums"]["temporal_scope"]
           audiencia: string
+          contexto_estrategico?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
@@ -701,6 +703,7 @@ export type Database = {
           alcance_geografico?: string[]
           alcance_temporal?: Database["public"]["Enums"]["temporal_scope"]
           audiencia?: string
+          contexto_estrategico?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
