@@ -80,6 +80,30 @@ function getOrder(sortBy?: string): string {
   }
 }
 
+// Wrap multi-word queries in quotes for exact matching on YouTube
+function buildExactQuery(query: string): string {
+  const trimmed = query.trim();
+  // Already quoted
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed;
+  // Multi-word → wrap in quotes for exact phrase match
+  if (trimmed.includes(" ")) return `"${trimmed}"`;
+  return trimmed;
+}
+
+// Extract keyword tokens from the original query for post-search relevance filtering
+function extractKeywordTokens(query: string): string[] {
+  // Remove quotes and split into meaningful tokens (2+ chars)
+  const cleaned = query.replace(/"/g, "").toLowerCase();
+  return cleaned.split(/\s+/).filter(t => t.length >= 2);
+}
+
+// Check if a video's text content is relevant to the search keywords
+function isRelevantResult(title: string, description: string, channelTitle: string, keywords: string[]): boolean {
+  const haystack = `${title} ${description} ${channelTitle}`.toLowerCase();
+  // At least one keyword token must appear in title, description, or channel name
+  return keywords.some(kw => haystack.includes(kw));
+}
+
 // Parse ISO 8601 duration (PT1H2M3S) to seconds
 function parseDuration(iso: string | undefined): number {
   if (!iso) return 0;
@@ -114,14 +138,17 @@ serve(async (req) => {
       );
     }
 
-    console.log(`YouTube API search: "${query}" maxResults=${maxResults} uploadDate=${uploadDate} sortBy=${sortBy}`);
+    const exactQuery = buildExactQuery(query);
+    const relevanceTokens = extractKeywordTokens(query);
 
-    // Step 1: Search for videos
+    console.log(`YouTube API search: original="${query}" exact="${exactQuery}" tokens=${JSON.stringify(relevanceTokens)} maxResults=${maxResults}`);
+
+    // Step 1: Search for videos (with exact-match quoting)
     const searchParams = new URLSearchParams({
       part: "snippet",
-      q: query,
+      q: exactQuery,
       type: "video",
-      maxResults: String(Math.min(maxResults, 50)), // API max is 50 per page
+      maxResults: String(Math.min(maxResults, 50)),
       order: getOrder(sortBy),
       key: apiKey,
     });
@@ -256,19 +283,28 @@ serve(async (req) => {
       };
     });
 
+    // Step 4: Post-search relevance filter — discard results that don't mention any keyword
+    const rawCount = items.length;
+    const relevantItems = items.filter(item =>
+      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens)
+    );
+    const discardedCount = rawCount - relevantItems.length;
+
     // Sort by date (newest first) by default, unless sorted by relevance/viewCount
     if (sortBy === "date" || !sortBy) {
-      items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      relevantItems.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
     }
 
-    console.log(`YouTube API: found ${items.length} results (${items.filter(i => i.raw._isShort).length} shorts)`);
+    console.log(`YouTube API: ${rawCount} raw → ${relevantItems.length} relevant (${discardedCount} discarded, ${relevantItems.filter(i => i.raw._isShort).length} shorts)`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        items,
-        totalResults: items.length,
-        quotaCost: maxPages + Math.ceil(videoIds.length / 50), // search + videos.list calls
+        items: relevantItems,
+        totalResults: relevantItems.length,
+        rawCount,
+        discardedCount,
+        quotaCost: maxPages + Math.ceil(videoIds.length / 50),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
