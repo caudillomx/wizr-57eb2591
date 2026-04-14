@@ -289,7 +289,20 @@ export function ReportAnalyticsCharts({
                     <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="py-2 text-xs font-bold text-primary">{i + 1}</td>
                       <td className="py-2">
-                        <span className="font-medium">{inf.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-7 w-7">
+                            {inf.avatarUrl && <AvatarImage src={inf.avatarUrl} />}
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                              {inf.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <span className="font-medium text-sm block truncate">{inf.name}</span>
+                            {inf.username && (
+                              <span className="text-[11px] text-muted-foreground">@{inf.username}</span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="text-center py-2">
                         <Badge variant="secondary" className="text-xs">{normalizeDomain(inf.platform)}</Badge>
