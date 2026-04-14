@@ -283,19 +283,28 @@ serve(async (req) => {
       };
     });
 
+    // Step 4: Post-search relevance filter — discard results that don't mention any keyword
+    const rawCount = items.length;
+    const relevantItems = items.filter(item =>
+      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens)
+    );
+    const discardedCount = rawCount - relevantItems.length;
+
     // Sort by date (newest first) by default, unless sorted by relevance/viewCount
     if (sortBy === "date" || !sortBy) {
-      items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      relevantItems.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
     }
 
-    console.log(`YouTube API: found ${items.length} results (${items.filter(i => i.raw._isShort).length} shorts)`);
+    console.log(`YouTube API: ${rawCount} raw → ${relevantItems.length} relevant (${discardedCount} discarded, ${relevantItems.filter(i => i.raw._isShort).length} shorts)`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        items,
-        totalResults: items.length,
-        quotaCost: maxPages + Math.ceil(videoIds.length / 50), // search + videos.list calls
+        items: relevantItems,
+        totalResults: relevantItems.length,
+        rawCount,
+        discardedCount,
+        quotaCost: maxPages + Math.ceil(videoIds.length / 50),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
