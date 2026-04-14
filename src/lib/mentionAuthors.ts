@@ -70,9 +70,22 @@ const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null
     if (segments.length === 0) return null;
 
     if (source.includes("twitter") || source.includes("x.com")) {
-      const blocked = new Set(["i", "search", "home", "explore", "messages", "compose", "intent", "share", "login", "signup"]);
+      const blocked = new Set(["i", "search", "home", "explore", "messages", "compose", "intent", "share", "login", "signup", "hashtag"]);
+      // Pattern 1: x.com/{username}/status/{id}
+      if (segments.includes("status")) {
+        const statusIdx = segments.indexOf("status");
+        const username = statusIdx > 0 ? segments[statusIdx - 1]?.replace(/^@/, "") : segments[0]?.replace(/^@/, "");
+        if (username && !blocked.has(username.toLowerCase())) {
+          return {
+            name: username,
+            username,
+            url: `${SOCIAL_DOMAIN_FALLBACKS.twitter}/${username}`,
+          };
+        }
+      }
+      // Pattern 2: x.com/{username} (profile URL, no /status/)
       const username = segments[0]?.replace(/^@/, "");
-      if (username && !blocked.has(username.toLowerCase()) && segments.includes("status")) {
+      if (username && !blocked.has(username.toLowerCase()) && segments.length <= 2) {
         return {
           name: username,
           username,
