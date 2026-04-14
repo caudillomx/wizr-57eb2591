@@ -311,7 +311,7 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
       updateJob(job.id, { status: "running" });
 
       try {
-        let results: Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }> = [];
+        let results: Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; author?: string; authorUsername?: string; authorUrl?: string; likes?: number; comments?: number; shares?: number; views?: number }> = [];
 
         if (job.platform === "news") {
           // Use Firecrawl for news
@@ -366,13 +366,25 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             const statusData = statusResult.data;
 
             if (statusData.status === "SUCCEEDED" || statusData.status === "completed") {
-              results = (statusData.items || []).map((r: Record<string, unknown>) => ({
-                url: (r as { url?: string }).url || "",
-                title: (r as { title?: string }).title,
-                description: (r as { description?: string; text?: string }).description || (r as { text?: string }).text,
-                source_domain: job.platform,
-                published_at: (r as { publishedAt?: string; timestamp?: string }).publishedAt || (r as { timestamp?: string }).timestamp,
-              }));
+              results = (statusData.items || []).map((r: Record<string, unknown>) => {
+                const item = r as Record<string, unknown>;
+                const authorObj = item.author as Record<string, unknown> | undefined;
+                const metricsObj = item.metrics as Record<string, unknown> | undefined;
+                return {
+                  url: String(item.url || ""),
+                  title: item.title ? String(item.title) : undefined,
+                  description: item.description ? String(item.description) : (item.text ? String(item.text) : undefined),
+                  source_domain: job.platform,
+                  published_at: item.publishedAt ? String(item.publishedAt) : (item.timestamp ? String(item.timestamp) : undefined),
+                  author: authorObj?.name ? String(authorObj.name) : undefined,
+                  authorUsername: authorObj?.username ? String(authorObj.username) : undefined,
+                  authorUrl: authorObj?.url ? String(authorObj.url) : undefined,
+                  likes: Number(metricsObj?.likes || 0) || undefined,
+                  comments: Number(metricsObj?.comments || 0) || undefined,
+                  shares: Number(metricsObj?.shares || 0) || undefined,
+                  views: Number(metricsObj?.views || 0) || undefined,
+                };
+              });
               break;
             }
 
@@ -399,6 +411,15 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             entity_id: entity.id,
             matched_keywords: entity.palabras_clave || [],
             published_at: r.published_at || null,
+            raw_metadata: {
+              ...(r.author ? { author: r.author } : {}),
+              ...(r.authorUsername ? { authorUsername: r.authorUsername } : {}),
+              ...(r.authorUrl ? { authorUrl: r.authorUrl } : {}),
+              ...(r.likes != null ? { likes: r.likes } : {}),
+              ...(r.comments != null ? { comments: r.comments } : {}),
+              ...(r.shares != null ? { shares: r.shares } : {}),
+              ...(r.views != null ? { views: r.views } : {}),
+            },
           }));
 
           // Apply semantic deduplication
