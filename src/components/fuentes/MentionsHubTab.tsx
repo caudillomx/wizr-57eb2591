@@ -46,7 +46,6 @@ import {
   User,
   Newspaper,
   Share2,
-  Share2,
   ArrowUpDown,
   AlertCircle,
 } from "lucide-react";
