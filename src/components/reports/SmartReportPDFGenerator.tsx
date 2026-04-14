@@ -159,12 +159,12 @@ export function SmartReportPDFGenerator({
 
       // Legend
       doc.setFontSize(6.5);
-      [
-        { c: GR, l: `Positivo ${posPct}%`, x: m },
-        { c: AM, l: `Neutral ${neuPct}%`, x: m + cw / 2 - 12 },
-        { c: RD, l: `Negativo ${negPct}%`, x: m + cw - 28 },
-      ].forEach(({ c, l, x }) => {
-        doc.setFillColor(...c);
+      ([
+        { c: GR as C3, l: `Positivo ${posPct}%`, x: m },
+        { c: AM as C3, l: `Neutral ${neuPct}%`, x: m + cw / 2 - 12 },
+        { c: RD as C3, l: `Negativo ${negPct}%`, x: m + cw - 28 },
+      ] as const).forEach(({ c, l, x }) => {
+        doc.setFillColor(c[0], c[1], c[2]);
         doc.circle(x + 1.5, y + 1.2, 1.5, "F");
         doc.setTextColor(...G);
         doc.text(l, x + 5, y + 2.2);
@@ -613,13 +613,13 @@ function drawTimelineChart(
   // Legend
   const legendY = y + chartH + 8;
   doc.setFontSize(6);
-  [
-    { c: GR, l: "Positivo" },
-    { c: AM, l: "Neutral" },
-    { c: RD, l: "Negativo" },
-  ].forEach(({ c, l }, i) => {
+  ([
+    { c: GR as C3, l: "Positivo" },
+    { c: AM as C3, l: "Neutral" },
+    { c: RD as C3, l: "Negativo" },
+  ] as const).forEach(({ c, l }, i) => {
     const lx = m + 10 + i * 25;
-    doc.setFillColor(...c);
+    doc.setFillColor(c[0], c[1], c[2]);
     doc.circle(lx, legendY, 1.5, "F");
     doc.setTextColor(...G);
     doc.text(l, lx + 3, legendY + 1);
