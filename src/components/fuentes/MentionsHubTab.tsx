@@ -46,6 +46,7 @@ import {
   User,
   Newspaper,
   Share2,
+  ArrowUpDown,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
@@ -697,7 +698,23 @@ export function MentionsHubTab({
             <CardTitle className="text-base">
               {filteredMentions.length} menciones encontradas
             </CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[200px] h-8 text-xs">
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectItem value="date_desc">Más recientes</SelectItem>
+                  <SelectItem value="date_asc">Más antiguas</SelectItem>
+                  <SelectItem value="engagement_desc">Mayor engagement</SelectItem>
+                  <SelectItem value="engagement_asc">Menor engagement</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages || 1}
+              </span>
+            </div>
               Página {currentPage} de {totalPages || 1}
             </div>
           </div>
