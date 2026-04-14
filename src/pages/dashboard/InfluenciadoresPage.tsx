@@ -255,7 +255,7 @@ const InfluenciadoresPage = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fuente Principal</CardTitle>
+            <CardTitle className="text-sm font-medium">Top Influenciador</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -263,11 +263,11 @@ const InfluenciadoresPage = () => {
               <Skeleton className="h-8 w-32" />
             ) : (
               <div className="text-2xl font-bold truncate">
-                {influencers[0]?.domain || "-"}
+                {influencers[0]?.authorName || "-"}
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              {influencers[0]?.totalMentions || 0} menciones
+              {influencers[0]?.totalMentions || 0} publicaciones • {influencers[0]?.platform || ""}
             </p>
           </CardContent>
         </Card>
