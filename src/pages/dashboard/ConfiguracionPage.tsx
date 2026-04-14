@@ -11,10 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useProject } from "@/contexts/ProjectContext";
 import { useEntities, EntityType } from "@/hooks/useEntities";
 import { EntityForm } from "@/components/entities/EntityForm";
 import { EntityList, Entity } from "@/components/entities/EntityList";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ConfiguracionPage = () => {
   const { selectedProject } = useProject();
