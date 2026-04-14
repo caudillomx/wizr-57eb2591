@@ -394,13 +394,20 @@ async function updateScheduleAfterRun(
   const now = new Date();
   const nextRun = calculateNextRun(frequency, now);
 
+  // First get current run_count
+  const { data: current } = await supabase
+    .from("project_search_schedules")
+    .select("run_count")
+    .eq("id", scheduleId)
+    .single();
+
   await supabase
     .from("project_search_schedules")
     .update({
       last_run_at: now.toISOString(),
       next_run_at: nextRun.toISOString(),
       last_error: error,
-      run_count: supabase.sql`run_count + 1`,
+      run_count: (current?.run_count || 0) + 1,
     })
     .eq("id", scheduleId);
 }
