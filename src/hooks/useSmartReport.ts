@@ -157,8 +157,8 @@ export function useSmartReport() {
       authorMap[key].engagement += eng;
     });
     const influencers: InfluencerInfo[] = Object.values(authorMap)
-      .sort((a, b) => b.mentions - a.mentions)
-      .slice(0, 15)
+      .sort((a, b) => b.engagement - a.engagement || b.mentions - a.mentions)
+      .slice(0, 20)
       .map(a => {
         const negRatio = a.sentiments.filter(s => s === "negativo").length / (a.sentiments.length || 1);
         const posRatio = a.sentiments.filter(s => s === "positivo").length / (a.sentiments.length || 1);
