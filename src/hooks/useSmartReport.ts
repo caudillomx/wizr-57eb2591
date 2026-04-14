@@ -110,18 +110,46 @@ export function useSmartReport() {
       .map(([source, data]) => ({ source, ...data }))
       .sort((a, b) => b.count - a.count);
 
-    // Influencers from raw_metadata
+    // Influencers from raw_metadata + text/URL inference
+    const inferAuthorFromText = (title?: string | null, description?: string | null, url?: string): string | null => {
+      // Try to extract @username from title or description
+      const text = `${title || ""} ${description || ""}`;
+      const mentionMatch = text.match(/@([A-Za-z0-9_]{2,})/);
+      if (mentionMatch) return mentionMatch[1];
+      // Try to extract from social URL patterns
+      if (url) {
+        const twitterMatch = url.match(/(?:twitter\.com|x\.com)\/([A-Za-z0-9_]+)/i);
+        if (twitterMatch && !["search", "hashtag", "i", "intent"].includes(twitterMatch[1].toLowerCase())) return twitterMatch[1];
+        const fbMatch = url.match(/facebook\.com\/([A-Za-z0-9_.]+)/i);
+        if (fbMatch && !["permalink.php", "profile.php", "story.php", "watch", "groups", "pages"].includes(fbMatch[1].toLowerCase())) return fbMatch[1];
+        const igMatch = url.match(/instagram\.com\/([A-Za-z0-9_.]+)/i);
+        if (igMatch && !["p", "reel", "explore", "stories"].includes(igMatch[1].toLowerCase())) return igMatch[1];
+      }
+      return null;
+    };
+
     const authorMap: Record<string, { name: string; username: string; avatarUrl: string | null; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
     mentions.forEach(m => {
       const meta = m.raw_metadata as Record<string, unknown> | null;
-      const authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
-      if (!authorName) return;
+      let authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
+      let username = (meta?.authorUsername || meta?.author_username || "") as string;
+      const avatarUrl = (meta?.authorAvatarUrl || meta?.author_avatar_url || meta?.profileImageUrl || null) as string | null;
+
+      // Fallback: infer from text/URL when metadata is empty
+      if (!authorName) {
+        const inferred = inferAuthorFromText(m.title, m.description, m.url);
+        if (inferred) {
+          authorName = inferred;
+          username = inferred;
+        } else {
+          return; // truly no author info
+        }
+      }
+
       const normalizedPlatform = normalizeDomain(m.source_domain || "unknown");
-      const key = `${authorName}@${normalizedPlatform}`;
+      const key = `${authorName.toLowerCase()}@${normalizedPlatform}`;
       if (!authorMap[key]) {
-        const username = (meta?.authorUsername || meta?.author_username || "") as string;
-        const avatarUrl = (meta?.authorAvatarUrl || meta?.author_avatar_url || meta?.profileImageUrl || null) as string | null;
-        authorMap[key] = { name: authorName, username, avatarUrl, platform: normalizedPlatform, mentions: 0, sentiments: [], engagement: 0 };
+        authorMap[key] = { name: authorName, username: username || authorName, avatarUrl, platform: normalizedPlatform, mentions: 0, sentiments: [], engagement: 0 };
       }
       authorMap[key].mentions++;
       if (m.sentiment) authorMap[key].sentiments.push(m.sentiment);
