@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings, Plus, User, Building2, Briefcase, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
