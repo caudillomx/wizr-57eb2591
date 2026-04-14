@@ -281,11 +281,12 @@ export function MentionsHubTab({
 
   // Export CSV
   const exportCSV = useCallback(() => {
-    const headers = ["Título", "Descripción", "URL", "Plataforma", "Autor", "Username", "Sentimiento", "Fecha", "Keywords", "Likes", "Comentarios", "Shares", "Vistas", "Entidad"];
-    const rows = filteredMentions.map((m) => {
+    const headers = ["Título", "Descripción", "URL", "Plataforma", "Autor", "Username", "Sentimiento", "Fecha", "Keywords", "Likes", "Comentarios", "Shares", "Vistas", "Engagement Total", "Entidad"];
+    const rows = sortedMentions.map((m) => {
       const author = getAuthorInfo(m);
       const metrics = getEngagementMetrics(m);
       const entity = entities.find((e) => e.id === m.entity_id);
+      const totalEng = metrics ? metrics.likes + metrics.comments + metrics.shares + metrics.views : 0;
       return [
         (m.title || "").replace(/"/g, '""'),
         (m.description || "").replace(/"/g, '""'),
@@ -300,6 +301,7 @@ export function MentionsHubTab({
         metrics?.comments ?? "",
         metrics?.shares ?? "",
         metrics?.views ?? "",
+        totalEng || "",
         entity?.nombre || "",
       ].map((v) => `"${v}"`).join(",");
     });
@@ -311,7 +313,7 @@ export function MentionsHubTab({
     a.download = `menciones_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [filteredMentions, entities]);
+  }, [sortedMentions, entities]);
 
   const activeFiltersCount = [
     searchQuery.trim(),
