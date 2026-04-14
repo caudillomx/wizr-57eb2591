@@ -160,11 +160,14 @@ const DashboardHomePage = () => {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{selectedProject.nombre}</h1>
-        <p className="text-sm text-muted-foreground">
-          {format(new Date(), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
-        </p>
+      <div className="flex items-end justify-between border-b border-border pb-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{selectedProject.nombre}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {format(new Date(), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
+          </p>
+        </div>
+        <span className="section-label hidden md:block">Panel ejecutivo</span>
       </div>
 
       {/* KPI Cards */}
@@ -222,12 +225,12 @@ const DashboardHomePage = () => {
 
       {/* Sparkline + Sentiment bar */}
       {stats && stats.total > 0 && (
-        <Card>
-          <CardContent className="p-4">
+        <Card className="data-card">
+          <CardContent className="p-5">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               {/* Mini sparkline */}
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground mb-2">Actividad últimos 7 días ({stats.total} menciones)</p>
+                <p className="section-label mb-2">Actividad · 7 días ({stats.total} menciones)</p>
                 <div className="flex items-end gap-1 h-12">
                   {stats.sparkline.map((v, i) => (
                     <div
@@ -247,7 +250,7 @@ const DashboardHomePage = () => {
               </div>
               {/* Sentiment bar */}
               <div className="md:w-64">
-                <p className="text-xs text-muted-foreground mb-2">Distribución de sentimiento</p>
+                <p className="section-label mb-2">Sentimiento</p>
                 <div className="flex h-3 rounded-full overflow-hidden bg-muted">
                   {stats.positivo > 0 && (
                     <div
@@ -293,10 +296,10 @@ const DashboardHomePage = () => {
       {/* Recent Mentions + Quick Actions */}
       <div className="grid md:grid-cols-3 gap-4">
         {/* Recent mentions feed */}
-        <Card className="md:col-span-2">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-foreground">Menciones recientes</p>
+        <Card className="md:col-span-2 data-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-foreground">Menciones recientes</h2>
               <Button
                 variant="ghost"
                 size="sm"
@@ -343,9 +346,9 @@ const DashboardHomePage = () => {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-foreground mb-3">Acciones rápidas</p>
+        <Card className="data-card">
+          <CardContent className="p-5">
+            <h2 className="text-base font-semibold text-foreground mb-4">Acciones rápidas</h2>
             <div className="space-y-2">
               <QuickAction
                 icon={<Search className="h-4 w-4" />}
@@ -399,16 +402,16 @@ function KPICard({
   };
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="cursor-pointer hover:shadow-md transition-all data-card"
       onClick={onClick}
     >
       <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-3">
           <div className={`p-1.5 rounded-md ${accentMap[accent]}`}>{icon}</div>
-          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="section-label !text-[10px]">{label}</span>
         </div>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
-        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+        <p className="data-value">{value}</p>
+        {subtitle && <p className="text-[11px] text-muted-foreground mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
   );
