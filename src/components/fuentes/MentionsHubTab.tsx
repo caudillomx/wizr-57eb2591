@@ -706,10 +706,18 @@ export function MentionsHubTab({
       {/* Results */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">
-              {filteredMentions.length} menciones encontradas
-            </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base">
+                {filteredMentions.length} menciones encontradas
+              </CardTitle>
+              {(sortBy === "engagement_desc" || sortBy === "engagement_asc") && stats.withoutEngagement > 0 && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {stats.withEngagement} con datos de engagement · {stats.withoutEngagement} sin datos (capturadas vía búsqueda web)
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[200px] h-8 text-xs">
@@ -723,7 +731,7 @@ export function MentionsHubTab({
                   <SelectItem value="engagement_asc">Menor engagement</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
                 Página {currentPage} de {totalPages || 1}
               </span>
             </div>
