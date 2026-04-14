@@ -96,6 +96,7 @@ const ConfiguracionPage = () => {
     }
   };
 
+  const handleCreateEntity = (data: {
     nombre: string;
     tipo: EntityType;
     descripcion?: string;
