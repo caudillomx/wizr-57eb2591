@@ -106,8 +106,11 @@ const DashboardHomePage = () => {
     if (!mentions) return null;
     const now = new Date();
     const yesterday = subHours(now, 24);
+    const getDate = (m: { published_at: string | null; created_at: string }) =>
+      new Date(m.published_at ?? m.created_at);
+
     const last24h = mentions.filter((m) =>
-      isWithinInterval(new Date(m.created_at), { start: yesterday, end: now })
+      isWithinInterval(getDate(m), { start: yesterday, end: now })
     );
     const total = mentions.length;
     const positivo = mentions.filter((m) => m.sentiment === "positivo").length;
@@ -122,7 +125,7 @@ const DashboardHomePage = () => {
       const dayEnd = subDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), i - 1);
       sparkline.push(
         mentions.filter((m) => {
-          const d = new Date(m.created_at);
+          const d = getDate(m);
           return d >= dayStart && d < dayEnd;
         }).length
       );
