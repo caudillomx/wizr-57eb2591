@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,10 @@ import {
   Trash2,
   Loader2,
   Sparkles,
+  Download,
+  User,
+  Newspaper,
+  Share2,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 
@@ -55,6 +59,14 @@ const PLATFORM_ICONS: Record<string, React.ElementType> = {
   "linkedin.com": Linkedin,
   "tiktok.com": MessageSquare,
   "reddit.com": MessageSquare,
+};
+
+const SOCIAL_DOMAINS = ["twitter", "x.com", "facebook", "instagram", "youtube", "linkedin", "tiktok", "threads", "reddit"];
+
+const isSocialDomain = (domain: string | null): boolean => {
+  if (!domain) return false;
+  const normalized = domain.toLowerCase().replace("www.", "");
+  return SOCIAL_DOMAINS.some((sd) => normalized.includes(sd));
 };
 
 const getPlatformIcon = (domain: string | null) => {
@@ -76,12 +88,41 @@ const getPlatformLabel = (domain: string | null): string => {
   return domain;
 };
 
+// Extract author info from raw_metadata
+const getAuthorInfo = (mention: Mention) => {
+  const meta = mention.raw_metadata as Record<string, unknown> | null;
+  if (!meta) return null;
+  const author = meta.author as string | undefined;
+  const authorUsername = meta.authorUsername as string | undefined;
+  const authorUrl = meta.authorUrl as string | undefined;
+  if (!author && !authorUsername) return null;
+  return {
+    name: author || authorUsername || "",
+    username: authorUsername || "",
+    url: authorUrl || "",
+  };
+};
+
+// Extract engagement metrics from raw_metadata
+const getEngagementMetrics = (mention: Mention) => {
+  const meta = mention.raw_metadata as Record<string, unknown> | null;
+  if (!meta) return null;
+  const likes = meta.likes as number | undefined;
+  const comments = meta.comments as number | undefined;
+  const shares = meta.shares as number | undefined;
+  const views = meta.views as number | undefined;
+  if (likes == null && comments == null && shares == null && views == null) return null;
+  return { likes: likes || 0, comments: comments || 0, shares: shares || 0, views: views || 0 };
+};
+
 const SENTIMENT_CONFIG = {
   positivo: { label: "Positivo", icon: Smile, color: "text-green-600", bg: "bg-green-100" },
   neutral: { label: "Neutral", icon: Meh, color: "text-gray-600", bg: "bg-gray-100" },
   negativo: { label: "Negativo", icon: Frown, color: "text-red-600", bg: "bg-red-100" },
   unknown: { label: "Sin analizar", icon: HelpCircle, color: "text-gray-400", bg: "bg-gray-50" },
 };
+
+type SourceCategory = "__all__" | "social" | "news";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -117,19 +158,23 @@ export function MentionsHubTab({
   const [selectedPlatform, setSelectedPlatform] = useState<string>("__all__");
   const [selectedSentiment, setSelectedSentiment] = useState<string>("__all__");
   const [selectedEntity, setSelectedEntity] = useState<string>("__all__");
+  const [sourceCategory, setSourceCategory] = useState<SourceCategory>("__all__");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Extract unique platforms
-  const platforms = useMemo(() => {
+  // Extract unique platforms grouped by category
+  const { platforms, socialCount, newsCount } = useMemo(() => {
     const uniqueDomains = new Set<string>();
+    let sc = 0, nc = 0;
     mentions.forEach((m) => {
       if (m.source_domain) {
-        uniqueDomains.add(m.source_domain.toLowerCase().replace("www.", ""));
+        const d = m.source_domain.toLowerCase().replace("www.", "");
+        uniqueDomains.add(d);
+        if (isSocialDomain(d)) sc++; else nc++;
       }
     });
-    return Array.from(uniqueDomains).sort();
+    return { platforms: Array.from(uniqueDomains).sort(), socialCount: sc, newsCount: nc };
   }, [mentions]);
 
   // Filter mentions
