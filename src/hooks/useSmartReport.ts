@@ -99,7 +99,7 @@ export function useSmartReport() {
     const authorMap: Record<string, { name: string; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
     mentions.forEach(m => {
       const meta = m.raw_metadata as Record<string, unknown> | null;
-      const authorName = (meta?.author_name || meta?.authorName || meta?.author_username) as string | undefined;
+      const authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
       if (!authorName) return;
       const key = `${authorName}@${m.source_domain || "unknown"}`;
       if (!authorMap[key]) {
