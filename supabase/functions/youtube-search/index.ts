@@ -80,6 +80,30 @@ function getOrder(sortBy?: string): string {
   }
 }
 
+// Wrap multi-word queries in quotes for exact matching on YouTube
+function buildExactQuery(query: string): string {
+  const trimmed = query.trim();
+  // Already quoted
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) return trimmed;
+  // Multi-word → wrap in quotes for exact phrase match
+  if (trimmed.includes(" ")) return `"${trimmed}"`;
+  return trimmed;
+}
+
+// Extract keyword tokens from the original query for post-search relevance filtering
+function extractKeywordTokens(query: string): string[] {
+  // Remove quotes and split into meaningful tokens (2+ chars)
+  const cleaned = query.replace(/"/g, "").toLowerCase();
+  return cleaned.split(/\s+/).filter(t => t.length >= 2);
+}
+
+// Check if a video's text content is relevant to the search keywords
+function isRelevantResult(title: string, description: string, channelTitle: string, keywords: string[]): boolean {
+  const haystack = `${title} ${description} ${channelTitle}`.toLowerCase();
+  // At least one keyword token must appear in title, description, or channel name
+  return keywords.some(kw => haystack.includes(kw));
+}
+
 // Parse ISO 8601 duration (PT1H2M3S) to seconds
 function parseDuration(iso: string | undefined): number {
   if (!iso) return 0;
