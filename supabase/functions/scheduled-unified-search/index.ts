@@ -11,6 +11,7 @@ interface Entity {
   nombre: string;
   palabras_clave: string[];
   aliases: string[];
+  platform_keywords: Record<string, string[]>;
 }
 
 interface Schedule {
@@ -80,6 +81,7 @@ serve(async (req) => {
         const { data: entities, error: entitiesError } = await supabase
           .from("entities")
           .select("id, nombre, palabras_clave, aliases")
+          .select("id, nombre, palabras_clave, aliases, platform_keywords")
           .eq("project_id", schedule.project_id)
           .eq("activo", true);
 
@@ -96,10 +98,9 @@ serve(async (req) => {
 
         // Process each entity
         for (const entity of entities as Entity[]) {
-          const searchQuery = buildSearchQuery(entity);
-
           // Process each platform
           for (const platform of schedule.platforms) {
+            const searchQuery = buildSearchQuery(entity, platform);
             try {
               let platformResults: Array<{
                 url: string;
@@ -207,7 +208,10 @@ serve(async (req) => {
   }
 });
 
-function buildSearchQuery(entity: Entity): string {
+function buildSearchQuery(entity: Entity, platform?: string): string {
+  if (platform && entity.platform_keywords && entity.platform_keywords[platform]?.length > 0) {
+    return entity.platform_keywords[platform].join(" OR ");
+  }
   if (entity.palabras_clave && entity.palabras_clave.length > 0) {
     return entity.palabras_clave.join(" OR ");
   }

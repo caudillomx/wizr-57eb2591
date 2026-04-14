@@ -211,6 +211,7 @@ export type Database = {
           metadata: Json | null
           nombre: string
           palabras_clave: string[]
+          platform_keywords: Json
           project_id: string
           tipo: Database["public"]["Enums"]["entity_type"]
           updated_at: string
@@ -224,6 +225,7 @@ export type Database = {
           metadata?: Json | null
           nombre: string
           palabras_clave?: string[]
+          platform_keywords?: Json
           project_id: string
           tipo: Database["public"]["Enums"]["entity_type"]
           updated_at?: string
@@ -237,6 +239,7 @@ export type Database = {
           metadata?: Json | null
           nombre?: string
           palabras_clave?: string[]
+          platform_keywords?: Json
           project_id?: string
           tipo?: Database["public"]["Enums"]["entity_type"]
           updated_at?: string

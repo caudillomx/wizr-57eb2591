@@ -39,6 +39,7 @@ const ConfiguracionPage = () => {
     descripcion?: string;
     palabras_clave: string[];
     aliases: string[];
+    platform_keywords: Record<string, string[]>;
   }) => {
     if (!selectedProject) return;
     
@@ -55,6 +56,7 @@ const ConfiguracionPage = () => {
     descripcion?: string;
     palabras_clave: string[];
     aliases: string[];
+    platform_keywords: Record<string, string[]>;
   }) => {
     if (!editingEntity) return;
     
@@ -265,6 +267,7 @@ const ConfiguracionPage = () => {
             descripcion: editingEntity.descripcion || undefined,
             palabras_clave: editingEntity.palabras_clave,
             aliases: editingEntity.aliases,
+            platform_keywords: editingEntity.platform_keywords || {},
           }}
           isLoading={isUpdating}
         />
