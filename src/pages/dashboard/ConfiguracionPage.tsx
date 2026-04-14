@@ -76,8 +76,26 @@ const ConfiguracionPage = () => {
       setIsSavingContext(false);
     }
   };
+  const handleDeleteProject = async () => {
+    if (!selectedProject || deleteConfirmName !== selectedProject.nombre) return;
+    setIsDeletingProject(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", selectedProject.id);
+      if (error) throw error;
+      toast({ title: "Proyecto eliminado", description: `"${selectedProject.nombre}" ha sido eliminado permanentemente.` });
+      await refreshProjects();
+      navigate("/dashboard/proyectos");
+    } catch {
+      toast({ title: "Error", description: "No se pudo eliminar el proyecto", variant: "destructive" });
+    } finally {
+      setIsDeletingProject(false);
+      setDeleteConfirmName("");
+    }
+  };
 
-  const handleCreateEntity = (data: {
     nombre: string;
     tipo: EntityType;
     descripcion?: string;
