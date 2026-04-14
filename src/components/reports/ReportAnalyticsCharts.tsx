@@ -208,55 +208,121 @@ export function ReportAnalyticsCharts({
           </CardContent>
         </Card>
 
-        {/* Influencers Table */}
+        {/* Source sentiment breakdown table */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Influenciadores de la Conversación
+              <Activity className="h-4 w-4" />
+              Desglose por Fuente
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {influencers.length > 0 ? (
-              <div className="space-y-2 max-h-[220px] overflow-y-auto">
-                {influencers.map((inf, i) => (
-                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-medium text-muted-foreground w-5">{i + 1}</span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{inf.name}</p>
-                        <p className="text-xs text-muted-foreground">{normalizeDomain(inf.platform)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className="text-xs">{inf.mentions}</Badge>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${
-                          inf.sentiment === "negativo"
-                            ? "text-red-600 border-red-200 bg-red-50"
-                            : inf.sentiment === "positivo"
-                            ? "text-green-600 border-green-200 bg-green-50"
-                            : "text-gray-600 border-gray-200"
-                        }`}
-                      >
-                        {inf.sentiment}
-                      </Badge>
-                      {inf.reach !== "N/D" && (
-                        <span className="text-xs text-muted-foreground">{inf.reach}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {topSources.length > 0 ? (
+              <div className="max-h-[220px] overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-1.5 font-medium">Fuente</th>
+                      <th className="text-center py-1.5 font-medium">Total</th>
+                      <th className="text-center py-1.5 font-medium text-green-600">+</th>
+                      <th className="text-center py-1.5 font-medium text-gray-500">~</th>
+                      <th className="text-center py-1.5 font-medium text-red-600">−</th>
+                      <th className="text-center py-1.5 font-medium">% Neg</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topSources.map((s, i) => (
+                      <tr key={i} className="border-b border-border/50 last:border-0">
+                        <td className="py-1.5 font-medium">{s.name}</td>
+                        <td className="text-center py-1.5">{s.count}</td>
+                        <td className="text-center py-1.5 text-green-600">{s.positive}</td>
+                        <td className="text-center py-1.5 text-gray-500">{s.neutral}</td>
+                        <td className="text-center py-1.5 text-red-600">{s.negative}</td>
+                        <td className="text-center py-1.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            s.negative / (s.count || 1) > 0.5 
+                              ? "bg-red-100 text-red-700" 
+                              : s.negative / (s.count || 1) > 0.3 
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-green-100 text-green-700"
+                          }`}>
+                            {Math.round(s.negative / (s.count || 1) * 100)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Sin datos de autores en las menciones
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-8">Sin datos</p>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Influencers — Full Width Table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Influenciadores de la Conversación ({influencers.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {influencers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs w-8">#</th>
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs">Perfil</th>
+                    <th className="text-center py-2 font-medium text-muted-foreground text-xs">Plataforma</th>
+                    <th className="text-center py-2 font-medium text-muted-foreground text-xs">Menciones</th>
+                    <th className="text-center py-2 font-medium text-muted-foreground text-xs">Sentimiento</th>
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs">Alcance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {influencers.map((inf, i) => (
+                    <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="py-2 text-xs font-bold text-primary">{i + 1}</td>
+                      <td className="py-2">
+                        <span className="font-medium">{inf.name}</span>
+                      </td>
+                      <td className="text-center py-2">
+                        <Badge variant="secondary" className="text-xs">{normalizeDomain(inf.platform)}</Badge>
+                      </td>
+                      <td className="text-center py-2">
+                        <Badge variant="outline" className="text-xs font-semibold">{inf.mentions}</Badge>
+                      </td>
+                      <td className="text-center py-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            inf.sentiment === "negativo"
+                              ? "text-red-600 border-red-200 bg-red-50"
+                              : inf.sentiment === "positivo"
+                              ? "text-green-600 border-green-200 bg-green-50"
+                              : "text-amber-600 border-amber-200 bg-amber-50"
+                          }`}
+                        >
+                          {inf.sentiment === "negativo" ? "Negativo" : inf.sentiment === "positivo" ? "Positivo" : "Mixto"}
+                        </Badge>
+                      </td>
+                      <td className="py-2 text-xs text-muted-foreground">{inf.reach}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Sin datos de autores en las menciones
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

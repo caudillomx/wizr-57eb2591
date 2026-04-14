@@ -127,14 +127,15 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
   const topKeywords = Object.entries(keywordCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   // Extract influencers from raw_metadata
-  const authorMap: Record<string, { name: string; platform: string; count: number; engagement: number; sentiment: string[] }> = {};
+  const authorMap: Record<string, { name: string; username: string; platform: string; count: number; engagement: number; sentiment: string[] }> = {};
   mentions.forEach(m => {
     const meta = m.raw_metadata;
-    const authorName = (meta?.author_name || meta?.authorName || meta?.author_username) as string | undefined;
+    const authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
     if (!authorName) return;
     const key = `${authorName}@${m.source_domain || "unknown"}`;
+    const authorUsername = (meta?.authorUsername || meta?.author_username || "") as string;
     if (!authorMap[key]) {
-      authorMap[key] = { name: authorName, platform: m.source_domain || "unknown", count: 0, engagement: 0, sentiment: [] };
+      authorMap[key] = { name: authorName, username: authorUsername, platform: m.source_domain || "unknown", count: 0, engagement: 0, sentiment: [] };
     }
     authorMap[key].count++;
     if (m.sentiment) authorMap[key].sentiment.push(m.sentiment);
@@ -197,7 +198,7 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
     analysis += "MUESTRA DE MENCIONES NEGATIVAS:\n";
     negative.slice(0, 8).forEach((m, i) => {
       const meta = m.raw_metadata;
-      const author = (meta?.author_name || meta?.author_username || "") as string;
+      const author = (meta?.author || meta?.author_name || meta?.author_username || meta?.authorUsername || "") as string;
       analysis += `${i+1}. [${m.source_domain}]${author ? " por " + author : ""} "${m.title || ''}": ${(m.description || '').substring(0, 200)}\n`;
     });
     analysis += "\n";
@@ -251,7 +252,7 @@ serve(async (req) => {
       sentiment: m.sentiment,
       keywords: m.matched_keywords?.join(", "),
       date: (m.published_at || m.created_at)?.split('T')[0],
-      author: (m.raw_metadata?.author_name || m.raw_metadata?.author_username || null) as string | null,
+      author: (m.raw_metadata?.author || m.raw_metadata?.author_name || m.raw_metadata?.authorUsername || null) as string | null,
     }));
 
     const maxTokens = EXTENSION_TOKENS[extension];
@@ -422,7 +423,7 @@ Responde en formato JSON con esta estructura exacta:
               summary: summaryMatch?.[1] || "Resumen generado parcialmente.",
               impactAssessment: impactMatch?.[1] || undefined,
               keyFindings: keyFindings.length > 0 ? keyFindings : ["Reporte generado con información parcial"],
-              recommendations: ["Intenta generar con extensión 'medium' para más detalle"],
+              recommendations: keyFindings.length > 0 ? ["Monitorear la evolución de los temas identificados", "Evaluar respuesta estratégica basada en los hallazgos"] : ["Reporte generado con información parcial — reintenta con extensión medium"],
               templates: {
                 executive: summaryMatch?.[1] || "",
                 technical: summaryMatch?.[1] || "",
@@ -451,8 +452,8 @@ Responde en formato JSON con esta estructura exacta:
       reportContent = {
         title: titleMatch?.[1] || `Reporte de ${reportType}`,
         summary: summaryMatch?.[1] || cleanText.substring(0, 500),
-        keyFindings: ["Reporte generado con información parcial"],
-        recommendations: ["Intenta generar con extensión 'medium'"],
+        keyFindings: ["Reporte generado con información parcial — se recomienda reintentar"],
+        recommendations: ["Reintentar generación con extensión medium para obtener análisis completo"],
         templates: {
           executive: summaryMatch?.[1] || cleanText.substring(0, 400),
           technical: cleanText.substring(0, 500),
