@@ -1,0 +1,1 @@
+ALTER TABLE public.entities ADD COLUMN platform_keywords jsonb NOT NULL DEFAULT '{}'::jsonb;
