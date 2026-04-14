@@ -129,7 +129,7 @@ const InfluenciadoresPage = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Influenciadores</h1>
           <p className="text-muted-foreground">
-            Fuentes con mayor impacto en las menciones de {selectedProject.nombre}
+            Perfiles y usuarios con mayor impacto en las menciones de {selectedProject.nombre}
           </p>
         </div>
 
