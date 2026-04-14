@@ -715,6 +715,9 @@ export function MentionsHubTab({
                   const sentimentConfig = SENTIMENT_CONFIG[sentimentKey];
                   const SentimentIcon = sentimentConfig.icon;
                   const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                  const author = getAuthorInfo(mention);
+                  const metrics = getEngagementMetrics(mention);
+                  const isSocial = isSocialDomain(mention.source_domain);
 
                   return (
                     <div
@@ -734,6 +737,27 @@ export function MentionsHubTab({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
+                              {/* Author line */}
+                              {author && (
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <User className="h-3 w-3 text-muted-foreground" />
+                                  {author.url ? (
+                                    <a
+                                      href={author.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs font-semibold text-primary hover:underline"
+                                    >
+                                      {author.name}
+                                    </a>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-foreground">{author.name}</span>
+                                  )}
+                                  {author.username && author.username !== author.name && (
+                                    <span className="text-xs text-muted-foreground">@{author.username}</span>
+                                  )}
+                                </div>
+                              )}
                               <a
                                 href={mention.url}
                                 target="_blank"
@@ -783,9 +807,12 @@ export function MentionsHubTab({
 
                           {/* Meta */}
                           <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs gap-1">
+                            <Badge variant="outline" className={cn("text-xs gap-1", isSocial ? "border-primary/30" : "border-muted-foreground/30")}>
                               <PlatformIcon className="h-3 w-3" />
                               {getPlatformLabel(mention.source_domain)}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {isSocial ? "Red Social" : "Medio Digital"}
                             </Badge>
                             <Badge className={cn("text-xs gap-1", sentimentConfig.bg, sentimentConfig.color)}>
                               <SentimentIcon className="h-3 w-3" />
@@ -800,6 +827,16 @@ export function MentionsHubTab({
                               {format(new Date(mention.published_at || mention.created_at), "d MMM yyyy HH:mm", { locale: es })}
                             </span>
                           </div>
+
+                          {/* Engagement metrics for social */}
+                          {metrics && (
+                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                              {metrics.views > 0 && <span>👁 {metrics.views.toLocaleString()}</span>}
+                              {metrics.likes > 0 && <span>❤️ {metrics.likes.toLocaleString()}</span>}
+                              {metrics.comments > 0 && <span>💬 {metrics.comments.toLocaleString()}</span>}
+                              {metrics.shares > 0 && <span>🔄 {metrics.shares.toLocaleString()}</span>}
+                            </div>
+                          )}
 
                           {/* Keywords */}
                           {mention.matched_keywords && mention.matched_keywords.length > 0 && (
