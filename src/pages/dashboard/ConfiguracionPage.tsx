@@ -20,7 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const ConfiguracionPage = () => {
-  const { selectedProject } = useProject();
+  const { selectedProject, refreshProjects } = useProject();
+  const { toast } = useToast();
   const {
     entities,
     isLoading,
@@ -35,6 +36,30 @@ const ConfiguracionPage = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
   const [filterType, setFilterType] = useState<"all" | EntityType>("all");
+  const [strategicContext, setStrategicContext] = useState(selectedProject?.contexto_estrategico || "");
+  const [isSavingContext, setIsSavingContext] = useState(false);
+
+  useEffect(() => {
+    setStrategicContext(selectedProject?.contexto_estrategico || "");
+  }, [selectedProject?.id]);
+
+  const handleSaveStrategicContext = async () => {
+    if (!selectedProject) return;
+    setIsSavingContext(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ contexto_estrategico: strategicContext.trim() || null })
+        .eq("id", selectedProject.id);
+      if (error) throw error;
+      await refreshProjects();
+      toast({ title: "Guardado", description: "Contexto estratégico actualizado" });
+    } catch {
+      toast({ title: "Error", description: "No se pudo guardar", variant: "destructive" });
+    } finally {
+      setIsSavingContext(false);
+    }
+  };
 
   const handleCreateEntity = (data: {
     nombre: string;
