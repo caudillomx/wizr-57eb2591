@@ -623,8 +623,6 @@ async function searchSocial(
     return [];
   }
 }
-    twitter: "powerai/twitter-search-scraper",
-    facebook: "powerai/facebook-post-search-scraper",
     tiktok: "sociavault/tiktok-keyword-search-scraper",
     instagram: "apify/instagram-scraper",
     youtube: "scrapesmith/free-youtube-search-scraper",
