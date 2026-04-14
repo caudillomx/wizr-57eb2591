@@ -47,6 +47,7 @@ import {
   Newspaper,
   Share2,
   ArrowUpDown,
+  AlertCircle,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
@@ -96,12 +97,14 @@ const getAuthorInfo = (mention: Mention) => getMentionAuthorInfo(mention);
 const getEngagementMetrics = (mention: Mention) => {
   const meta = mention.raw_metadata as Record<string, unknown> | null;
   if (!meta) return null;
-  const likes = meta.likes as number | undefined;
-  const comments = meta.comments as number | undefined;
-  const shares = meta.shares as number | undefined;
-  const views = meta.views as number | undefined;
-  if (likes == null && comments == null && shares == null && views == null) return null;
-  return { likes: likes || 0, comments: comments || 0, shares: shares || 0, views: views || 0 };
+  const likes = typeof meta.likes === "number" ? meta.likes : 0;
+  const comments = typeof meta.comments === "number" ? meta.comments : 0;
+  const shares = typeof meta.shares === "number" ? meta.shares : 0;
+  const views = typeof meta.views === "number" ? meta.views : 0;
+  // Check if metadata actually has ANY engagement keys at all
+  const hasEngagementKeys = "likes" in meta || "comments" in meta || "shares" in meta || "views" in meta;
+  if (!hasEngagementKeys) return null;
+  return { likes, comments, shares, views, total: likes + comments + shares + views };
 };
 
 const SENTIMENT_CONFIG = {
@@ -230,8 +233,12 @@ export function MentionsHubTab({
       }
       const metricsA = getEngagementMetrics(a);
       const metricsB = getEngagementMetrics(b);
-      const engA = metricsA ? metricsA.likes + metricsA.comments + metricsA.shares + metricsA.views : 0;
-      const engB = metricsB ? metricsB.likes + metricsB.comments + metricsB.shares + metricsB.views : 0;
+      // Mentions without engagement data go to the bottom
+      if (!metricsA && !metricsB) return 0;
+      if (!metricsA) return 1;
+      if (!metricsB) return -1;
+      const engA = metricsA.total;
+      const engB = metricsB.total;
       return sortBy === "engagement_desc" ? engB - engA : engA - engB;
     });
     return sorted;
@@ -259,7 +266,11 @@ export function MentionsHubTab({
       byPlatform[platform] = (byPlatform[platform] || 0) + 1;
     });
 
-    return { bySentiment, byPlatform };
+    // Engagement coverage
+    const withEngagement = filteredMentions.filter((m) => getEngagementMetrics(m) !== null).length;
+    const withoutEngagement = filteredMentions.length - withEngagement;
+
+    return { bySentiment, byPlatform, withEngagement, withoutEngagement };
   }, [filteredMentions]);
 
   // Reset page when filters change
@@ -696,10 +707,18 @@ export function MentionsHubTab({
       {/* Results */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">
-              {filteredMentions.length} menciones encontradas
-            </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base">
+                {filteredMentions.length} menciones encontradas
+              </CardTitle>
+              {(sortBy === "engagement_desc" || sortBy === "engagement_asc") && stats.withoutEngagement > 0 && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {stats.withEngagement} con datos de engagement · {stats.withoutEngagement} sin datos (capturadas vía búsqueda web)
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[200px] h-8 text-xs">
@@ -713,7 +732,7 @@ export function MentionsHubTab({
                   <SelectItem value="engagement_asc">Menor engagement</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
                 Página {currentPage} de {totalPages || 1}
               </span>
             </div>
@@ -853,14 +872,21 @@ export function MentionsHubTab({
                           </div>
 
                           {/* Engagement metrics for social */}
-                          {metrics && (
-                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                              {metrics.views > 0 && <span>👁 {metrics.views.toLocaleString()}</span>}
-                              {metrics.likes > 0 && <span>❤️ {metrics.likes.toLocaleString()}</span>}
-                              {metrics.comments > 0 && <span>💬 {metrics.comments.toLocaleString()}</span>}
-                              {metrics.shares > 0 && <span>🔄 {metrics.shares.toLocaleString()}</span>}
+                          {metrics ? (
+                            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+                              <span className="font-semibold text-foreground">
+                                📊 {metrics.total.toLocaleString()} eng.
+                              </span>
+                              {metrics.views > 0 && <span className="text-muted-foreground">👁 {metrics.views.toLocaleString()}</span>}
+                              {metrics.likes > 0 && <span className="text-muted-foreground">❤️ {metrics.likes.toLocaleString()}</span>}
+                              {metrics.comments > 0 && <span className="text-muted-foreground">💬 {metrics.comments.toLocaleString()}</span>}
+                              {metrics.shares > 0 && <span className="text-muted-foreground">🔄 {metrics.shares.toLocaleString()}</span>}
                             </div>
-                          )}
+                          ) : isSocial ? (
+                            <p className="text-xs text-muted-foreground/60 mt-1.5 italic">
+                              Sin datos de engagement — recapturar desde Redes Sociales
+                            </p>
+                          ) : null}
 
                           {/* Keywords */}
                           {mention.matched_keywords && mention.matched_keywords.length > 0 && (
