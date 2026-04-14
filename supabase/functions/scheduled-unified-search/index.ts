@@ -81,6 +81,7 @@ serve(async (req) => {
         const { data: entities, error: entitiesError } = await supabase
           .from("entities")
           .select("id, nombre, palabras_clave, aliases")
+          .select("id, nombre, palabras_clave, aliases, platform_keywords")
           .eq("project_id", schedule.project_id)
           .eq("activo", true);
 
@@ -97,10 +98,9 @@ serve(async (req) => {
 
         // Process each entity
         for (const entity of entities as Entity[]) {
-          const searchQuery = buildSearchQuery(entity);
-
           // Process each platform
           for (const platform of schedule.platforms) {
+            const searchQuery = buildSearchQuery(entity, platform);
             try {
               let platformResults: Array<{
                 url: string;
