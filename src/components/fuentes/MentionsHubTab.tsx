@@ -96,12 +96,14 @@ const getAuthorInfo = (mention: Mention) => getMentionAuthorInfo(mention);
 const getEngagementMetrics = (mention: Mention) => {
   const meta = mention.raw_metadata as Record<string, unknown> | null;
   if (!meta) return null;
-  const likes = meta.likes as number | undefined;
-  const comments = meta.comments as number | undefined;
-  const shares = meta.shares as number | undefined;
-  const views = meta.views as number | undefined;
-  if (likes == null && comments == null && shares == null && views == null) return null;
-  return { likes: likes || 0, comments: comments || 0, shares: shares || 0, views: views || 0 };
+  const likes = typeof meta.likes === "number" ? meta.likes : 0;
+  const comments = typeof meta.comments === "number" ? meta.comments : 0;
+  const shares = typeof meta.shares === "number" ? meta.shares : 0;
+  const views = typeof meta.views === "number" ? meta.views : 0;
+  // Check if metadata actually has ANY engagement keys at all
+  const hasEngagementKeys = "likes" in meta || "comments" in meta || "shares" in meta || "views" in meta;
+  if (!hasEngagementKeys) return null;
+  return { likes, comments, shares, views, total: likes + comments + shares + views };
 };
 
 const SENTIMENT_CONFIG = {
