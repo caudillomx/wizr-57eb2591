@@ -116,7 +116,7 @@ const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null
     }
 
     if (source.includes("facebook")) {
-      const blocked = new Set(["share", "watch", "reel", "story.php", "photo", "photos", "groups", "events"]);
+      const blocked = new Set(["share", "watch", "reel", "story.php", "photo", "photos", "groups", "events", "permalink.php", "login", "marketplace", "pages", "profile.php", "hashtag", "flx"]);
       const username = segments[0]?.replace(/^@/, "");
       if (username && !blocked.has(username.toLowerCase())) {
         return {
