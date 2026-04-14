@@ -51,7 +51,7 @@ const ConfiguracionPage = () => {
   const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
   const [filterType, setFilterType] = useState<"all" | EntityType>("all");
   const [strategicContext, setStrategicContext] = useState(selectedProject?.contexto_estrategico || "");
-  const [isSavingContext, setIsSavingContext] = false);
+  const [isSavingContext, setIsSavingContext] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [isDeletingProject, setIsDeletingProject] = useState(false);
 
