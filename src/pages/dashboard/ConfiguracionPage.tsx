@@ -260,10 +260,41 @@ const ConfiguracionPage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="preferences">
+        <TabsContent value="preferences" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Preferencias</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Contexto Estratégico
+              </CardTitle>
+              <CardDescription>
+                Define el contexto estratégico del proyecto. Esta información se usará automáticamente 
+                en todos los reportes para orientar el análisis de IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={strategicContext}
+                onChange={(e) => setStrategicContext(e.target.value)}
+                placeholder="Ej: Actinver está en un litigio activo con Rafael Zaga Tawil por fraude millonario al Infonavit. Todo el monitoreo debe evaluarse desde el impacto reputacional para Actinver y su posición en el caso legal."
+                className="min-h-[120px]"
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground max-w-md">
+                  Este contexto se incluye automáticamente en cada reporte generado. 
+                  Además, al generar un reporte puedes agregar un enfoque específico adicional.
+                </p>
+                <Button onClick={handleSaveStrategicContext} disabled={isSavingContext} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSavingContext ? "Guardando..." : "Guardar"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferencias Generales</CardTitle>
               <CardDescription>
                 Configuración general del proyecto
               </CardDescription>
