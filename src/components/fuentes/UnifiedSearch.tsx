@@ -409,14 +409,16 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             entity_id: entity.id,
             matched_keywords: entity.palabras_clave || [],
             published_at: r.published_at || null,
+            raw_metadata: {
+              ...(r.author ? { author: r.author } : {}),
+              ...(r.authorUsername ? { authorUsername: r.authorUsername } : {}),
+              ...(r.authorUrl ? { authorUrl: r.authorUrl } : {}),
+              ...(r.likes != null ? { likes: r.likes } : {}),
+              ...(r.comments != null ? { comments: r.comments } : {}),
+              ...(r.shares != null ? { shares: r.shares } : {}),
+              ...(r.views != null ? { views: r.views } : {}),
+            },
           }));
-
-          // Apply semantic deduplication
-          const { unique, duplicates } = deduplicateBatch(
-            mentionsToCheck,
-            allExistingMentions,
-            0.7 // 70% similarity threshold
-          );
 
           totalDuplicatesSkipped += duplicates.length;
 
