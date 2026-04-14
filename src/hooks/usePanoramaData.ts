@@ -3,6 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMemo } from "react";
 import { subDays, format, eachDayOfInterval, startOfDay } from "date-fns";
 
+const MENTIONS_PAGE_SIZE = 1000;
+
+function getMentionEffectiveDate(mention: {
+  published_at: string | null;
+  created_at: string;
+}) {
+  return new Date(mention.published_at ?? mention.created_at);
+}
+
+function buildDateFilter(start: Date, end: Date) {
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+
+  return `and(published_at.gte.${startIso},published_at.lte.${endIso}),and(published_at.is.null,created_at.gte.${startIso},created_at.lte.${endIso})`;
+}
+
 export interface PanoramaMetrics {
   totalMentions: number;
   recentMentions: number;
@@ -38,32 +54,41 @@ export function usePanoramaData(
     queryFn: async () => {
       if (!projectId) return [];
 
-      const { data, error } = await supabase
-        .from("mentions")
-        .select("id, sentiment, source_domain, created_at, published_at")
-        .eq("project_id", projectId)
-        .eq("is_archived", false)
-        .order("created_at", { ascending: true });
+      const allMentions: Array<{
+        id: string;
+        sentiment: string | null;
+        source_domain: string | null;
+        created_at: string;
+        published_at: string | null;
+      }> = [];
 
-      if (error) throw error;
+      const dateFilter = buildDateFilter(effectiveStart, effectiveEnd);
 
-      console.log("[PanoramaData] Raw mentions from DB:", data?.length);
-      console.log("[PanoramaData] Date range:", effectiveStart.toISOString(), "→", effectiveEnd.toISOString());
+      for (let page = 0; ; page += 1) {
+        const from = page * MENTIONS_PAGE_SIZE;
+        const to = from + MENTIONS_PAGE_SIZE - 1;
 
-      // Filter by effective date (published_at or created_at) within the range
-      const filtered = (data || []).filter((m) => {
-        const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-        return d >= effectiveStart && d <= effectiveEnd;
-      });
+        const { data, error } = await supabase
+          .from("mentions")
+          .select("id, sentiment, source_domain, created_at, published_at")
+          .eq("project_id", projectId)
+          .eq("is_archived", false)
+          .or(dateFilter)
+          .order("created_at", { ascending: false })
+          .range(from, to);
 
-      console.log("[PanoramaData] After date filter:", filtered.length);
-      if (data && data.length > 0 && filtered.length === 0) {
-        const sample = data[0];
-        const sampleDate = sample.published_at ? new Date(sample.published_at) : new Date(sample.created_at);
-        console.log("[PanoramaData] Sample mention date:", sampleDate.toISOString(), "published_at:", sample.published_at, "created_at:", sample.created_at);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allMentions.push(...data);
+
+        if (data.length < MENTIONS_PAGE_SIZE) break;
       }
 
-      return filtered;
+      return allMentions.filter((mention) => {
+        const effectiveDate = getMentionEffectiveDate(mention);
+        return effectiveDate >= effectiveStart && effectiveDate <= effectiveEnd;
+      });
     },
     enabled: !!projectId,
   });
@@ -92,8 +117,8 @@ export function usePanoramaData(
     });
 
     const recentMentions = mentions.filter((m) => {
-      const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-      return d > sevenDaysAgo;
+      const effectiveDate = getMentionEffectiveDate(m);
+      return effectiveDate > sevenDaysAgo;
     }).length;
 
     const sourceMap = new Map<string, number>();
@@ -113,8 +138,7 @@ export function usePanoramaData(
 
     const dailyMap = new Map<string, number>();
     mentions.forEach((m) => {
-      const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
-      const dateKey = format(d, "yyyy-MM-dd");
+      const dateKey = format(getMentionEffectiveDate(m), "yyyy-MM-dd");
       dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + 1);
     });
 
