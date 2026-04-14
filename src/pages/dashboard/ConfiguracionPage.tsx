@@ -46,8 +46,9 @@ const ConfiguracionPage = () => {
     createEntity({
       project_id: selectedProject.id,
       ...data,
+    }, {
+      onSuccess: () => setFormOpen(false),
     });
-    setFormOpen(false);
   };
 
   const handleUpdateEntity = (data: {
@@ -63,8 +64,9 @@ const ConfiguracionPage = () => {
     updateEntity({
       id: editingEntity.id,
       ...data,
+    }, {
+      onSuccess: () => setEditingEntity(null),
     });
-    setEditingEntity(null);
   };
 
   const handleEditClick = (entity: Entity) => {
