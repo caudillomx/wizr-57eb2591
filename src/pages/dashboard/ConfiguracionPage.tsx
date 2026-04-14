@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target } from "lucide-react";
+import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,10 +18,24 @@ import { EntityForm } from "@/components/entities/EntityForm";
 import { EntityList, Entity } from "@/components/entities/EntityList";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 const ConfiguracionPage = () => {
   const { selectedProject, refreshProjects } = useProject();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const {
     entities,
     isLoading,
@@ -38,6 +52,8 @@ const ConfiguracionPage = () => {
   const [filterType, setFilterType] = useState<"all" | EntityType>("all");
   const [strategicContext, setStrategicContext] = useState(selectedProject?.contexto_estrategico || "");
   const [isSavingContext, setIsSavingContext] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
 
   useEffect(() => {
     setStrategicContext(selectedProject?.contexto_estrategico || "");
@@ -58,6 +74,25 @@ const ConfiguracionPage = () => {
       toast({ title: "Error", description: "No se pudo guardar", variant: "destructive" });
     } finally {
       setIsSavingContext(false);
+    }
+  };
+  const handleDeleteProject = async () => {
+    if (!selectedProject || deleteConfirmName !== selectedProject.nombre) return;
+    setIsDeletingProject(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", selectedProject.id);
+      if (error) throw error;
+      toast({ title: "Proyecto eliminado", description: `"${selectedProject.nombre}" ha sido eliminado permanentemente.` });
+      await refreshProjects();
+      navigate("/dashboard/proyectos");
+    } catch {
+      toast({ title: "Error", description: "No se pudo eliminar el proyecto", variant: "destructive" });
+    } finally {
+      setIsDeletingProject(false);
+      setDeleteConfirmName("");
     }
   };
 
@@ -303,6 +338,75 @@ const ConfiguracionPage = () => {
               <p className="text-muted-foreground text-center py-8">
                 Próximamente: Configuración de alertas, notificaciones y más.
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Zona de Peligro
+              </CardTitle>
+              <CardDescription>
+                Acciones irreversibles para este proyecto
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Eliminar proyecto</p>
+                  <p className="text-sm text-muted-foreground">
+                    Se eliminarán permanentemente todas las menciones, entidades, alertas y datos asociados.
+                  </p>
+                </div>
+                <AlertDialog onOpenChange={() => setDeleteConfirmName("")}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar proyecto
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        ¿Eliminar "{selectedProject.nombre}"?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-3">
+                        <span className="block">
+                          Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán:
+                        </span>
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          <li>Todas las menciones capturadas</li>
+                          <li>Todas las entidades configuradas</li>
+                          <li>Alertas, fichas temáticas y reportes</li>
+                          <li>Búsquedas programadas y configuración</li>
+                        </ul>
+                        <span className="block mt-3">
+                          Escribe <strong>{selectedProject.nombre}</strong> para confirmar:
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Input
+                      value={deleteConfirmName}
+                      onChange={(e) => setDeleteConfirmName(e.target.value)}
+                      placeholder={selectedProject.nombre}
+                      className="mt-2"
+                    />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteProject}
+                        disabled={deleteConfirmName !== selectedProject.nombre || isDeletingProject}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeletingProject ? "Eliminando..." : "Eliminar permanentemente"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
