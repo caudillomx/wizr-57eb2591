@@ -9,6 +9,8 @@ import {
   Settings,
   Trophy,
   Home,
+  Eye,
+  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import wizrIcon from "@/assets/wizr-icon-transparent.png";
@@ -31,36 +33,34 @@ interface NavItemDef {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  tourId: string;
 }
 
 const homeItem: NavItemDef = {
   title: "Inicio",
   url: "/dashboard",
   icon: Home,
-  tourId: "nav-inicio",
 };
 
-const monitorItems: NavItemDef[] = [
-  { title: "Fuentes", url: "/dashboard/fuentes", icon: Database, tourId: "nav-fuentes" },
-  { title: "Panorama", url: "/dashboard/panorama", icon: LayoutDashboard, tourId: "nav-panorama" },
+const performanceItems: NavItemDef[] = [
+  { title: "Rankings", url: "/dashboard/rankings", icon: Trophy },
 ];
 
-const analyzeItems: NavItemDef[] = [
-  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText, tourId: "nav-semantica" },
-  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare, tourId: "nav-comparativa" },
-  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users, tourId: "nav-influenciadores" },
-  { title: "Rankings", url: "/dashboard/rankings", icon: Trophy, tourId: "nav-rankings" },
+const listeningItems: NavItemDef[] = [
+  { title: "Fuentes", url: "/dashboard/fuentes", icon: Database },
+  { title: "Panorama", url: "/dashboard/panorama", icon: Eye },
+  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText },
+  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare },
+  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users },
 ];
 
-const produceItems: NavItemDef[] = [
-  { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart, tourId: "nav-reportes" },
-  { title: "Configuración", url: "/dashboard/configuracion", icon: Settings, tourId: "nav-configuracion" },
+const outputItems: NavItemDef[] = [
+  { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart },
+  { title: "Configuración", url: "/dashboard/configuracion", icon: Settings },
 ];
 
 function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: boolean; isActive: boolean }) {
   return (
-    <SidebarMenuItem data-tour={item.tourId}>
+    <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive} tooltip={collapsed ? item.title : undefined}>
         <NavLink
           to={item.url}
@@ -77,10 +77,12 @@ function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: b
 
 function NavGroup({ label, items, collapsed, isActive }: { label: string; items: NavItemDef[]; collapsed: boolean; isActive: (url: string) => boolean }) {
   return (
-    <SidebarGroup className="mt-4">
-      <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-        {!collapsed ? label : ""}
-      </SidebarGroupLabel>
+    <SidebarGroup className="mt-3">
+      {!collapsed && (
+        <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
@@ -116,7 +118,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className="px-2 py-3">
         {/* Home */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -130,14 +132,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <NavGroup label="Monitor" items={monitorItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Analizar" items={analyzeItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Producir" items={produceItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Performance" items={performanceItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Producir" items={outputItems} collapsed={collapsed} isActive={isActive} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
-          <p className="px-2 text-xs text-sidebar-foreground/50">Wizr Intelligence Platform</p>
+          <p className="px-2 text-[10px] text-sidebar-foreground/40 uppercase tracking-wider">Wizr Intelligence</p>
         )}
       </SidebarFooter>
     </Sidebar>

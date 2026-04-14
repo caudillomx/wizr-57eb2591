@@ -120,16 +120,10 @@ const AppRoutes = () => {
         <Route path="reportes" element={<ReportesPage />} />
         <Route path="proyectos" element={<ProjectsPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
-        {/* Legacy routes - redirect to new unified views */}
-        <Route path="tendencias" element={<InsightsPage />} />
-        <Route path="alertas" element={<InsightsPage />} />
-        <Route path="reportes" element={<ReportesPage />} />
-        <Route path="proyectos" element={<ProjectsPage />} />
-        <Route path="configuracion" element={<ConfiguracionPage />} />
+        {/* Legacy redirects */}
+        <Route path="tendencias" element={<Navigate to="/dashboard/panorama" replace />} />
+        <Route path="alertas" element={<Navigate to="/dashboard/panorama" replace />} />
       </Route>
-
-      {/* Legacy dashboard redirect */}
-      <Route path="/dashboard" element={<Navigate to="/dashboard/panorama" replace />} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
