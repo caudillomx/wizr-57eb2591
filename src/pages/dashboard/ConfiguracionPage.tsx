@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 const ConfiguracionPage = () => {
   const { selectedProject, refreshProjects } = useProject();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const {
     entities,
     isLoading,
