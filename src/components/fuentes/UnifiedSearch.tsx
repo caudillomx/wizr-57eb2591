@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { firecrawlApi, type EntityForSearch } from "@/lib/api/firecrawl";
+import { apifyApi } from "@/lib/api/apify";
 import { cn } from "@/lib/utils";
 import { deduplicateBatch, type DuplicateCandidate } from "@/lib/utils/semanticDedup";
 import {
@@ -308,55 +309,57 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             }));
           }
         } else {
-          // Use Apify for social platforms
+          // Use Apify for social platforms through the dedicated client.
           const searchQuery = buildSearchQuery(entity);
-          
-          const { data: scrapeResult, error: scrapeError } = await supabase.functions.invoke("apify-scrape", {
-            body: {
-              platform: job.platform,
-              searchType: "query",
-              searchValue: searchQuery,
-              maxResults: maxResultsPerPlatform,
-            },
+          const scrapeResult = await apifyApi.startScrape({
+            platform: job.platform,
+            query: searchQuery,
+            maxResults: maxResultsPerPlatform,
           });
 
-          if (scrapeError) throw scrapeError;
+          if (!scrapeResult.success || !scrapeResult.data?.runId) {
+            throw new Error(scrapeResult.error || scrapeResult.data?.error || "No se pudo iniciar la búsqueda");
+          }
 
-          if (scrapeResult?.runId) {
-            // Poll for completion
-            let attempts = 0;
-            const maxAttempts = 60; // 2 minutes max
-            
-            while (attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              
-              const { data: statusData, error: statusError } = await supabase.functions.invoke("apify-status", {
-                body: { runId: scrapeResult.runId },
-              });
+          // Poll for completion
+          let attempts = 0;
+          const maxAttempts = 60; // 2 minutes max
 
-              if (statusError) throw statusError;
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-              if (statusData?.status === "SUCCEEDED" || statusData?.status === "completed") {
-                results = (statusData.results || []).map((r: Record<string, unknown>) => ({
-                  url: (r as { url?: string }).url || "",
-                  title: (r as { title?: string }).title,
-                  description: (r as { description?: string; text?: string }).description || (r as { text?: string }).text,
-                  source_domain: job.platform,
-                  published_at: (r as { publishedAt?: string; timestamp?: string }).publishedAt || (r as { timestamp?: string }).timestamp,
-                }));
-                break;
-              }
+            const statusResult = await apifyApi.checkStatus(
+              scrapeResult.data.runId,
+              job.platform,
+              searchQuery,
+            );
 
-              if (statusData?.status === "FAILED" || statusData?.status === "failed") {
-                throw new Error(statusData?.error || "Search failed");
-              }
-
-              attempts++;
+            if (!statusResult.success || !statusResult.data) {
+              throw new Error(statusResult.error || "No se pudo consultar el estado de la búsqueda");
             }
 
-            if (attempts >= maxAttempts) {
-              throw new Error("Search timeout");
+            const statusData = statusResult.data;
+
+            if (statusData.status === "SUCCEEDED" || statusData.status === "completed") {
+              results = (statusData.items || []).map((r: Record<string, unknown>) => ({
+                url: (r as { url?: string }).url || "",
+                title: (r as { title?: string }).title,
+                description: (r as { description?: string; text?: string }).description || (r as { text?: string }).text,
+                source_domain: job.platform,
+                published_at: (r as { publishedAt?: string; timestamp?: string }).publishedAt || (r as { timestamp?: string }).timestamp,
+              }));
+              break;
             }
+
+            if (statusData.status === "FAILED" || statusData.status === "failed" || statusData.status === "ABORTED" || statusData.status === "TIMED-OUT") {
+              throw new Error(statusData.error || `Search ${statusData.status.toLowerCase()}`);
+            }
+
+            attempts++;
+          }
+
+          if (attempts >= maxAttempts) {
+            throw new Error("Search timeout");
           }
         }
 
