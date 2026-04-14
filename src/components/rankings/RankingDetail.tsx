@@ -280,6 +280,7 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
 
         <TabsContent value="config" className="mt-6">
           <div className="space-y-6">
+            <FKCSVImporter rankingId={ranking.id} />
             <RankingBatchForm rankingId={ranking.id} />
             <ProfilesList 
               profiles={profiles} 
