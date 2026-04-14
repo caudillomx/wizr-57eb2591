@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, startOfDay, setHours, subDays } from "date-fns";
+import { format, startOfDay, endOfDay, setHours, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Clock, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
