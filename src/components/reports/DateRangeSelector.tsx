@@ -277,26 +277,6 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
               </PopoverContent>
             </Popover>
           </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Corte</Label>
-            <Select
-              value={value.cutoffHour.toString()}
-              onValueChange={handleCutoffChange}
-            >
-              <SelectTrigger className="w-[120px]">
-                <Clock className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-lg z-50">
-                {CUTOFF_HOURS.map((h) => (
-                  <SelectItem key={h.value} value={h.value.toString()}>
-                    {h.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       )}
 
