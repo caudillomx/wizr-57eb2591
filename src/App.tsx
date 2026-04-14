@@ -95,15 +95,7 @@ const AppRoutes = () => {
         path="/nuevo-proyecto"
         element={
           <ProtectedRoute>
-            <ProjectSpecBuilder />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/proyecto/:id/editar"
-        element={
-          <ProtectedRoute>
-            <ProjectSpecBuilder />
+            <ProjectWizard />
           </ProtectedRoute>
         }
       />
