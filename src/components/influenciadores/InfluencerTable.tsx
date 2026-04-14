@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TrendingUp, TrendingDown, Minus, AlertCircle, ExternalLink, Heart, Eye } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, AlertCircle, ExternalLink, Heart, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { InfluencerMetrics } from "@/hooks/useInfluencersData";
 import { SourceMentionsDrawer } from "./SourceMentionsDrawer";
 import { formatDistanceToNow } from "date-fns";
@@ -40,12 +40,61 @@ interface InfluencerTableProps {
   mentions?: Mention[];
 }
 
+type SortField = "mentions" | "engagement" | "sentiment" | "date";
+type SortDir = "asc" | "desc";
+
+function SortableHead({ label, field, current, dir, onSort }: { label: string; field: SortField; current: SortField; dir: SortDir; onSort: (f: SortField) => void }) {
+  const isActive = current === field;
+  const Icon = isActive ? (dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <TableHead className="text-center cursor-pointer select-none hover:bg-muted/50 transition-colors" onClick={() => onSort(field)}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <Icon className={`h-3 w-3 ${isActive ? "text-primary" : "text-muted-foreground/50"}`} />
+      </span>
+    </TableHead>
+  );
+}
+
 export function InfluencerTable({ influencers, maxMentions, mentions = [] }: InfluencerTableProps) {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("mentions");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const sortedInfluencers = useMemo(() => {
+    const sorted = [...influencers];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "mentions":
+          cmp = a.totalMentions - b.totalMentions;
+          break;
+        case "engagement":
+          cmp = (a.totalEngagement + a.totalViews) - (b.totalEngagement + b.totalViews);
+          break;
+        case "sentiment":
+          cmp = a.sentimentScore - b.sentimentScore;
+          break;
+        case "date":
+          cmp = new Date(a.lastMentionDate || 0).getTime() - new Date(b.lastMentionDate || 0).getTime();
+          break;
+      }
+      return sortDir === "desc" ? -cmp : cmp;
+    });
+    return sorted;
+  }, [influencers, sortField, sortDir]);
 
   const handleRowClick = (influencer: InfluencerMetrics) => {
-    // Use platform domain for drawer filtering
     setSelectedDomain(influencer.platform.toLowerCase().replace("/", ""));
     setDrawerOpen(true);
   };
@@ -101,7 +150,7 @@ export function InfluencerTable({ influencers, maxMentions, mentions = [] }: Inf
             )}
           </CardTitle>
           <CardDescription>
-            {influencers.length} perfiles identificados ordenados por impacto
+            {influencers.length} perfiles identificados — clic en columna para ordenar
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -111,15 +160,15 @@ export function InfluencerTable({ influencers, maxMentions, mentions = [] }: Inf
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead className="text-center">Red Social</TableHead>
-                <TableHead className="text-center">Publicaciones</TableHead>
-                <TableHead className="text-center">Engagement</TableHead>
-                <TableHead className="text-center">Sentimiento</TableHead>
+                <SortableHead label="Publicaciones" field="mentions" current={sortField} dir={sortDir} onSort={handleSort} />
+                <SortableHead label="Engagement" field="engagement" current={sortField} dir={sortDir} onSort={handleSort} />
+                <SortableHead label="Sentimiento" field="sentiment" current={sortField} dir={sortDir} onSort={handleSort} />
                 <TableHead className="text-center">Tendencia</TableHead>
-                <TableHead>Última Actividad</TableHead>
+                <SortableHead label="Última Actividad" field="date" current={sortField} dir={sortDir} onSort={handleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {influencers.map((influencer, index) => {
+              {sortedInfluencers.map((influencer, index) => {
                 const TrendIcon = influencer.trend === "up"
                   ? TrendingUp
                   : influencer.trend === "down"

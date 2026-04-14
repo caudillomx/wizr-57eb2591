@@ -46,6 +46,7 @@ import {
   User,
   Newspaper,
   Share2,
+  ArrowUpDown,
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
@@ -150,6 +151,7 @@ export function MentionsHubTab({
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "engagement_desc" | "engagement_asc">("date_desc");
 
   // Extract unique platforms grouped by category
   const { platforms, socialCount, newsCount } = useMemo(() => {
@@ -217,12 +219,30 @@ export function MentionsHubTab({
     });
   }, [mentions, searchQuery, selectedPlatform, selectedSentiment, selectedEntity, sourceCategory, dateFrom, dateTo]);
 
+  // Sort mentions
+  const sortedMentions = useMemo(() => {
+    const sorted = [...filteredMentions];
+    sorted.sort((a, b) => {
+      if (sortBy === "date_desc" || sortBy === "date_asc") {
+        const dateA = new Date(a.published_at || a.created_at).getTime();
+        const dateB = new Date(b.published_at || b.created_at).getTime();
+        return sortBy === "date_desc" ? dateB - dateA : dateA - dateB;
+      }
+      const metricsA = getEngagementMetrics(a);
+      const metricsB = getEngagementMetrics(b);
+      const engA = metricsA ? metricsA.likes + metricsA.comments + metricsA.shares + metricsA.views : 0;
+      const engB = metricsB ? metricsB.likes + metricsB.comments + metricsB.shares + metricsB.views : 0;
+      return sortBy === "engagement_desc" ? engB - engA : engA - engB;
+    });
+    return sorted;
+  }, [filteredMentions, sortBy]);
+
   // Pagination
-  const totalPages = Math.ceil(filteredMentions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedMentions.length / ITEMS_PER_PAGE);
   const paginatedMentions = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredMentions.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredMentions, currentPage]);
+    return sortedMentions.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedMentions, currentPage]);
 
   // Stats for analysis panels
   const stats = useMemo(() => {
@@ -261,11 +281,12 @@ export function MentionsHubTab({
 
   // Export CSV
   const exportCSV = useCallback(() => {
-    const headers = ["Título", "Descripción", "URL", "Plataforma", "Autor", "Username", "Sentimiento", "Fecha", "Keywords", "Likes", "Comentarios", "Shares", "Vistas", "Entidad"];
-    const rows = filteredMentions.map((m) => {
+    const headers = ["Título", "Descripción", "URL", "Plataforma", "Autor", "Username", "Sentimiento", "Fecha", "Keywords", "Likes", "Comentarios", "Shares", "Vistas", "Engagement Total", "Entidad"];
+    const rows = sortedMentions.map((m) => {
       const author = getAuthorInfo(m);
       const metrics = getEngagementMetrics(m);
       const entity = entities.find((e) => e.id === m.entity_id);
+      const totalEng = metrics ? metrics.likes + metrics.comments + metrics.shares + metrics.views : 0;
       return [
         (m.title || "").replace(/"/g, '""'),
         (m.description || "").replace(/"/g, '""'),
@@ -280,6 +301,7 @@ export function MentionsHubTab({
         metrics?.comments ?? "",
         metrics?.shares ?? "",
         metrics?.views ?? "",
+        totalEng || "",
         entity?.nombre || "",
       ].map((v) => `"${v}"`).join(",");
     });
@@ -291,7 +313,7 @@ export function MentionsHubTab({
     a.download = `menciones_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [filteredMentions, entities]);
+  }, [sortedMentions, entities]);
 
   const activeFiltersCount = [
     searchQuery.trim(),
@@ -678,8 +700,22 @@ export function MentionsHubTab({
             <CardTitle className="text-base">
               {filteredMentions.length} menciones encontradas
             </CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages || 1}
+            <div className="flex items-center gap-3">
+              <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[200px] h-8 text-xs">
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectItem value="date_desc">Más recientes</SelectItem>
+                  <SelectItem value="date_asc">Más antiguas</SelectItem>
+                  <SelectItem value="engagement_desc">Mayor engagement</SelectItem>
+                  <SelectItem value="engagement_asc">Menor engagement</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages || 1}
+              </span>
             </div>
           </div>
         </CardHeader>
