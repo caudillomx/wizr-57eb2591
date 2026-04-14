@@ -58,7 +58,7 @@ export function AlertsSidePanel({ projectId }: AlertsSidePanelProps) {
   const handleRunMonitoring = async () => {
     setIsRunningMonitoring(true);
     try {
-      const { data, error } = await supabase.functions.invoke('scheduled-monitoring', {
+      const { data, error } = await supabase.functions.invoke('scheduled-unified-search', {
         body: { manual: true },
       });
 
@@ -70,8 +70,9 @@ export function AlertsSidePanel({ projectId }: AlertsSidePanelProps) {
       }
 
       if (data?.success) {
+        const totalAlerts = (data.results || []).reduce((sum: number, r: any) => sum + (r.alertsTriggered || 0), 0);
         toast.success('Monitoreo completado', {
-          description: `${data.processed.alertsTriggered} alertas activadas`,
+          description: `${totalAlerts} alertas activadas`,
         });
         refetchNotifications();
       }

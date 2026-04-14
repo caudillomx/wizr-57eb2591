@@ -23,6 +23,27 @@ interface Schedule {
   projects: { id: string; nombre: string } | null;
 }
 
+interface AlertConfig {
+  id: string;
+  project_id: string;
+  name: string;
+  alert_type: "sentiment_negative" | "mention_spike" | "keyword_match";
+  threshold_percent: number | null;
+  keywords: string[] | null;
+  entity_ids: string[] | null;
+  is_active: boolean;
+  trigger_count: number;
+}
+
+interface SavedMention {
+  id: string;
+  project_id: string;
+  entity_id: string | null;
+  title: string | null;
+  description: string | null;
+  url: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,7 +61,7 @@ serve(async (req) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient(supabaseUrl, supabaseServiceKey) as any;
 
-    // Find all enabled schedules that are due (next_run_at <= now or next_run_at is null)
+    // Find all enabled schedules that are due
     const { data: schedules, error: schedulesError } = await supabase
       .from("project_search_schedules")
       .select("*, projects(id, nombre)")
@@ -62,12 +83,37 @@ serve(async (req) => {
 
     console.log(`Found ${schedules.length} schedules to process`);
 
+    // Collect all project IDs to fetch alert configs in one query
+    const allProjectIds = (schedules as Schedule[]).map(s => s.project_id);
+
+    // Fetch alert configs for all projects at once
+    const { data: alertConfigs } = await supabase
+      .from("alert_configs")
+      .select("*")
+      .in("project_id", allProjectIds)
+      .eq("is_active", true);
+
+    // Fetch previous mention counts for spike detection (last 24h)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const { data: recentMentionCounts } = await supabase
+      .from("mentions")
+      .select("project_id")
+      .in("project_id", allProjectIds)
+      .gte("created_at", yesterday.toISOString());
+
+    const previousCounts = new Map<string, number>();
+    for (const m of recentMentionCounts || []) {
+      previousCounts.set(m.project_id, (previousCounts.get(m.project_id) || 0) + 1);
+    }
+
     const results: Array<{
       projectId: string;
       projectName: string;
       success: boolean;
       mentionsFound: number;
       mentionsSaved: number;
+      alertsTriggered: number;
       error?: string;
     }> = [];
 
@@ -80,7 +126,6 @@ serve(async (req) => {
         // Get entities for this project
         const { data: entities, error: entitiesError } = await supabase
           .from("entities")
-          .select("id, nombre, palabras_clave, aliases")
           .select("id, nombre, palabras_clave, aliases, platform_keywords")
           .eq("project_id", schedule.project_id)
           .eq("activo", true);
@@ -95,10 +140,10 @@ serve(async (req) => {
 
         let totalMentionsFound = 0;
         let totalMentionsSaved = 0;
+        const allSavedMentions: SavedMention[] = [];
 
         // Process each entity
         for (const entity of entities as Entity[]) {
-          // Process each platform
           for (const platform of schedule.platforms) {
             const searchQuery = buildSearchQuery(entity, platform);
             try {
@@ -118,7 +163,6 @@ serve(async (req) => {
 
               totalMentionsFound += platformResults.length;
 
-              // Save results as mentions
               if (platformResults.length > 0) {
                 const mentionsToSave = platformResults
                   .filter(r => r.url)
@@ -136,14 +180,15 @@ serve(async (req) => {
                 if (mentionsToSave.length > 0) {
                   const { error: saveError, data: savedData } = await supabase
                     .from("mentions")
-                    .upsert(mentionsToSave, { 
+                    .upsert(mentionsToSave, {
                       onConflict: "project_id,url",
-                      ignoreDuplicates: true 
+                      ignoreDuplicates: true,
                     })
-                    .select("id");
+                    .select("id, project_id, entity_id, title, description, url");
 
                   if (!saveError && savedData) {
                     totalMentionsSaved += savedData.length;
+                    allSavedMentions.push(...savedData);
                   }
                 }
               }
@@ -155,6 +200,20 @@ serve(async (req) => {
           }
         }
 
+        // === ALERT EVALUATION ===
+        const projectAlerts = (alertConfigs || []).filter(
+          (c: AlertConfig) => c.project_id === schedule.project_id && c.is_active
+        );
+
+        const alertsTriggered = await evaluateAndCreateAlerts(
+          supabase,
+          projectAlerts as AlertConfig[],
+          allSavedMentions,
+          schedule.project_id,
+          previousCounts.get(schedule.project_id) || 0,
+          totalMentionsSaved
+        );
+
         // Update schedule after successful run
         await updateScheduleAfterRun(supabase, schedule.id, schedule.frequency, null);
 
@@ -164,13 +223,14 @@ serve(async (req) => {
           success: true,
           mentionsFound: totalMentionsFound,
           mentionsSaved: totalMentionsSaved,
+          alertsTriggered,
         });
 
-        console.log(`Project ${projectName}: ${totalMentionsFound} found, ${totalMentionsSaved} saved`);
+        console.log(`Project ${projectName}: ${totalMentionsFound} found, ${totalMentionsSaved} saved, ${alertsTriggered} alerts`);
       } catch (projectError) {
         const errorMessage = projectError instanceof Error ? projectError.message : "Unknown error";
         console.error(`Error processing project ${schedule.project_id}:`, projectError);
-        
+
         await updateScheduleAfterRun(supabase, schedule.id, schedule.frequency, errorMessage);
 
         results.push({
@@ -179,6 +239,7 @@ serve(async (req) => {
           success: false,
           mentionsFound: 0,
           mentionsSaved: 0,
+          alertsTriggered: 0,
           error: errorMessage,
         });
       }
@@ -208,16 +269,120 @@ serve(async (req) => {
   }
 });
 
-function buildSearchQuery(entity: Entity, platform?: string): string {
-  if (platform && entity.platform_keywords && entity.platform_keywords[platform]?.length > 0) {
-    return entity.platform_keywords[platform].join(" OR ");
+// ==================== ALERT EVALUATION ====================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function evaluateAndCreateAlerts(
+  supabase: any,
+  alertConfigs: AlertConfig[],
+  newMentions: SavedMention[],
+  projectId: string,
+  previousMentionCount: number,
+  currentNewCount: number
+): Promise<number> {
+  if (alertConfigs.length === 0 || newMentions.length === 0) return 0;
+
+  const triggered: Array<{ config: AlertConfig; reason: string; mentionCount: number; sampleUrls: string[] }> = [];
+
+  for (const config of alertConfigs) {
+    // Filter by entity if specified
+    const relevantMentions = config.entity_ids && config.entity_ids.length > 0
+      ? newMentions.filter(m => m.entity_id && config.entity_ids!.includes(m.entity_id))
+      : newMentions;
+
+    if (relevantMentions.length === 0) continue;
+
+    switch (config.alert_type) {
+      case "keyword_match": {
+        if (!config.keywords || config.keywords.length === 0) continue;
+
+        const matched = relevantMentions.filter(mention => {
+          const content = `${mention.title || ""} ${mention.description || ""}`.toLowerCase();
+          return config.keywords!.some(kw => content.includes(kw.toLowerCase()));
+        });
+
+        if (matched.length > 0) {
+          triggered.push({
+            config,
+            reason: `Se encontraron ${matched.length} menciones con palabras clave monitoreadas`,
+            mentionCount: matched.length,
+            sampleUrls: matched.slice(0, 3).map(m => m.url),
+          });
+        }
+        break;
+      }
+
+      case "mention_spike": {
+        const threshold = config.threshold_percent || 50;
+        const percentIncrease = previousMentionCount > 0
+          ? ((currentNewCount - previousMentionCount) / previousMentionCount) * 100
+          : currentNewCount > 0 ? 100 : 0;
+
+        if (percentIncrease >= threshold) {
+          triggered.push({
+            config,
+            reason: `Incremento de ${percentIncrease.toFixed(0)}% en menciones (umbral: ${threshold}%)`,
+            mentionCount: relevantMentions.length,
+            sampleUrls: relevantMentions.slice(0, 3).map(m => m.url),
+          });
+        }
+        break;
+      }
+
+      case "sentiment_negative": {
+        if (relevantMentions.length >= 3) {
+          triggered.push({
+            config,
+            reason: `${relevantMentions.length} nuevas menciones requieren análisis de sentimiento`,
+            mentionCount: relevantMentions.length,
+            sampleUrls: relevantMentions.slice(0, 3).map(m => m.url),
+          });
+        }
+        break;
+      }
+    }
   }
-  if (entity.palabras_clave && entity.palabras_clave.length > 0) {
-    return entity.palabras_clave.join(" OR ");
+
+  if (triggered.length === 0) return 0;
+
+  // Create notifications
+  const notifications = triggered.map(t => ({
+    alert_config_id: t.config.id,
+    project_id: projectId,
+    title: `Alerta: ${t.config.name}`,
+    message: t.reason,
+    severity: t.config.alert_type === "sentiment_negative" ? "error" : "warning",
+    metadata: {
+      mention_count: t.mentionCount,
+      sample_urls: t.sampleUrls,
+    },
+  }));
+
+  const { error: notifError } = await supabase
+    .from("alert_notifications")
+    .insert(notifications);
+
+  if (notifError) {
+    console.error("Error creating alert notifications:", notifError);
+    return 0;
   }
-  const terms = [entity.nombre, ...entity.aliases].filter(Boolean);
-  return terms.join(" OR ");
+
+  // Update trigger counts
+  for (const t of triggered) {
+    await supabase
+      .from("alert_configs")
+      .update({
+        trigger_count: t.config.trigger_count + 1,
+        last_triggered_at: new Date().toISOString(),
+      })
+      .eq("id", t.config.id);
+  }
+
+  console.log(`Created ${triggered.length} alert notifications for project ${projectId}`);
+  return triggered.length;
 }
+
+// ==================== SCHEDULE HELPERS ====================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function updateScheduleAfterRun(
@@ -229,13 +394,20 @@ async function updateScheduleAfterRun(
   const now = new Date();
   const nextRun = calculateNextRun(frequency, now);
 
+  // First get current run_count
+  const { data: current } = await supabase
+    .from("project_search_schedules")
+    .select("run_count")
+    .eq("id", scheduleId)
+    .single();
+
   await supabase
     .from("project_search_schedules")
     .update({
       last_run_at: now.toISOString(),
       next_run_at: nextRun.toISOString(),
       last_error: error,
-      run_count: supabase.sql`run_count + 1`,
+      run_count: (current?.run_count || 0) + 1,
     })
     .eq("id", scheduleId);
 }
@@ -259,6 +431,19 @@ function calculateNextRun(frequency: string, fromTime: Date): Date {
       next.setDate(next.getDate() + 1);
   }
   return next;
+}
+
+// ==================== SEARCH FUNCTIONS ====================
+
+function buildSearchQuery(entity: Entity, platform?: string): string {
+  if (platform && entity.platform_keywords && entity.platform_keywords[platform]?.length > 0) {
+    return entity.platform_keywords[platform].join(" OR ");
+  }
+  if (entity.palabras_clave && entity.palabras_clave.length > 0) {
+    return entity.palabras_clave.join(" OR ");
+  }
+  const terms = [entity.nombre, ...entity.aliases].filter(Boolean);
+  return terms.join(" OR ");
 }
 
 async function searchNews(
