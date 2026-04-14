@@ -366,13 +366,23 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             const statusData = statusResult.data;
 
             if (statusData.status === "SUCCEEDED" || statusData.status === "completed") {
-              results = (statusData.items || []).map((r: Record<string, unknown>) => ({
-                url: (r as { url?: string }).url || "",
-                title: (r as { title?: string }).title,
-                description: (r as { description?: string; text?: string }).description || (r as { text?: string }).text,
-                source_domain: job.platform,
-                published_at: (r as { publishedAt?: string; timestamp?: string }).publishedAt || (r as { timestamp?: string }).timestamp,
-              }));
+              results = (statusData.items || []).map((r: Record<string, unknown>) => {
+                const item = r as Record<string, unknown>;
+                return {
+                  url: (item.url as string) || "",
+                  title: (item.title as string) || undefined,
+                  description: (item.description as string) || (item.text as string) || undefined,
+                  source_domain: job.platform,
+                  published_at: (item.publishedAt as string) || (item.timestamp as string) || undefined,
+                  author: (item.author_name as string) || (item.authorName as string) || undefined,
+                  authorUsername: (item.author_username as string) || (item.authorUsername as string) || undefined,
+                  authorUrl: (item.author_url as string) || (item.authorUrl as string) || undefined,
+                  likes: (item.likes as number) || undefined,
+                  comments: (item.comments as number) || undefined,
+                  shares: (item.shares as number) || undefined,
+                  views: (item.views as number) || undefined,
+                };
+              });
               break;
             }
 
