@@ -1080,7 +1080,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       // =====================================================
       // BRIGHT DATA FLOW (only TikTok & YouTube supported)
       // =====================================================
-      const brightDataSupported = ["tiktok", "youtube"].includes(platform);
+      const brightDataSupported = ["tiktok"].includes(platform);
       const effectiveProvider = (dataProvider === "brightdata" && brightDataSupported) ? "brightdata" : "apify";
 
       if (effectiveProvider === "brightdata") {
