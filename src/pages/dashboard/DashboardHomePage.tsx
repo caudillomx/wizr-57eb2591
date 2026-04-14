@@ -31,21 +31,39 @@ const DashboardHomePage = () => {
   const navigate = useNavigate();
   const projectId = selectedProject?.id;
 
-  // Fetch last 7 days mentions
+  // Fetch last 30 days mentions (aligned with Panorama logic)
   const { data: mentions, isLoading } = useQuery({
     queryKey: ["dashboard-home-mentions", projectId],
     queryFn: async () => {
-      const sevenDaysAgo = subDays(new Date(), 7);
-      const { data, error } = await supabase
-        .from("mentions")
-        .select("id, title, source_domain, sentiment, created_at, published_at, url, is_read")
-        .eq("project_id", projectId!)
-        .eq("is_archived", false)
-        .gte("created_at", sevenDaysAgo.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data || [];
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      const startIso = thirtyDaysAgo.toISOString();
+      const endIso = new Date().toISOString();
+
+      // Use same date logic as Panorama: published_at OR created_at
+      const dateFilter = `and(published_at.gte.${startIso},published_at.lte.${endIso}),and(published_at.is.null,created_at.gte.${startIso},created_at.lte.${endIso})`;
+
+      // Paginate to get all mentions (same as usePanoramaData)
+      const PAGE_SIZE = 1000;
+      const allMentions: any[] = [];
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("mentions")
+          .select("id, title, source_domain, sentiment, created_at, published_at, url, is_read")
+          .eq("project_id", projectId!)
+          .eq("is_archived", false)
+          .or(dateFilter)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        allMentions.push(...(data || []));
+        hasMore = (data?.length || 0) === PAGE_SIZE;
+        from += PAGE_SIZE;
+      }
+
+      return allMentions;
     },
     enabled: !!projectId,
     staleTime: 30000,
@@ -88,8 +106,11 @@ const DashboardHomePage = () => {
     if (!mentions) return null;
     const now = new Date();
     const yesterday = subHours(now, 24);
+    const getDate = (m: { published_at: string | null; created_at: string }) =>
+      new Date(m.published_at ?? m.created_at);
+
     const last24h = mentions.filter((m) =>
-      isWithinInterval(new Date(m.created_at), { start: yesterday, end: now })
+      isWithinInterval(getDate(m), { start: yesterday, end: now })
     );
     const total = mentions.length;
     const positivo = mentions.filter((m) => m.sentiment === "positivo").length;
@@ -104,7 +125,7 @@ const DashboardHomePage = () => {
       const dayEnd = subDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), i - 1);
       sparkline.push(
         mentions.filter((m) => {
-          const d = new Date(m.created_at);
+          const d = getDate(m);
           return d >= dayStart && d < dayEnd;
         }).length
       );
