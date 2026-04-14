@@ -47,11 +47,23 @@ export function usePanoramaData(
 
       if (error) throw error;
 
+      console.log("[PanoramaData] Raw mentions from DB:", data?.length);
+      console.log("[PanoramaData] Date range:", effectiveStart.toISOString(), "→", effectiveEnd.toISOString());
+
       // Filter by effective date (published_at or created_at) within the range
-      return (data || []).filter((m) => {
+      const filtered = (data || []).filter((m) => {
         const d = m.published_at ? new Date(m.published_at) : new Date(m.created_at);
         return d >= effectiveStart && d <= effectiveEnd;
       });
+
+      console.log("[PanoramaData] After date filter:", filtered.length);
+      if (data && data.length > 0 && filtered.length === 0) {
+        const sample = data[0];
+        const sampleDate = sample.published_at ? new Date(sample.published_at) : new Date(sample.created_at);
+        console.log("[PanoramaData] Sample mention date:", sampleDate.toISOString(), "published_at:", sample.published_at, "created_at:", sample.created_at);
+      }
+
+      return filtered;
     },
     enabled: !!projectId,
   });
