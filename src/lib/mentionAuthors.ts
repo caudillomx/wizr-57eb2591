@@ -58,6 +58,46 @@ const buildProfileUrl = (username: string, sourceDomain?: string | null): string
   return "";
 };
 
+const formatDomainAsName = (domain: string): string => {
+  // Remove common prefixes and TLDs, capitalize
+  const clean = domain
+    .replace(/^(www\.|m\.|mobile\.|amp\.)/, "")
+    .replace(/\.(com|org|net|mx|es|co|io|info|gov|edu)(\.\w+)?$/, "");
+  
+  // Known media brand mappings
+  const KNOWN_MEDIA: Record<string, string> = {
+    "elfinanciero": "El Financiero",
+    "eleconomista": "El Economista",
+    "expansion": "Expansión",
+    "reforma": "Reforma",
+    "eluniversal": "El Universal",
+    "milenio": "Milenio",
+    "excelsior": "Excélsior",
+    "jornada": "La Jornada",
+    "forbes": "Forbes",
+    "bloomberg": "Bloomberg",
+    "reuters": "Reuters",
+    "informador": "El Informador",
+    "proceso": "Proceso",
+    "animalpolitico": "Animal Político",
+    "aristeguinoticias": "Aristegui Noticias",
+    "sinembargo": "Sin Embargo",
+    "sdpnoticias": "SDP Noticias",
+    "hrratings": "HR Ratings",
+    "cbonds": "Cbonds",
+  };
+
+  const key = clean.replace(/[-_.]/g, "").toLowerCase();
+  if (KNOWN_MEDIA[key]) return KNOWN_MEDIA[key];
+
+  // Fallback: capitalize segments
+  return clean
+    .split(/[-_.]/)
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
+};
+
 const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null) => {
   if (!rawUrl) return null;
 
@@ -67,11 +107,17 @@ const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null
     const source = normalizeDomain(sourceDomain) || hostname;
     const segments = parsedUrl.pathname.split("/").filter(Boolean);
 
-    if (segments.length === 0) return null;
+    if (segments.length === 0 && !isSocialDomain(source)) {
+      // Root URL of a non-social site — use domain as source name
+      return {
+        name: formatDomainAsName(source),
+        username: source,
+        url: `https://${source}`,
+      };
+    }
 
     if (source.includes("twitter") || source.includes("x.com")) {
       const blocked = new Set(["i", "search", "home", "explore", "messages", "compose", "intent", "share", "login", "signup", "hashtag"]);
-      // Pattern 1: x.com/{username}/status/{id}
       if (segments.includes("status")) {
         const statusIdx = segments.indexOf("status");
         const username = statusIdx > 0 ? segments[statusIdx - 1]?.replace(/^@/, "") : segments[0]?.replace(/^@/, "");
@@ -83,7 +129,6 @@ const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null
           };
         }
       }
-      // Pattern 2: x.com/{username} (profile URL, no /status/)
       const username = segments[0]?.replace(/^@/, "");
       if (username && !blocked.has(username.toLowerCase()) && segments.length <= 2) {
         return {
@@ -139,12 +184,24 @@ const inferAuthorFromUrl = (rawUrl?: string | null, sourceDomain?: string | null
         };
       }
     }
+
+    // Non-social domain: use the domain name as the "author" (i.e. the publication)
+    if (!isSocialDomain(source)) {
+      return {
+        name: formatDomainAsName(source),
+        username: source,
+        url: `https://${source}`,
+      };
+    }
   } catch {
     return null;
   }
 
   return null;
 };
+
+const SOCIAL_DOMAINS = ["twitter", "x.com", "instagram", "tiktok", "reddit", "facebook", "youtube", "linkedin"];
+const isSocialDomain = (domain: string): boolean => SOCIAL_DOMAINS.some((s) => domain.includes(s));
 
 export const getMentionAuthorInfo = (mention: MentionAuthorSource): MentionAuthorInfo | null => {
   const metadata = getMetadataRecord(mention.raw_metadata);
