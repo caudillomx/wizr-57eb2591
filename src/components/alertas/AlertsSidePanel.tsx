@@ -70,8 +70,9 @@ export function AlertsSidePanel({ projectId }: AlertsSidePanelProps) {
       }
 
       if (data?.success) {
+        const totalAlerts = (data.results || []).reduce((sum: number, r: any) => sum + (r.alertsTriggered || 0), 0);
         toast.success('Monitoreo completado', {
-          description: `${data.processed.alertsTriggered} alertas activadas`,
+          description: `${totalAlerts} alertas activadas`,
         });
         refetchNotifications();
       }

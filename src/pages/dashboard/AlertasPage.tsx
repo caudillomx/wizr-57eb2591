@@ -70,8 +70,10 @@ const AlertasPage = () => {
       }
 
       if (data?.success) {
+        const totalAlerts = (data.results || []).reduce((sum: number, r: any) => sum + (r.alertsTriggered || 0), 0);
+        const totalMentions = (data.results || []).reduce((sum: number, r: any) => sum + (r.mentionsSaved || 0), 0);
         toast.success('Monitoreo completado', {
-          description: `Procesados: ${data.processed.entities} entidades, ${data.processed.newMentions} menciones nuevas, ${data.processed.alertsTriggered} alertas activadas`,
+          description: `${totalMentions} menciones nuevas, ${totalAlerts} alertas activadas`,
         });
         refetchNotifications();
       } else {
