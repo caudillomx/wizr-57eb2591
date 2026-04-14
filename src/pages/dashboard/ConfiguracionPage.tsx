@@ -18,6 +18,19 @@ import { EntityForm } from "@/components/entities/EntityForm";
 import { EntityList, Entity } from "@/components/entities/EntityList";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 const ConfiguracionPage = () => {
   const { selectedProject, refreshProjects } = useProject();
