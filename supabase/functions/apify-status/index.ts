@@ -1133,16 +1133,18 @@ serve(async (req) => {
 
         // Filter by keyword for platforms that need it
         // SKIP filtering for TikTok - keywords appear in video overlays (OCR) not in metadata
+        // SKIP filtering for Twitter - apidojo/tweet-scraper already searches by searchTerms natively
         // User prefers to see all results and manually curate
         //
         // SOFT FILTER for YouTube: When the query IS the keyword, Apify already searched for it.
         // Re-filtering would be overly restrictive (e.g. a video about "Actinver" might not repeat the word in title).
         // So for YouTube we skip keyword filtering entirely and rely on frontend date filtering.
         // YouTube: Apify already searched for the keyword and results are generally relevant.
+        // Twitter: The scraper searches by terms natively, re-filtering with quoted terms causes false negatives.
         // Reddit: The scraper returns generic posts, so keyword filtering IS needed.
         const useSoftFilter = platform === "youtube";
         
-        if (keywordLower && platform !== "tiktok" && !useSoftFilter) {
+        if (keywordLower && platform !== "tiktok" && platform !== "twitter" && !useSoftFilter) {
           const beforeCount = normalized.length;
           
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
