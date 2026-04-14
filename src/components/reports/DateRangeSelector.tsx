@@ -58,7 +58,7 @@ export function calculateDateRange(config: DateRangeConfig): DateRangeResult {
   const now = new Date();
   const cutoffHour = config.cutoffHour;
 
-  // Single day report
+  // Single day report — uses cutoff hour (e.g. 8AM yesterday → 8AM today)
   if (config.type === "day" && config.customDate) {
     const selectedDate = config.customDate;
     const endDate = setHours(startOfDay(selectedDate), cutoffHour);
@@ -71,22 +71,22 @@ export function calculateDateRange(config: DateRangeConfig): DateRangeResult {
     };
   }
 
-  // Custom range
+  // Custom range — include full days (start of first day → end of last day)
   if (config.type === "range" && config.rangeStart && config.rangeEnd) {
-    const startDate = setHours(startOfDay(config.rangeStart), cutoffHour);
-    const endDate = setHours(startOfDay(config.rangeEnd), cutoffHour);
+    const startDate = startOfDay(config.rangeStart);
+    const rangeEndDate = endOfDay(config.rangeEnd);
 
     return {
       startDate,
-      endDate,
+      endDate: rangeEndDate,
       label: `${format(config.rangeStart, "d MMM", { locale: es })} - ${format(config.rangeEnd, "d MMM yyyy", { locale: es })}`,
     };
   }
 
-  // Preset ranges
+  // Preset ranges — from N days ago (start of day) to right now
   const days = config.type === "7d" ? 7 : config.type === "30d" ? 30 : 90;
   const endDate = now;
-  const startDate = subDays(now, days);
+  const startDate = startOfDay(subDays(now, days));
 
   const labelMap: Record<string, string> = {
     "7d": "Últimos 7 días",
