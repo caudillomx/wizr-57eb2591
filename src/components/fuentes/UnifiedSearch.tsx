@@ -311,7 +311,7 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
       updateJob(job.id, { status: "running" });
 
       try {
-        let results: Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }> = [];
+        let results: Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; author?: string; authorUsername?: string; authorUrl?: string; likes?: number; comments?: number; shares?: number; views?: number }> = [];
 
         if (job.platform === "news") {
           // Use Firecrawl for news
