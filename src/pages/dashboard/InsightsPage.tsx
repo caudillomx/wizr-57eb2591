@@ -51,8 +51,8 @@ import {
 const InsightsPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
-  const { dateConfig, setDateConfig, daysRange } = useDateRangeFilter("30d");
-  const { metrics, isLoading: metricsLoading } = usePanoramaData(selectedProject?.id, daysRange);
+  const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("30d");
+  const { metrics, isLoading: metricsLoading } = usePanoramaData(selectedProject?.id, daysRange, startDate, endDate);
   const [selectedEntityId, setSelectedEntityId] = useState<string>("all");
   const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
   
