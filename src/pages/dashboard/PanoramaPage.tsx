@@ -44,7 +44,7 @@ const PanoramaPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
   const navigate = useNavigate();
   const { dateConfig, setDateConfig, daysRange, startDate, endDate } = useDateRangeFilter("30d");
-  const { metrics, isLoading: metricsLoading } = usePanoramaData(selectedProject?.id, daysRange);
+  const { metrics, isLoading: metricsLoading } = usePanoramaData(selectedProject?.id, daysRange, startDate, endDate);
 
   const loading = projectLoading || metricsLoading;
 
