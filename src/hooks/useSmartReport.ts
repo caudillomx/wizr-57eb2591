@@ -79,6 +79,70 @@ export function useSmartReport() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Compute enriched analytics from mentions
+  const computeAnalytics = (mentions: Mention[]) => {
+    // Source breakdown
+    const sourceMap: Record<string, { count: number; positive: number; negative: number; neutral: number }> = {};
+    mentions.forEach(m => {
+      const src = m.source_domain || "desconocido";
+      if (!sourceMap[src]) sourceMap[src] = { count: 0, positive: 0, negative: 0, neutral: 0 };
+      sourceMap[src].count++;
+      if (m.sentiment === "positivo") sourceMap[src].positive++;
+      else if (m.sentiment === "negativo") sourceMap[src].negative++;
+      else if (m.sentiment === "neutral") sourceMap[src].neutral++;
+    });
+    const sourceBreakdown: SourceBreakdown[] = Object.entries(sourceMap)
+      .map(([source, data]) => ({ source, ...data }))
+      .sort((a, b) => b.count - a.count);
+
+    // Influencers from raw_metadata
+    const authorMap: Record<string, { name: string; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
+    mentions.forEach(m => {
+      const meta = m.raw_metadata as Record<string, unknown> | null;
+      const authorName = (meta?.author_name || meta?.authorName || meta?.author_username) as string | undefined;
+      if (!authorName) return;
+      const key = `${authorName}@${m.source_domain || "unknown"}`;
+      if (!authorMap[key]) {
+        authorMap[key] = { name: authorName, platform: m.source_domain || "unknown", mentions: 0, sentiments: [], engagement: 0 };
+      }
+      authorMap[key].mentions++;
+      if (m.sentiment) authorMap[key].sentiments.push(m.sentiment);
+      const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0);
+      authorMap[key].engagement += eng;
+    });
+    const influencers: InfluencerInfo[] = Object.values(authorMap)
+      .sort((a, b) => b.mentions - a.mentions)
+      .slice(0, 10)
+      .map(a => {
+        const negRatio = a.sentiments.filter(s => s === "negativo").length / (a.sentiments.length || 1);
+        const posRatio = a.sentiments.filter(s => s === "positivo").length / (a.sentiments.length || 1);
+        const sentiment = negRatio > 0.5 ? "negativo" : posRatio > 0.5 ? "positivo" : "mixto";
+        return {
+          name: a.name,
+          platform: a.platform,
+          mentions: a.mentions,
+          sentiment,
+          reach: a.engagement > 0 ? `${a.engagement.toLocaleString()} interacciones` : "N/D",
+        };
+      });
+
+    // Timeline by day
+    const dayMap: Record<string, { count: number; negative: number; positive: number }> = {};
+    mentions.forEach(m => {
+      const date = (m.published_at || m.created_at || "").split("T")[0];
+      if (!date) return;
+      if (!dayMap[date]) dayMap[date] = { count: 0, negative: 0, positive: 0 };
+      dayMap[date].count++;
+      if (m.sentiment === "negativo") dayMap[date].negative++;
+      if (m.sentiment === "positivo") dayMap[date].positive++;
+    });
+    const timeline: TimelinePoint[] = Object.entries(dayMap)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, data]) => ({ date, ...data }));
+
+    return { sourceBreakdown, influencers, timeline };
+  };
+
   const generateReport = async (
     mentions: Mention[],
     config: SmartReportConfig
@@ -96,6 +160,8 @@ export function useSmartReport() {
     setError(null);
 
     try {
+      const analytics = computeAnalytics(mentions);
+
       const { data, error: fnError } = await supabase.functions.invoke("generate-smart-report", {
         body: {
           mentions: mentions.map(m => ({
@@ -106,7 +172,9 @@ export function useSmartReport() {
             source_domain: m.source_domain,
             sentiment: m.sentiment,
             created_at: m.created_at,
+            published_at: m.published_at,
             matched_keywords: m.matched_keywords,
+            raw_metadata: m.raw_metadata,
           })),
           ...config,
         },
@@ -120,13 +188,21 @@ export function useSmartReport() {
         throw new Error(data.error);
       }
 
-      setReport(data);
+      // Merge server AI analysis with client-side computed analytics
+      const enrichedReport: SmartReportContent = {
+        ...data,
+        sourceBreakdown: analytics.sourceBreakdown,
+        influencers: analytics.influencers,
+        timeline: analytics.timeline,
+      };
+
+      setReport(enrichedReport);
       toast({
         title: "Reporte generado",
-        description: `"${data.title}" está listo`,
+        description: `"${enrichedReport.title}" está listo`,
       });
 
-      return data;
+      return enrichedReport;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError(message);
