@@ -420,6 +420,13 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             },
           }));
 
+          // Apply semantic deduplication
+          const { unique, duplicates } = deduplicateBatch(
+            mentionsToCheck,
+            allExistingMentions,
+            0.7 // 70% similarity threshold
+          );
+
           totalDuplicatesSkipped += duplicates.length;
 
           if (unique.length > 0) {
