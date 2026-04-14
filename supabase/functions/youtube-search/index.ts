@@ -138,14 +138,17 @@ serve(async (req) => {
       );
     }
 
-    console.log(`YouTube API search: "${query}" maxResults=${maxResults} uploadDate=${uploadDate} sortBy=${sortBy}`);
+    const exactQuery = buildExactQuery(query);
+    const relevanceTokens = extractKeywordTokens(query);
 
-    // Step 1: Search for videos
+    console.log(`YouTube API search: original="${query}" exact="${exactQuery}" tokens=${JSON.stringify(relevanceTokens)} maxResults=${maxResults}`);
+
+    // Step 1: Search for videos (with exact-match quoting)
     const searchParams = new URLSearchParams({
       part: "snippet",
-      q: query,
+      q: exactQuery,
       type: "video",
-      maxResults: String(Math.min(maxResults, 50)), // API max is 50 per page
+      maxResults: String(Math.min(maxResults, 50)),
       order: getOrder(sortBy),
       key: apiKey,
     });
