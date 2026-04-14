@@ -11,6 +11,7 @@ interface Entity {
   nombre: string;
   palabras_clave: string[];
   aliases: string[];
+  platform_keywords: Record<string, string[]>;
 }
 
 interface Schedule {
@@ -207,7 +208,10 @@ serve(async (req) => {
   }
 });
 
-function buildSearchQuery(entity: Entity): string {
+function buildSearchQuery(entity: Entity, platform?: string): string {
+  if (platform && entity.platform_keywords && entity.platform_keywords[platform]?.length > 0) {
+    return entity.platform_keywords[platform].join(" OR ");
+  }
   if (entity.palabras_clave && entity.palabras_clave.length > 0) {
     return entity.palabras_clave.join(" OR ");
   }
