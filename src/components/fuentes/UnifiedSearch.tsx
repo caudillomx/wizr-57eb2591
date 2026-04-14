@@ -219,11 +219,17 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
   };
 
   // Build search query from entity keywords
-  const buildSearchQuery = (entity: Entity): string => {
-    // Prioritize keywords, fallback to name + aliases
+  const buildSearchQuery = (entity: Entity, platform?: string): string => {
+    // 1. Check platform-specific keywords first
+    const pk = (entity as any).platform_keywords as Record<string, string[]> | undefined;
+    if (pk && platform && pk[platform] && pk[platform].length > 0) {
+      return pk[platform].join(", ");
+    }
+    // 2. Fallback to general keywords
     if (entity.palabras_clave && entity.palabras_clave.length > 0) {
       return entity.palabras_clave.join(", ");
     }
+    // 3. Fallback to name + aliases
     const terms = [entity.nombre, ...entity.aliases].filter(Boolean);
     return terms.join(", ");
   };
@@ -310,7 +316,7 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
           }
         } else {
           // Use Apify for social platforms through the dedicated client.
-          const searchQuery = buildSearchQuery(entity);
+          const searchQuery = buildSearchQuery(entity, job.platform);
           const scrapeResult = await apifyApi.startScrape({
             platform: job.platform,
             query: searchQuery,
