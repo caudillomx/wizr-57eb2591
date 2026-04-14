@@ -623,7 +623,6 @@ async function searchSocial(
     return [];
   }
 }
-    tiktok: "sociavault/tiktok-keyword-search-scraper",
     instagram: "apify/instagram-scraper",
     youtube: "scrapesmith/free-youtube-search-scraper",
     reddit: "trudax/reddit-scraper-lite",
