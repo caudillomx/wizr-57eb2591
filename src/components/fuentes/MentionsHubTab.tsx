@@ -150,6 +150,7 @@ export function MentionsHubTab({
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "engagement_desc" | "engagement_asc">("date_desc");
 
   // Extract unique platforms grouped by category
   const { platforms, socialCount, newsCount } = useMemo(() => {
@@ -217,12 +218,30 @@ export function MentionsHubTab({
     });
   }, [mentions, searchQuery, selectedPlatform, selectedSentiment, selectedEntity, sourceCategory, dateFrom, dateTo]);
 
+  // Sort mentions
+  const sortedMentions = useMemo(() => {
+    const sorted = [...filteredMentions];
+    sorted.sort((a, b) => {
+      if (sortBy === "date_desc" || sortBy === "date_asc") {
+        const dateA = new Date(a.published_at || a.created_at).getTime();
+        const dateB = new Date(b.published_at || b.created_at).getTime();
+        return sortBy === "date_desc" ? dateB - dateA : dateA - dateB;
+      }
+      const metricsA = getEngagementMetrics(a);
+      const metricsB = getEngagementMetrics(b);
+      const engA = metricsA ? metricsA.likes + metricsA.comments + metricsA.shares + metricsA.views : 0;
+      const engB = metricsB ? metricsB.likes + metricsB.comments + metricsB.shares + metricsB.views : 0;
+      return sortBy === "engagement_desc" ? engB - engA : engA - engB;
+    });
+    return sorted;
+  }, [filteredMentions, sortBy]);
+
   // Pagination
-  const totalPages = Math.ceil(filteredMentions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedMentions.length / ITEMS_PER_PAGE);
   const paginatedMentions = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredMentions.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredMentions, currentPage]);
+    return sortedMentions.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedMentions, currentPage]);
 
   // Stats for analysis panels
   const stats = useMemo(() => {
