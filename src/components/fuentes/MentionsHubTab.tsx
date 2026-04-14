@@ -156,18 +156,31 @@ export function MentionsHubTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "engagement_desc" | "engagement_asc">("date_desc");
 
+  // Normalize social domains to canonical display names
+  const normalizePlatformDomain = (domain: string): string => {
+    const d = domain.toLowerCase().replace(/^(www\.|m\.|mobile\.)/, "");
+    if (d.includes("twitter") || d.includes("x.com")) return "X (Twitter)";
+    if (d.includes("facebook")) return "Facebook";
+    if (d.includes("instagram")) return "Instagram";
+    if (d.includes("tiktok")) return "TikTok";
+    if (d.includes("youtube")) return "YouTube";
+    if (d.includes("reddit")) return "Reddit";
+    if (d.includes("linkedin")) return "LinkedIn";
+    return d;
+  };
+
   // Extract unique platforms grouped by category
   const { platforms, socialCount, newsCount } = useMemo(() => {
-    const uniqueDomains = new Set<string>();
+    const uniqueLabels = new Set<string>();
     let sc = 0, nc = 0;
     mentions.forEach((m) => {
       if (m.source_domain) {
-        const d = m.source_domain.toLowerCase().replace("www.", "");
-        uniqueDomains.add(d);
-        if (isSocialDomain(d)) sc++; else nc++;
+        const label = normalizePlatformDomain(m.source_domain);
+        uniqueLabels.add(label);
+        if (isSocialDomain(m.source_domain)) sc++; else nc++;
       }
     });
-    return { platforms: Array.from(uniqueDomains).sort(), socialCount: sc, newsCount: nc };
+    return { platforms: Array.from(uniqueLabels).sort(), socialCount: sc, newsCount: nc };
   }, [mentions]);
 
   // Filter mentions
@@ -193,8 +206,8 @@ export function MentionsHubTab({
 
       // Platform filter
       if (selectedPlatform !== "__all__") {
-        const domain = mention.source_domain?.toLowerCase().replace("www.", "") || "";
-        if (!domain.includes(selectedPlatform)) return false;
+        const label = normalizePlatformDomain(mention.source_domain || "");
+        if (label !== selectedPlatform) return false;
       }
 
       // Sentiment filter
