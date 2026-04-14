@@ -20,6 +20,29 @@ export interface SmartReportTemplates {
   public: string;
 }
 
+export interface SourceBreakdown {
+  source: string;
+  count: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+}
+
+export interface InfluencerInfo {
+  name: string;
+  platform: string;
+  mentions: number;
+  sentiment: string;
+  reach: string;
+}
+
+export interface TimelinePoint {
+  date: string;
+  count: number;
+  negative: number;
+  positive: number;
+}
+
 export interface SmartReportContent {
   title: string;
   summary: string;
@@ -27,6 +50,11 @@ export interface SmartReportContent {
   recommendations: string[];
   metrics: SmartReportMetrics;
   templates: SmartReportTemplates;
+  impactAssessment?: string;
+  sourceBreakdown: SourceBreakdown[];
+  influencers: InfluencerInfo[];
+  timeline: TimelinePoint[];
+  sentimentAnalysis?: string;
 }
 
 export interface SmartReportConfig {
@@ -35,6 +63,8 @@ export interface SmartReportConfig {
   projectName: string;
   projectAudience: string;
   projectObjective: string;
+  strategicContext?: string;
+  strategicFocus?: string;
   entityNames?: string[];
   dateRange: {
     start: string;
