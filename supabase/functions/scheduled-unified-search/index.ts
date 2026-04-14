@@ -491,8 +491,138 @@ async function searchSocial(
   platform: string,
   query: string,
   maxResults: number
-): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; raw_metadata?: Record<string, unknown> }>> {
   const actorMap: Record<string, string> = {
+    twitter: "powerai/twitter-search-scraper",
+    facebook: "powerai/facebook-post-search-scraper",
+    tiktok: "sociavault/tiktok-keyword-search-scraper",
+    instagram: "apify/instagram-scraper",
+    youtube: "scrapesmith/free-youtube-search-scraper",
+    reddit: "trudax/reddit-scraper-lite",
+    linkedin: "harvestapi/linkedin-post-search",
+  };
+
+  const actorId = actorMap[platform];
+  if (!actorId) {
+    console.log(`Unknown platform: ${platform}`);
+    return [];
+  }
+
+  try {
+    let input: Record<string, unknown> = {};
+
+    switch (platform) {
+      case "twitter":
+        input = { query, searchType: "Latest", maxTweets: maxResults };
+        break;
+      case "facebook":
+        input = { query, maxResults, recent_posts: true };
+        break;
+      case "tiktok":
+        input = { query, max_results: maxResults, date_posted: "this-week" };
+        break;
+      case "instagram":
+        input = { search: query, resultsLimit: Math.min(maxResults, 20) };
+        break;
+      case "youtube":
+        input = { searchQueries: [query], maxResults };
+        break;
+      case "reddit":
+        input = { searches: [query], maxItems: maxResults, sort: "new" };
+        break;
+      case "linkedin":
+        input = { search: query, maxPosts: maxResults };
+        break;
+    }
+
+    const startResponse = await fetch(
+      `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiToken}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }
+    );
+
+    if (!startResponse.ok) {
+      console.error(`Apify start error for ${platform}:`, startResponse.status);
+      return [];
+    }
+
+    const startData = await startResponse.json();
+    const runId = startData.data?.id;
+
+    if (!runId) {
+      console.error(`No run ID for ${platform}`);
+      return [];
+    }
+
+    // Poll for completion (max 2 minutes)
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const statusResponse = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
+      );
+
+      if (!statusResponse.ok) {
+        attempts++;
+        continue;
+      }
+
+      const statusData = await statusResponse.json();
+      const status = statusData.data?.status;
+
+      if (status === "SUCCEEDED") {
+        const datasetId = statusData.data?.defaultDatasetId;
+        if (!datasetId) return [];
+
+        const resultsResponse = await fetch(
+          `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&limit=${maxResults}`
+        );
+
+        if (!resultsResponse.ok) return [];
+
+        const rawItems = await resultsResponse.json();
+
+        // Use the shared canonical normalizer for rich metadata
+        const normalized = normalizeShared(rawItems, platform as Platform);
+
+        return normalized.filter(r => r.url).map(r => ({
+          url: r.url,
+          title: r.title,
+          description: r.description,
+          source_domain: r.platform,
+          published_at: r.publishedAt,
+          raw_metadata: {
+            author: r.author,
+            metrics: r.metrics,
+            contentType: r.contentType,
+            media: r.media,
+            hashtags: r.hashtags,
+            mentions: r.mentions,
+          },
+        }));
+      }
+
+      if (status === "FAILED" || status === "ABORTED" || status === "TIMED-OUT") {
+        console.error(`Apify run ${status} for ${platform}`);
+        return [];
+      }
+
+      attempts++;
+    }
+
+    console.error(`Timeout waiting for ${platform} results`);
+    return [];
+  } catch (error) {
+    console.error(`searchSocial error for ${platform}:`, error);
+    return [];
+  }
+}
     twitter: "powerai/twitter-search-scraper",
     facebook: "powerai/facebook-post-search-scraper",
     tiktok: "sociavault/tiktok-keyword-search-scraper",
