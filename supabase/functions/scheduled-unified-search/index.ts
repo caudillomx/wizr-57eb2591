@@ -154,6 +154,7 @@ serve(async (req) => {
                 description?: string;
                 source_domain?: string;
                 published_at?: string;
+                raw_metadata?: Record<string, unknown>;
               }> = [];
 
               if (platform === "news" && firecrawlKey) {
@@ -176,6 +177,7 @@ serve(async (req) => {
                     entity_id: entity.id,
                     matched_keywords: entity.palabras_clave || [],
                     published_at: r.published_at || null,
+                    raw_metadata: r.raw_metadata || {},
                   }));
 
                 if (mentionsToSave.length > 0) {
