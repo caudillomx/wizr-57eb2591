@@ -186,7 +186,16 @@ export function MentionsHubTab({
         const matchesTitle = mention.title?.toLowerCase().includes(query);
         const matchesDesc = mention.description?.toLowerCase().includes(query);
         const matchesKeywords = mention.matched_keywords?.some((k) => k.toLowerCase().includes(query));
-        if (!matchesTitle && !matchesDesc && !matchesKeywords) return false;
+        const author = getAuthorInfo(mention);
+        const matchesAuthor = author && (author.name.toLowerCase().includes(query) || author.username.toLowerCase().includes(query));
+        if (!matchesTitle && !matchesDesc && !matchesKeywords && !matchesAuthor) return false;
+      }
+
+      // Source category filter (social vs news)
+      if (sourceCategory !== "__all__") {
+        const social = isSocialDomain(mention.source_domain);
+        if (sourceCategory === "social" && !social) return false;
+        if (sourceCategory === "news" && social) return false;
       }
 
       // Platform filter
@@ -218,7 +227,7 @@ export function MentionsHubTab({
 
       return true;
     });
-  }, [mentions, searchQuery, selectedPlatform, selectedSentiment, selectedEntity, dateFrom, dateTo]);
+  }, [mentions, searchQuery, selectedPlatform, selectedSentiment, selectedEntity, sourceCategory, dateFrom, dateTo]);
 
   // Pagination
   const totalPages = Math.ceil(filteredMentions.length / ITEMS_PER_PAGE);
@@ -256,16 +265,52 @@ export function MentionsHubTab({
     setSelectedPlatform("__all__");
     setSelectedSentiment("__all__");
     setSelectedEntity("__all__");
+    setSourceCategory("__all__");
     setDateFrom(subDays(new Date(), 30));
     setDateTo(new Date());
     setCurrentPage(1);
   };
+
+  // Export CSV
+  const exportCSV = useCallback(() => {
+    const headers = ["Título", "Descripción", "URL", "Plataforma", "Autor", "Username", "Sentimiento", "Fecha", "Keywords", "Likes", "Comentarios", "Shares", "Vistas", "Entidad"];
+    const rows = filteredMentions.map((m) => {
+      const author = getAuthorInfo(m);
+      const metrics = getEngagementMetrics(m);
+      const entity = entities.find((e) => e.id === m.entity_id);
+      return [
+        (m.title || "").replace(/"/g, '""'),
+        (m.description || "").replace(/"/g, '""'),
+        m.url,
+        getPlatformLabel(m.source_domain),
+        author?.name || "",
+        author?.username || "",
+        m.sentiment || "sin analizar",
+        m.published_at || m.created_at,
+        (m.matched_keywords || []).join("; "),
+        metrics?.likes ?? "",
+        metrics?.comments ?? "",
+        metrics?.shares ?? "",
+        metrics?.views ?? "",
+        entity?.nombre || "",
+      ].map((v) => `"${v}"`).join(",");
+    });
+    const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `menciones_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredMentions, entities]);
 
   const activeFiltersCount = [
     searchQuery.trim(),
     selectedPlatform !== "__all__",
     selectedSentiment !== "__all__",
     selectedEntity !== "__all__",
+    sourceCategory !== "__all__",
   ].filter(Boolean).length;
 
   // Navigate to analysis panels with context
