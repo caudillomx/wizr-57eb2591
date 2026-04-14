@@ -281,12 +281,20 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
       )}
 
       {/* Show computed range for day/range modes */}
-      {(value.type === "day" || value.type === "range") && (
+      {value.type === "day" && (
         <div className="text-xs text-muted-foreground sm:ml-2 flex items-center gap-1">
           <span className="font-medium">Período:</span>
           {format(rangeResult.startDate, "d MMM HH:mm", { locale: es })}
           {" → "}
           {format(rangeResult.endDate, "d MMM HH:mm", { locale: es })}
+        </div>
+      )}
+      {value.type === "range" && (
+        <div className="text-xs text-muted-foreground sm:ml-2 flex items-center gap-1">
+          <span className="font-medium">Período:</span>
+          {format(rangeResult.startDate, "d MMM yyyy", { locale: es })}
+          {" → "}
+          {format(rangeResult.endDate, "d MMM yyyy", { locale: es })}
         </div>
       )}
     </div>
