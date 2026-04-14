@@ -12,7 +12,7 @@ import Registro from "./pages/Registro";
 import RecuperarContrasena from "./pages/RecuperarContrasena";
 import RestablecerContrasena from "./pages/RestablecerContrasena";
 import SolicitarAcceso from "./pages/SolicitarAcceso";
-import ProjectSpecBuilder from "./pages/ProjectSpecBuilder";
+import ProjectWizard from "./pages/ProjectWizard";
 import NotFound from "./pages/NotFound";
 
 
