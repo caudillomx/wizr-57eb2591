@@ -714,6 +714,7 @@ export function MentionsHubTab({
               <span className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages || 1}
               </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
