@@ -206,8 +206,8 @@ export function MentionsHubTab({
 
       // Platform filter
       if (selectedPlatform !== "__all__") {
-        const domain = mention.source_domain?.toLowerCase().replace("www.", "") || "";
-        if (!domain.includes(selectedPlatform)) return false;
+        const label = normalizePlatformDomain(mention.source_domain || "");
+        if (label !== selectedPlatform) return false;
       }
 
       // Sentiment filter
