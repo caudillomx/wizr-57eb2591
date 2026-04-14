@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Send,
@@ -18,6 +19,9 @@ import {
   BookOpen,
   Loader2,
   Sparkles,
+  Plus,
+  X,
+  ArrowRight,
 } from "lucide-react";
 import wizrLogo from "@/assets/wizr-logo.png";
 import { cn } from "@/lib/utils";
@@ -26,14 +30,14 @@ import { cn } from "@/lib/utils";
 
 type ProductType = "performance" | "listening" | "briefing";
 type ListeningDepth = "flash" | "brief" | "deep_dive" | "investigacion";
+type InputMode = "text" | "textarea" | "entities" | null;
 
 interface ChatMessage {
   id: string;
   role: "assistant" | "user";
   content: string;
   options?: OptionItem[];
-  inputType?: "text" | "textarea";
-  inputPlaceholder?: string;
+  entities?: string[]; // for displaying entity chips in user messages
 }
 
 interface OptionItem {
@@ -48,7 +52,7 @@ interface WizardState {
   product?: ProductType;
   depth?: ListeningDepth;
   name?: string;
-  subject?: string;
+  entities: string[];
   audience?: string;
 }
 
@@ -106,42 +110,37 @@ const DEPTH_OPTIONS: OptionItem[] = [
 
 function mapProductToProjectType(product: ProductType): string {
   switch (product) {
-    case "performance":
-      return "benchmark";
-    case "listening":
-      return "monitoreo";
-    case "briefing":
-      return "monitoreo";
+    case "performance": return "benchmark";
+    case "listening": return "monitoreo";
+    case "briefing": return "monitoreo";
   }
 }
 
 function mapDepthToTemporal(depth?: ListeningDepth): string {
   switch (depth) {
-    case "flash":
-      return "tiempo_real";
-    case "brief":
-      return "diario";
-    case "deep_dive":
-      return "semanal";
-    case "investigacion":
-      return "mensual";
-    default:
-      return "diario";
+    case "flash": return "tiempo_real";
+    case "brief": return "diario";
+    case "deep_dive": return "semanal";
+    case "investigacion": return "mensual";
+    default: return "diario";
   }
 }
 
 function mapDepthToSensitivity(depth?: ListeningDepth): string {
   switch (depth) {
-    case "flash":
-      return "bajo";
-    case "brief":
-      return "medio";
-    case "deep_dive":
-      return "alto";
-    case "investigacion":
-      return "alto";
-    default:
-      return "medio";
+    case "flash": return "bajo";
+    case "brief": return "medio";
+    case "deep_dive": return "alto";
+    case "investigacion": return "alto";
+    default: return "medio";
+  }
+}
+
+function guessEntityType(product: ProductType): string {
+  switch (product) {
+    case "performance": return "marca";
+    case "listening": return "tema";
+    case "briefing": return "tema";
   }
 }
 
@@ -156,26 +155,27 @@ const ProjectWizard = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
-  const [state, setState] = useState<WizardState>({ step: 0 });
+  const [state, setState] = useState<WizardState>({ step: 0, entities: [] });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [currentInputType, setCurrentInputType] = useState<"text" | "textarea" | null>(null);
-  const [currentPlaceholder, setCurrentPlaceholder] = useState("");
+  const [inputMode, setInputMode] = useState<InputMode>(null);
+  const [placeholder, setPlaceholder] = useState("");
+  const [pendingEntities, setPendingEntities] = useState<string[]>([]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, pendingEntities]);
 
-  // Focus input when it appears
+  // Focus input
   useEffect(() => {
-    if (currentInputType && inputRef.current) {
-      inputRef.current.focus();
+    if (inputMode && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [currentInputType]);
+  }, [inputMode]);
 
   // Start conversation
   useEffect(() => {
@@ -184,32 +184,46 @@ const ProjectWizard = () => {
         "¡Hola! Soy Wizr. Vamos a configurar tu nuevo análisis.\n\n¿Qué necesitas hacer?",
         PRODUCT_OPTIONS
       );
-      setState({ step: 1 });
+      setState({ step: 1, entities: [] });
     }, 400);
     return () => clearTimeout(timer);
   }, []);
 
-  const addAssistantMessage = (
-    content: string,
-    options?: OptionItem[],
-    inputType?: "text" | "textarea",
-    inputPlaceholder?: string
-  ) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: uid(), role: "assistant", content, options, inputType, inputPlaceholder },
-    ]);
-    if (inputType) {
-      setCurrentInputType(inputType);
-      setCurrentPlaceholder(inputPlaceholder || "");
-    } else if (!options) {
-      setCurrentInputType(null);
-    }
+  const addAssistantMessage = (content: string, options?: OptionItem[]) => {
+    setMessages((prev) => [...prev, { id: uid(), role: "assistant", content, options }]);
   };
 
-  const addUserMessage = (content: string) => {
-    setMessages((prev) => [...prev, { id: uid(), role: "user", content }]);
-    setCurrentInputType(null);
+  const addUserMessage = (content: string, entities?: string[]) => {
+    setMessages((prev) => [...prev, { id: uid(), role: "user", content, entities }]);
+    setInputMode(null);
+  };
+
+  const showInput = (mode: InputMode, ph: string) => {
+    setInputMode(mode);
+    setPlaceholder(ph);
+  };
+
+  // ── Entity Input Helpers ──────────────────────────────────────────────────
+
+  const addEntity = () => {
+    const val = inputValue.trim();
+    if (!val || pendingEntities.includes(val)) return;
+    setPendingEntities((prev) => [...prev, val]);
+    setInputValue("");
+  };
+
+  const removeEntity = (name: string) => {
+    setPendingEntities((prev) => prev.filter((e) => e !== name));
+  };
+
+  const confirmEntities = () => {
+    if (pendingEntities.length === 0) return;
+    const entities = [...pendingEntities];
+    const displayText = entities.join(", ");
+    addUserMessage(displayText, entities);
+    setState((s) => ({ ...s, entities }));
+    setPendingEntities([]);
+    advanceAfterEntities(entities);
   };
 
   // ── Flow Logic ──────────────────────────────────────────────────────────────
@@ -220,30 +234,22 @@ const ProjectWizard = () => {
 
       switch (state.step) {
         case 1: {
-          // Product selected
           const product = value as ProductType;
           setState((s) => ({ ...s, step: 2, product }));
 
           setTimeout(() => {
             if (product === "performance") {
               addAssistantMessage(
-                "Perfecto, análisis de performance. ¿De quién o qué marca quieres analizar las redes?",
-                undefined,
-                "text",
-                "Ej: Actinver, Banorte, GBM..."
+                "Perfecto, análisis de performance.\n\n¿A quiénes quieres comparar? Agrega los actores o marcas que te interesan."
               );
+              showInput("entities", "Escribe un nombre y presiona Enter o +");
             } else if (product === "listening") {
-              addAssistantMessage(
-                "Entendido, listening temático. ¿Qué tan profundo necesitas ir?",
-                DEPTH_OPTIONS
-              );
+              addAssistantMessage("Entendido, listening temático. ¿Qué tan profundo necesitas ir?", DEPTH_OPTIONS);
             } else {
               addAssistantMessage(
-                "Briefing personalizado. ¿Para quién es este briefing? Describe al tomador de decisiones.",
-                undefined,
-                "text",
-                "Ej: Director de comunicación de Actinver"
+                "Briefing personalizado. ¿Para quién es este briefing? Describe al tomador de decisiones."
               );
+              showInput("text", "Ej: Director de comunicación de Actinver");
             }
           }, 300);
           break;
@@ -256,11 +262,9 @@ const ProjectWizard = () => {
 
           setTimeout(() => {
             addAssistantMessage(
-              "¿Sobre qué tema, persona o fenómeno quieres investigar?",
-              undefined,
-              "text",
-              "Ej: Captura de El Mayo Zambada, reforma judicial..."
+              "¿Sobre qué temas, personas o fenómenos quieres investigar?\n\nPuedes agregar varios para comparar o dar seguimiento."
             );
+            showInput("entities", "Ej: Reforma judicial, AMLO, Claudia Sheinbaum...");
           }, 300);
           break;
         }
@@ -269,68 +273,68 @@ const ProjectWizard = () => {
     [state.step]
   );
 
+  const advanceAfterEntities = (entities: string[]) => {
+    const { product } = state;
+    const entitiesList = entities.map((e) => `**${e}**`).join(", ");
+
+    if (product === "performance") {
+      setState((s) => ({ ...s, step: 3 }));
+      setTimeout(() => {
+        addAssistantMessage(
+          `Genial, vamos a analizar: ${entitiesList}.\n\n¿Quieres darle un nombre al proyecto?`
+        );
+        showInput("text", `Ej: Performance Banca Digital Q2 2026`);
+      }, 300);
+    } else if (product === "listening") {
+      setState((s) => ({ ...s, step: 4 }));
+      setTimeout(() => {
+        addAssistantMessage(
+          `Perfecto, vamos a monitorear: ${entitiesList}.\n\n¿Quién va a usar este análisis?`
+        );
+        showInput("text", "Ej: Equipo de comunicación, director general...");
+      }, 300);
+    } else if (product === "briefing") {
+      setState((s) => ({ ...s, step: 4 }));
+      setTimeout(() => {
+        addAssistantMessage(
+          `Temas del briefing: ${entitiesList}.\n\n¿Quieres darle un nombre al proyecto?`
+        );
+        showInput("text", `Ej: Briefing para ${state.audience}`);
+      }, 300);
+    }
+  };
+
   const handleTextSubmit = useCallback(() => {
     if (!inputValue.trim()) return;
+
+    // If in entities mode, add entity instead of submitting
+    if (inputMode === "entities") {
+      addEntity();
+      return;
+    }
+
     const value = inputValue.trim();
     addUserMessage(value);
     setInputValue("");
 
     const { step, product } = state;
 
-    if (product === "performance" && step === 2) {
-      // Subject entered for performance
-      setState((s) => ({ ...s, step: 3, subject: value }));
+    if (product === "briefing" && step === 2) {
+      // Audience entered for briefing
+      setState((s) => ({ ...s, step: 3, audience: value }));
       setTimeout(() => {
         addAssistantMessage(
-          `Voy a crear un proyecto de Performance para **${value}**.\n\n¿Quieres darle un nombre al proyecto o lo genero automáticamente?`,
-          undefined,
-          "text",
-          `Ej: Performance ${value} Q2 2026`
+          "¿Sobre qué temas necesita estar informado?\n\nAgrega los temas, competidores o actores que quieras monitorear."
         );
-      }, 300);
-    } else if (product === "listening" && step === 3) {
-      // Subject entered for listening
-      setState((s) => ({ ...s, step: 4, subject: value }));
-      setTimeout(() => {
-        addAssistantMessage(
-          `Perfecto, vamos a monitorear **"${value}"**.\n\n¿Quién va a usar este análisis? Esto me ayuda a calibrar el tono y la profundidad.`,
-          undefined,
-          "text",
-          "Ej: Equipo de comunicación, director general..."
-        );
+        showInput("entities", "Ej: Mercado financiero, regulación CNBV, GBM...");
       }, 300);
     } else if (product === "listening" && step === 4) {
       // Audience entered for listening
       setState((s) => ({ ...s, step: 5, audience: value }));
       setTimeout(() => {
-        addAssistantMessage(
-          `¿Quieres darle un nombre al proyecto o lo genero automáticamente?`,
-          undefined,
-          "text",
-          `Ej: Listening - ${state.subject}`
-        );
-      }, 300);
-    } else if (product === "briefing" && step === 2) {
-      // Audience entered for briefing
-      setState((s) => ({ ...s, step: 3, audience: value }));
-      setTimeout(() => {
-        addAssistantMessage(
-          "¿Sobre qué temas necesita estar informado? Pueden ser temas de industria, competidores, persona pública, etc.",
-          undefined,
-          "textarea",
-          "Ej: Mercado financiero mexicano, regulación CNBV, competidores (GBM, Banorte)..."
-        );
-      }, 300);
-    } else if (product === "briefing" && step === 3) {
-      // Subject entered for briefing
-      setState((s) => ({ ...s, step: 4, subject: value }));
-      setTimeout(() => {
-        addAssistantMessage(
-          `¿Quieres darle un nombre al proyecto o lo genero automáticamente?`,
-          undefined,
-          "text",
-          `Ej: Briefing para ${state.audience}`
-        );
+        addAssistantMessage("¿Quieres darle un nombre al proyecto?");
+        const firstEntity = state.entities[0] || "Tema";
+        showInput("text", `Ej: Listening - ${firstEntity}`);
       }, 300);
     } else if (
       (product === "performance" && step === 3) ||
@@ -341,18 +345,17 @@ const ProjectWizard = () => {
       setState((s) => ({ ...s, name: value }));
       createProject({ ...state, name: value });
     }
-  }, [inputValue, state]);
+  }, [inputValue, state, inputMode]);
 
-  // ── Create Project ────────────────────────────────────────────────────────
+  // ── Create Project + Entities ─────────────────────────────────────────────
 
   const createProject = async (finalState: WizardState) => {
     if (!user) return;
     setIsCreating(true);
-    setCurrentInputType(null);
+    setInputMode(null);
 
     const projectName =
-      finalState.name || `${finalState.product} - ${finalState.subject || "Nuevo"}`;
-
+      finalState.name || `${finalState.product} - ${finalState.entities.join(", ") || "Nuevo"}`;
     const objetivo = buildObjective(finalState);
 
     try {
@@ -374,35 +377,53 @@ const ProjectWizard = () => {
 
       if (error) throw error;
 
+      // Create entities
+      if (finalState.entities.length > 0 && data?.id) {
+        const entityType = guessEntityType(finalState.product!);
+        const entitiesToInsert = finalState.entities.map((name) => ({
+          project_id: data.id,
+          nombre: name,
+          tipo: entityType as any,
+          palabras_clave: [name],
+          aliases: [],
+        }));
+
+        const { error: entitiesError } = await supabase
+          .from("entities")
+          .insert(entitiesToInsert);
+
+        if (entitiesError) {
+          console.error("Error creating entities:", entitiesError);
+        }
+      }
+
       setTimeout(() => {
+        const entityCount = finalState.entities.length;
+        const entityMsg = entityCount > 0 ? `\n${entityCount} entidades creadas.` : "";
         addAssistantMessage(
-          `✅ **¡Proyecto creado!**\n\n**${projectName}**\n\nTe llevo al dashboard para que empieces a trabajar.`
+          `✅ **¡Proyecto creado!**\n\n**${projectName}**${entityMsg}\n\nTe llevo al dashboard para que empieces a trabajar.`
         );
 
         setTimeout(() => {
-          toast({
-            title: "¡Proyecto creado!",
-            description: projectName,
-          });
+          toast({ title: "¡Proyecto creado!", description: projectName });
           navigate("/dashboard/fuentes");
         }, 1500);
       }, 400);
     } catch (error: any) {
-      addAssistantMessage(
-        `❌ Hubo un error al crear el proyecto: ${error.message}. Intenta de nuevo.`
-      );
+      addAssistantMessage(`❌ Hubo un error: ${error.message}. Intenta de nuevo.`);
       setIsCreating(false);
     }
   };
 
   const buildObjective = (s: WizardState): string => {
+    const entitiesStr = s.entities.join(", ") || "los actores definidos";
     switch (s.product) {
       case "performance":
-        return `Analizar el performance en redes sociales de ${s.subject || "los actores definidos"} para identificar tendencias de engagement, crecimiento y contenido top.`;
+        return `Analizar el performance en redes sociales de ${entitiesStr} para identificar tendencias de engagement, crecimiento y contenido top.`;
       case "listening":
-        return `Monitorear y analizar conversaciones sobre "${s.subject || "el tema definido"}" en medios digitales y redes sociales.`;
+        return `Monitorear y analizar conversaciones sobre ${entitiesStr} en medios digitales y redes sociales.`;
       case "briefing":
-        return `Generar briefings personalizados sobre ${s.subject || "los temas de interés"} para ${s.audience || "el tomador de decisiones"}.`;
+        return `Generar briefings personalizados sobre ${entitiesStr} para ${s.audience || "el tomador de decisiones"}.`;
       default:
         return "Análisis de inteligencia estratégica.";
     }
@@ -438,7 +459,7 @@ const ProjectWizard = () => {
                   isLatest={msg.id === messages[messages.length - 1]?.id}
                 />
               ) : (
-                <UserBubble content={msg.content} />
+                <UserBubble content={msg.content} entities={msg.entities} />
               )}
             </div>
           ))}
@@ -453,46 +474,99 @@ const ProjectWizard = () => {
       </div>
 
       {/* Input Area */}
-      {currentInputType && !isCreating && (
+      {inputMode && !isCreating && (
         <div className="border-t border-border bg-card px-4 py-3 animate-in slide-in-from-bottom-4 duration-200">
-          <div className="mx-auto flex max-w-2xl items-end gap-2">
-            {currentInputType === "textarea" ? (
-              <Textarea
-                ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={currentPlaceholder}
-                className="min-h-[80px] resize-none bg-background"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleTextSubmit();
-                  }
-                }}
-              />
-            ) : (
-              <Input
-                ref={inputRef as React.RefObject<HTMLInputElement>}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={currentPlaceholder}
-                className="bg-background"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleTextSubmit();
-                  }
-                }}
-              />
+          <div className="mx-auto max-w-2xl space-y-2">
+            {/* Entity chips */}
+            {inputMode === "entities" && pendingEntities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {pendingEntities.map((name) => (
+                  <Badge
+                    key={name}
+                    variant="secondary"
+                    className="gap-1 py-1 pl-3 pr-1.5 text-sm"
+                  >
+                    {name}
+                    <button
+                      onClick={() => removeEntity(name)}
+                      className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
             )}
-            <Button
-              size="icon"
-              onClick={handleTextSubmit}
-              disabled={!inputValue.trim()}
-              className="shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+
+            <div className="flex items-end gap-2">
+              {inputMode === "textarea" ? (
+                <Textarea
+                  ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={placeholder}
+                  className="min-h-[80px] resize-none bg-background"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleTextSubmit();
+                    }
+                  }}
+                />
+              ) : (
+                <Input
+                  ref={inputRef as React.RefObject<HTMLInputElement>}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={placeholder}
+                  className="bg-background"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleTextSubmit();
+                    }
+                  }}
+                />
+              )}
+
+              {inputMode === "entities" ? (
+                <div className="flex gap-1.5 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={addEntity}
+                    disabled={!inputValue.trim()}
+                    title="Agregar"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    onClick={confirmEntities}
+                    disabled={pendingEntities.length === 0}
+                    title="Continuar"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="icon"
+                  onClick={handleTextSubmit}
+                  disabled={!inputValue.trim()}
+                  className="shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {inputMode === "entities" && (
+              <p className="text-xs text-muted-foreground">
+                Escribe cada nombre y presiona Enter o <Plus className="inline h-3 w-3" /> para agregar. 
+                Cuando termines, presiona <ArrowRight className="inline h-3 w-3" /> para continuar.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -522,9 +596,7 @@ function AssistantBubble({
         <div className="text-sm leading-relaxed text-foreground whitespace-pre-line">
           {content.split(/\*\*(.*?)\*\*/g).map((part, i) =>
             i % 2 === 1 ? (
-              <strong key={i} className="font-semibold">
-                {part}
-              </strong>
+              <strong key={i} className="font-semibold">{part}</strong>
             ) : (
               <span key={i}>{part}</span>
             )
@@ -558,11 +630,21 @@ function AssistantBubble({
   );
 }
 
-function UserBubble({ content }: { content: string }) {
+function UserBubble({ content, entities }: { content: string; entities?: string[] }) {
   return (
     <div className="flex justify-end py-2">
       <div className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground">
-        {content}
+        {entities && entities.length > 1 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {entities.map((e) => (
+              <span key={e} className="inline-block rounded-full bg-primary-foreground/20 px-2.5 py-0.5 text-xs font-medium">
+                {e}
+              </span>
+            ))}
+          </div>
+        ) : (
+          content
+        )}
       </div>
     </div>
   );
