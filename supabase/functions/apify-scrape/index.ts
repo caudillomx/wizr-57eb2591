@@ -102,8 +102,8 @@ function getNextAvailableActor(pool: ActorConfig[]): ActorConfig | null {
 
 // Apify Actor IDs for different platforms
 const ACTOR_IDS: Record<string, string> = {
-  // Twitter/X: powerai/twitter-search-scraper (rented, $4.99/1000 results)
-  twitter: "powerai/twitter-search-scraper",
+  // Twitter/X: apidojo/tweet-scraper ($0.40/1000 tweets, 30-80 tweets/sec, Latest+Top mode)
+  twitter: "apidojo/tweet-scraper",
   // Facebook: handled by META_RESILIENCE system
   facebook: "__META_RESILIENCE_FACEBOOK__",
   // Facebook fallback markers (for backwards compatibility)
@@ -207,15 +207,14 @@ serve(async (req) => {
 
     switch (platform) {
       case "twitter":
-        // powerai/twitter-search-scraper - uses 'query' parameter (NOT searchTerms)
-        // Combine all search terms into a single OR query for Twitter search
+        // apidojo/tweet-scraper - uses 'searchTerms' array (multiple terms searched in parallel)
+        // Split comma-separated terms into individual search terms for broader coverage
         const searchTerms = query ? query.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
-        // Format: "term1 OR term2 OR term3" for Twitter's search syntax
-        const twitterQuery = searchTerms.join(" OR ");
         input = {
-          query: twitterQuery || "Actinver", // Required parameter
-          searchType: "Latest", // Top, Latest, Media, People, Lists
-          maxTweets: maxResults,
+          searchTerms: searchTerms.length > 0 ? searchTerms : ["Actinver"],
+          maxItems: maxResults,
+          sort: "Latest + Top", // Run both simultaneously for maximum coverage
+          tweetLanguage: "es",
         };
         break;
         
