@@ -325,7 +325,7 @@ const InfluenciadoresPage = () => {
           {viewMode === "cards" ? (
             <div>
               <h2 className="text-xl font-semibold mb-4">
-                Top Fuentes 
+                Top Influenciadores
                 {sourceTypeFilter !== "all" && (
                   <span className="text-muted-foreground font-normal ml-2">
                     ({SOURCE_TYPE_OPTIONS.find(o => o.value === sourceTypeFilter)?.label})
