@@ -7,6 +7,7 @@ import {
   AreaChart, Area, Legend,
 } from "recharts";
 import { TrendingUp, Users, Globe, Activity } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SourceBreakdown, InfluencerInfo, TimelinePoint } from "@/hooks/useSmartReport";
 
 interface ReportAnalyticsChartsProps {
