@@ -58,7 +58,7 @@ export function AlertsSidePanel({ projectId }: AlertsSidePanelProps) {
   const handleRunMonitoring = async () => {
     setIsRunningMonitoring(true);
     try {
-      const { data, error } = await supabase.functions.invoke('scheduled-monitoring', {
+      const { data, error } = await supabase.functions.invoke('scheduled-unified-search', {
         body: { manual: true },
       });
 
