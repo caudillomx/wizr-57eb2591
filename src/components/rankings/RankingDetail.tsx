@@ -8,6 +8,7 @@ import { ArrowLeft, BarChart3, Settings, Trophy, TrendingUp, FileText, Sparkles,
 import { Ranking } from "@/hooks/useRankings";
 import { useFKProfilesByRanking, useFKProfileKPIs, useFKAllKPIs, useFKDailyTopPosts, FKNetwork } from "@/hooks/useFanpageKarma";
 import { RankingBatchForm } from "./RankingBatchForm";
+import { FKCSVImporter } from "./FKCSVImporter";
 import { ProfilesList } from "./ProfilesList";
 import { RankingTable } from "./RankingTable";
 import { RankingChart } from "./RankingChart";
