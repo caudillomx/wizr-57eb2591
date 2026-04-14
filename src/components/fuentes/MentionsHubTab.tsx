@@ -484,6 +484,41 @@ export function MentionsHubTab({
         </CardContent>
       </Card>
 
+      {/* Source Category Tabs + Export */}
+      <div className="flex items-center justify-between">
+        <div className="flex rounded-lg border bg-muted p-1">
+          <Button
+            variant={sourceCategory === "__all__" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => { setSourceCategory("__all__"); handleFilterChange(); }}
+          >
+            Todas ({mentions.length})
+          </Button>
+          <Button
+            variant={sourceCategory === "social" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => { setSourceCategory("social"); handleFilterChange(); }}
+            className="gap-1"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Redes Sociales ({socialCount})
+          </Button>
+          <Button
+            variant={sourceCategory === "news" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => { setSourceCategory("news"); handleFilterChange(); }}
+            className="gap-1"
+          >
+            <Newspaper className="h-3.5 w-3.5" />
+            Medios Digitales ({newsCount})
+          </Button>
+        </div>
+        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2">
+          <Download className="h-4 w-4" />
+          Exportar CSV
+        </Button>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardHeader className="pb-3">
@@ -512,7 +547,7 @@ export function MentionsHubTab({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar en título, descripción o keywords..."
+                  placeholder="Buscar en título, descripción, keywords o autor..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
