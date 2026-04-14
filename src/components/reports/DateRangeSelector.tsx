@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, startOfDay, setHours, subDays } from "date-fns";
+import { format, startOfDay, endOfDay, setHours, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Clock, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function calculateDateRange(config: DateRangeConfig): DateRangeResult {
   const now = new Date();
   const cutoffHour = config.cutoffHour;
 
-  // Single day report
+  // Single day report — uses cutoff hour (e.g. 8AM yesterday → 8AM today)
   if (config.type === "day" && config.customDate) {
     const selectedDate = config.customDate;
     const endDate = setHours(startOfDay(selectedDate), cutoffHour);
@@ -71,22 +71,22 @@ export function calculateDateRange(config: DateRangeConfig): DateRangeResult {
     };
   }
 
-  // Custom range
+  // Custom range — include full days (start of first day → end of last day)
   if (config.type === "range" && config.rangeStart && config.rangeEnd) {
-    const startDate = setHours(startOfDay(config.rangeStart), cutoffHour);
-    const endDate = setHours(startOfDay(config.rangeEnd), cutoffHour);
+    const startDate = startOfDay(config.rangeStart);
+    const rangeEndDate = endOfDay(config.rangeEnd);
 
     return {
       startDate,
-      endDate,
+      endDate: rangeEndDate,
       label: `${format(config.rangeStart, "d MMM", { locale: es })} - ${format(config.rangeEnd, "d MMM yyyy", { locale: es })}`,
     };
   }
 
-  // Preset ranges
+  // Preset ranges — from N days ago (start of day) to right now
   const days = config.type === "7d" ? 7 : config.type === "30d" ? 30 : 90;
   const endDate = now;
-  const startDate = subDays(now, days);
+  const startDate = startOfDay(subDays(now, days));
 
   const labelMap: Record<string, string> = {
     "7d": "Últimos 7 días",
@@ -277,36 +277,24 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
               </PopoverContent>
             </Popover>
           </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Corte</Label>
-            <Select
-              value={value.cutoffHour.toString()}
-              onValueChange={handleCutoffChange}
-            >
-              <SelectTrigger className="w-[120px]">
-                <Clock className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-lg z-50">
-                {CUTOFF_HOURS.map((h) => (
-                  <SelectItem key={h.value} value={h.value.toString()}>
-                    {h.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       )}
 
       {/* Show computed range for day/range modes */}
-      {(value.type === "day" || value.type === "range") && (
+      {value.type === "day" && (
         <div className="text-xs text-muted-foreground sm:ml-2 flex items-center gap-1">
           <span className="font-medium">Período:</span>
           {format(rangeResult.startDate, "d MMM HH:mm", { locale: es })}
           {" → "}
           {format(rangeResult.endDate, "d MMM HH:mm", { locale: es })}
+        </div>
+      )}
+      {value.type === "range" && (
+        <div className="text-xs text-muted-foreground sm:ml-2 flex items-center gap-1">
+          <span className="font-medium">Período:</span>
+          {format(rangeResult.startDate, "d MMM yyyy", { locale: es })}
+          {" → "}
+          {format(rangeResult.endDate, "d MMM yyyy", { locale: es })}
         </div>
       )}
     </div>
