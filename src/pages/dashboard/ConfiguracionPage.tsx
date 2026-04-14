@@ -340,6 +340,75 @@ const ConfiguracionPage = () => {
               </p>
             </CardContent>
           </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Zona de Peligro
+              </CardTitle>
+              <CardDescription>
+                Acciones irreversibles para este proyecto
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Eliminar proyecto</p>
+                  <p className="text-sm text-muted-foreground">
+                    Se eliminarán permanentemente todas las menciones, entidades, alertas y datos asociados.
+                  </p>
+                </div>
+                <AlertDialog onOpenChange={() => setDeleteConfirmName("")}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar proyecto
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        ¿Eliminar "{selectedProject.nombre}"?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-3">
+                        <span className="block">
+                          Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán:
+                        </span>
+                        <ul className="list-disc list-inside text-sm space-y-1">
+                          <li>Todas las menciones capturadas</li>
+                          <li>Todas las entidades configuradas</li>
+                          <li>Alertas, fichas temáticas y reportes</li>
+                          <li>Búsquedas programadas y configuración</li>
+                        </ul>
+                        <span className="block mt-3">
+                          Escribe <strong>{selectedProject.nombre}</strong> para confirmar:
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Input
+                      value={deleteConfirmName}
+                      onChange={(e) => setDeleteConfirmName(e.target.value)}
+                      placeholder={selectedProject.nombre}
+                      className="mt-2"
+                    />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteProject}
+                        disabled={deleteConfirmName !== selectedProject.nombre || isDeletingProject}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeletingProject ? "Eliminando..." : "Eliminar permanentemente"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
