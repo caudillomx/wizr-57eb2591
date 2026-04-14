@@ -12,6 +12,7 @@ export interface Entity {
   descripcion: string | null;
   palabras_clave: string[];
   aliases: string[];
+  platform_keywords: Record<string, string[]>;
   metadata: Record<string, unknown>;
   activo: boolean;
   created_at: string;
@@ -25,6 +26,7 @@ interface CreateEntityData {
   descripcion?: string;
   palabras_clave: string[];
   aliases: string[];
+  platform_keywords?: Record<string, string[]>;
 }
 
 interface UpdateEntityData extends Partial<CreateEntityData> {
