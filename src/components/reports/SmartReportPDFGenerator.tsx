@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { SmartReportContent } from "@/hooks/useSmartReport";
+import type { SmartReportContent, InfluencerInfo, SourceBreakdown } from "@/hooks/useSmartReport";
 
 interface SmartReportPDFGeneratorProps {
   report: SmartReportContent;
@@ -19,6 +19,18 @@ interface SmartReportPDFGeneratorProps {
   editedTemplate: string;
 }
 
+// Brand colors
+const WIZR_VIOLET = [90, 47, 186] as const;
+const WIZR_VIOLET_LIGHT = [237, 231, 252] as const;
+const WIZR_ORANGE = [255, 107, 53] as const;
+const DARK = [17, 24, 39] as const;
+const GRAY = [107, 114, 128] as const;
+const LIGHT_BG = [248, 250, 252] as const;
+const WHITE = [255, 255, 255] as const;
+const GREEN = [16, 185, 129] as const;
+const RED = [239, 68, 68] as const;
+const AMBER = [245, 158, 11] as const;
+
 export function SmartReportPDFGenerator({
   report,
   projectName,
@@ -30,154 +42,359 @@ export function SmartReportPDFGenerator({
 
   const generatePDF = async () => {
     setIsGenerating(true);
-
     try {
       const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 20;
+      const pw = doc.internal.pageSize.getWidth();
+      const ph = doc.internal.pageSize.getHeight();
+      const margin = 18;
+      const contentW = pw - margin * 2;
+      let y = 0;
 
-      const checkPageBreak = (required: number = 30) => {
-        if (yPos + required > pageHeight - 20) {
+      const checkPage = (need: number = 25) => {
+        if (y + need > ph - 25) {
           doc.addPage();
-          yPos = 20;
+          y = 22;
         }
       };
 
-      // Title
-      doc.setFontSize(24);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(90, 47, 186); // Wizr violet
-      doc.text(report.title, pageWidth / 2, yPos, { align: "center" });
-      yPos += 12;
-
-      // Project & Date
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(107, 114, 128);
-      doc.text(projectName, pageWidth / 2, yPos, { align: "center" });
-      yPos += 6;
-      doc.setFontSize(10);
-      doc.text(`${dateRange.label} • Generado: ${format(new Date(), "PPp", { locale: es })}`, pageWidth / 2, yPos, { align: "center" });
-      yPos += 15;
-
-      // Summary
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(31, 41, 55);
-      const summaryLines = doc.splitTextToSize(report.summary, pageWidth - 40);
-      doc.text(summaryLines, 20, yPos);
-      yPos += summaryLines.length * 5 + 10;
-
-      // Metrics Box
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(20, yPos, pageWidth - 40, 25, 3, 3, "F");
-      
-      doc.setFontSize(10);
-      const metricsText = [
-        `Total: ${report.metrics.totalMentions}`,
-        `Positivas: ${report.metrics.positiveCount}`,
-        `Neutrales: ${report.metrics.neutralCount}`,
-        `Negativas: ${report.metrics.negativeCount}`,
-      ];
-      
-      const metricSpacing = (pageWidth - 40) / 4;
-      metricsText.forEach((text, i) => {
-        doc.text(text, 30 + i * metricSpacing, yPos + 15);
-      });
-      yPos += 35;
-
-      // Key Findings
-      checkPageBreak(50);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(31, 41, 55);
-      doc.text("Hallazgos Clave", 20, yPos);
-      yPos += 8;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      report.keyFindings.forEach((finding) => {
-        checkPageBreak(15);
-        const lines = doc.splitTextToSize(`• ${finding}`, pageWidth - 50);
-        doc.text(lines, 25, yPos);
-        yPos += lines.length * 5 + 3;
-      });
-      yPos += 5;
-
-      // Recommendations
-      checkPageBreak(50);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Recomendaciones", 20, yPos);
-      yPos += 8;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      report.recommendations.forEach((rec, i) => {
-        checkPageBreak(15);
-        const lines = doc.splitTextToSize(`${i + 1}. ${rec}`, pageWidth - 50);
-        doc.text(lines, 25, yPos);
-        yPos += lines.length * 5 + 3;
-      });
-      yPos += 10;
-
-      // Selected Template Content
-      checkPageBreak(60);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      const templateLabels = {
-        executive: "Mensaje Ejecutivo",
-        technical: "Mensaje Técnico",
-        public: "Mensaje Público",
-      };
-      doc.text(templateLabels[selectedTemplate], 20, yPos);
-      yPos += 8;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      const templateLines = doc.splitTextToSize(editedTemplate, pageWidth - 40);
-      
-      templateLines.forEach((line: string) => {
-        checkPageBreak(8);
-        doc.text(line, 20, yPos);
-        yPos += 5;
-      });
-
-      // Top Sources
-      if (report.metrics.topSources.length > 0) {
-        checkPageBreak(40);
-        yPos += 10;
-        doc.setFontSize(12);
+      const drawSectionTitle = (title: string, icon?: string) => {
+        checkPage(20);
+        // Accent bar
+        doc.setFillColor(...WIZR_VIOLET);
+        doc.rect(margin, y, 3, 12, "F");
         doc.setFont("helvetica", "bold");
-        doc.text("Fuentes Principales", 20, yPos);
-        yPos += 8;
+        doc.setFontSize(13);
+        doc.setTextColor(...DARK);
+        doc.text(`${icon ? icon + "  " : ""}${title}`, margin + 8, y + 9);
+        y += 18;
+      };
 
-        autoTable(doc, {
-          startY: yPos,
-          head: [["Fuente"]],
-          body: report.metrics.topSources.map(s => [s]),
-          theme: "striped",
-          headStyles: { fillColor: [90, 47, 186] },
-          margin: { left: 20, right: 20 },
+      const drawParagraph = (text: string, fontSize = 9.5) => {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...DARK);
+        const lines = doc.splitTextToSize(text, contentW - 4);
+        lines.forEach((line: string) => {
+          checkPage(6);
+          doc.text(line, margin + 2, y);
+          y += 4.5;
         });
+        y += 3;
+      };
+
+      // ============= COVER PAGE =============
+      // Top gradient bar
+      doc.setFillColor(...WIZR_VIOLET);
+      doc.rect(0, 0, pw, 65, "F");
+      // Subtle pattern overlay
+      doc.setFillColor(255, 255, 255);
+      doc.setGState(doc.GState({ opacity: 0.08 }));
+      for (let i = 0; i < 8; i++) {
+        doc.circle(pw - 30 + i * 5, 30 + i * 3, 40, "F");
+      }
+      doc.setGState(doc.GState({ opacity: 1 }));
+
+      // Logo / Brand
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...WHITE);
+      doc.text("WIZR", margin, 18);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("Inteligencia Estrategica", margin + 22, 18);
+
+      // Title on cover
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(...WHITE);
+      const titleLines = doc.splitTextToSize(report.title, contentW);
+      titleLines.forEach((line: string, i: number) => {
+        doc.text(line, margin, 38 + i * 9);
+      });
+
+      // Date badge
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${dateRange.label}  |  ${format(new Date(), "d 'de' MMMM yyyy", { locale: es })}`, margin, 55);
+
+      y = 78;
+
+      // Project info bar
+      doc.setFillColor(...LIGHT_BG);
+      doc.roundedRect(margin, y, contentW, 16, 2, 2, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...WIZR_VIOLET);
+      doc.text("PROYECTO", margin + 6, y + 7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...DARK);
+      doc.text(projectName, margin + 36, y + 7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...WIZR_VIOLET);
+      doc.text("PERIODO", margin + contentW / 2, y + 7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...DARK);
+      doc.text(`${dateRange.start} al ${dateRange.end}`, margin + contentW / 2 + 28, y + 7);
+      y += 24;
+
+      // ============= METRICS DASHBOARD =============
+      const metricBoxW = (contentW - 12) / 4;
+      const metrics = [
+        { label: "Total Menciones", value: report.metrics.totalMentions.toString(), color: WIZR_VIOLET },
+        { label: "Positivas", value: report.metrics.positiveCount.toString(), color: GREEN },
+        { label: "Neutrales", value: report.metrics.neutralCount.toString(), color: AMBER },
+        { label: "Negativas", value: report.metrics.negativeCount.toString(), color: RED },
+      ];
+
+      metrics.forEach((m, i) => {
+        const x = margin + i * (metricBoxW + 4);
+        doc.setFillColor(...(m.color as [number, number, number]));
+        doc.roundedRect(x, y, metricBoxW, 22, 2, 2, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(...WHITE);
+        doc.text(m.value, x + metricBoxW / 2, y + 12, { align: "center" });
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.text(m.label, x + metricBoxW / 2, y + 18, { align: "center" });
+      });
+      y += 30;
+
+      // Sentiment percentage bar
+      const total = report.metrics.totalMentions || 1;
+      const posW = (report.metrics.positiveCount / total) * contentW;
+      const neuW = (report.metrics.neutralCount / total) * contentW;
+      const negW = (report.metrics.negativeCount / total) * contentW;
+      
+      doc.setFillColor(...GREEN);
+      doc.roundedRect(margin, y, Math.max(posW, 0.5), 6, 1, 1, "F");
+      doc.setFillColor(...AMBER);
+      doc.rect(margin + posW, y, Math.max(neuW, 0.5), 6, "F");
+      doc.setFillColor(...RED);
+      doc.roundedRect(margin + posW + neuW, y, Math.max(negW, 0.5), 6, 1, 1, "F");
+      
+      y += 10;
+      doc.setFontSize(7);
+      doc.setTextColor(...GRAY);
+      const posPct = Math.round(report.metrics.positiveCount / total * 100);
+      const neuPct = Math.round(report.metrics.neutralCount / total * 100);
+      const negPct = Math.round(report.metrics.negativeCount / total * 100);
+      doc.text(`Positivo ${posPct}%`, margin, y);
+      doc.text(`Neutral ${neuPct}%`, pw / 2 - 10, y);
+      doc.text(`Negativo ${negPct}%`, pw - margin - 25, y);
+      y += 10;
+
+      // ============= RESUMEN EJECUTIVO =============
+      drawSectionTitle("Resumen Ejecutivo");
+      drawParagraph(report.summary, 10);
+
+      // ============= ANALISIS DE SENTIMIENTO =============
+      if (report.sentimentAnalysis) {
+        drawSectionTitle("Analisis de Sentimiento");
+        drawParagraph(report.sentimentAnalysis);
       }
 
-      // Footer
+      // ============= EVALUACION DE IMPACTO =============
+      if (report.impactAssessment) {
+        drawSectionTitle("Evaluacion de Impacto");
+        // Impact box with colored border
+        checkPage(30);
+        doc.setFillColor(...WIZR_VIOLET_LIGHT);
+        const impactLines = doc.splitTextToSize(report.impactAssessment, contentW - 16);
+        const impactH = impactLines.length * 4.5 + 10;
+        doc.roundedRect(margin, y, contentW, impactH, 2, 2, "F");
+        doc.setFillColor(...WIZR_VIOLET);
+        doc.rect(margin, y, 3, impactH, "F");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        impactLines.forEach((line: string, i: number) => {
+          doc.text(line, margin + 10, y + 8 + i * 4.5);
+        });
+        y += impactH + 8;
+      }
+
+      // ============= HALLAZGOS CLAVE =============
+      drawSectionTitle("Hallazgos Clave");
+      report.keyFindings.forEach((finding, i) => {
+        checkPage(16);
+        // Number badge
+        doc.setFillColor(...WIZR_VIOLET);
+        doc.circle(margin + 6, y - 1, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(...WHITE);
+        doc.text(`${i + 1}`, margin + 6, y + 1, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        const lines = doc.splitTextToSize(finding, contentW - 20);
+        lines.forEach((line: string, li: number) => {
+          checkPage(6);
+          doc.text(line, margin + 14, y + li * 4.5);
+        });
+        y += lines.length * 4.5 + 4;
+      });
+      y += 4;
+
+      // ============= INFLUENCIADORES =============
+      if (report.influencers.length > 0) {
+        drawSectionTitle("Influenciadores de la Conversacion");
+        
+        autoTable(doc, {
+          startY: y,
+          head: [["#", "Perfil", "Plataforma", "Menciones", "Sentimiento", "Alcance"]],
+          body: report.influencers.map((inf: InfluencerInfo, i: number) => [
+            `${i + 1}`,
+            inf.name,
+            normalizePlatform(inf.platform),
+            `${inf.mentions}`,
+            inf.sentiment === "negativo" ? "Negativo" : inf.sentiment === "positivo" ? "Positivo" : "Mixto",
+            inf.reach,
+          ]),
+          theme: "grid",
+          headStyles: {
+            fillColor: [...WIZR_VIOLET],
+            textColor: [...WHITE],
+            fontStyle: "bold",
+            fontSize: 8,
+            halign: "center",
+          },
+          bodyStyles: {
+            fontSize: 8,
+            textColor: [...DARK],
+          },
+          alternateRowStyles: {
+            fillColor: [...WIZR_VIOLET_LIGHT],
+          },
+          columnStyles: {
+            0: { halign: "center", cellWidth: 10 },
+            1: { cellWidth: 45 },
+            2: { halign: "center", cellWidth: 28 },
+            3: { halign: "center", cellWidth: 20 },
+            4: { halign: "center", cellWidth: 22 },
+            5: { cellWidth: "auto" },
+          },
+          margin: { left: margin, right: margin },
+        });
+        y = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 10 || y + 40;
+      }
+
+      // ============= DISTRIBUCION POR FUENTES =============
+      if (report.sourceBreakdown.length > 0) {
+        drawSectionTitle("Distribucion por Medios y Plataformas");
+        
+        const topSources = report.sourceBreakdown.slice(0, 10);
+        autoTable(doc, {
+          startY: y,
+          head: [["Fuente", "Total", "Positivas", "Neutrales", "Negativas", "% Negativo"]],
+          body: topSources.map((s: SourceBreakdown) => [
+            normalizePlatform(s.source),
+            `${s.count}`,
+            `${s.positive}`,
+            `${s.neutral}`,
+            `${s.negative}`,
+            `${Math.round(s.negative / (s.count || 1) * 100)}%`,
+          ]),
+          theme: "grid",
+          headStyles: {
+            fillColor: [...WIZR_VIOLET],
+            textColor: [...WHITE],
+            fontStyle: "bold",
+            fontSize: 8,
+            halign: "center",
+          },
+          bodyStyles: { fontSize: 8, textColor: [...DARK] },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: {
+            0: { cellWidth: 45 },
+            1: { halign: "center", cellWidth: 18 },
+            2: { halign: "center", cellWidth: 22 },
+            3: { halign: "center", cellWidth: 22 },
+            4: { halign: "center", cellWidth: 22 },
+            5: { halign: "center", cellWidth: 22 },
+          },
+          margin: { left: margin, right: margin },
+        });
+        y = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 10 || y + 40;
+      }
+
+      // ============= RECOMENDACIONES =============
+      drawSectionTitle("Recomendaciones Estrategicas");
+      report.recommendations.forEach((rec, i) => {
+        checkPage(18);
+        // Colored number
+        doc.setFillColor(...WIZR_ORANGE);
+        doc.circle(margin + 6, y - 1, 4, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(...WHITE);
+        doc.text(`${i + 1}`, margin + 6, y + 1, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...DARK);
+        const lines = doc.splitTextToSize(rec, contentW - 20);
+        lines.forEach((line: string, li: number) => {
+          checkPage(6);
+          doc.text(line, margin + 14, y + li * 4.5);
+        });
+        y += lines.length * 4.5 + 5;
+      });
+      y += 4;
+
+      // ============= TEMPLATE / MENSAJE =============
+      checkPage(40);
+      const templateLabels: Record<string, string> = {
+        executive: "Mensaje Ejecutivo",
+        technical: "Mensaje Tecnico",
+        public: "Mensaje Publico (WhatsApp)",
+      };
+      drawSectionTitle(templateLabels[selectedTemplate] || "Mensaje");
+      
+      // Template in a styled box
+      doc.setFillColor(...LIGHT_BG);
+      const templateLines = doc.splitTextToSize(editedTemplate, contentW - 16);
+      const templateH = Math.min(templateLines.length * 4.5 + 10, ph - y - 30);
+      doc.roundedRect(margin, y, contentW, templateH, 2, 2, "F");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...DARK);
+      let tempY = y + 6;
+      for (const line of templateLines) {
+        if (tempY > y + templateH - 4) {
+          doc.addPage();
+          y = 22;
+          tempY = y;
+          doc.setFillColor(...LIGHT_BG);
+          const remainingLines = templateLines.slice(templateLines.indexOf(line));
+          const remH = remainingLines.length * 4.5 + 10;
+          doc.roundedRect(margin, y, contentW, Math.min(remH, ph - 50), 2, 2, "F");
+        }
+        doc.text(line, margin + 8, tempY);
+        tempY += 4.5;
+      }
+      y = tempY + 8;
+
+      // ============= FOOTER on all pages =============
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
+        // Bottom bar
+        doc.setFillColor(...WIZR_VIOLET);
+        doc.rect(0, ph - 12, pw, 12, "F");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(...WHITE);
         doc.text(
-          `Página ${i} de ${pageCount} | ${projectName} | Generado con Wizr`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: "center" }
+          `${projectName}  |  ${dateRange.label}  |  Generado con Wizr`,
+          margin,
+          ph - 5
         );
+        doc.text(`${i} / ${pageCount}`, pw - margin, ph - 5, { align: "right" });
       }
 
-      // Save
       const fileName = `reporte_inteligente_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
       doc.save(fileName);
     } catch (error) {
@@ -197,4 +414,17 @@ export function SmartReportPDFGenerator({
       PDF
     </Button>
   );
+}
+
+function normalizePlatform(domain: string): string {
+  const map: Record<string, string> = {
+    "twitter": "X/Twitter", "twitter.com": "X/Twitter", "x.com": "X/Twitter",
+    "facebook": "Facebook", "facebook.com": "Facebook",
+    "instagram": "Instagram", "instagram.com": "Instagram",
+    "tiktok": "TikTok", "tiktok.com": "TikTok",
+    "youtube": "YouTube", "youtube.com": "YouTube",
+    "reddit": "Reddit", "reddit.com": "Reddit",
+    "linkedin": "LinkedIn", "linkedin.com": "LinkedIn",
+  };
+  return map[domain] || domain.replace(/^www\./, "");
 }
