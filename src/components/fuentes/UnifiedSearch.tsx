@@ -227,10 +227,29 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
     }
     // 2. Fallback to general keywords
     if (entity.palabras_clave && entity.palabras_clave.length > 0) {
+      // For Twitter: wrap multi-word terms in quotes for exact matching, add name variations
+      if (platform === "twitter") {
+        const terms = new Set<string>();
+        entity.palabras_clave.forEach(kw => {
+          terms.add(kw.includes(" ") ? `"${kw}"` : kw);
+        });
+        // Also add entity name in quotes if not already present
+        if (!entity.palabras_clave.some(kw => kw.toLowerCase() === entity.nombre.toLowerCase())) {
+          terms.add(entity.nombre.includes(" ") ? `"${entity.nombre}"` : entity.nombre);
+        }
+        // Add aliases
+        entity.aliases?.forEach(alias => {
+          if (alias.trim()) terms.add(alias.includes(" ") ? `"${alias}"` : alias);
+        });
+        return Array.from(terms).join(", ");
+      }
       return entity.palabras_clave.join(", ");
     }
     // 3. Fallback to name + aliases
     const terms = [entity.nombre, ...entity.aliases].filter(Boolean);
+    if (platform === "twitter") {
+      return terms.map(t => t.includes(" ") ? `"${t}"` : t).join(", ");
+    }
     return terms.join(", ");
   };
 
