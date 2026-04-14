@@ -278,7 +278,7 @@ export function SmartReportPDFGenerator({
           },
           margin: { left: margin, right: margin },
         });
-        y = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 10 || y + 40;
+        y = (doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY + 10 || y + 40;
       }
 
       // ============= DISTRIBUCION POR FUENTES =============
@@ -317,7 +317,7 @@ export function SmartReportPDFGenerator({
           },
           margin: { left: margin, right: margin },
         });
-        y = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 10 || y + 40;
+        y = (doc as unknown as Record<string, Record<string, number>>).lastAutoTable?.finalY + 10 || y + 40;
       }
 
       // ============= RECOMENDACIONES =============
