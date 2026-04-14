@@ -150,6 +150,12 @@ export function useReportData(
       const lastMentionDate = sortedMentions[0]?.created_at || null;
 
       result.push({
+        authorKey: domain,
+        authorName: domain,
+        authorUsername: "",
+        authorUrl: "",
+        authorAvatarUrl: "",
+        platform: domain,
         domain,
         totalMentions: total,
         sentiment,
@@ -159,6 +165,8 @@ export function useReportData(
         topKeywords: Array.from(data.keywords).slice(0, 5),
         entities: Array.from(data.entities),
         lastMentionDate,
+        totalEngagement: 0,
+        totalViews: 0,
       });
     });
 

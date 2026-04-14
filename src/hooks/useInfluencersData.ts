@@ -4,25 +4,56 @@ import { useMemo } from "react";
 import { format, subDays } from "date-fns";
 
 export interface InfluencerMetrics {
-  domain: string;
+  authorKey: string; // unique identifier: "username@platform" or "name@platform"
+  authorName: string;
+  authorUsername: string;
+  authorUrl: string;
+  authorAvatarUrl: string;
+  platform: string;
   totalMentions: number;
   sentiment: {
     positivo: number;
     neutral: number;
     negativo: number;
   };
-  sentimentScore: number; // -1 to 1
-  recentMentions: number; // last 7 days
+  sentimentScore: number;
+  recentMentions: number;
   trend: "up" | "down" | "stable";
   topKeywords: string[];
   entities: string[];
   lastMentionDate: string | null;
+  totalEngagement: number;
+  totalViews: number;
+  // Legacy compat
+  domain: string;
 }
 
 export interface DailyInfluencerData {
   date: string;
-  [domain: string]: number | string;
+  [key: string]: number | string;
 }
+
+const SOCIAL_DOMAINS = ["twitter", "x.com", "facebook", "instagram", "youtube", "linkedin", "tiktok", "threads", "reddit"];
+
+const isSocialDomain = (domain: string | null): boolean => {
+  if (!domain) return false;
+  const lower = domain.toLowerCase().replace("www.", "");
+  return SOCIAL_DOMAINS.some((sd) => lower.includes(sd));
+};
+
+const normalizePlatform = (domain: string): string => {
+  if (!domain) return "unknown";
+  const lower = domain.toLowerCase().trim();
+  if (lower === "linkedin" || lower.includes("linkedin.com")) return "LinkedIn";
+  if (lower === "twitter" || lower === "x.com" || lower.includes("twitter.com")) return "Twitter/X";
+  if (lower === "facebook" || lower.includes("facebook.com")) return "Facebook";
+  if (lower === "instagram" || lower.includes("instagram.com")) return "Instagram";
+  if (lower === "youtube" || lower.includes("youtube.com")) return "YouTube";
+  if (lower === "tiktok" || lower.includes("tiktok.com")) return "TikTok";
+  if (lower.includes("threads.")) return "Threads";
+  if (lower.includes("reddit")) return "Reddit";
+  return lower.replace(/^www\./, "").split("/")[0];
+};
 
 export function useInfluencersData(
   projectId: string | undefined,
@@ -52,6 +83,7 @@ export function useInfluencersData(
           entity_id,
           created_at,
           published_at,
+          raw_metadata,
           entity:entities(id, nombre)
         `)
         .eq("project_id", projectId)
@@ -63,7 +95,6 @@ export function useInfluencersData(
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       return data || [];
     },
@@ -74,13 +105,11 @@ export function useInfluencersData(
     queryKey: ["influencers-entities", projectId],
     queryFn: async () => {
       if (!projectId) return [];
-
       const { data, error } = await supabase
         .from("entities")
         .select("id, nombre, tipo")
         .eq("project_id", projectId)
         .eq("activo", true);
-
       if (error) throw error;
       return data || [];
     },
@@ -91,61 +120,76 @@ export function useInfluencersData(
     const mentions = mentionsQuery.data || [];
     const sevenDaysAgo = subDays(new Date(), 7);
 
-    // Helper to get the effective date for a mention (published_at preferred, fallback to created_at)
     const getEffectiveDate = (mention: { published_at?: string | null; created_at: string }) => {
       return mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
     };
 
-    // Normalize domain function - convert to consistent format
-    const normalizeDomain = (domain: string): string => {
-      if (!domain) return "unknown";
-      const lower = domain.toLowerCase().trim();
-      
-      // Handle variants of the same platform
-      if (lower === "linkedin" || lower.includes("linkedin.com")) return "linkedin";
-      if (lower === "twitter" || lower === "x.com" || lower.includes("twitter.com")) return "twitter";
-      if (lower === "facebook" || lower.includes("facebook.com")) return "facebook";
-      if (lower === "instagram" || lower.includes("instagram.com")) return "instagram";
-      if (lower === "youtube" || lower.includes("youtube.com")) return "youtube";
-      if (lower === "tiktok" || lower.includes("tiktok.com")) return "tiktok";
-      if (lower.includes("threads.")) return "threads";
-      
-      // For other domains, use the base domain
-      return lower.replace(/^www\./, "").split("/")[0];
-    };
-
-    // Group by normalized domain
-    const domainMap = new Map<string, {
+    // Group by author (only social mentions with author info)
+    const authorMap = new Map<string, {
+      authorName: string;
+      authorUsername: string;
+      authorUrl: string;
+      authorAvatarUrl: string;
+      platform: string;
       mentions: typeof mentions;
       keywords: Set<string>;
       entities: Set<string>;
+      totalEngagement: number;
+      totalViews: number;
     }>();
 
     mentions.forEach((mention) => {
-      const domain = normalizeDomain(mention.source_domain || "unknown");
-      
-      if (!domainMap.has(domain)) {
-        domainMap.set(domain, {
+      const meta = mention.raw_metadata as Record<string, unknown> | null;
+      if (!meta) return;
+
+      const domain = mention.source_domain || "";
+      // Only process social media mentions that have author info
+      if (!isSocialDomain(domain)) return;
+
+      const authorName = (meta.author as string) || "";
+      const authorUsername = (meta.authorUsername as string) || "";
+      const authorUrl = (meta.authorUrl as string) || "";
+      const authorAvatarUrl = (meta.authorAvatarUrl as string) || "";
+      const platform = normalizePlatform(domain);
+
+      // Need at least a name or username
+      if (!authorName && !authorUsername) return;
+
+      // Create unique key: username@platform or name@platform
+      const key = `${(authorUsername || authorName).toLowerCase()}@${platform.toLowerCase()}`;
+
+      if (!authorMap.has(key)) {
+        authorMap.set(key, {
+          authorName: authorName || authorUsername,
+          authorUsername,
+          authorUrl,
+          authorAvatarUrl,
+          platform,
           mentions: [],
           keywords: new Set(),
           entities: new Set(),
+          totalEngagement: 0,
+          totalViews: 0,
         });
       }
 
-      const data = domainMap.get(domain)!;
+      const data = authorMap.get(key)!;
       data.mentions.push(mention);
-      
+
+      const engagement = (meta.engagement as number) || ((meta.likes as number) || 0) + ((meta.comments as number) || 0) + ((meta.shares as number) || 0);
+      data.totalEngagement += engagement;
+      data.totalViews += (meta.views as number) || 0;
+
       (mention.matched_keywords || []).forEach((kw: string) => data.keywords.add(kw));
-      
       if (mention.entity?.nombre) {
         data.entities.add(mention.entity.nombre);
       }
     });
 
-    // Calculate metrics for each domain
+    // Calculate metrics for each author
     const influencers: InfluencerMetrics[] = [];
 
-    domainMap.forEach((data, domain) => {
+    authorMap.forEach((data, key) => {
       const total = data.mentions.length;
       const sentiment = {
         positivo: data.mentions.filter((m) => m.sentiment === "positivo").length,
@@ -153,34 +197,30 @@ export function useInfluencersData(
         negativo: data.mentions.filter((m) => m.sentiment === "negativo").length,
       };
 
-      // Calculate sentiment score (-1 to 1)
-      const sentimentScore = total > 0
-        ? (sentiment.positivo - sentiment.negativo) / total
-        : 0;
+      const sentimentScore = total > 0 ? (sentiment.positivo - sentiment.negativo) / total : 0;
 
-      // Recent mentions (last 7 days) - use effective date
-      const recentMentions = data.mentions.filter(
-        (m) => getEffectiveDate(m) > sevenDaysAgo
-      ).length;
+      const recentMentions = data.mentions.filter((m) => getEffectiveDate(m) > sevenDaysAgo).length;
 
-      // Trend calculation
       const olderMentions = total - recentMentions;
       const avgOlder = olderMentions / Math.max(1, (timeRangeDays - 7) / 7);
       let trend: "up" | "down" | "stable" = "stable";
       if (recentMentions > avgOlder * 1.2) trend = "up";
       else if (recentMentions < avgOlder * 0.8) trend = "down";
 
-      // Last mention date - use effective date
       const sortedMentions = [...data.mentions].sort(
         (a, b) => getEffectiveDate(b).getTime() - getEffectiveDate(a).getTime()
       );
       const lastMention = sortedMentions[0];
-      const lastMentionDate = lastMention 
-        ? (lastMention.published_at || lastMention.created_at) 
-        : null;
+      const lastMentionDate = lastMention ? (lastMention.published_at || lastMention.created_at) : null;
 
       influencers.push({
-        domain,
+        authorKey: key,
+        authorName: data.authorName,
+        authorUsername: data.authorUsername,
+        authorUrl: data.authorUrl,
+        authorAvatarUrl: data.authorAvatarUrl,
+        platform: data.platform,
+        domain: data.platform.toLowerCase().replace(/\//g, ""),
         totalMentions: total,
         sentiment,
         sentimentScore,
@@ -189,80 +229,72 @@ export function useInfluencersData(
         topKeywords: Array.from(data.keywords).slice(0, 5),
         entities: Array.from(data.entities),
         lastMentionDate,
+        totalEngagement: data.totalEngagement,
+        totalViews: data.totalViews,
       });
     });
 
-    // Sort by total mentions
-    influencers.sort((a, b) => b.totalMentions - a.totalMentions);
+    // Sort by total engagement, then mentions
+    influencers.sort((a, b) => (b.totalEngagement + b.totalMentions * 10) - (a.totalEngagement + a.totalMentions * 10));
 
-    // Daily data for trend chart (top 5 domains)
+    // Daily data for trend chart (top 5 authors)
     const topInfluencersList = influencers.slice(0, 5);
-    const topDomains = topInfluencersList.map((i) => i.domain);
-
-    // Recharts treats dots in dataKey as nested paths (e.g. "msn.com" => msn.com),
-    // so we generate safe keys and keep labels separate.
     const toChartKey = (d: string) => d.replace(/[^a-z0-9]/gi, "_");
-    const chartKeyByDomain: Record<string, string> = {};
+    const chartKeyByAuthor: Record<string, string> = {};
     const chartLabelByKey: Record<string, string> = {};
-    topDomains.forEach((d) => {
-      const key = toChartKey(d);
-      chartKeyByDomain[d] = key;
-      chartLabelByKey[key] = d;
+    topInfluencersList.forEach((inf) => {
+      const key = toChartKey(inf.authorKey);
+      chartKeyByAuthor[inf.authorKey] = key;
+      chartLabelByKey[key] = `${inf.authorName} (${inf.platform})`;
     });
-    
-    // Build daily map with all dates filled (including today)
+
+    const topKeys = topInfluencersList.map((i) => i.authorKey);
+
     const dailyMap = new Map<string, Record<string, number>>();
-    // timeRangeDays days ago to today = timeRangeDays + 1 entries, but we want exactly timeRangeDays
-    // So we go from (timeRangeDays - 1) days ago up to today (i=0)
     for (let i = timeRangeDays - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
-      // IMPORTANT: Use the same date key logic as the mention bucketing below.
-      // Using toISOString() can shift the day depending on timezone and cause
-      // mismatches (all zeros) when dailyMap doesn't contain the mention date key.
       const dateStr = format(date, "yyyy-MM-dd");
       const initialData: Record<string, number> = {};
-      topDomains.forEach((d) => {
-        initialData[chartKeyByDomain[d]] = 0;
-      });
+      topKeys.forEach((k) => { initialData[chartKeyByAuthor[k]] = 0; });
       dailyMap.set(dateStr, initialData);
     }
 
-    // Count mentions per day per domain - use effective date (published_at or created_at)
     mentions.forEach((mention) => {
-      const domain = normalizeDomain(mention.source_domain || "unknown");
-      if (!topDomains.includes(domain)) return;
+      const meta = mention.raw_metadata as Record<string, unknown> | null;
+      if (!meta) return;
+      const domain = mention.source_domain || "";
+      if (!isSocialDomain(domain)) return;
+      const authorName = (meta.author as string) || "";
+      const authorUsername = (meta.authorUsername as string) || "";
+      if (!authorName && !authorUsername) return;
+      const platform = normalizePlatform(domain);
+      const authorKey = `${(authorUsername || authorName).toLowerCase()}@${platform.toLowerCase()}`;
+      if (!topKeys.includes(authorKey)) return;
 
-      // Use published_at if available, otherwise fall back to created_at
-      const effectiveDate = mention.published_at 
-        ? new Date(mention.published_at) 
-        : new Date(mention.created_at);
+      const effectiveDate = mention.published_at ? new Date(mention.published_at) : new Date(mention.created_at);
       const dateKey = format(effectiveDate, "yyyy-MM-dd");
-      
+
       if (dailyMap.has(dateKey)) {
         const dayData = dailyMap.get(dateKey)!;
-        const key = chartKeyByDomain[domain];
+        const key = chartKeyByAuthor[authorKey];
         dayData[key] = (dayData[key] || 0) + 1;
       }
     });
 
     const dailyTrends: DailyInfluencerData[] = Array.from(dailyMap.entries())
-      .map(([date, domains]) => ({
-        date,
-        ...domains,
-      }))
+      .map(([date, domains]) => ({ date, ...domains }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
       influencers,
-      topDomains: topDomains.map((d) => chartKeyByDomain[d]),
+      topDomains: topKeys.map((k) => chartKeyByAuthor[k]),
       topDomainLabels: chartLabelByKey,
       dailyTrends,
-      totalMentions: mentions.length,
+      totalMentions: mentions.filter((m) => isSocialDomain(m.source_domain)).length,
       uniqueSources: influencers.length,
     };
   }, [mentionsQuery.data, timeRangeDays]);
 
-  // Format raw mentions for table consumption
   const rawMentions = useMemo(() => {
     return (mentionsQuery.data || []).map((m) => ({
       id: m.id,

@@ -450,8 +450,45 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
 
     toast({
       title: "Búsqueda completada",
-      description: `${totalFound} menciones encontradas, ${totalSaved} guardadas${totalDuplicatesSkipped > 0 ? `, ${totalDuplicatesSkipped} duplicados omitidos` : ""}. ${successCount} búsquedas exitosas${failedCount > 0 ? `, ${failedCount} fallidas` : ""}.`,
+      description: `${totalFound} menciones encontradas, ${totalSaved} guardadas${totalDuplicatesSkipped > 0 ? `, ${totalDuplicatesSkipped} duplicados omitidos` : ""}. ${successCount} búsquedas exitosas${failedCount > 0 ? `, ${failedCount} fallidas` : ""}. Analizando sentimiento...`,
     });
+
+    // Auto-analyze sentiment for newly saved mentions (fire and forget)
+    if (totalSaved > 0) {
+      try {
+        const { data: unanalyzed } = await supabase
+          .from("mentions")
+          .select("id, title, description")
+          .eq("project_id", projectId)
+          .is("sentiment", null)
+          .order("created_at", { ascending: false })
+          .limit(100);
+
+        if (unanalyzed && unanalyzed.length > 0) {
+          const BATCH_SIZE = 25;
+          for (let i = 0; i < unanalyzed.length; i += BATCH_SIZE) {
+            const batch = unanalyzed.slice(i, i + BATCH_SIZE);
+            supabase.functions
+              .invoke("analyze-sentiment", { body: { mentions: batch } })
+              .then(async (response) => {
+                if (response.data?.success && response.data.results) {
+                  const updates = (response.data.results as Array<{ id: string; sentiment: string }>).map((r) =>
+                    supabase.from("mentions").update({ sentiment: r.sentiment }).eq("id", r.id)
+                  );
+                  await Promise.all(updates);
+                }
+              })
+              .catch((err) => console.error("Auto sentiment analysis error:", err));
+
+            if (i + BATCH_SIZE < unanalyzed.length) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to trigger auto sentiment analysis:", err);
+      }
+    }
 
     onSearchComplete(totalFound, totalSaved);
   }, [entities, selectedEntities, selectedPlatforms, timeRange, maxResultsPerPlatform, projectId, toast, onSearchComplete, existingMentions]);
