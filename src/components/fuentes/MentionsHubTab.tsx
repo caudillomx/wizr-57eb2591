@@ -232,8 +232,12 @@ export function MentionsHubTab({
       }
       const metricsA = getEngagementMetrics(a);
       const metricsB = getEngagementMetrics(b);
-      const engA = metricsA ? metricsA.likes + metricsA.comments + metricsA.shares + metricsA.views : 0;
-      const engB = metricsB ? metricsB.likes + metricsB.comments + metricsB.shares + metricsB.views : 0;
+      // Mentions without engagement data go to the bottom
+      if (!metricsA && !metricsB) return 0;
+      if (!metricsA) return 1;
+      if (!metricsB) return -1;
+      const engA = metricsA.total;
+      const engB = metricsB.total;
       return sortBy === "engagement_desc" ? engB - engA : engA - engB;
     });
     return sorted;
@@ -261,7 +265,11 @@ export function MentionsHubTab({
       byPlatform[platform] = (byPlatform[platform] || 0) + 1;
     });
 
-    return { bySentiment, byPlatform };
+    // Engagement coverage
+    const withEngagement = filteredMentions.filter((m) => getEngagementMetrics(m) !== null).length;
+    const withoutEngagement = filteredMentions.length - withEngagement;
+
+    return { bySentiment, byPlatform, withEngagement, withoutEngagement };
   }, [filteredMentions]);
 
   // Reset page when filters change
