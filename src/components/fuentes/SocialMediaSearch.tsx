@@ -1080,7 +1080,7 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       // =====================================================
       // BRIGHT DATA FLOW (only TikTok & YouTube supported)
       // =====================================================
-      const brightDataSupported = ["tiktok", "youtube"].includes(platform);
+      const brightDataSupported = ["tiktok"].includes(platform);
       const effectiveProvider = (dataProvider === "brightdata" && brightDataSupported) ? "brightdata" : "apify";
 
       if (effectiveProvider === "brightdata") {
@@ -1184,53 +1184,115 @@ export const SocialMediaSearch = ({ projectId, onResultsSaved }: SocialMediaSear
       // =====================================================
       // APIFY FLOW (original or fallback from unsupported Bright Data platform)
       // =====================================================
-      else if (effectiveProvider === "apify" && platform === "youtube") {
-        // YOUTUBE SEARCH: streamers/youtube-scraper handles BOTH videos AND shorts in one run
-        setProgressMessage("Buscando videos y shorts...");
+      else if (platform === "youtube") {
+        // YOUTUBE SEARCH: Official YouTube Data API v3 (instant, accurate metadata)
+        setProgressMessage("Buscando con YouTube Data API v3...");
+        setProgress(20);
         
-        // Determine valid YouTube upload date filter
         const validUploadDates = ["lastHour", "today", "thisWeek", "thisMonth", "thisYear"] as const;
         const uploadDateValue = validUploadDates.includes(youtubeUploadDate as typeof validUploadDates[number])
           ? (youtubeUploadDate as typeof validUploadDates[number])
           : undefined;
-        
-        const result = await apifyApi.startScrape({
-          platform: "youtube",
-          query: searchType === "query" ? searchValue : undefined,
-          channelUrl: searchType === "channelUrl" ? searchValue : undefined,
-          maxResults,
-          // Pass native YouTube filters
-          youtubeUploadDate: uploadDateValue,
-          youtubeSortType: youtubeSortType || undefined,
+
+        const { data: ytData, error: ytError } = await supabase.functions.invoke("youtube-search", {
+          body: {
+            query: searchValue,
+            maxResults,
+            uploadDate: uploadDateValue,
+            sortBy: youtubeSortType === "popularity" ? "viewCount" : "relevance",
+          },
         });
 
-        if (!result.success || !result.data) {
-          throw new Error(result.error || "Error al iniciar la búsqueda de YouTube");
+        if (ytError) throw ytError;
+        if (!ytData?.success) {
+          throw new Error(ytData?.error || "Error en YouTube Data API");
         }
 
-        const data = result.data;
+        setProgress(80);
+        setProgressMessage("Procesando resultados...");
 
-        if (data.success && data.runId) {
-          setRunId(data.runId);
-          setProgress(10);
-          
-          // Update job with runId and datasetId
+        const processed = processBackendResults((ytData.items || []) as SocialSearchResult[], "youtube");
+        
+        // Apply date filtering (YouTube API's publishedAfter is accurate, but apply strict filter anyway)
+        let finalResults = processed;
+        if (uploadDateValue) {
+          const now = new Date();
+          let effectiveDateFrom: Date | undefined;
+          switch (uploadDateValue) {
+            case "lastHour": effectiveDateFrom = new Date(now.getTime() - 60 * 60 * 1000); break;
+            case "today": effectiveDateFrom = startOfDay(now); break;
+            case "thisWeek": effectiveDateFrom = startOfDay(subDays(now, 7)); break;
+            case "thisMonth": effectiveDateFrom = startOfDay(subDays(now, 30)); break;
+            case "thisYear": effectiveDateFrom = startOfDay(subDays(now, 365)); break;
+          }
+          if (effectiveDateFrom) {
+            finalResults = processed.filter(r => {
+              if (!r.publishedAt) return false;
+              const d = new Date(r.publishedAt);
+              return !isNaN(d.getTime()) && d >= effectiveDateFrom!;
+            });
+            if (finalResults.length === 0 && processed.length > 0) {
+              finalResults = processed; // soft filter fallback
+              setUsedSoftFilter(true);
+            }
+          }
+        }
+
+        setRawResultsCount(ytData.totalResults || processed.length);
+        setFilteredResultsCount(finalResults.length);
+        setKeywordFilteredCount(finalResults.length);
+        setResults(finalResults);
+        setProgress(100);
+        setJobStatus("completed");
+        setIsSearching(false);
+        setPollingStartTime(null);
+
+        // Save to DB
+        if (job.id && finalResults.length > 0) {
           await updateJob({
             id: job.id,
             updates: {
-              run_id: data.runId,
-              dataset_id: data.datasetId,
-              status: "running",
+              status: "completed",
+              completed_at: new Date().toISOString(),
+              results_count: finalResults.length,
+              metadata: { provider: "youtube_api_v3", quotaCost: ytData.quotaCost },
             },
           });
-          
-          // Start polling for status (use standard flow - actor returns both videos & shorts)
-          const startTime = Date.now();
-          setPollingStartTime(startTime);
-          setTimeout(() => checkJobStatus(data.runId!, searchValue, startTime), 3000);
-        } else {
-          throw new Error(data.error || "Error al iniciar la búsqueda de YouTube");
+          await saveResults({
+            jobId: job.id,
+            results: finalResults.map((r) => ({
+              platform: r.platform,
+              external_id: r.id,
+              title: r.title || "",
+              description: r.description || "",
+              author_name: r.author?.name || "",
+              author_username: r.author?.username || "",
+              author_url: r.author?.url || "",
+              author_avatar_url: r.author?.avatarUrl,
+              author_verified: r.author?.verified,
+              author_followers: r.author?.followers,
+              likes: r.metrics?.likes || 0,
+              comments: r.metrics?.comments || 0,
+              shares: r.metrics?.shares || 0,
+              views: r.metrics?.views,
+              engagement: r.metrics?.engagement,
+              published_at: r.publishedAt,
+              url: r.url || "",
+              content_type: r.contentType || "video",
+              hashtags: r.hashtags,
+              mentions: r.mentions,
+              raw_data: JSON.parse(JSON.stringify(r.raw || {})),
+            })),
+          });
+          refetchJobs();
         }
+
+        const shortsCount = finalResults.filter(r => r.platform === "youtube_shorts").length;
+        const videosCount = finalResults.length - shortsCount;
+        toast({
+          title: "Búsqueda completada (YouTube API v3)",
+          description: `${finalResults.length} resultados (${videosCount} videos, ${shortsCount} shorts)`,
+        });
       } else {
         // STANDARD SINGLE PLATFORM SEARCH
         // Special handling for Reddit comments search - use reddit_comments platform
