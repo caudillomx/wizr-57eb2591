@@ -625,7 +625,6 @@ async function searchSocial(
     return [];
   }
 }
-    instagram: "apify/instagram-scraper",
     youtube: "scrapesmith/free-youtube-search-scraper",
     reddit: "trudax/reddit-scraper-lite",
     linkedin: "harvestapi/linkedin-post-search",
