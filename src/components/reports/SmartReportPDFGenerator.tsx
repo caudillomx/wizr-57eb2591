@@ -118,20 +118,27 @@ export function SmartReportPDFGenerator({
       const neuPct = Math.round(report.metrics.neutralCount / total * 100);
       const negPct = Math.round(report.metrics.negativeCount / total * 100);
 
+      const formatBig = (n: number): string => {
+        if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+        if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+        return n.toLocaleString();
+      };
+
+      // Row 1: Impressions + Reach + Mentions + Autores
       const mBoxW = (cw - 9) / 4;
-      const mData: { label: string; val: string; sub: string; bg: C3; fg: C3 }[] = [
+      const row1Data: { label: string; val: string; sub: string; bg: C3; fg: C3 }[] = [
+        { label: "Impresiones Est.", val: formatBig(report.metrics.estimatedImpressions || 0), sub: "Visualizaciones totales", bg: [219, 234, 254], fg: [30, 64, 175] },
+        { label: "Alcance Est.", val: formatBig(report.metrics.estimatedReach || 0), sub: "Personas unicas", bg: [237, 233, 254], fg: [91, 33, 182] },
         { label: "Menciones", val: report.metrics.totalMentions.toString(), sub: "Total detectadas", bg: V, fg: W },
-        { label: "Positivas", val: report.metrics.positiveCount.toString(), sub: `${posPct}% del total`, bg: [220, 252, 231], fg: [21, 128, 61] },
-        { label: "Neutrales", val: report.metrics.neutralCount.toString(), sub: `${neuPct}% del total`, bg: [254, 243, 199], fg: [146, 64, 14] },
-        { label: "Negativas", val: report.metrics.negativeCount.toString(), sub: `${negPct}% del total`, bg: [254, 226, 226], fg: [185, 28, 28] },
+        { label: "Autores", val: (report.influencers?.length || 0).toString(), sub: "Voces unicas", bg: [254, 243, 199], fg: [146, 64, 14] },
       ];
 
-      mData.forEach((md, i) => {
+      row1Data.forEach((md, i) => {
         const x = m + i * (mBoxW + 3);
         doc.setFillColor(...md.bg);
         doc.roundedRect(x, y, mBoxW, 24, 2, 2, "F");
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(20);
+        doc.setFontSize(18);
         doc.setTextColor(...md.fg);
         doc.text(md.val, x + mBoxW / 2, y + 12, { align: "center" });
         doc.setFontSize(7);
@@ -141,7 +148,32 @@ export function SmartReportPDFGenerator({
         doc.setFontSize(6);
         doc.text(md.sub, x + mBoxW / 2, y + 21.5, { align: "center" });
       });
-      y += 30;
+      y += 27;
+
+      // Row 2: Sentiment breakdown
+      const row2Data: { label: string; val: string; sub: string; bg: C3; fg: C3 }[] = [
+        { label: "Positivas", val: report.metrics.positiveCount.toString(), sub: `${posPct}% del total`, bg: [220, 252, 231], fg: [21, 128, 61] },
+        { label: "Neutrales", val: report.metrics.neutralCount.toString(), sub: `${neuPct}% del total`, bg: [254, 243, 199], fg: [146, 64, 14] },
+        { label: "Negativas", val: report.metrics.negativeCount.toString(), sub: `${negPct}% del total`, bg: [254, 226, 226], fg: [185, 28, 28] },
+      ];
+
+      const sBoxW = (cw - 6) / 3;
+      row2Data.forEach((md, i) => {
+        const x = m + i * (sBoxW + 3);
+        doc.setFillColor(...md.bg);
+        doc.roundedRect(x, y, sBoxW, 20, 2, 2, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(...md.fg);
+        doc.text(md.val, x + sBoxW / 2, y + 10, { align: "center" });
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        doc.text(md.label, x + sBoxW / 2, y + 15, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(5.5);
+        doc.text(md.sub, x + sBoxW / 2, y + 18.5, { align: "center" });
+      });
+      y += 24;
 
       // ── Sentiment bar ──
       const barH = 5;
