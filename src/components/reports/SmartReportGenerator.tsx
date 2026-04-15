@@ -455,6 +455,13 @@ export function SmartReportGenerator({
               <span className="text-green-600">+{report.metrics.positiveCount}</span>
               <span className="text-gray-500">{report.metrics.neutralCount}</span>
               <span className="text-red-600">-{report.metrics.negativeCount}</span>
+              {report.metrics.estimatedImpressions > 0 && (
+                <>
+                  <span>•</span>
+                  <span>~{(report.metrics.estimatedImpressions / 1000).toFixed(1)}K impresiones</span>
+                  <span>~{(report.metrics.estimatedReach / 1000).toFixed(1)}K alcance</span>
+                </>
+              )}
             </div>
           </div>
         )}
