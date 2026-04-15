@@ -12,6 +12,8 @@ export interface SmartReportMetrics {
   negativeCount: number;
   neutralCount: number;
   topSources: string[];
+  estimatedImpressions: number;
+  estimatedReach: number;
 }
 
 export interface SmartReportTemplates {
