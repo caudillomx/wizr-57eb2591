@@ -24,11 +24,12 @@ interface SmartReportPDFGeneratorProps {
   strategicContext?: string;
   strategicFocus?: string;
   entityNames?: string[];
+  extension?: "micro" | "short" | "medium";
 }
 
 export function SmartReportPDFGenerator({
   report, projectName, dateRange, selectedTemplate, editedTemplate, reportType,
-  useClaudeHTML, rawMentions, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames,
+  useClaudeHTML, rawMentions, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, extension = "short",
 }: SmartReportPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -129,36 +130,44 @@ export function SmartReportPDFGenerator({
 
   const generatePDFWithClaude = async () => {
     setIsGenerating(true);
+    let iframe: HTMLIFrameElement | null = null;
+
     try {
-      const { data, error } = await supabase.functions.invoke("generate-claude-report", {
-        body: {
-          mentions: rawMentions || [],
-          reportType: reportType || "brief",
-          extension: "medium",
-          projectName,
-          dateRange,
-          projectAudience: projectAudience || "",
-          projectObjective: projectObjective || "",
-          strategicContext,
-          strategicFocus,
-          entityNames,
-        },
-      });
-      if (error) throw error;
-      const html: string = data.html;
+      const result = await Promise.race([
+        supabase.functions.invoke("generate-claude-report", {
+          body: {
+            mentions: rawMentions || [],
+            reportType: reportType || "brief",
+            extension,
+            projectName,
+            dateRange,
+            projectAudience: projectAudience || "",
+            projectObjective: projectObjective || "",
+            strategicContext,
+            strategicFocus,
+            entityNames,
+          },
+        }),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("Tiempo de espera agotado al diseñar el reporte con Claude")), 80000);
+        }),
+      ]);
 
-      // Write HTML to a hidden iframe
-      const iframe = document.createElement("iframe");
-      iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:auto;border:none;";
+      const invokeResult = result as { data: { html?: string } | null; error: { message?: string } | null };
+      if (invokeResult.error) throw new Error(invokeResult.error.message || "Error al invocar generate-claude-report");
+
+      const html = typeof invokeResult.data?.html === "string" ? invokeResult.data.html.trim() : "";
+      if (!html) throw new Error("Claude no devolvió HTML válido");
+
+      iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:auto;border:none;opacity:0;pointer-events:none;";
       document.body.appendChild(iframe);
-      iframe.contentDocument!.open();
-      iframe.contentDocument!.write(html);
-      iframe.contentDocument!.close();
+      iframe.contentDocument?.open();
+      iframe.contentDocument?.write(html);
+      iframe.contentDocument?.close();
 
-      // Wait for fonts and layout
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1600));
 
-      // Capture with html2canvas
       const canvas = await html2canvas(iframe.contentDocument!.body, {
         scale: 2,
         useCORS: true,
@@ -168,7 +177,6 @@ export function SmartReportPDFGenerator({
         width: 794,
       });
 
-      // Slice into A4 pages
       const pdfW = 210;
       const pdfH = 297;
       const imgW = canvas.width;
@@ -186,23 +194,28 @@ export function SmartReportPDFGenerator({
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width = imgW;
         pageCanvas.height = sliceH;
-        const ctx = pageCanvas.getContext("2d")!;
-        ctx.drawImage(canvas, 0, currentPos, imgW, sliceH, 0, 0, imgW, sliceH);
-        const pageImg = pageCanvas.toDataURL("image/png");
-        doc.addImage(pageImg, "PNG", 0, 0, pdfW, sliceH * ratio);
+        const ctx = pageCanvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(canvas, 0, currentPos, imgW, sliceH, 0, 0, imgW, sliceH);
+          const pageImg = pageCanvas.toDataURL("image/png");
+          doc.addImage(pageImg, "PNG", 0, 0, pdfW, sliceH * ratio);
+        }
         currentPos += sliceH;
         pageNum++;
       }
 
       const fileName = `reporte_claude_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
       doc.save(fileName);
-      document.body.removeChild(iframe);
-
       toast({ title: "PDF generado", description: fileName });
     } catch (error) {
       console.error("Claude PDF error:", error);
-      toast({ title: "Error al generar PDF", description: "No se pudo generar el reporte con Claude. Intenta nuevamente.", variant: "destructive" });
+      toast({
+        title: "Error al generar PDF",
+        description: error instanceof Error ? error.message : "No se pudo generar el reporte con Claude. Intenta nuevamente.",
+        variant: "destructive"
+      });
     } finally {
+      if (iframe && document.body.contains(iframe)) document.body.removeChild(iframe);
       setIsGenerating(false);
     }
   };
@@ -212,7 +225,6 @@ export function SmartReportPDFGenerator({
 
   return (
     <>
-      {/* Hidden preview for html2canvas capture (default flow) */}
       {!useClaudeHTML && (
         <div className="fixed left-[-9999px] top-0" aria-hidden="true">
           <SmartReportPDFPreview

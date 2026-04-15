@@ -447,6 +447,7 @@ export function SmartReportGenerator({
                   strategicContext={strategicContext}
                   strategicFocus={strategicFocus}
                   entityNames={filteredEntityNames}
+                  extension={extension}
                 />
               </div>
             </div>
