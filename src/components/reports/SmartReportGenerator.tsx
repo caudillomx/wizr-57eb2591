@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Sparkles,
   FileText,
@@ -17,6 +18,7 @@ import {
   CheckCircle2,
   Filter,
   Target,
+  Wand2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, ReportType, ReportExtension, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
@@ -98,6 +100,7 @@ export function SmartReportGenerator({
   const [reportType, setReportType] = useState<ReportType>("brief");
   const [extension, setExtension] = useState<ReportExtension>("short");
   const [strategicFocus, setStrategicFocus] = useState("");
+  const [useClaudeHTML, setUseClaudeHTML] = useState(false);
   
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
@@ -417,7 +420,18 @@ export function SmartReportGenerator({
 
             {/* Download */}
             <div className="space-y-3">
-              <h4 className="font-medium">Descargar Reporte</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Descargar Reporte</h4>
+                <div className="flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  <Label htmlFor="claude-toggle" className="text-sm cursor-pointer">Diseño IA (Claude)</Label>
+                  <Switch
+                    id="claude-toggle"
+                    checked={useClaudeHTML}
+                    onCheckedChange={setUseClaudeHTML}
+                  />
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <SmartReportPDFGenerator
                   report={report}
@@ -426,6 +440,13 @@ export function SmartReportGenerator({
                   selectedTemplate="executive"
                   editedTemplate={report.templates?.executive || ""}
                   reportType={reportType}
+                  useClaudeHTML={useClaudeHTML}
+                  rawMentions={filteredMentions}
+                  projectAudience={projectAudience}
+                  projectObjective={projectObjective}
+                  strategicContext={strategicContext}
+                  strategicFocus={strategicFocus}
+                  entityNames={filteredEntityNames}
                 />
               </div>
             </div>
