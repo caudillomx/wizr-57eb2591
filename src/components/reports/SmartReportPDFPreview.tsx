@@ -134,9 +134,10 @@ function FormattedText({ text, fontSize = "12.5px" }: { text: string; fontSize?:
 
 /* ─── Chart components (pure HTML/CSS) ─── */
 
+/* FIX 3 — wider labels */
 const LABEL_STYLE: React.CSSProperties = {
-  minWidth: "110px",
-  width: "110px",
+  minWidth: "140px",
+  width: "140px",
   fontSize: "10px",
   color: "#475569",
   textAlign: "right",
@@ -201,7 +202,7 @@ function StackedSentimentChart({ data }: {
         );
       })}
       {/* legend */}
-      <div style={{ display: "flex", gap: "14px", marginTop: "4px", paddingLeft: "118px", fontSize: "9px", color: "#64748b" }}>
+      <div style={{ display: "flex", gap: "14px", marginTop: "4px", paddingLeft: "148px", fontSize: "9px", color: "#64748b" }}>
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22c55e", display: "inline-block" }} />Positivo</span>
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#94a3b8", display: "inline-block" }} />Neutral</span>
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#ef4444", display: "inline-block" }} />Negativo</span>
@@ -246,10 +247,12 @@ const SECTION_STYLE: React.CSSProperties = {
   breakInside: "avoid",
 };
 
-function SectionHeader({ title, dark }: { title: string; dark?: boolean }) {
+/* FIX 8 — crisis-aware SectionHeader */
+function SectionHeader({ title, dark, isCrisis }: { title: string; dark?: boolean; isCrisis?: boolean }) {
+  const bg = isCrisis ? "#991b1b" : dark ? DARK : ACCENT;
   return (
     <div style={{
-      backgroundColor: dark ? DARK : ACCENT,
+      backgroundColor: bg,
       color: "#fff",
       fontSize: "10px",
       fontWeight: 700,
@@ -300,6 +303,8 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
     const neuPct = Math.round((report.metrics.neutralCount / total) * 100);
     const negPct = Math.round((report.metrics.negativeCount / total) * 100);
 
+    const isCrisis = reportType === "crisis";
+
     const period = `${safeDate(dateRange.start)} — ${safeDate(dateRange.end)}`;
     const generated = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
     const badge = reportTypeBadge[reportType] || reportTypeBadge.brief;
@@ -310,13 +315,17 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
       [report.sourceBreakdown]
     );
 
-    const dailyMentions = useMemo(() =>
-      report.timeline.slice(-14).map((t: TimelinePoint) => ({
-        label: (() => { try { return format(new Date(t.date), "dd/MM"); } catch { return t.date; } })(),
-        value: t.count,
-      })),
-      [report.timeline]
-    );
+    /* FIX 4 — limit timeline X-axis to 7 points */
+    const dailyMentions = useMemo(() => {
+      const points = report.timeline.slice(-14);
+      const step = points.length > 7 ? Math.ceil(points.length / 7) : 1;
+      return points
+        .filter((_, i) => i % step === 0)
+        .map((t: TimelinePoint) => ({
+          label: (() => { try { return format(new Date(t.date), "dd/MM"); } catch { return t.date; } })(),
+          value: t.count,
+        }));
+    }, [report.timeline]);
 
     const sentimentByPlatform = useMemo(() =>
       report.sourceBreakdown
@@ -342,9 +351,24 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
       [report.influencers]
     );
 
-    // Derive conclusions from summary
-    const conclusionIntro = "Con base en el análisis de las menciones recopiladas durante el periodo evaluado, se identifican los siguientes puntos clave:";
-    const conclusionBullets = report.keyFindings.slice(0, 5);
+    /* FIX 7 — Conclusions: dedicated field or synthesis, NOT keyFindings copy */
+    const conclusionBullets = useMemo(() => {
+      if ((report as any).conclusions && Array.isArray((report as any).conclusions) && (report as any).conclusions.length > 0) {
+        return (report as any).conclusions as string[];
+      }
+      const t = report.metrics.totalMentions;
+      const nPct = Math.round((report.metrics.negativeCount / (t || 1)) * 100);
+      const pPct = Math.round((report.metrics.positiveCount / (t || 1)) * 100);
+      const topSource = report.sourceBreakdown[0]?.source || "";
+      const synthesis: string[] = [];
+      if (t > 0) synthesis.push(`El análisis de ${t} menciones revela un entorno digital con ${nPct}% de sentimiento negativo y ${pPct}% positivo en el período evaluado.`);
+      if (topSource) synthesis.push(`La plataforma con mayor volumen de conversación fue ${platformLabel(topSource)}, que requiere atención prioritaria en la estrategia de respuesta.`);
+      if (report.narratives && report.narratives.length > 0) synthesis.push(`Las narrativas identificadas presentan tendencia ${report.narratives[0].trend}, lo que exige seguimiento continuo en las próximas 72 horas.`);
+      synthesis.push(`Se recomienda implementar las acciones estratégicas señaladas en este reporte como respuesta inmediata para gestionar el impacto reputacional detectado.`);
+      return synthesis;
+    }, [report]);
+
+    const conclusionIntro = "Con base en el análisis integral de las menciones recopiladas, se presentan las siguientes conclusiones estratégicas:";
 
     // Daily change %
     const dailyChange = useMemo(() => {
@@ -437,12 +461,24 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
         </div>
 
+        {/* FIX 8 — Crisis alert banner */}
+        {isCrisis && (
+          <div style={{ margin: "0 24px 8px", padding: "12px 16px", backgroundColor: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", display: "flex", alignItems: "flex-start", gap: "10px" }}>
+            <span style={{ fontSize: "18px", flexShrink: 0 }}>🔴</span>
+            <div>
+              <p style={{ fontSize: "12px", fontWeight: 700, color: "#991b1b", margin: 0 }}>Modo Crisis Activado</p>
+              <p style={{ fontSize: "11px", color: "#b91c1c", margin: "2px 0 0", lineHeight: 1.5 }}>Este reporte requiere atención inmediata. Las recomendaciones estratégicas deben implementarse en las próximas 24–72 horas.</p>
+            </div>
+          </div>
+        )}
+
         {/* ═══ 4. BODY ═══ */}
-        <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* FIX 5 — paddingTop added */}
+        <div style={{ padding: "8px 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
           {/* — Resumen Ejecutivo — */}
           <div data-pdf-section style={SECTION_STYLE}>
-            <SectionHeader title="Resumen Ejecutivo" />
+            <SectionHeader title="Resumen Ejecutivo" isCrisis={isCrisis} />
             <SectionBody>
               <FormattedText text={report.summary} />
             </SectionBody>
@@ -450,7 +486,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Visualización de Datos — */}
           <div data-pdf-section style={SECTION_STYLE}>
-            <SectionHeader title="Visualización de Datos" />
+            <SectionHeader title="Visualización de Datos" isCrisis={isCrisis} />
             <SectionBody>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {/* Chart 1: Menciones por plataforma */}
@@ -511,15 +547,17 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Hallazgos Clave — */}
           <div data-pdf-section style={SECTION_STYLE}>
-            <SectionHeader title="Hallazgos Clave" />
+            <SectionHeader title="Hallazgos Clave" isCrisis={isCrisis} />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {report.keyFindings.map((f, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", pageBreakInside: "avoid", breakInside: "avoid" }}>
+                    {/* FIX 1 — stable numbered circle with line-height fix */}
                     <span style={{
                       flexShrink: 0, width: "22px", height: "22px", borderRadius: "50%",
                       backgroundColor: ACCENT, color: "#fff", fontSize: "11px", fontWeight: 700,
                       display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px",
+                      lineHeight: "22px",
                     }}>{i + 1}</span>
                     <span style={{ fontSize: "12.5px", lineHeight: "1.65" }}><InlineBold text={f} /></span>
                   </div>
@@ -531,7 +569,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           {/* — Influenciadores — */}
           {report.influencers.length > 0 && (
             <div data-pdf-section style={SECTION_STYLE}>
-              <SectionHeader title="Influenciadores de la Conversación" />
+              <SectionHeader title="Influenciadores de la Conversación" isCrisis={isCrisis} />
               <SectionBody>
                 <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
                   <thead>
@@ -561,7 +599,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           {/* — Principales Narrativas — */}
           {report.narratives && report.narratives.length > 0 && (
             <div data-pdf-section style={SECTION_STYLE}>
-              <SectionHeader title="Principales Narrativas" />
+              <SectionHeader title="Principales Narrativas" isCrisis={isCrisis} />
               <SectionBody>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {report.narratives.map((n: NarrativeInfo, i: number) => {
@@ -592,7 +630,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Recomendaciones Estratégicas — */}
           <div data-pdf-section style={SECTION_STYLE}>
-            <SectionHeader title="Recomendaciones Estratégicas" />
+            <SectionHeader title="Recomendaciones Estratégicas" isCrisis={isCrisis} />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {report.recommendations.map((rec, i) => {
@@ -606,10 +644,12 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                   return (
                     <div key={i} style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 0" }}>
+                        {/* FIX 1 — stable numbered circle with line-height fix */}
                         <span style={{
                           flexShrink: 0, width: "22px", height: "22px", borderRadius: "50%",
                           backgroundColor: DARK, color: "#fff", fontSize: "11px", fontWeight: 700,
                           display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px",
+                          lineHeight: "22px",
                         }}>{i + 1}</span>
                         <div>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
@@ -620,7 +660,8 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                               </span>
                             )}
                           </div>
-                          {desc && <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.6, marginTop: "2px" }}><InlineBold text={desc} /></p>}
+                          {/* FIX 6 — darker description color */}
+                          {desc && <p style={{ fontSize: "12px", color: "#475569", lineHeight: 1.6, marginTop: "2px" }}><InlineBold text={desc} /></p>}
                         </div>
                       </div>
                       {i < report.recommendations.length - 1 && (
@@ -635,7 +676,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Conclusiones — */}
           <div data-pdf-section style={SECTION_STYLE}>
-            <SectionHeader title="Conclusiones" dark />
+            <SectionHeader title="Conclusiones" dark isCrisis={isCrisis} />
             <SectionBody bg="#f8fafc">
               <p style={{ fontSize: "12.5px", lineHeight: 1.75, marginBottom: "10px" }}>{conclusionIntro}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

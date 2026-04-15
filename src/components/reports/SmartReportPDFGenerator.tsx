@@ -4,6 +4,7 @@ import { Download, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import type { SmartReportContent } from "@/hooks/useSmartReport";
 import { SmartReportPDFPreview } from "./SmartReportPDFPreview";
 
@@ -21,6 +22,7 @@ export function SmartReportPDFGenerator({
 }: SmartReportPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const generatePDF = async () => {
     if (!previewRef.current) return;
@@ -51,8 +53,9 @@ export function SmartReportPDFGenerator({
       const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
       if (scaledH <= pdfH) {
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
-        doc.addImage(imgData, "JPEG", 0, 0, pdfW, scaledH);
+        /* FIX 2 — PNG instead of JPEG */
+        const imgData = canvas.toDataURL("image/png");
+        doc.addImage(imgData, "PNG", 0, 0, pdfW, scaledH);
       } else {
         // Section-aware page breaking: find section boundaries
         const sections = element.querySelectorAll("[data-pdf-section]");
@@ -81,12 +84,10 @@ export function SmartReportPDFGenerator({
 
           // If sections exist, try not to cut through them
           if (sectionBounds.length > 0 && sliceEnd < imgH) {
-            // Find last section that starts before sliceEnd but ends after it (= would be cut)
             const cuttingSection = sectionBounds.find(
               s => s.top < sliceEnd && s.bottom > sliceEnd && s.top > currentPos
             );
             if (cuttingSection) {
-              // Move cut point to just before that section starts (with 4px margin)
               const adjusted = cuttingSection.top - 4;
               if (adjusted > currentPos + pageHeightPx * 0.3) {
                 sliceEnd = adjusted;
@@ -101,9 +102,10 @@ export function SmartReportPDFGenerator({
           const ctx = pageCanvas.getContext("2d");
           if (ctx) {
             ctx.drawImage(canvas, 0, currentPos, imgW, sliceH, 0, 0, imgW, sliceH);
-            const pageImg = pageCanvas.toDataURL("image/jpeg", 0.92);
+            /* FIX 2 — PNG instead of JPEG */
+            const pageImg = pageCanvas.toDataURL("image/png");
             const pageScaledH = sliceH * ratio;
-            doc.addImage(pageImg, "JPEG", 0, 0, pdfW, pageScaledH);
+            doc.addImage(pageImg, "PNG", 0, 0, pdfW, pageScaledH);
           }
 
           currentPos += sliceH;
@@ -115,6 +117,12 @@ export function SmartReportPDFGenerator({
       doc.save(fileName);
     } catch (error) {
       console.error("Error generating PDF:", error);
+      /* FIX 9 — toast error feedback */
+      toast({
+        title: "Error al generar PDF",
+        description: "No se pudo generar el reporte. Intenta nuevamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
