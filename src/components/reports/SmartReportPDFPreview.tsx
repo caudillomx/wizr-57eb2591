@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type {
@@ -9,6 +9,13 @@ import type {
   TimelinePoint,
   ReportType,
 } from "@/hooks/useSmartReport";
+import logoUrl from "@/assets/wizr-logo-full-transparent.png";
+
+/* ─── constants ─── */
+const HEADER_BG = "#1e1b4b";
+const ACCENT = "#6366f1";
+const DARK = "#0f172a";
+const FONT = "'Inter', sans-serif";
 
 /* ─── helpers ─── */
 
@@ -55,6 +62,22 @@ const reportTypeBadge: Record<string, { bg: string; label: string }> = {
   comparative: { bg: "#0891b2", label: "COMPARATIVO" },
 };
 
+/* ─── logo loader ─── */
+function useLogoBase64() {
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    fetch(logoUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => setSrc(reader.result as string);
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => setSrc(""));
+  }, []);
+  return src;
+}
+
 /* ─── Inline markdown parser ─── */
 
 function InlineBold({ text }: { text: string }) {
@@ -82,7 +105,7 @@ function FormattedText({ text, fontSize = "12.5px" }: { text: string; fontSize?:
               if (numMatch) {
                 return (
                   <div key={li} style={{ display: "flex", alignItems: "flex-start", gap: "8px", paddingLeft: "4px", fontSize, lineHeight: "1.75" }}>
-                    <span style={{ fontWeight: 700, color: "#6366f1", minWidth: "18px" }}>{numMatch[1]}.</span>
+                    <span style={{ fontWeight: 700, color: ACCENT, minWidth: "18px" }}>{numMatch[1]}.</span>
                     <span><InlineBold text={numMatch[2]} /></span>
                   </div>
                 );
@@ -91,7 +114,7 @@ function FormattedText({ text, fontSize = "12.5px" }: { text: string; fontSize?:
               if (bulletMatch) {
                 return (
                   <div key={li} style={{ display: "flex", alignItems: "flex-start", gap: "8px", paddingLeft: "8px", fontSize, lineHeight: "1.75" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#6366f1", flexShrink: 0, marginTop: "7px" }} />
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: ACCENT, flexShrink: 0, marginTop: "7px" }} />
                     <span><InlineBold text={bulletMatch[1]} /></span>
                   </div>
                 );
@@ -111,6 +134,18 @@ function FormattedText({ text, fontSize = "12.5px" }: { text: string; fontSize?:
 
 /* ─── Chart components (pure HTML/CSS) ─── */
 
+const LABEL_STYLE: React.CSSProperties = {
+  minWidth: "110px",
+  width: "110px",
+  fontSize: "10px",
+  color: "#475569",
+  textAlign: "right",
+  flexShrink: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
 function HorizontalBarChart({ data, colorFn, maxVal }: {
   data: { label: string; value: number }[];
   colorFn?: (item: { label: string; value: number }, idx: number) => string;
@@ -121,10 +156,10 @@ function HorizontalBarChart({ data, colorFn, maxVal }: {
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       {data.map((d, i) => {
         const pct = Math.max((d.value / max) * 100, 2);
-        const color = colorFn ? colorFn(d, i) : (i < 3 ? "#6366f1" : "#94a3b8");
+        const color = colorFn ? colorFn(d, i) : (i < 3 ? ACCENT : "#94a3b8");
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ width: "80px", fontSize: "10px", color: "#475569", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</span>
+            <span style={LABEL_STYLE}>{d.label}</span>
             <div style={{ flex: 1, height: "14px", backgroundColor: "#f1f5f9", borderRadius: "3px", position: "relative", overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", backgroundColor: color, borderRadius: "3px", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "4px" }}>
                 {pct > 20 && <span style={{ fontSize: "9px", color: "#fff", fontWeight: 600 }}>{d.value}</span>}
@@ -134,6 +169,43 @@ function HorizontalBarChart({ data, colorFn, maxVal }: {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* Stacked horizontal bar chart for sentiment by platform */
+function StackedSentimentChart({ data }: {
+  data: { label: string; pos: number; neu: number; neg: number; total: number }[];
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {data.map((d, i) => {
+        const posPct = d.total > 0 ? (d.pos / d.total) * 100 : 0;
+        const neuPct = d.total > 0 ? (d.neu / d.total) * 100 : 0;
+        const negPct = d.total > 0 ? (d.neg / d.total) * 100 : 0;
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={LABEL_STYLE}>{d.label}</span>
+            <div style={{ flex: 1, height: "14px", backgroundColor: "#f1f5f9", borderRadius: "3px", display: "flex", overflow: "hidden" }}>
+              {posPct > 0 && <div style={{ width: `${posPct}%`, height: "100%", backgroundColor: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {posPct > 12 && <span style={{ fontSize: "8px", color: "#fff", fontWeight: 600 }}>{Math.round(posPct)}%</span>}
+              </div>}
+              {neuPct > 0 && <div style={{ width: `${neuPct}%`, height: "100%", backgroundColor: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {neuPct > 12 && <span style={{ fontSize: "8px", color: "#fff", fontWeight: 600 }}>{Math.round(neuPct)}%</span>}
+              </div>}
+              {negPct > 0 && <div style={{ width: `${negPct}%`, height: "100%", backgroundColor: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {negPct > 12 && <span style={{ fontSize: "8px", color: "#fff", fontWeight: 600 }}>{Math.round(negPct)}%</span>}
+              </div>}
+            </div>
+          </div>
+        );
+      })}
+      {/* legend */}
+      <div style={{ display: "flex", gap: "14px", marginTop: "4px", paddingLeft: "118px", fontSize: "9px", color: "#64748b" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22c55e", display: "inline-block" }} />Positivo</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#94a3b8", display: "inline-block" }} />Neutral</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#ef4444", display: "inline-block" }} />Negativo</span>
+      </div>
     </div>
   );
 }
@@ -153,7 +225,7 @@ function VerticalBarChart({ data, highlightMax }: {
           return (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
               <span style={{ fontSize: "8px", color: "#475569", fontWeight: 600, marginBottom: "2px" }}>{d.value}</span>
-              <div style={{ width: "100%", height: `${h}px`, backgroundColor: isMax ? "#ef4444" : "#6366f1", borderRadius: "2px 2px 0 0" }} />
+              <div style={{ width: "100%", height: `${h}px`, backgroundColor: isMax ? "#ef4444" : ACCENT, borderRadius: "2px 2px 0 0" }} />
             </div>
           );
         })}
@@ -169,10 +241,15 @@ function VerticalBarChart({ data, highlightMax }: {
 
 /* ─── Section wrappers ─── */
 
+const SECTION_STYLE: React.CSSProperties = {
+  pageBreakInside: "avoid",
+  breakInside: "avoid",
+};
+
 function SectionHeader({ title, dark }: { title: string; dark?: boolean }) {
   return (
     <div style={{
-      backgroundColor: dark ? "#0f172a" : "#6366f1",
+      backgroundColor: dark ? DARK : ACCENT,
       color: "#fff",
       fontSize: "10px",
       fontWeight: 700,
@@ -189,7 +266,7 @@ function SectionHeader({ title, dark }: { title: string; dark?: boolean }) {
 function SectionBody({ children, bg }: { children: React.ReactNode; bg?: string }) {
   return (
     <div style={{
-      border: "0.5px solid #6366f1",
+      border: `0.5px solid ${ACCENT}`,
       borderTop: "none",
       borderRadius: "0 0 4px 4px",
       padding: "14px",
@@ -217,6 +294,7 @@ interface Props {
 // eslint-disable-next-line react/display-name
 export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
   ({ report, projectName, dateRange, reportType = "brief" }, ref) => {
+    const logoBase64 = useLogoBase64();
     const total = report.metrics.totalMentions || 1;
     const posPct = Math.round((report.metrics.positiveCount / total) * 100);
     const neuPct = Math.round((report.metrics.neutralCount / total) * 100);
@@ -240,11 +318,17 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
       [report.timeline]
     );
 
-    const negPctByPlatform = useMemo(() =>
+    const sentimentByPlatform = useMemo(() =>
       report.sourceBreakdown
         .filter(s => s.count > 0)
-        .map(s => ({ label: platformLabel(s.source), value: Math.round((s.negative / s.count) * 100) }))
-        .sort((a, b) => b.value - a.value)
+        .map(s => ({
+          label: platformLabel(s.source),
+          pos: s.positive || 0,
+          neu: s.neutral || 0,
+          neg: s.negative || 0,
+          total: s.count,
+        }))
+        .sort((a, b) => b.total - a.total)
         .slice(0, 8),
       [report.sourceBreakdown]
     );
@@ -273,27 +357,33 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
     return (
       <div
         ref={ref}
-        style={{ width: 794, fontFamily: "Helvetica, Arial, sans-serif", backgroundColor: "#fff", color: "#111827", fontSize: "12.5px", lineHeight: 1.6 }}
+        style={{ width: 794, fontFamily: FONT, backgroundColor: "#fff", color: "#111827", fontSize: "12.5px", lineHeight: 1.6 }}
       >
+        {/* Google Fonts link for html2canvas */}
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');`}</style>
+
         {/* ═══ 1. HEADER ═══ */}
-        <div style={{ backgroundColor: "#0f172a", padding: "28px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ backgroundColor: HEADER_BG, padding: "28px 32px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px" }}>
           {/* Logo left */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "32px", height: "32px", backgroundColor: "#6366f1", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-            </div>
-            <span style={{ fontSize: "13px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+            {logoBase64 ? (
+              <img src={logoBase64} alt="Wizr" style={{ height: "28px", objectFit: "contain" }} />
+            ) : (
+              <span style={{ fontSize: "13px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
+            )}
           </div>
 
           {/* Right */}
-          <div style={{ textAlign: "right" }}>
-            <span style={{ display: "inline-block", backgroundColor: badge.bg, color: "#fff", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", padding: "2px 8px", borderRadius: "4px", letterSpacing: "0.06em" }}>
+          <div style={{ textAlign: "right", flexShrink: 1, minWidth: 0 }}>
+            <span style={{
+              display: "inline-block", whiteSpace: "nowrap",
+              backgroundColor: badge.bg, color: "#fff",
+              fontSize: "10px", fontWeight: 700, textTransform: "uppercase",
+              padding: "3px 10px", borderRadius: "4px", letterSpacing: "0.06em", lineHeight: "1.4",
+            }}>
               {badge.label}
             </span>
-            <h1 style={{ color: "#f8fafc", fontSize: "15px", fontWeight: 700, marginTop: "6px", maxWidth: "480px", lineHeight: 1.35 }}>
+            <h1 style={{ color: "#f8fafc", fontSize: "15px", fontWeight: 700, marginTop: "6px", lineHeight: 1.35 }}>
               {report.title}
             </h1>
             <p style={{ color: "#94a3b8", fontSize: "11px", marginTop: "4px" }}>{period} · Generado: {generated}</p>
@@ -303,9 +393,9 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         {/* ═══ 2. METRICS ROW ═══ */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", borderBottom: "1px solid #e2e8f0" }}>
           {[
-            { v: fmt(report.metrics.estimatedImpressions || 0), l: "Impresiones Est.", c: "#6366f1" },
-            { v: report.metrics.totalMentions.toString(), l: "Total Menciones", c: "#6366f1" },
-            { v: fmt(report.metrics.estimatedReach || 0), l: "Alcance Est.", c: "#6366f1" },
+            { v: fmt(report.metrics.estimatedImpressions || 0), l: "Impresiones Est.", c: ACCENT },
+            { v: report.metrics.totalMentions.toString(), l: "Total Menciones", c: ACCENT },
+            { v: fmt(report.metrics.estimatedReach || 0), l: "Alcance Est.", c: ACCENT },
             { v: `${negPct}%`, l: "% Negativo", c: "#ef4444" },
             { v: `${posPct}%`, l: "% Positivo", c: "#22c55e" },
           ].map((m, i) => (
@@ -351,7 +441,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
           {/* — Resumen Ejecutivo — */}
-          <div>
+          <div style={SECTION_STYLE}>
             <SectionHeader title="Resumen Ejecutivo" />
             <SectionBody>
               <FormattedText text={report.summary} />
@@ -359,12 +449,12 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Visualización de Datos — */}
-          <div>
+          <div style={SECTION_STYLE}>
             <SectionHeader title="Visualización de Datos" />
             <SectionBody>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {/* Chart 1: Menciones por plataforma */}
-                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px" }}>
+                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                   <p style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.06em", marginBottom: "10px", fontWeight: 600 }}>Menciones por plataforma</p>
                   {mentionsByPlatform.length > 0 ? (
                     <HorizontalBarChart data={mentionsByPlatform} />
@@ -374,7 +464,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                 </div>
 
                 {/* Chart 2: Evolución diaria */}
-                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px" }}>
+                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                   <p style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.06em", marginBottom: "10px", fontWeight: 600 }}>Evolución diaria de menciones</p>
                   {dailyMentions.length > 0 ? (
                     <>
@@ -390,22 +480,18 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                   )}
                 </div>
 
-                {/* Chart 3: % negativo por plataforma */}
-                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px" }}>
-                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.06em", marginBottom: "10px", fontWeight: 600 }}>% Negativo por plataforma</p>
-                  {negPctByPlatform.length > 0 ? (
-                    <HorizontalBarChart
-                      data={negPctByPlatform.map(d => ({ label: d.label, value: d.value }))}
-                      colorFn={(d) => d.value >= 80 ? "#ef4444" : d.value >= 60 ? "#f97316" : "#6366f1"}
-                      maxVal={100}
-                    />
+                {/* Chart 3: % de sentimiento por plataforma (stacked) */}
+                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px", pageBreakInside: "avoid", breakInside: "avoid" }}>
+                  <p style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.06em", marginBottom: "10px", fontWeight: 600 }}>% de sentimiento por plataforma</p>
+                  {sentimentByPlatform.length > 0 ? (
+                    <StackedSentimentChart data={sentimentByPlatform} />
                   ) : (
                     <p style={{ fontSize: "10px", color: "#cbd5e1" }}>Sin datos</p>
                   )}
                 </div>
 
                 {/* Chart 4: Top influenciadores por interacciones */}
-                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px" }}>
+                <div style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "14px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                   <p style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.06em", marginBottom: "10px", fontWeight: 600 }}>Top influenciadores por interacciones</p>
                   {topInfluencersByInteractions.length > 0 ? (
                     <HorizontalBarChart
@@ -424,15 +510,15 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Hallazgos Clave — */}
-          <div>
+          <div style={SECTION_STYLE}>
             <SectionHeader title="Hallazgos Clave" />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {report.keyFindings.map((f, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                     <span style={{
                       flexShrink: 0, width: "22px", height: "22px", borderRadius: "50%",
-                      backgroundColor: "#6366f1", color: "#fff", fontSize: "11px", fontWeight: 700,
+                      backgroundColor: ACCENT, color: "#fff", fontSize: "11px", fontWeight: 700,
                       display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px",
                     }}>{i + 1}</span>
                     <span style={{ fontSize: "12.5px", lineHeight: "1.65" }}><InlineBold text={f} /></span>
@@ -444,12 +530,12 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Influenciadores — */}
           {report.influencers.length > 0 && (
-            <div>
+            <div style={SECTION_STYLE}>
               <SectionHeader title="Influenciadores de la Conversación" />
               <SectionBody>
                 <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#0f172a" }}>
+                    <tr style={{ backgroundColor: DARK }}>
                       {["#", "Perfil", "Red", "Menciones", "Sentimiento", "Interacciones"].map((h, i) => (
                         <th key={i} style={{ padding: "6px 8px", color: "#e2e8f0", fontWeight: 700, textAlign: i === 0 || i >= 3 ? "center" : "left", fontSize: "10px" }}>{h}</th>
                       ))}
@@ -457,7 +543,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                   </thead>
                   <tbody>
                     {report.influencers.map((inf: InfluencerInfo, i: number) => (
-                      <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                      <tr key={i} style={{ backgroundColor: i % 2 === 0 ? "#fff" : "#f8fafc", pageBreakInside: "avoid", breakInside: "avoid" }}>
                         <td style={{ padding: "5px 8px", textAlign: "center", fontWeight: 500 }}>{i + 1}</td>
                         <td style={{ padding: "5px 8px", fontWeight: 500 }}>{inf.username ? `@${inf.username}` : inf.name}</td>
                         <td style={{ padding: "5px 8px", fontWeight: 500 }}>{platformLabel(inf.platform)}</td>
@@ -474,7 +560,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Principales Narrativas — */}
           {report.narratives && report.narratives.length > 0 && (
-            <div>
+            <div style={SECTION_STYLE}>
               <SectionHeader title="Principales Narrativas" />
               <SectionBody>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -486,7 +572,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                         : { bg: "#f1f5f9", color: "#475569" };
                     const trendIcon = n.trend === "creciente" ? "↑" : n.trend === "decreciente" ? "↓" : "→";
                     return (
-                      <div key={i} style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "10px 12px" }}>
+                      <div key={i} style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "10px 12px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span style={{ fontSize: "12.5px", fontWeight: 500 }}>{n.narrative}</span>
                           <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "3px", backgroundColor: sentBadge.bg, color: sentBadge.color, fontWeight: 600 }}>
@@ -505,26 +591,24 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           )}
 
           {/* — Recomendaciones Estratégicas — */}
-          <div>
+          <div style={SECTION_STYLE}>
             <SectionHeader title="Recomendaciones Estratégicas" />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {report.recommendations.map((rec, i) => {
-                  // Try to parse urgency from text like "(24 hrs)" or "(48 hrs)"
                   const urgencyMatch = rec.match(/\((\d+\s*hrs?)\)/i);
                   const urgency = urgencyMatch ? urgencyMatch[1] : null;
                   const cleanRec = urgency ? rec.replace(urgencyMatch![0], "").trim() : rec;
-                  // Split into title (first sentence) and description
                   const dotIdx = cleanRec.indexOf(".");
                   const title = dotIdx > 0 ? cleanRec.slice(0, dotIdx + 1) : cleanRec;
                   const desc = dotIdx > 0 ? cleanRec.slice(dotIdx + 1).trim() : "";
 
                   return (
-                    <div key={i}>
+                    <div key={i} style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "10px 0" }}>
                         <span style={{
                           flexShrink: 0, width: "22px", height: "22px", borderRadius: "50%",
-                          backgroundColor: "#0f172a", color: "#fff", fontSize: "11px", fontWeight: 700,
+                          backgroundColor: DARK, color: "#fff", fontSize: "11px", fontWeight: 700,
                           display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px",
                         }}>{i + 1}</span>
                         <div>
@@ -550,14 +634,14 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Conclusiones — */}
-          <div>
+          <div style={SECTION_STYLE}>
             <SectionHeader title="Conclusiones" dark />
             <SectionBody bg="#f8fafc">
               <p style={{ fontSize: "12.5px", lineHeight: 1.75, marginBottom: "10px" }}>{conclusionIntro}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {conclusionBullets.map((b, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#6366f1", flexShrink: 0, marginTop: "7px" }} />
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", pageBreakInside: "avoid", breakInside: "avoid" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: ACCENT, flexShrink: 0, marginTop: "7px" }} />
                     <span style={{ fontSize: "12.5px", lineHeight: 1.65 }}><InlineBold text={b} /></span>
                   </div>
                 ))}
@@ -567,17 +651,22 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* ═══ 5. FOOTER ═══ */}
-        <div style={{ backgroundColor: "#0f172a", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ backgroundColor: HEADER_BG, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <div style={{ width: "20px", height: "20px", backgroundColor: "#6366f1", borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-            </div>
-            <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 600 }}>Wizr</span>
+            {logoBase64 ? (
+              <img src={logoBase64} alt="Wizr" style={{ height: "16px", objectFit: "contain" }} />
+            ) : (
+              <>
+                <div style={{ width: "20px", height: "20px", backgroundColor: ACCENT, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg>
+                </div>
+                <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 600 }}>Wizr</span>
+              </>
+            )}
           </div>
-          <span style={{ fontSize: "11px", color: "#64748b" }}>{projectName}</span>
           <span style={{ fontSize: "11px", color: "#64748b" }}>Generado con Wizr</span>
         </div>
       </div>
