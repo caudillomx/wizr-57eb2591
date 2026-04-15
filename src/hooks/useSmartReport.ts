@@ -67,6 +67,7 @@ export interface SmartReportContent {
   sourceBreakdown: SourceBreakdown[];
   influencers: InfluencerInfo[];
   timeline: TimelinePoint[];
+  narratives: NarrativeInfo[];
   sentimentAnalysis?: string;
   totalUniqueAuthors: number;
 }
