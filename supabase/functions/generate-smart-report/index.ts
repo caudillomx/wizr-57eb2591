@@ -324,17 +324,28 @@ Analiza los datos y genera un reporte siguiendo la estructura indicada. Sé ESPE
 Responde en formato JSON con esta estructura exacta:
 {
   "title": "string - título profesional que refleje el contenido y ángulo estratégico del reporte",
-  "summary": "string - párrafo ejecutivo de 4-6 oraciones con hallazgos críticos, mencionando fuentes, autores y números específicos, y cómo impactan a la marca/entidad",
-  "impactAssessment": "string - párrafo evaluando específicamente cómo los eventos detectados afectan a la marca/entidad principal en el contexto estratégico. Si no hay contexto estratégico, evalúa el impacto reputacional general",
-  "sentimentAnalysis": "string - párrafo analizando la distribución de sentimiento, tendencias, y qué factores impulsan la negatividad o positividad",
-  "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...] - mínimo 4, ordenados por importancia,
-  "recommendations": ["string - acción específica y priorizada", ...] - mínimo 3 concretas,
+  "summary": "string - párrafo ejecutivo de 4-6 oraciones con hallazgos críticos, mencionando fuentes, autores y números específicos",
+  "impactAssessment": "string - párrafo evaluando cómo los eventos afectan a la marca/entidad",
+  "sentimentAnalysis": "string - párrafo analizando distribución de sentimiento y sus drivers",
+  "narratives": [
+    {
+      "narrative": "string - nombre corto de la narrativa temática (ej: 'Vinculación con fraude financiero')",
+      "description": "string - 1-2 oraciones: qué dice esta narrativa, quién la promueve, en qué medios aparece",
+      "mentions": "number - cantidad estimada de menciones que contienen esta narrativa",
+      "sentiment": "positivo | negativo | mixto",
+      "trend": "creciente | decreciente | estable"
+    }
+  ],
+  "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...],
+  "recommendations": ["string - acción específica y priorizada", ...],
   "templates": {
-    "executive": "string - 3-4 párrafos para directivos: impacto de negocio, decisiones necesarias, contexto estratégico",
-    "technical": "string - 3-4 párrafos para analistas: metodología, datos detallados, influenciadores, medios",
-    "public": "string - 2-3 párrafos con emojis para WhatsApp: resumen accesible, cifras clave"
+    "executive": "string - 3-4 párrafos para directivos",
+    "technical": "string - 3-4 párrafos para analistas",
+    "public": "string - 2-3 párrafos con emojis para WhatsApp"
   }
-}`;
+}
+
+IMPORTANTE sobre "narratives": Identifica entre 3 y 8 NARRATIVAS TEMÁTICAS principales. Una narrativa NO es un keyword ni un nombre propio — es una IDEA o ARGUMENTO recurrente en la conversación (ej: "Cuestionamiento de transparencia financiera", "Defensa institucional ante acusaciones"). Ordénalas por frecuencia.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
