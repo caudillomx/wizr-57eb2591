@@ -489,6 +489,7 @@ IMPORTANTE sobre "narratives": Identifica entre 3 y 8 NARRATIVAS TEMÁTICAS prin
       recommendations: reportContent.recommendations || [],
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
+      narratives: reportContent.narratives || [],
       metrics,
       templates: {
         executive: reportContent.templates?.executive || "",
