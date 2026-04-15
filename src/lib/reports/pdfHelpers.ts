@@ -48,32 +48,34 @@ export function drawHeader(
   pw: number,
   m: number,
 ) {
-  const headerH = 28;
+  const headerH = 36;
+  // Full-width dark background
   doc.setFillColor(...PDF_COLORS.dark);
   doc.rect(0, 0, pw, headerH, "F");
 
-  // Logo — left side, height ~8mm to fit nicely
+  // Logo — left side
   try {
-    doc.addImage(logoBase64, "PNG", m, 6, 30, 8);
+    doc.addImage(logoBase64, "PNG", m, 8, 32, 9);
   } catch {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setTextColor(...PDF_COLORS.white);
-    doc.text("WIZR", m, 14);
+    doc.text("WIZR", m, 16);
   }
 
-  // Title — right aligned
+  // Title — right aligned, white
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setTextColor(...PDF_COLORS.white);
-  const titleLines = doc.splitTextToSize(title, pw - m * 2 - 40);
-  doc.text(titleLines[0] || title, pw - m, 12, { align: "right" });
+  const maxTitleW = pw - m * 2 - 42;
+  const titleLines = doc.splitTextToSize(title, maxTitleW);
+  doc.text(titleLines[0] || title, pw - m, 14, { align: "right" });
 
-  // Subtitle
+  // Subtitle — right aligned, light gray
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(180, 190, 210);
-  doc.text(subtitle, pw - m, 20, { align: "right" });
+  doc.text(subtitle, pw - m, 22, { align: "right" });
 
   return headerH + 6;
 }
@@ -277,9 +279,9 @@ export function drawSectionTitle(
 }
 
 // ═══════════════════════════════════════
-//  PARAGRAPH TEXT
+//  FORMATTED TEXT (markdown-aware)
 // ═══════════════════════════════════════
-export function drawParagraph(
+export function renderFormattedText(
   doc: jsPDF,
   text: string,
   m: number,
@@ -290,22 +292,125 @@ export function drawParagraph(
   projectName: string,
   fontSize = 10,
 ): number {
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(fontSize);
-  doc.setTextColor(...PDF_COLORS.textDark);
-  const lines = doc.splitTextToSize(text, cw - 4);
   const lineH = fontSize * 0.45;
-  for (const line of lines) {
+  const maxW = cw - 4;
+  const indent = 5;
+
+  const checkPage = () => {
     if (y + lineH > ph - 18) {
       doc.addPage();
       y = 20;
       drawPageHeader(doc, logoBase64, projectName, doc.internal.pageSize.getWidth(), m);
     }
-    doc.text(line, m + 2, y);
-    y += lineH;
-  }
+  };
+
+  // Split by double newlines for paragraph separation, then single newlines for lines
+  const paragraphs = text.split(/\n\s*\n/);
+
+  paragraphs.forEach((para, pIdx) => {
+    if (pIdx > 0) y += 3; // paragraph spacing
+
+    const lines = para.split(/\n/);
+    lines.forEach((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) return;
+
+      checkPage();
+
+      // Bold line: **text** or starts/ends with **
+      const boldMatch = line.match(/^\*\*(.+?)\*\*$/);
+      if (boldMatch) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...PDF_COLORS.textDark);
+        const wrapped = doc.splitTextToSize(boldMatch[1], maxW);
+        for (const wl of wrapped) {
+          checkPage();
+          doc.text(wl, m + 2, y);
+          y += lineH;
+        }
+        return;
+      }
+
+      // Inline bold: text with **bold** segments
+      if (line.includes("**")) {
+        // Render segments: split by ** markers
+        const segments = line.split(/\*\*/);
+        let xCursor = m + 2;
+        segments.forEach((seg, si) => {
+          if (!seg) return;
+          const isBold = si % 2 === 1;
+          doc.setFont("helvetica", isBold ? "bold" : "normal");
+          doc.setFontSize(fontSize);
+          doc.setTextColor(...PDF_COLORS.textDark);
+          // If text would overflow, wrap to new line
+          const segW = doc.getTextWidth(seg);
+          if (xCursor + segW > m + cw - 2) {
+            y += lineH;
+            checkPage();
+            xCursor = m + 2;
+          }
+          doc.text(seg, xCursor, y);
+          xCursor += segW;
+        });
+        y += lineH;
+        return;
+      }
+
+      // Bullet list: - or • or * at start
+      const bulletMatch = line.match(/^[-•*]\s+(.+)/);
+      if (bulletMatch) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...PDF_COLORS.textDark);
+        // Draw bullet
+        doc.setFillColor(...PDF_COLORS.accent);
+        doc.circle(m + indent, y - 1, 1, "F");
+        const wrapped = doc.splitTextToSize(bulletMatch[1], maxW - indent - 4);
+        for (const wl of wrapped) {
+          checkPage();
+          doc.text(wl, m + indent + 3, y);
+          y += lineH;
+        }
+        return;
+      }
+
+      // Numbered list: 1. or 1) at start
+      const numMatch = line.match(/^(\d+)[.)]\s+(.+)/);
+      if (numMatch) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...PDF_COLORS.accent);
+        doc.text(`${numMatch[1]}.`, m + 2, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...PDF_COLORS.textDark);
+        const wrapped = doc.splitTextToSize(numMatch[2], maxW - indent - 6);
+        for (const wl of wrapped) {
+          checkPage();
+          doc.text(wl, m + indent + 5, y);
+          y += lineH;
+        }
+        return;
+      }
+
+      // Normal text
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...PDF_COLORS.textDark);
+      const wrapped = doc.splitTextToSize(line, maxW);
+      for (const wl of wrapped) {
+        checkPage();
+        doc.text(wl, m + 2, y);
+        y += lineH;
+      }
+    });
+  });
+
   return y + 3;
 }
+
+// Keep backward-compatible alias
+export const drawParagraph = renderFormattedText;
 
 // ═══════════════════════════════════════
 //  NUMBERED ITEMS
