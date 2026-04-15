@@ -47,6 +47,15 @@ export interface TimelinePoint {
   positive: number;
 }
 
+export interface NarrativeInfo {
+  keyword: string;
+  count: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+  trend: "up" | "down" | "stable";
+}
+
 export interface SmartReportContent {
   title: string;
   summary: string;
