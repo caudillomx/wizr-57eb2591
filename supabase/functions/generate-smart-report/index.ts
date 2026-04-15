@@ -348,6 +348,7 @@ Responde en formato JSON con esta estructura exacta:
     }
   ],
   "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...],
+  "conclusions": ["string - 3-4 conclusiones ESTRATÉGICAS de síntesis que NO repitan los hallazgos. Cada conclusión debe integrar múltiples datos para ofrecer una visión global del panorama digital, evaluar el estado reputacional general, y proyectar tendencias. Ejemplo: 'El análisis de 150 menciones revela un entorno digital predominantemente negativo (65%) concentrado en X/Twitter, donde las narrativas de fraude dominan la conversación con tendencia creciente.'", ...],
   "recommendations": ["string - recomendación DETALLADA de 2-3 oraciones: qué hacer exactamente, en qué plataforma/canal, con qué mensaje o enfoque, y en qué plazo (ej: 'En las próximas 24 horas, publicar un comunicado en X/Twitter respondiendo directamente a las publicaciones de @usuario que acumulan 15K interacciones, usando los datos del informe anual como respaldo. Monitorear la respuesta durante 48 hrs.')", ...],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
