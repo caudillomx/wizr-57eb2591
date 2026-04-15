@@ -240,37 +240,7 @@ export function useSmartReport() {
 
     const totalUniqueAuthors = Object.keys(authorMap).length;
 
-    // ── Narratives: top keywords with sentiment breakdown ──
-    const kwMap: Record<string, { count: number; positive: number; negative: number; neutral: number; dates: string[] }> = {};
-    mentions.forEach(m => {
-      const kws = m.matched_keywords || [];
-      const date = (m.published_at || m.created_at || "").split("T")[0];
-      kws.forEach(kw => {
-        const key = kw.toLowerCase().trim();
-        if (!key || key.length < 2) return;
-        if (!kwMap[key]) kwMap[key] = { count: 0, positive: 0, negative: 0, neutral: 0, dates: [] };
-        kwMap[key].count++;
-        if (m.sentiment === "positivo") kwMap[key].positive++;
-        else if (m.sentiment === "negativo") kwMap[key].negative++;
-        else kwMap[key].neutral++;
-        if (date) kwMap[key].dates.push(date);
-      });
-    });
-
-    const narratives: NarrativeInfo[] = Object.entries(kwMap)
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 12)
-      .map(([keyword, data]) => {
-        // Trend: compare first half vs second half of dates
-        const sorted = data.dates.sort();
-        const mid = Math.floor(sorted.length / 2);
-        const firstHalf = sorted.slice(0, mid).length;
-        const secondHalf = sorted.slice(mid).length;
-        const trend: "up" | "down" | "stable" = secondHalf > firstHalf * 1.3 ? "up" : firstHalf > secondHalf * 1.3 ? "down" : "stable";
-        return { keyword, count: data.count, positive: data.positive, negative: data.negative, neutral: data.neutral, trend };
-      });
-
-    return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors, narratives };
+    return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors };
   };
 
   const generateReport = async (
