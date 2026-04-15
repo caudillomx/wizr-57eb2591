@@ -32,9 +32,9 @@ interface ReportRequest {
 }
 
 const EXTENSION_CONFIG = {
-  micro: { sampleCount: 8, maxTokens: 4200, maxSources: 6, maxAuthors: 6, maxKeywords: 6, maxExamples: 3, maxTimelinePoints: 7 },
-  short: { sampleCount: 14, maxTokens: 6200, maxSources: 8, maxAuthors: 8, maxKeywords: 8, maxExamples: 4, maxTimelinePoints: 7 },
-  medium: { sampleCount: 20, maxTokens: 8200, maxSources: 10, maxAuthors: 10, maxKeywords: 10, maxExamples: 5, maxTimelinePoints: 7 },
+  micro: { sampleCount: 5, maxTokens: 4000, maxSources: 5, maxAuthors: 4, maxKeywords: 5, maxExamples: 2, maxTimelinePoints: 5 },
+  short: { sampleCount: 8, maxTokens: 5000, maxSources: 6, maxAuthors: 5, maxKeywords: 6, maxExamples: 3, maxTimelinePoints: 6 },
+  medium: { sampleCount: 12, maxTokens: 6000, maxSources: 7, maxAuthors: 6, maxKeywords: 7, maxExamples: 3, maxTimelinePoints: 7 },
 } as const;
 
 type ExtensionKey = keyof typeof EXTENSION_CONFIG;
@@ -173,15 +173,8 @@ function buildPrompt(body: ReportRequest): string {
 
   const mentionsSample = mentions.slice(0, cfg.sampleCount).map((m) => {
     const meta = m.raw_metadata;
-    return {
-      title: m.title,
-      description: m.description?.slice(0, 180),
-      source: normalizeSource(m.source_domain),
-      sentiment: m.sentiment,
-      date: (m.published_at || m.created_at)?.split("T")[0],
-      author: (meta?.author || meta?.author_name || meta?.authorUsername || null) as string | null,
-      interactions: Number(meta?.likes || 0) + Number(meta?.comments || 0) + Number(meta?.shares || 0),
-    };
+    const author = (meta?.author || meta?.author_name || meta?.authorUsername || null) as string | null;
+    return `[${normalizeSource(m.source_domain)}] ${(m.published_at || m.created_at)?.split("T")[0] || "?"} | ${m.sentiment || "?"} | ${author || "anon"} | ${(m.title || m.description || "").slice(0, 120)}`;
   });
 
   return `You are an expert information designer, data journalist, and strategic communications analyst specializing in digital monitoring reports for institutional clients in Mexico and Latin America.
@@ -203,7 +196,7 @@ ANALYSIS SUMMARY
 ${detailedAnalysis}
 
 SAMPLE MENTIONS (${mentionsSample.length} of ${mentions.length})
-${JSON.stringify(mentionsSample, null, 2)}
+${mentionsSample.join("\n")}
 
 HTML RULES
 - Fixed width 794px body
@@ -275,7 +268,7 @@ serve(async (req) => {
     console.log(`Generating Claude report: ${body.reportType}, ${body.extension}, ${body.mentions.length} mentions, project: ${body.projectName}`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort("Anthropic request timeout"), 70000);
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
     let response: Response;
     try {
@@ -337,13 +330,14 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in generate-claude-report:", error);
-    const description = error instanceof Error && error.name === "AbortError"
-      ? "Claude tardó demasiado en responder"
-      : error instanceof Error ? error.message : "Unknown error";
+    const isTimeout = error instanceof DOMException && error.name === "AbortError";
+    const description = isTimeout
+      ? "Claude tardó demasiado. Intenta con extensión 'micro' o menos menciones."
+      : error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error in generate-claude-report:", description);
 
     return new Response(JSON.stringify({ error: description }), {
-      status: 500,
+      status: isTimeout ? 504 : 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
