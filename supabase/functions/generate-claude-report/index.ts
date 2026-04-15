@@ -290,7 +290,7 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2025-04-14",
+        "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
       body: JSON.stringify({
