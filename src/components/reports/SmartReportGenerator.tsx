@@ -320,7 +320,10 @@ export function SmartReportGenerator({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">{report.title}</h3>
-                <Button variant="ghost" size="sm" onClick={clearReport}>Nuevo reporte</Button>
+                <Button variant="outline" size="sm" onClick={clearReport}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Nuevo reporte
+                </Button>
               </div>
               <p className="text-muted-foreground">{report.summary}</p>
             </div>
