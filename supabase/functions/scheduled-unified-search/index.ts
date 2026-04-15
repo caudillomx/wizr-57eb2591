@@ -166,8 +166,14 @@ serve(async (req) => {
               totalMentionsFound += platformResults.length;
 
               if (platformResults.length > 0) {
-                const mentionsToSave = platformResults
-                  .filter(r => r.url)
+                // Post-validate: only keep results whose content actually mentions a keyword
+                const relevantResults = platformResults.filter(r => r.url && contentMatchesKeywords(r, entity));
+                const filtered = platformResults.length - relevantResults.length;
+                if (filtered > 0) {
+                  console.log(`  ${entity.nombre}/${platform}: filtered ${filtered}/${platformResults.length} irrelevant results`);
+                }
+
+                const mentionsToSave = relevantResults
                   .map(r => ({
                     project_id: schedule.project_id,
                     url: r.url,
@@ -437,6 +443,44 @@ function calculateNextRun(frequency: string, fromTime: Date): Date {
       next.setDate(next.getDate() + 1);
   }
   return next;
+}
+
+// ==================== RELEVANCE FILTER ====================
+
+/**
+ * Post-validates that a mention's content actually contains at least one
+ * of the entity's keywords. Prevents false positives from scrapers that
+ * return tangentially related results.
+ */
+function contentMatchesKeywords(
+  item: { title?: string; description?: string; url?: string },
+  entity: Entity
+): boolean {
+  const text = [item.title, item.description, item.url]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (!text) return false;
+
+  // Collect all keywords: nombre, aliases, palabras_clave
+  const keywords: string[] = [
+    entity.nombre,
+    ...entity.aliases,
+    ...entity.palabras_clave,
+  ].filter(Boolean);
+
+  // Also include platform_keywords values (flattened)
+  if (entity.platform_keywords && typeof entity.platform_keywords === "object") {
+    for (const vals of Object.values(entity.platform_keywords as Record<string, string[]>)) {
+      if (Array.isArray(vals)) keywords.push(...vals);
+    }
+  }
+
+  // At least one keyword (2+ chars) must appear in the text
+  return keywords
+    .filter(k => k.length >= 2)
+    .some(keyword => text.includes(keyword.toLowerCase()));
 }
 
 // ==================== SEARCH FUNCTIONS ====================
