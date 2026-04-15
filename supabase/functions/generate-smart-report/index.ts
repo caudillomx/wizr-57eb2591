@@ -294,12 +294,14 @@ PRINCIPIOS:
 6. MEDIOS: Detalla qué medios/plataformas cubren el tema y con qué ángulo.
 
 ALCANCE DE LAS RECOMENDACIONES:
-Las recomendaciones DEBEN limitarse al ámbito DIGITAL y de COMUNICACIÓN ONLINE:
+Las recomendaciones DEBEN ser DETALLADAS y ACCIONABLES (2-3 oraciones cada una), limitadas al ámbito DIGITAL:
+- Especifica QUÉ hacer, EN QUÉ PLATAFORMA, CON QUÉ MENSAJE y EN QUÉ PLAZO
 - Monitoreo de medios y redes sociales (qué vigilar, dónde, con qué frecuencia)
 - Gestión de reputación digital (respuestas en redes, SEO, contenido reactivo)
 - Comunicación digital (mensajes clave para redes, alertas de keywords, community management)
 - Análisis de conversación digital (narrativas a rastrear, influenciadores a seguir)
-NO incluyas recomendaciones operativas, legales, de negocio, capacitación interna, ni estrategia corporativa fuera del ecosistema digital.
+NO incluyas recomendaciones genéricas como "monitorear la evolución" o "evaluar respuesta estratégica". Cada recomendación debe citar datos, nombres o plataformas concretas del análisis.
+NO incluyas recomendaciones operativas, legales, de negocio, ni estrategia corporativa fuera del ecosistema digital.
 
 FORMATO:
 - Español profesional
@@ -345,7 +347,7 @@ Responde en formato JSON con esta estructura exacta:
     }
   ],
   "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...],
-  "recommendations": ["string - acción específica y priorizada", ...],
+  "recommendations": ["string - recomendación DETALLADA de 2-3 oraciones: qué hacer exactamente, en qué plataforma/canal, con qué mensaje o enfoque, y en qué plazo (ej: 'En las próximas 24 horas, publicar un comunicado en X/Twitter respondiendo directamente a las publicaciones de @usuario que acumulan 15K interacciones, usando los datos del informe anual como respaldo. Monitorear la respuesta durante 48 hrs.')", ...],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
