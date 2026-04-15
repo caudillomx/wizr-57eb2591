@@ -13,6 +13,7 @@ import {
   BarChart3,
   GitCompare,
   Loader2,
+  RefreshCw,
   CheckCircle2,
   Filter,
   Target,
