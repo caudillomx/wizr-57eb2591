@@ -25,6 +25,7 @@ interface ReportAnalyticsChartsProps {
   dateLabel: string;
   estimatedImpressions?: number;
   estimatedReach?: number;
+  totalUniqueAuthors?: number;
 }
 
 function formatBigNumber(n: number): string {
@@ -65,6 +66,7 @@ export function ReportAnalyticsCharts({
   dateLabel,
   estimatedImpressions = 0,
   estimatedReach = 0,
+  totalUniqueAuthors,
 }: ReportAnalyticsChartsProps) {
   const sentimentChartData = useMemo(() => {
     const items = [
@@ -138,7 +140,7 @@ export function ReportAnalyticsCharts({
                 <Users className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{influencers.length}</p>
+                <p className="text-2xl font-bold">{totalUniqueAuthors ?? influencers.length}</p>
                 <p className="text-xs text-muted-foreground">Autores únicos</p>
               </div>
             </CardContent>

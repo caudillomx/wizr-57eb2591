@@ -369,6 +369,7 @@ export function SmartReportGenerator({
               dateLabel={dateRange.label}
               estimatedImpressions={report.metrics.estimatedImpressions}
               estimatedReach={report.metrics.estimatedReach}
+              totalUniqueAuthors={report.totalUniqueAuthors}
             />
 
             {/* Key Findings & Recommendations */}

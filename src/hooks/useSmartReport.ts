@@ -59,6 +59,7 @@ export interface SmartReportContent {
   influencers: InfluencerInfo[];
   timeline: TimelinePoint[];
   sentimentAnalysis?: string;
+  totalUniqueAuthors: number;
 }
 
 export interface SmartReportConfig {
@@ -228,7 +229,9 @@ export function useSmartReport() {
     // Estimated Reach = ~65% of impressions (accounts for repeat viewers)
     const estimatedReach = Math.round(estimatedImpressions * 0.65);
 
-    return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach };
+    const totalUniqueAuthors = Object.keys(authorMap).length;
+
+    return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors };
   };
 
   const generateReport = async (
@@ -282,6 +285,7 @@ export function useSmartReport() {
         sourceBreakdown: analytics.sourceBreakdown,
         influencers: analytics.influencers,
         timeline: analytics.timeline,
+        totalUniqueAuthors: analytics.totalUniqueAuthors,
         metrics: {
           ...data.metrics,
           estimatedImpressions: analytics.estimatedImpressions,
