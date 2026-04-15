@@ -60,6 +60,7 @@ export interface SmartReportContent {
   summary: string;
   keyFindings: string[];
   recommendations: string[];
+  conclusions?: string[];
   metrics: SmartReportMetrics;
   templates: SmartReportTemplates;
   impactAssessment?: string;
