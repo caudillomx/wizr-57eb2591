@@ -406,47 +406,18 @@ export function SmartReportGenerator({
 
             <Separator />
 
-            {/* Output Channels */}
-            <div className="space-y-4">
-              <h4 className="font-medium">Canales de Salida</h4>
-              <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as typeof selectedTemplate)}>
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="executive">Ejecutivo</TabsTrigger>
-                  <TabsTrigger value="technical">Técnico</TabsTrigger>
-                  <TabsTrigger value="public">Público</TabsTrigger>
-                </TabsList>
-                <TabsContent value={selectedTemplate} className="mt-4">
-                  <div className="space-y-3">
-                    <Textarea
-                      value={currentTemplate}
-                      onChange={(e) => handleTemplateEdit(e.target.value)}
-                      className="min-h-[200px] font-sans"
-                      placeholder="Contenido del mensaje..."
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copiar
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleWhatsAppShare}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        WhatsApp
-                      </Button>
-                      <SmartReportPDFGenerator
-                        report={report}
-                        projectName={projectName}
-                        dateRange={dateRange}
-                        selectedTemplate={selectedTemplate}
-                        editedTemplate={currentTemplate}
-                      />
-                      <Button variant="outline" size="sm" disabled>
-                        <Globe className="mr-2 h-4 w-4" />
-                        Vista Web (próximamente)
-                      </Button>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
+            {/* Download */}
+            <div className="space-y-3">
+              <h4 className="font-medium">Descargar Reporte</h4>
+              <div className="flex flex-wrap gap-2">
+                <SmartReportPDFGenerator
+                  report={report}
+                  projectName={projectName}
+                  dateRange={dateRange}
+                  selectedTemplate="executive"
+                  editedTemplate={report.templates?.executive || ""}
+                />
+              </div>
             </div>
 
             {/* Metrics Summary */}
