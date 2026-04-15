@@ -280,7 +280,7 @@ serve(async (req) => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929",
+          model: "claude-3-5-haiku-20241022",
           max_tokens: EXTENSION_CONFIG[body.extension].maxTokens,
           temperature: 0.4,
           messages: [{ role: "user", content: buildPrompt(body) }],
