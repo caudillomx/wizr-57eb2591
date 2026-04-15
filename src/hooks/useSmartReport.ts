@@ -48,12 +48,11 @@ export interface TimelinePoint {
 }
 
 export interface NarrativeInfo {
-  keyword: string;
-  count: number;
-  positive: number;
-  negative: number;
-  neutral: number;
-  trend: "up" | "down" | "stable";
+  narrative: string;
+  description: string;
+  mentions: number;
+  sentiment: "positivo" | "negativo" | "mixto";
+  trend: "creciente" | "decreciente" | "estable";
 }
 
 export interface SmartReportContent {
