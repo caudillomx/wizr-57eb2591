@@ -96,6 +96,55 @@ export function ReportAnalyticsCharts({
 
   return (
     <div className="space-y-6">
+      {/* Estimated Impressions & Reach */}
+      {(estimatedImpressions > 0 || estimatedReach > 0) && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border-primary/20">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Eye className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{formatBigNumber(estimatedImpressions)}</p>
+                <p className="text-xs text-muted-foreground">Impresiones est.</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-primary/20">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Radio className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{formatBigNumber(estimatedReach)}</p>
+                <p className="text-xs text-muted-foreground">Alcance est.</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{total}</p>
+                <p className="text-xs text-muted-foreground">Menciones</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{influencers.length}</p>
+                <p className="text-xs text-muted-foreground">Autores únicos</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {/* Impact Assessment */}
       {impactAssessment && (
         <Card className="border-destructive/30 bg-destructive/5">
