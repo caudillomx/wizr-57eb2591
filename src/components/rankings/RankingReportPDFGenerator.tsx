@@ -82,7 +82,8 @@ export function RankingReportPDFGenerator({
       const barWidth = (Math.abs(item.value) / maxValue) * barAreaWidth;
       const barX = xPos + labelWidth + 5;
 
-      doc.setFillColor(...(item.value >= 0 ? PDF_COLORS.positive : PDF_COLORS.negative));
+      const barColor = item.value >= 0 ? PDF_COLORS.positive : PDF_COLORS.negative;
+      doc.setFillColor(barColor[0], barColor[1], barColor[2]);
       doc.roundedRect(barX, barY, Math.max(barWidth, 2), barHeight - 1, 1, 1, "F");
 
       doc.setFontSize(7);
