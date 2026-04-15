@@ -153,10 +153,10 @@ export function SmartReportPDFGenerator({
         }),
       ]);
 
-      const { data, error } = result as Awaited<ReturnType<typeof supabase.functions.invoke>>;
-      if (error) throw error;
+      const invokeResult = result as { data: { html?: string } | null; error: { message?: string } | null };
+      if (invokeResult.error) throw new Error(invokeResult.error.message || "Error al invocar generate-claude-report");
 
-      const html = typeof data?.html === "string" ? data.html.trim() : "";
+      const html = typeof invokeResult.data?.html === "string" ? invokeResult.data.html.trim() : "";
       if (!html) throw new Error("Claude no devolvió HTML válido");
 
       iframe = document.createElement("iframe");
