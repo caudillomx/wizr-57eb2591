@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { SmartReportContent, InfluencerInfo, SourceBreakdown } from "@/hooks/useSmartReport";
+import type { SmartReportContent, InfluencerInfo, SourceBreakdown, NarrativeInfo } from "@/hooks/useSmartReport";
 import logoUrl from "@/assets/wizr-logo-full-transparent.png";
 
 interface Props {

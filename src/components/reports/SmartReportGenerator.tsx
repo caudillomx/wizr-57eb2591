@@ -343,6 +343,46 @@ export function SmartReportGenerator({
               totalUniqueAuthors={report.totalUniqueAuthors}
             />
 
+            {/* Narratives Analysis */}
+            {report.narratives && report.narratives.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Principales Narrativas
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-2 font-medium">Narrativa / Keyword</th>
+                        <th className="text-center py-2 px-1 font-medium">Menciones</th>
+                        <th className="text-center py-2 px-1 font-medium text-green-600">Pos</th>
+                        <th className="text-center py-2 px-1 font-medium text-red-600">Neg</th>
+                        <th className="text-center py-2 px-1 font-medium text-muted-foreground">Neu</th>
+                        <th className="text-center py-2 px-1 font-medium">Tendencia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.narratives.map((n, i) => (
+                        <tr key={i} className="border-b last:border-0">
+                          <td className="py-1.5 px-2 font-medium capitalize">{n.keyword}</td>
+                          <td className="py-1.5 px-1 text-center">
+                            <Badge variant="secondary" className="text-xs">{n.count}</Badge>
+                          </td>
+                          <td className="py-1.5 px-1 text-center text-green-600">{n.positive}</td>
+                          <td className="py-1.5 px-1 text-center text-red-600">{n.negative}</td>
+                          <td className="py-1.5 px-1 text-center text-muted-foreground">{n.neutral}</td>
+                          <td className="py-1.5 px-1 text-center">
+                            {n.trend === "up" ? "📈" : n.trend === "down" ? "📉" : "➡️"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Key Findings & Recommendations */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
