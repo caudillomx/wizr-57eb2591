@@ -345,7 +345,7 @@ Responde en formato JSON con esta estructura exacta:
     }
   ],
   "keyFindings": ["string - hallazgo específico citando fuentes, autores y datos", ...],
-  "recommendations": ["string - acción específica y priorizada", ...],
+  "recommendations": ["string - recomendación DETALLADA de 2-3 oraciones: qué hacer exactamente, en qué plataforma/canal, con qué mensaje o enfoque, y en qué plazo (ej: 'En las próximas 24 horas, publicar un comunicado en X/Twitter respondiendo directamente a las publicaciones de @usuario que acumulan 15K interacciones, usando los datos del informe anual como respaldo. Monitorear la respuesta durante 48 hrs.')", ...],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
