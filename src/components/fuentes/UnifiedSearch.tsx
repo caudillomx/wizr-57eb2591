@@ -400,9 +400,26 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
           }
         }
 
+        // Post-validate: filter out results that don't actually contain any keyword
+        const entityKeywords = [
+          entity.nombre,
+          ...(entity.aliases || []),
+          ...(entity.palabras_clave || []),
+        ].filter(Boolean).filter(k => k.length >= 2);
+
+        const relevantResults = results.filter(r => {
+          const text = [r.title, r.description, r.url].filter(Boolean).join(" ").toLowerCase();
+          return entityKeywords.some(kw => text.includes(kw.toLowerCase()));
+        });
+
+        const filtered = results.length - relevantResults.length;
+        if (filtered > 0) {
+          console.log(`Filtered ${filtered}/${results.length} irrelevant results for ${entity.nombre}`);
+        }
+
         // Save results to mentions table with semantic deduplication
-        if (results.length > 0) {
-          const mentionsToCheck = results.map(r => ({
+        if (relevantResults.length > 0) {
+          const mentionsToCheck = relevantResults.map(r => ({
             project_id: projectId,
             url: r.url,
             title: r.title || null,
