@@ -28,7 +28,9 @@ export function SmartReportPDFGenerator({
     try {
       const element = previewRef.current;
 
-      // Capture the full rendered HTML as a canvas at 2x resolution
+      // Wait for fonts & images to settle
+      await new Promise(r => setTimeout(r, 500));
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -37,7 +39,6 @@ export function SmartReportPDFGenerator({
         logging: false,
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const imgW = canvas.width;
       const imgH = canvas.height;
 
@@ -49,20 +50,51 @@ export function SmartReportPDFGenerator({
 
       const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-      // If content fits in one page
       if (scaledH <= pdfH) {
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
         doc.addImage(imgData, "JPEG", 0, 0, pdfW, scaledH);
       } else {
-        // Multi-page: slice the canvas into page-sized chunks
-        const pageHeightPx = pdfH / ratio; // height in canvas pixels per page
+        // Section-aware page breaking: find section boundaries
+        const sections = element.querySelectorAll("[data-pdf-section]");
+        const sectionBounds: { top: number; bottom: number }[] = [];
+
+        if (sections.length > 0) {
+          const parentRect = element.getBoundingClientRect();
+          sections.forEach(sec => {
+            const r = sec.getBoundingClientRect();
+            // Convert to canvas-pixel coordinates (scale 2x)
+            sectionBounds.push({
+              top: (r.top - parentRect.top) * 2,
+              bottom: (r.bottom - parentRect.top) * 2,
+            });
+          });
+        }
+
+        const pageHeightPx = pdfH / ratio;
         let currentPos = 0;
         let pageNum = 0;
 
         while (currentPos < imgH) {
           if (pageNum > 0) doc.addPage();
 
-          // Create a slice canvas for this page
-          const sliceH = Math.min(pageHeightPx, imgH - currentPos);
+          let sliceEnd = currentPos + pageHeightPx;
+
+          // If sections exist, try not to cut through them
+          if (sectionBounds.length > 0 && sliceEnd < imgH) {
+            // Find last section that starts before sliceEnd but ends after it (= would be cut)
+            const cuttingSection = sectionBounds.find(
+              s => s.top < sliceEnd && s.bottom > sliceEnd && s.top > currentPos
+            );
+            if (cuttingSection) {
+              // Move cut point to just before that section starts (with 4px margin)
+              const adjusted = cuttingSection.top - 4;
+              if (adjusted > currentPos + pageHeightPx * 0.3) {
+                sliceEnd = adjusted;
+              }
+            }
+          }
+
+          const sliceH = Math.min(sliceEnd - currentPos, imgH - currentPos);
           const pageCanvas = document.createElement("canvas");
           pageCanvas.width = imgW;
           pageCanvas.height = sliceH;
@@ -74,7 +106,7 @@ export function SmartReportPDFGenerator({
             doc.addImage(pageImg, "JPEG", 0, 0, pdfW, pageScaledH);
           }
 
-          currentPos += pageHeightPx;
+          currentPos += sliceH;
           pageNum++;
         }
       }
