@@ -48,6 +48,7 @@ interface ReportContent {
   summary: string;
   keyFindings: string[];
   recommendations: string[];
+  conclusions?: string[];
   impactAssessment?: string;
   sentimentAnalysis?: string;
   narratives?: NarrativeItem[];
