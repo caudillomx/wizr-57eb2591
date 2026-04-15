@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Sparkles,
   FileText,
@@ -17,6 +18,7 @@ import {
   CheckCircle2,
   Filter,
   Target,
+  Wand2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, ReportType, ReportExtension, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
