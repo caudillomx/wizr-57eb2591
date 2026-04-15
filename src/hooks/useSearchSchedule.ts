@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export type ScheduleFrequency = "hourly" | "twice_daily" | "daily" | "weekly";
+export type ScheduleFrequency = "hourly" | "every_3_hours" | "twice_daily" | "daily" | "weekly";
 
 export interface SearchSchedule {
   id: string;

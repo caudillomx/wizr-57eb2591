@@ -421,6 +421,9 @@ function calculateNextRun(frequency: string, fromTime: Date): Date {
     case "hourly":
       next.setHours(next.getHours() + 1);
       break;
+    case "every_3_hours":
+      next.setHours(next.getHours() + 3);
+      break;
     case "twice_daily":
       next.setHours(next.getHours() + 12);
       break;
