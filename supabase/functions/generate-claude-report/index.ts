@@ -300,7 +300,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: `Anthropic API error: ${response.status}` }), {
+      return new Response(JSON.stringify({ error: `Anthropic API error: ${response.status}`, details: errorText.slice(0, 500) }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
