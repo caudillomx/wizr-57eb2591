@@ -294,7 +294,7 @@ serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-latest",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 12000,
         messages: [{ role: "user", content: prompt }],
       }),
