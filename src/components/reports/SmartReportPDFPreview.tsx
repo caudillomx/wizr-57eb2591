@@ -441,7 +441,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         <div style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
           {/* — Resumen Ejecutivo — */}
-          <div style={SECTION_STYLE}>
+          <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Resumen Ejecutivo" />
             <SectionBody>
               <FormattedText text={report.summary} />
@@ -449,7 +449,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Visualización de Datos — */}
-          <div style={SECTION_STYLE}>
+          <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Visualización de Datos" />
             <SectionBody>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -510,7 +510,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Hallazgos Clave — */}
-          <div style={SECTION_STYLE}>
+          <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Hallazgos Clave" />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -530,7 +530,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Influenciadores — */}
           {report.influencers.length > 0 && (
-            <div style={SECTION_STYLE}>
+            <div data-pdf-section style={SECTION_STYLE}>
               <SectionHeader title="Influenciadores de la Conversación" />
               <SectionBody>
                 <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
@@ -560,7 +560,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
 
           {/* — Principales Narrativas — */}
           {report.narratives && report.narratives.length > 0 && (
-            <div style={SECTION_STYLE}>
+            <div data-pdf-section style={SECTION_STYLE}>
               <SectionHeader title="Principales Narrativas" />
               <SectionBody>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -591,7 +591,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           )}
 
           {/* — Recomendaciones Estratégicas — */}
-          <div style={SECTION_STYLE}>
+          <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Recomendaciones Estratégicas" />
             <SectionBody>
               <div style={{ display: "flex", flexDirection: "column" }}>
@@ -634,7 +634,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           </div>
 
           {/* — Conclusiones — */}
-          <div style={SECTION_STYLE}>
+          <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Conclusiones" dark />
             <SectionBody bg="#f8fafc">
               <p style={{ fontSize: "12.5px", lineHeight: 1.75, marginBottom: "10px" }}>{conclusionIntro}</p>
