@@ -293,6 +293,14 @@ PRINCIPIOS:
 5. INFLUENCIADORES: Identifica quién genera la conversación, con qué alcance y tono.
 6. MEDIOS: Detalla qué medios/plataformas cubren el tema y con qué ángulo.
 
+ALCANCE DE LAS RECOMENDACIONES:
+Las recomendaciones DEBEN limitarse al ámbito DIGITAL y de COMUNICACIÓN ONLINE:
+- Monitoreo de medios y redes sociales (qué vigilar, dónde, con qué frecuencia)
+- Gestión de reputación digital (respuestas en redes, SEO, contenido reactivo)
+- Comunicación digital (mensajes clave para redes, alertas de keywords, community management)
+- Análisis de conversación digital (narrativas a rastrear, influenciadores a seguir)
+NO incluyas recomendaciones operativas, legales, de negocio, capacitación interna, ni estrategia corporativa fuera del ecosistema digital.
+
 FORMATO:
 - Español profesional
 - NO uses markdown, asteriscos, ni símbolos especiales (excepto emojis en versión WhatsApp)
