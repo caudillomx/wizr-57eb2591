@@ -23,6 +23,14 @@ interface ReportAnalyticsChartsProps {
   impactAssessment?: string;
   sentimentAnalysis?: string;
   dateLabel: string;
+  estimatedImpressions?: number;
+  estimatedReach?: number;
+}
+
+function formatBigNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
 }
 
 const SENTIMENT_COLORS = {
@@ -55,6 +63,8 @@ export function ReportAnalyticsCharts({
   impactAssessment,
   sentimentAnalysis,
   dateLabel,
+  estimatedImpressions = 0,
+  estimatedReach = 0,
 }: ReportAnalyticsChartsProps) {
   const sentimentChartData = useMemo(() => {
     const items = [
