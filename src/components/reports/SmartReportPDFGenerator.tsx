@@ -130,7 +130,7 @@ export function SmartReportPDFGenerator({
         { label: "Impresiones Est.", val: formatBig(report.metrics.estimatedImpressions || 0), sub: "Visualizaciones totales", bg: [219, 234, 254], fg: [30, 64, 175] },
         { label: "Alcance Est.", val: formatBig(report.metrics.estimatedReach || 0), sub: "Personas unicas", bg: [237, 233, 254], fg: [91, 33, 182] },
         { label: "Menciones", val: report.metrics.totalMentions.toString(), sub: "Total detectadas", bg: V, fg: W },
-        { label: "Autores", val: (report.influencers?.length || 0).toString(), sub: "Voces unicas", bg: [254, 243, 199], fg: [146, 64, 14] },
+        { label: "Autores", val: (report.totalUniqueAuthors || report.influencers?.length || 0).toString(), sub: "Voces unicas", bg: [254, 243, 199], fg: [146, 64, 14] },
       ];
 
       row1Data.forEach((md, i) => {
