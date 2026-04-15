@@ -35,6 +35,14 @@ interface ReportRequest {
   };
 }
 
+interface NarrativeItem {
+  narrative: string;
+  description: string;
+  mentions: number;
+  sentiment: "positivo" | "negativo" | "mixto";
+  trend: "creciente" | "decreciente" | "estable";
+}
+
 interface ReportContent {
   title: string;
   summary: string;
@@ -42,6 +50,7 @@ interface ReportContent {
   recommendations: string[];
   impactAssessment?: string;
   sentimentAnalysis?: string;
+  narratives?: NarrativeItem[];
   metrics: {
     totalMentions: number;
     positiveCount: number;
