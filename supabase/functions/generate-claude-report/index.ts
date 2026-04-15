@@ -290,11 +290,11 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2025-04-14",
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-latest",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 12000,
         messages: [{ role: "user", content: prompt }],
       }),
