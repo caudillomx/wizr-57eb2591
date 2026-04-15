@@ -2,8 +2,6 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -14,9 +12,6 @@ import {
   BarChart3,
   GitCompare,
   Loader2,
-  Copy,
-  MessageCircle,
-  Globe,
   CheckCircle2,
   Filter,
   Target,
@@ -100,8 +95,6 @@ export function SmartReportGenerator({
   
   const [reportType, setReportType] = useState<ReportType>("brief");
   const [extension, setExtension] = useState<ReportExtension>("short");
-  const [selectedTemplate, setSelectedTemplate] = useState<"executive" | "technical" | "public">("executive");
-  const [editedTemplates, setEditedTemplates] = useState<SmartReportContent["templates"] | null>(null);
   const [strategicFocus, setStrategicFocus] = useState("");
   
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
@@ -155,35 +148,8 @@ export function SmartReportGenerator({
       },
     };
 
-    const result = await generateReport(filteredMentions, config);
-    if (result) {
-      setEditedTemplates(result.templates);
-    }
+    await generateReport(filteredMentions, config);
   };
-
-  const handleCopyToClipboard = () => {
-    const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
-    if (template) {
-      navigator.clipboard.writeText(template);
-      toast({ title: "Copiado", description: "Texto copiado al portapapeles" });
-    }
-  };
-
-  const handleWhatsAppShare = () => {
-    const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
-    if (template) {
-      const encodedText = encodeURIComponent(template);
-      window.open(`https://wa.me/?text=${encodedText}`, "_blank");
-    }
-  };
-
-  const handleTemplateEdit = (value: string) => {
-    if (editedTemplates) {
-      setEditedTemplates({ ...editedTemplates, [selectedTemplate]: value });
-    }
-  };
-
-  const currentTemplate = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate] || "";
 
   return (
     <Card>
