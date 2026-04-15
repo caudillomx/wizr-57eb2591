@@ -425,6 +425,7 @@ export function SmartReportGenerator({
                   dateRange={dateRange}
                   selectedTemplate="executive"
                   editedTemplate={report.templates?.executive || ""}
+                  reportType={reportType}
                 />
               </div>
             </div>

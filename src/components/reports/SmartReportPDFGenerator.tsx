@@ -13,10 +13,11 @@ interface SmartReportPDFGeneratorProps {
   dateRange: { start: string; end: string; label: string };
   selectedTemplate: "executive" | "technical" | "public";
   editedTemplate: string;
+  reportType?: "brief" | "crisis" | "thematic" | "comparative";
 }
 
 export function SmartReportPDFGenerator({
-  report, projectName, dateRange, selectedTemplate, editedTemplate,
+  report, projectName, dateRange, selectedTemplate, editedTemplate, reportType,
 }: SmartReportPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -97,6 +98,7 @@ export function SmartReportPDFGenerator({
           projectName={projectName}
           dateRange={dateRange}
           editedTemplate={editedTemplate}
+          reportType={reportType}
         />
       </div>
 
