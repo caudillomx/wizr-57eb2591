@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { SmartReportContent, InfluencerInfo, SourceBreakdown } from "@/hooks/useSmartReport";
+import type { SmartReportContent, InfluencerInfo, SourceBreakdown, NarrativeInfo } from "@/hooks/useSmartReport";
 import logoUrl from "@/assets/wizr-logo-full-transparent.png";
 
 interface Props {
@@ -280,6 +280,38 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </Section>
+          )}
+
+          {/* Narrativas Principales */}
+          {report.narratives && report.narratives.length > 0 && (
+            <Section title="Principales Narrativas">
+              <table className="w-full text-[11px] border-collapse">
+                <thead>
+                  <tr className="bg-[#0f172a] text-white">
+                    <th className="py-1.5 px-2 text-left font-bold">Narrativa</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Total</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Pos</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Neg</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Neu</th>
+                    <th className="py-1.5 px-2 text-center font-bold">Tendencia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.narratives.map((n: NarrativeInfo, i: number) => (
+                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"}>
+                      <td className="py-1 px-2 font-semibold capitalize">{n.keyword}</td>
+                      <td className="py-1 px-2 text-center">{n.count}</td>
+                      <td className="py-1 px-2 text-center text-[#22c55e]">{n.positive}</td>
+                      <td className="py-1 px-2 text-center text-[#ef4444]">{n.negative}</td>
+                      <td className="py-1 px-2 text-center text-[#94a3b8]">{n.neutral}</td>
+                      <td className="py-1 px-2 text-center">
+                        {n.trend === "up" ? "↑" : n.trend === "down" ? "↓" : "→"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </Section>
