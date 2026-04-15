@@ -367,6 +367,8 @@ export function SmartReportGenerator({
               impactAssessment={report.impactAssessment}
               sentimentAnalysis={report.sentimentAnalysis}
               dateLabel={dateRange.label}
+              estimatedImpressions={report.metrics.estimatedImpressions}
+              estimatedReach={report.metrics.estimatedReach}
             />
 
             {/* Key Findings & Recommendations */}
