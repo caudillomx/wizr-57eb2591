@@ -2,11 +2,10 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sparkles,
   FileText,
@@ -14,9 +13,6 @@ import {
   BarChart3,
   GitCompare,
   Loader2,
-  Copy,
-  MessageCircle,
-  Globe,
   CheckCircle2,
   Filter,
   Target,
@@ -100,8 +96,6 @@ export function SmartReportGenerator({
   
   const [reportType, setReportType] = useState<ReportType>("brief");
   const [extension, setExtension] = useState<ReportExtension>("short");
-  const [selectedTemplate, setSelectedTemplate] = useState<"executive" | "technical" | "public">("executive");
-  const [editedTemplates, setEditedTemplates] = useState<SmartReportContent["templates"] | null>(null);
   const [strategicFocus, setStrategicFocus] = useState("");
   
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
@@ -155,35 +149,8 @@ export function SmartReportGenerator({
       },
     };
 
-    const result = await generateReport(filteredMentions, config);
-    if (result) {
-      setEditedTemplates(result.templates);
-    }
+    await generateReport(filteredMentions, config);
   };
-
-  const handleCopyToClipboard = () => {
-    const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
-    if (template) {
-      navigator.clipboard.writeText(template);
-      toast({ title: "Copiado", description: "Texto copiado al portapapeles" });
-    }
-  };
-
-  const handleWhatsAppShare = () => {
-    const template = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate];
-    if (template) {
-      const encodedText = encodeURIComponent(template);
-      window.open(`https://wa.me/?text=${encodedText}`, "_blank");
-    }
-  };
-
-  const handleTemplateEdit = (value: string) => {
-    if (editedTemplates) {
-      setEditedTemplates({ ...editedTemplates, [selectedTemplate]: value });
-    }
-  };
-
-  const currentTemplate = editedTemplates?.[selectedTemplate] || report?.templates[selectedTemplate] || "";
 
   return (
     <Card>
@@ -406,47 +373,18 @@ export function SmartReportGenerator({
 
             <Separator />
 
-            {/* Output Channels */}
-            <div className="space-y-4">
-              <h4 className="font-medium">Canales de Salida</h4>
-              <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as typeof selectedTemplate)}>
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="executive">Ejecutivo</TabsTrigger>
-                  <TabsTrigger value="technical">Técnico</TabsTrigger>
-                  <TabsTrigger value="public">Público</TabsTrigger>
-                </TabsList>
-                <TabsContent value={selectedTemplate} className="mt-4">
-                  <div className="space-y-3">
-                    <Textarea
-                      value={currentTemplate}
-                      onChange={(e) => handleTemplateEdit(e.target.value)}
-                      className="min-h-[200px] font-sans"
-                      placeholder="Contenido del mensaje..."
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={handleCopyToClipboard}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copiar
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleWhatsAppShare}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        WhatsApp
-                      </Button>
-                      <SmartReportPDFGenerator
-                        report={report}
-                        projectName={projectName}
-                        dateRange={dateRange}
-                        selectedTemplate={selectedTemplate}
-                        editedTemplate={currentTemplate}
-                      />
-                      <Button variant="outline" size="sm" disabled>
-                        <Globe className="mr-2 h-4 w-4" />
-                        Vista Web (próximamente)
-                      </Button>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
+            {/* Download */}
+            <div className="space-y-3">
+              <h4 className="font-medium">Descargar Reporte</h4>
+              <div className="flex flex-wrap gap-2">
+                <SmartReportPDFGenerator
+                  report={report}
+                  projectName={projectName}
+                  dateRange={dateRange}
+                  selectedTemplate="executive"
+                  editedTemplate={report.templates?.executive || ""}
+                />
+              </div>
             </div>
 
             {/* Metrics Summary */}
