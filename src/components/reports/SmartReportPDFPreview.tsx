@@ -315,7 +315,9 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                 </tbody>
               </table>
             </Section>
-          )
+          )}
+
+          {/* Recomendaciones */}
           <Section title="Recomendaciones Estratégicas">
             <div className="space-y-2">
               {report.recommendations.map((rec, i) => (
