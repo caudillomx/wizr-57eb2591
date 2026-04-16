@@ -362,9 +362,18 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // Header context: project + report type + date range
-  const headerContext = `${escapeHtml(projectName)} · ${escapeHtml(badge.label)} · ${escapeHtml(dateRange.label)}`;
-  const headerSubtitle = escapeHtml(report.title);
+  // Header context for running print header
+  const headerContext = `${projectName} · ${badge.label} · ${dateRange.label}`;
+  const headerSubtitle = report.title;
+  const runningHeader = `<div class="running-header" aria-hidden="true">
+    <div class="running-header-inner">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="running-header-logo" />
+      <div class="running-header-copy">
+        <div class="running-header-context">${escapeHtml(headerContext)}</div>
+        <div class="running-header-title">${escapeHtml(headerSubtitle)}</div>
+      </div>
+    </div>
+  </div>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
