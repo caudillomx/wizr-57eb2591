@@ -244,7 +244,7 @@ export function useThematicCards(projectId: string | undefined) {
     }) => {
       const { data, error } = await supabase
         .from("thematic_cards")
-        .update(updates as Record<string, unknown>)
+        .update(updates as never)
         .eq("id", id)
         .select()
         .single();

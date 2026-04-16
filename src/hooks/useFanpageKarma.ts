@@ -420,8 +420,8 @@ export function useSyncFKProfile() {
       }
 
       // Update last_synced_at and display_name if found
-      const updateData: Record<string, unknown> = { 
-        last_synced_at: new Date().toISOString() 
+      const updateData: { last_synced_at: string; display_name?: string; avatar_url?: string } = {
+        last_synced_at: new Date().toISOString(),
       };
       if (displayName && displayName !== profile.profile_id) {
         updateData.display_name = displayName;
@@ -590,8 +590,8 @@ export function useSyncAllProfiles() {
             avatarUrl = metadata.avatar;
           }
 
-          const updateData: Record<string, unknown> = { 
-            last_synced_at: new Date().toISOString() 
+          const updateData: { last_synced_at: string; display_name?: string; avatar_url?: string } = {
+            last_synced_at: new Date().toISOString(),
           };
           if (displayName && displayName !== profile.profile_id) {
             updateData.display_name = displayName;
