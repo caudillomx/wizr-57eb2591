@@ -395,30 +395,30 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin: 82px 0 44px 0;
+  margin: 92px 0 44px 0;
 
   @top-left{
     content: "";
     background-color: ${C.primary};
     background-image: url("${LOGO_WHITE_B64}");
     background-repeat: no-repeat;
-    background-position: 22px center;
-    background-size: auto 46px;
+    background-position: 24px center;
+    background-size: auto 60px;
     width: 100%;
     margin: 0;
     padding: 0;
   }
   @top-right{
-    content: "${headerContext.replace(/"/g, '\\"')}\\A ${headerSubtitle.replace(/"/g, '\\"')}";
-    white-space: pre;
+    content: "${headerContext.replace(/"/g, '\\"')} — ${headerSubtitle.replace(/"/g, '\\"')}";
     color: #ffffff;
     font-family: 'Inter', sans-serif;
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 600;
     text-align: right;
-    line-height: 1.5;
-    padding: 18px 26px 0 0;
+    line-height: 1.4;
+    padding: 0 28px 0 0;
     margin: 0;
+    vertical-align: middle;
   }
   @bottom-left{
     content: "Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
