@@ -16,7 +16,6 @@ interface SmartReportPDFGeneratorProps {
   dateRange: { start: string; end: string; label: string };
   selectedTemplate: "executive" | "technical" | "public";
   editedTemplate: string;
-  reportType?: "brief" | "crisis" | "thematic" | "comparative";
   useClaudeHTML?: boolean;
   rawMentions?: Mention[];
   projectAudience?: string;
@@ -24,12 +23,11 @@ interface SmartReportPDFGeneratorProps {
   strategicContext?: string;
   strategicFocus?: string;
   entityNames?: string[];
-  extension?: "micro" | "short" | "medium";
 }
 
 export function SmartReportPDFGenerator({
-  report, projectName, dateRange, selectedTemplate, editedTemplate, reportType,
-  useClaudeHTML, rawMentions, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, extension = "short",
+  report, projectName, dateRange, selectedTemplate, editedTemplate,
+  useClaudeHTML, rawMentions, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames,
 }: SmartReportPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -43,11 +41,7 @@ export function SmartReportPDFGenerator({
       await new Promise(r => setTimeout(r, 500));
 
       const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
+        scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false,
       });
 
       const imgW = canvas.width;
@@ -70,10 +64,7 @@ export function SmartReportPDFGenerator({
           const parentRect = element.getBoundingClientRect();
           sections.forEach(sec => {
             const r = sec.getBoundingClientRect();
-            sectionBounds.push({
-              top: (r.top - parentRect.top) * 2,
-              bottom: (r.bottom - parentRect.top) * 2,
-            });
+            sectionBounds.push({ top: (r.top - parentRect.top) * 2, bottom: (r.bottom - parentRect.top) * 2 });
           });
         }
 
@@ -91,9 +82,7 @@ export function SmartReportPDFGenerator({
             );
             if (cuttingSection) {
               const adjusted = cuttingSection.top - 4;
-              if (adjusted > currentPos + pageHeightPx * 0.3) {
-                sliceEnd = adjusted;
-              }
+              if (adjusted > currentPos + pageHeightPx * 0.3) sliceEnd = adjusted;
             }
           }
 
@@ -118,11 +107,7 @@ export function SmartReportPDFGenerator({
       doc.save(fileName);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast({
-        title: "Error al generar PDF",
-        description: "No se pudo generar el reporte. Intenta nuevamente.",
-        variant: "destructive",
-      });
+      toast({ title: "Error al generar PDF", description: "No se pudo generar el reporte. Intenta nuevamente.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -145,19 +130,15 @@ export function SmartReportPDFGenerator({
               metrics: report.metrics,
               sourceBreakdown: report.sourceBreakdown.slice(0, 4),
               influencers: report.influencers.slice(0, 4).map((item) => ({
-                name: item.name,
-                username: item.username,
-                platform: item.platform,
-                mentions: item.mentions,
-                sentiment: item.sentiment,
-                reach: item.reach,
+                name: item.name, username: item.username, platform: item.platform,
+                mentions: item.mentions, sentiment: item.sentiment, reach: item.reach,
               })),
               timeline: report.timeline.slice(0, 5),
               narratives: report.narratives.slice(0, 3),
               totalUniqueAuthors: report.totalUniqueAuthors,
             },
-            reportType: reportType || "brief",
-            extension,
+            reportType: "unified",
+            extension: "medium",
             projectName,
             dateRange,
             projectAudience: projectAudience || "",
@@ -185,23 +166,13 @@ export function SmartReportPDFGenerator({
       iframe.contentDocument?.write(html);
       iframe.contentDocument?.close();
 
-      // Wait for initial layout
       await new Promise(r => setTimeout(r, 300));
-
-      // Set explicit height from actual document content
       const scrollHeight = iframe.contentDocument?.body?.scrollHeight || 2000;
       iframe.style.height = scrollHeight + "px";
-
-      // Wait for fonts and full render
       await new Promise(r => setTimeout(r, 1600));
 
       const canvas = await html2canvas(iframe.contentDocument!.body, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: 794,
+        scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false, width: 794,
       });
 
       const pdfW = 210;
@@ -238,7 +209,7 @@ export function SmartReportPDFGenerator({
       console.error("Claude PDF error:", error);
       toast({
         title: "Error al generar PDF",
-        description: error instanceof Error ? error.message : "No se pudo generar el reporte con Claude. Intenta nuevamente.",
+        description: error instanceof Error ? error.message : "No se pudo generar el reporte con Claude.",
         variant: "destructive"
       });
     } finally {
@@ -260,7 +231,6 @@ export function SmartReportPDFGenerator({
             projectName={projectName}
             dateRange={dateRange}
             editedTemplate={editedTemplate}
-            reportType={reportType}
           />
         </div>
       )}

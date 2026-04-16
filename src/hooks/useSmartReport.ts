@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Mention } from "./useMentions";
 
-export type ReportType = "brief" | "crisis" | "thematic" | "comparative";
-export type ReportExtension = "micro" | "short" | "medium";
+export type ReportFormat = "summary" | "full";
 
 export interface SmartReportMetrics {
   totalMentions: number;
@@ -70,11 +69,11 @@ export interface SmartReportContent {
   narratives: NarrativeInfo[];
   sentimentAnalysis?: string;
   totalUniqueAuthors: number;
+  entityComparison?: string;
 }
 
 export interface SmartReportConfig {
-  reportType: ReportType;
-  extension: ReportExtension;
+  reportFormat: ReportFormat;
   projectName: string;
   projectAudience: string;
   projectObjective: string;
@@ -88,15 +87,17 @@ export interface SmartReportConfig {
   };
 }
 
+// Keep old types as aliases for backward compatibility
+export type ReportType = "brief" | "crisis" | "thematic" | "comparative";
+export type ReportExtension = "micro" | "short" | "medium";
+
 export function useSmartReport() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<SmartReportContent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Compute enriched analytics from mentions
   const computeAnalytics = (mentions: Mention[]) => {
-    // Source breakdown — normalize domains first
     const normalizeDomain = (d: string): string => {
       const map: Record<string, string> = {
         "twitter": "twitter.com", "x.com": "twitter.com",
@@ -123,13 +124,10 @@ export function useSmartReport() {
       .map(([source, data]) => ({ source, ...data }))
       .sort((a, b) => b.count - a.count);
 
-    // Influencers from raw_metadata + text/URL inference
     const inferAuthorFromText = (title?: string | null, description?: string | null, url?: string): string | null => {
-      // Try to extract @username from title or description
       const text = `${title || ""} ${description || ""}`;
       const mentionMatch = text.match(/@([A-Za-z0-9_]{2,})/);
       if (mentionMatch) return mentionMatch[1];
-      // Try to extract from social URL patterns
       if (url) {
         const twitterMatch = url.match(/(?:twitter\.com|x\.com)\/([A-Za-z0-9_]+)/i);
         if (twitterMatch && !["search", "hashtag", "i", "intent"].includes(twitterMatch[1].toLowerCase())) return twitterMatch[1];
@@ -148,14 +146,13 @@ export function useSmartReport() {
       let username = (meta?.authorUsername || meta?.author_username || "") as string;
       const avatarUrl = (meta?.authorAvatarUrl || meta?.author_avatar_url || meta?.profileImageUrl || null) as string | null;
 
-      // Fallback: infer from text/URL when metadata is empty
       if (!authorName) {
         const inferred = inferAuthorFromText(m.title, m.description, m.url);
         if (inferred) {
           authorName = inferred;
           username = inferred;
         } else {
-          return; // truly no author info
+          return;
         }
       }
 
@@ -177,17 +174,12 @@ export function useSmartReport() {
         const posRatio = a.sentiments.filter(s => s === "positivo").length / (a.sentiments.length || 1);
         const sentiment = negRatio > 0.5 ? "negativo" : posRatio > 0.5 ? "positivo" : "mixto";
         return {
-          name: a.name,
-          username: a.username,
-          avatarUrl: a.avatarUrl,
-          platform: a.platform,
-          mentions: a.mentions,
-          sentiment,
+          name: a.name, username: a.username, avatarUrl: a.avatarUrl, platform: a.platform,
+          mentions: a.mentions, sentiment,
           reach: a.engagement > 0 ? `${a.engagement.toLocaleString()} interacciones` : "N/D",
         };
       });
 
-    // Timeline by day
     const dayMap: Record<string, { count: number; negative: number; positive: number }> = {};
     mentions.forEach(m => {
       const date = (m.published_at || m.created_at || "").split("T")[0];
@@ -201,16 +193,9 @@ export function useSmartReport() {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, data]) => ({ date, ...data }));
 
-    // ── Estimated Impressions & Reach ──
-    // Industry-standard multipliers: engagement × platform factor
     const PLATFORM_MULTIPLIERS: Record<string, number> = {
-      "twitter.com": 25,
-      "facebook.com": 30,
-      "instagram.com": 20,
-      "linkedin.com": 15,
-      "tiktok.com": 12,
-      "youtube.com": 8,
-      "reddit.com": 18,
+      "twitter.com": 25, "facebook.com": 30, "instagram.com": 20,
+      "linkedin.com": 15, "tiktok.com": 12, "youtube.com": 8, "reddit.com": 18,
     };
 
     let estimatedImpressions = 0;
@@ -223,22 +208,12 @@ export function useSmartReport() {
       const engagement = likes + comments + shares;
       const platform = normalizeDomain(m.source_domain || "unknown");
 
-      if (views > 0) {
-        // Use actual views as impressions
-        estimatedImpressions += views;
-      } else if (engagement > 0) {
-        // Estimate: engagement × platform-specific multiplier
-        const multiplier = PLATFORM_MULTIPLIERS[platform] || 20;
-        estimatedImpressions += engagement * multiplier;
-      } else {
-        // Minimal footprint: at least 1 impression per mention
-        estimatedImpressions += 50;
-      }
+      if (views > 0) estimatedImpressions += views;
+      else if (engagement > 0) estimatedImpressions += engagement * (PLATFORM_MULTIPLIERS[platform] || 20);
+      else estimatedImpressions += 50;
     });
 
-    // Estimated Reach = ~65% of impressions (accounts for repeat viewers)
     const estimatedReach = Math.round(estimatedImpressions * 0.65);
-
     const totalUniqueAuthors = Object.keys(authorMap).length;
 
     return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors };
@@ -266,30 +241,18 @@ export function useSmartReport() {
       const { data, error: fnError } = await supabase.functions.invoke("generate-smart-report", {
         body: {
           mentions: mentions.map(m => ({
-            id: m.id,
-            title: m.title,
-            description: m.description,
-            url: m.url,
-            source_domain: m.source_domain,
-            sentiment: m.sentiment,
-            created_at: m.created_at,
-            published_at: m.published_at,
-            matched_keywords: m.matched_keywords,
-            raw_metadata: m.raw_metadata,
+            id: m.id, title: m.title, description: m.description, url: m.url,
+            source_domain: m.source_domain, sentiment: m.sentiment,
+            created_at: m.created_at, published_at: m.published_at,
+            matched_keywords: m.matched_keywords, raw_metadata: m.raw_metadata,
           })),
           ...config,
         },
       });
 
-      if (fnError) {
-        throw fnError;
-      }
+      if (fnError) throw fnError;
+      if (data.error) throw new Error(data.error);
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Merge server AI analysis with client-side computed analytics
       const enrichedReport: SmartReportContent = {
         ...data,
         sourceBreakdown: analytics.sourceBreakdown,
@@ -305,20 +268,12 @@ export function useSmartReport() {
       };
 
       setReport(enrichedReport);
-      toast({
-        title: "Reporte generado",
-        description: `"${enrichedReport.title}" está listo`,
-      });
-
+      toast({ title: "Reporte generado", description: `"${enrichedReport.title}" está listo` });
       return enrichedReport;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError(message);
-      toast({
-        title: "Error al generar reporte",
-        description: message,
-        variant: "destructive",
-      });
+      toast({ title: "Error al generar reporte", description: message, variant: "destructive" });
       return null;
     } finally {
       setIsGenerating(false);
@@ -330,11 +285,5 @@ export function useSmartReport() {
     setError(null);
   };
 
-  return {
-    generateReport,
-    clearReport,
-    isGenerating,
-    report,
-    error,
-  };
+  return { generateReport, clearReport, isGenerating, report, error };
 }
