@@ -283,7 +283,7 @@ interface Props {
 // eslint-disable-next-line react/display-name
 export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
   ({ report, projectName, dateRange, reportType = "brief" }, ref) => {
-    const logoBase64 = useLogoBase64();
+    const logoBase64 = LOGO_WHITE_B64;
     const total = report.metrics.totalMentions || 1;
     const posPct = Math.round((report.metrics.positiveCount / total) * 100);
     const neuPct = Math.round((report.metrics.neutralCount / total) * 100);
