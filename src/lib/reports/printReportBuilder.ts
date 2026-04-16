@@ -362,10 +362,23 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // ── FOOTER (compact, white logo on dark bg) ──
-  const footer = `<div class="report-footer" style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
-    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:18px;width:auto;display:block;" />
-    <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
+  // ── RUNNING HEADER (fixed on every page via @page margin box) ──
+  const runningHeader = `<div class="running-header">
+    <div class="running-header-inner">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="running-header-logo" />
+      <div class="running-header-meta">
+        <div class="running-header-project">${escapeHtml(projectName)}</div>
+        <div class="running-header-date">${escapeHtml(dateRange.label)}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── RUNNING FOOTER (fixed on every page, includes "Página X de Y") ──
+  const runningFooter = `<div class="running-footer">
+    <div class="running-footer-inner">
+      <span class="running-footer-text">Generado con Wizr · ${generatedDate}</span>
+      <span class="running-footer-pages">Página <span class="page-num"></span> de <span class="page-total"></span></span>
+    </div>
   </div>`;
 
   return `<!DOCTYPE html>
@@ -390,55 +403,103 @@ body{
   color-adjust:exact !important;
 }
 strong{font-weight:700;color:${C.primary};}
-.report-shell{
-  background:${C.white};
-}
-.report-content{
-  padding:0 20px 18px;
-}
-.report-content > .pdf-section-block{
-  margin-bottom:14px;
-}
-.report-content > .pdf-section-block:last-child{
-  margin-bottom:0;
-}
+.report-shell{ background:${C.white}; }
+.report-content{ padding:0 20px 18px; }
+.report-content > .pdf-section-block{ margin-bottom:14px; }
+.report-content > .pdf-section-block:last-child{ margin-bottom:0; }
+
+/* Running header/footer — hidden on screen, shown as fixed bands in print */
+.running-header,.running-footer{ display:none; }
+
 @page{
   margin:0;
   size:A4;
 }
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .report-shell{padding-bottom:70px;}
-  .report-content{padding-bottom:24px;}
-  .report-content > .pdf-section-block{margin-bottom:14px;padding-bottom:8px;}
-  .report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
-  .pdf-section-block{page-break-inside:auto;break-inside:auto;}
-  .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
-  .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
-  .section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
-  .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
-  .section-body > *:last-child{margin-bottom:14px;}
-  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
-  table{page-break-inside:auto;}
-  thead{display:table-header-group;}
-  tr{page-break-inside:avoid;page-break-after:auto;break-inside:avoid;}
-  p{orphans:2;widows:2;}
-  h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
-  .report-footer{position:fixed;left:0;right:0;bottom:0;height:36px;padding:9px 24px !important;page-break-inside:avoid;break-inside:avoid;page-break-before:avoid;break-before:avoid;}
+
+  /* Reserve space top & bottom on EVERY page for the fixed header/footer */
+  .report-shell{ padding-top:72px; padding-bottom:48px; }
+  .report-content{ padding-bottom:18px; }
+  .report-content > .pdf-section-block{ margin-bottom:14px; padding-bottom:8px; }
+  .report-section{ page-break-inside:auto; break-inside:auto; margin-bottom:6px; }
+  .pdf-section-block{ page-break-inside:auto; break-inside:auto; }
+  .section-header-wrap{ page-break-inside:avoid; break-inside:avoid; page-break-after:avoid; break-after:avoid; }
+  .section-header{ page-break-after:avoid; break-after:avoid; page-break-inside:avoid; break-inside:avoid; }
+  .section-body{ page-break-inside:auto; break-inside:auto; padding-bottom:6px; }
+  .section-body > *:first-child{ page-break-before:avoid; break-before:avoid; }
+  .section-body > *:last-child{ margin-bottom:14px; }
+  .avoid-break{ page-break-inside:avoid; break-inside:avoid; }
+  table{ page-break-inside:auto; }
+  thead{ display:table-header-group; }
+  tr{ page-break-inside:avoid; page-break-after:auto; break-inside:avoid; }
+  p{ orphans:2; widows:2; }
+  h1,h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
+
+  /* Fixed running header — appears at the top of every page */
+  .running-header{
+    display:block;
+    position:fixed;
+    top:0; left:0; right:0;
+    height:62px;
+    background:${C.primary};
+    z-index:1000;
+  }
+  .running-header-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:100%;
+    padding:0 24px;
+  }
+  .running-header-logo{ height:42px; width:auto; display:block; }
+  .running-header-meta{ text-align:right; }
+  .running-header-project{ color:#fff; font-size:11px; font-weight:600; line-height:1.2; }
+  .running-header-date{ color:${C.accentLight}; font-size:9px; margin-top:3px; letter-spacing:0.3px; }
+
+  /* Fixed running footer — appears at the bottom of every page with "Página X de Y" */
+  .running-footer{
+    display:block;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    height:36px;
+    background:${C.primary};
+    z-index:1000;
+  }
+  .running-footer-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:100%;
+    padding:0 24px;
+  }
+  .running-footer-text{ color:${C.accentLight}; font-size:8.5px; letter-spacing:0.5px; }
+  .running-footer-pages{ color:#fff; font-size:9px; font-weight:600; letter-spacing:0.5px; }
+
+  /* PDFShift / paged-media: live page counters */
+  .page-num::before{ content: counter(page); }
+  .page-total::before{ content: counter(pages); }
+
+  /* Hide the in-flow page-intro header — running-header takes its place */
+  .page-intro-header{ display:none; }
 }
 @media screen{
-  body{padding-bottom:30px;background:${C.borderLight};}
-  .report-shell{box-shadow:0 8px 24px rgba(15,23,42,0.08);}
+  body{ padding-bottom:30px; background:${C.borderLight}; }
+  .report-shell{ box-shadow:0 8px 24px rgba(15,23,42,0.08); }
 }
 </style>
 </head>
 <body>
+  ${runningHeader}
+  ${runningFooter}
   <div class="report-shell">
-    <div class="page-intro">${header}${metricsRow}${sentBar}</div>
+    <div class="page-intro">
+      <div class="page-intro-header">${header}</div>
+      ${metricsRow}${sentBar}
+    </div>
     <div class="report-content">
       ${blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="block-${blockIndex + 1}">${block}</div>`).join("\n")}
     </div>
-    ${footer}
   </div>
 </body>
 </html>`;
