@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileText, BookOpen, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SmartReportContent } from "@/hooks/useSmartReport";
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFPreview } from "./SmartReportPDFPreview";
+
+export type PDFFormat = "summary" | "full";
 
 interface SmartReportPDFGeneratorProps {
   report: SmartReportContent;
@@ -23,15 +25,38 @@ interface SmartReportPDFGeneratorProps {
   strategicContext?: string;
   strategicFocus?: string;
   entityNames?: string[];
+  pdfFormat?: PDFFormat;
+}
+
+/**
+ * Trims a full report to summary-level content for the Resumen PDF.
+ */
+function trimReportForSummary(report: SmartReportContent): SmartReportContent {
+  return {
+    ...report,
+    keyFindings: report.keyFindings.slice(0, 3),
+    recommendations: report.recommendations.slice(0, 2),
+    conclusions: report.conclusions?.slice(0, 2),
+    narratives: report.narratives.slice(0, 3),
+    influencers: report.influencers.slice(0, 5),
+    sourceBreakdown: report.sourceBreakdown.slice(0, 5),
+    timeline: report.timeline,
+    // Remove detailed sections for summary
+    entityComparison: undefined,
+  };
 }
 
 export function SmartReportPDFGenerator({
   report, projectName, dateRange, selectedTemplate, editedTemplate,
   useClaudeHTML, rawMentions, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames,
+  pdfFormat = "full",
 }: SmartReportPDFGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const isSummary = pdfFormat === "summary";
+  const reportForPDF = isSummary ? trimReportForSummary(report) : report;
 
   const generatePDFDefault = async () => {
     if (!previewRef.current) return;
@@ -103,7 +128,8 @@ export function SmartReportPDFGenerator({
         }
       }
 
-      const fileName = `reporte_inteligente_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
+      const prefix = isSummary ? "resumen" : "reporte_completo";
+      const fileName = `${prefix}_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
       doc.save(fileName);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -118,27 +144,29 @@ export function SmartReportPDFGenerator({
     let iframe: HTMLIFrameElement | null = null;
 
     try {
+      const trimmedReport = isSummary ? trimReportForSummary(report) : report;
+      
       const result = await Promise.race([
         supabase.functions.invoke("generate-claude-report", {
           body: {
             precomputedReport: {
-              title: report.title,
-              summary: report.summary,
-              keyFindings: report.keyFindings.slice(0, 4),
-              recommendations: report.recommendations.slice(0, 4),
-              conclusions: report.conclusions?.slice(0, 3),
-              metrics: report.metrics,
-              sourceBreakdown: report.sourceBreakdown.slice(0, 4),
-              influencers: report.influencers.slice(0, 4).map((item) => ({
+              title: trimmedReport.title,
+              summary: trimmedReport.summary,
+              keyFindings: trimmedReport.keyFindings.slice(0, isSummary ? 3 : 6),
+              recommendations: trimmedReport.recommendations.slice(0, isSummary ? 2 : 5),
+              conclusions: trimmedReport.conclusions?.slice(0, isSummary ? 2 : 4),
+              metrics: trimmedReport.metrics,
+              sourceBreakdown: trimmedReport.sourceBreakdown.slice(0, isSummary ? 3 : 6),
+              influencers: trimmedReport.influencers.slice(0, isSummary ? 3 : 6).map((item) => ({
                 name: item.name, username: item.username, platform: item.platform,
                 mentions: item.mentions, sentiment: item.sentiment, reach: item.reach,
               })),
-              timeline: report.timeline.slice(0, 5),
-              narratives: report.narratives.slice(0, 3),
-              totalUniqueAuthors: report.totalUniqueAuthors,
+              timeline: trimmedReport.timeline.slice(0, isSummary ? 5 : 10),
+              narratives: trimmedReport.narratives.slice(0, isSummary ? 2 : 5),
+              totalUniqueAuthors: trimmedReport.totalUniqueAuthors,
             },
             reportType: "unified",
-            extension: "medium",
+            extension: isSummary ? "short" : "medium",
             projectName,
             dateRange,
             projectAudience: projectAudience || "",
@@ -202,7 +230,8 @@ export function SmartReportPDFGenerator({
         pageNum++;
       }
 
-      const fileName = `reporte_claude_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
+      const prefix = isSummary ? "resumen_claude" : "reporte_claude";
+      const fileName = `${prefix}_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
       doc.save(fileName);
       toast({ title: "PDF generado", description: fileName });
     } catch (error) {
@@ -219,7 +248,9 @@ export function SmartReportPDFGenerator({
   };
 
   const handleGenerate = useClaudeHTML ? generatePDFWithClaude : generatePDFDefault;
-  const loadingText = useClaudeHTML ? "Diseñando reporte con Claude..." : "Generando PDF...";
+  const loadingText = useClaudeHTML ? "Diseñando con Claude..." : "Generando PDF...";
+  const Icon = isSummary ? FileText : BookOpen;
+  const label = isSummary ? "Descargar Resumen" : "Descargar Completo";
 
   return (
     <>
@@ -227,7 +258,7 @@ export function SmartReportPDFGenerator({
         <div className="fixed left-[-9999px] top-0" aria-hidden="true">
           <SmartReportPDFPreview
             ref={previewRef}
-            report={report}
+            report={reportForPDF}
             projectName={projectName}
             dateRange={dateRange}
             editedTemplate={editedTemplate}
@@ -235,9 +266,9 @@ export function SmartReportPDFGenerator({
         </div>
       )}
 
-      <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating}>
-        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-        {isGenerating ? loadingText : "PDF"}
+      <Button variant="outline" size="sm" onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2">
+        {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+        {isGenerating ? loadingText : label}
       </Button>
     </>
   );
