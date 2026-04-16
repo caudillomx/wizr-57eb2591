@@ -240,13 +240,9 @@ serve(async (req) => {
       author: (m.raw_metadata?.author || m.raw_metadata?.author_name || m.raw_metadata?.authorUsername || null) as string | null,
     }));
 
-    const maxTokens = FORMAT_TOKENS[reportFormat] || FORMAT_TOKENS.full;
-    const isSummary = reportFormat === "summary";
-
-    // Determine if entity comparison should be included
+    // Always generate full report
     const hasDistinctEntities = entityNames && entityNames.length >= 2 && areEntitiesDistinct(entityNames);
 
-    // Build strategic context block
     let strategicBlock = "";
     if (strategicContext || strategicFocus) {
       strategicBlock = "\n=== CONTEXTO ESTRATÉGICO ===\n";
@@ -255,14 +251,7 @@ serve(async (req) => {
       strategicBlock += `\nIMPORTANTE: Usa este contexto para INTERPRETAR el sentimiento. Lo negativo hacia un actor externo puede ser positivo para el cliente. Evalúa cada hallazgo según cómo impacta a la marca/entidad principal en este contexto.\n`;
     }
 
-    const formatInstructions = isSummary
-      ? `FORMATO: Reporte RESUMEN (1-2 páginas A4). Sé conciso pero específico. Prioriza los datos más relevantes.
-- summary: 3-4 oraciones
-- keyFindings: máximo 4
-- recommendations: máximo 3 (1-2 oraciones cada una)
-- narratives: máximo 3
-- conclusions: máximo 2`
-      : `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
+    const formatInstructions = `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
 - summary: 5-8 oraciones
 - keyFindings: 5-8
 - recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
