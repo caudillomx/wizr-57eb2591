@@ -377,9 +377,9 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           {/* Logo left */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
             {logoBase64 ? (
-              <img src={logoBase64} alt="Wizr" style={{ height: "28px", objectFit: "contain" }} />
+              <img src={logoBase64} alt="Wizr" style={{ height: "44px", objectFit: "contain" }} />
             ) : (
-              <span style={{ fontSize: "13px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
+              <span style={{ fontSize: "16px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
             )}
           </div>
 
@@ -681,7 +681,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         <div style={{ backgroundColor: HEADER_BG, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             {logoBase64 ? (
-              <img src={logoBase64} alt="Wizr" style={{ height: "16px", objectFit: "contain" }} />
+              <img src={logoBase64} alt="Wizr" style={{ height: "22px", objectFit: "contain" }} />
             ) : (
               <>
                 <div style={{ width: "20px", height: "20px", backgroundColor: ACCENT, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center" }}>
