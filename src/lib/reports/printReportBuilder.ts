@@ -62,9 +62,14 @@ function detectBadge(report: SmartReportContent, isSummary: boolean): { label: s
 }
 
 function section(title: string, body: string, headerBg = C.accent): string {
-  return `<div class="report-section" style="margin-bottom:14px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div class="section-header" style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
-    <div style="padding:14px 16px;background:${C.white};">${body}</div>
+  // Header + body wrapped so the section title never gets orphaned at the bottom of a page.
+  // The outer .report-section keeps a small top margin; the .section-header-wrap pins the
+  // title to the first piece of content via break-inside:avoid.
+  return `<div class="report-section" style="margin-bottom:14px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);background:${C.white};">
+    <div class="section-header-wrap" style="break-inside:avoid;page-break-inside:avoid;">
+      <div class="section-header" style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
+    </div>
+    <div class="section-body" style="padding:14px 16px;background:${C.white};">${body}</div>
   </div>`;
 }
 
