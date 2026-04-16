@@ -336,7 +336,7 @@ SOBRE "narratives": Identifica NARRATIVAS TEMÁTICAS (ideas/argumentos recurrent
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: maxTokens + 1000,
+        max_tokens: MAX_TOKENS + 1000,
         temperature: 0.5,
       }),
     });
