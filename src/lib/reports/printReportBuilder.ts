@@ -318,7 +318,7 @@ export function buildReportHTML(
   if (recs.length > 0) {
     recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
-      recsHtml += `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+      recsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
         <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
         <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
       </div>`;
