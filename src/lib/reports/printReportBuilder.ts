@@ -185,7 +185,7 @@ export function buildReportHTML(
   // ── HEADER (compact, white logo on dark bg) ──
   const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="color:${C.white};font-size:28px;font-weight:800;letter-spacing:1px;line-height:1;">WIZR</div>
+      <img src="${LOGO_COLOR_B64}" alt="Wizr" style="height:34px;width:auto;display:block;filter:brightness(0) invert(1);" />
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
@@ -341,8 +341,8 @@ export function buildReportHTML(
   }
 
   // ── FOOTER (compact, white logo on dark bg) ──
-  const footer = `<div style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
-    <span style="color:${C.white};font-size:14px;font-weight:800;letter-spacing:0.8px;line-height:1;">WIZR</span>
+  const footer = `<div class="report-footer" style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
+    <img src="${LOGO_COLOR_B64}" alt="Wizr" style="height:18px;width:auto;display:block;filter:brightness(0) invert(1);" />
     <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
   </div>`;
 
@@ -374,12 +374,17 @@ strong{font-weight:700;color:${C.primary};}
 }
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .report-section{page-break-inside:auto;}
-  .section-header{page-break-after:avoid;}
+  .report-section{page-break-inside:auto;break-inside:auto;}
+  .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
+  .section-header + div > .avoid-break:first-child,
+  .section-header + div > div:first-child{page-break-before:avoid;break-before:avoid;}
   .avoid-break{page-break-inside:avoid;break-inside:avoid;}
   table{page-break-inside:auto;}
-  tr{page-break-inside:avoid;page-break-after:auto;}
-  p{orphans:3;widows:3;page-break-inside:avoid;break-inside:avoid;}
+  thead{display:table-header-group;}
+  tr{page-break-inside:avoid;page-break-after:auto;break-inside:avoid;}
+  p{orphans:3;widows:3;}
+  h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
+  .report-footer{page-break-inside:avoid;break-inside:avoid;page-break-before:avoid;break-before:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
