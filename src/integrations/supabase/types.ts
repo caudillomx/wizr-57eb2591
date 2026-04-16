@@ -744,6 +744,57 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_reports: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string
+          date_range: Json
+          expires_at: string | null
+          id: string
+          is_revoked: boolean
+          last_viewed_at: string | null
+          project_id: string
+          project_name: string
+          public_token: string
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by: string
+          date_range: Json
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean
+          last_viewed_at?: string | null
+          project_id: string
+          project_name: string
+          public_token?: string
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string
+          date_range?: Json
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean
+          last_viewed_at?: string | null
+          project_id?: string
+          project_name?: string
+          public_token?: string
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       social_results: {
         Row: {
           author_avatar_url: string | null
@@ -999,6 +1050,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_report_view: { Args: { _token: string }; Returns: undefined }
     }
     Enums: {
       alert_status: "active" | "paused" | "triggered"
