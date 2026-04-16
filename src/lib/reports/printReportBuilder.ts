@@ -475,8 +475,6 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
-  ${runningHeader}
-  ${runningFooter}
   <div class="report-shell">
     <div class="page-intro">
       <div class="page-intro-header">${header}</div>
