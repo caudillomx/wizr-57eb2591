@@ -23,6 +23,8 @@ import { useSmartReport, SmartReportContent, SmartReportConfig } from "@/hooks/u
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
+import { PublishReportDialog } from "./PublishReportDialog";
+import { Globe } from "lucide-react";
 
 interface Entity {
   id: string;
@@ -31,6 +33,7 @@ interface Entity {
 
 interface SmartReportGeneratorProps {
   mentions: Mention[];
+  projectId?: string;
   projectName: string;
   projectAudience: string;
   projectObjective: string;
@@ -71,6 +74,7 @@ function getSourceType(domain: string | null | undefined): string {
 
 export function SmartReportGenerator({
   mentions,
+  projectId,
   projectName,
   projectAudience,
   projectObjective,
@@ -85,6 +89,7 @@ export function SmartReportGenerator({
   const [strategicFocus, setStrategicFocus] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const filteredMentions = useMemo(() => {
     return mentions.filter((m) => {
@@ -396,7 +401,36 @@ export function SmartReportGenerator({
                   />
                 </div>
               </div>
+
+              {/* Publicar como link público */}
+              {projectId && (
+                <div className="p-4 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex flex-wrap items-center gap-3 justify-between">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <Globe className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm">Compartir como link público</p>
+                      <p className="text-xs text-muted-foreground">
+                        Genera un link sin login para enviar este reporte a tu cliente por correo o WhatsApp.
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={() => setPublishOpen(true)} size="sm" className="gap-2">
+                    <Globe className="h-4 w-4" /> Publicar
+                  </Button>
+                </div>
+              )}
             </div>
+
+            {projectId && (
+              <PublishReportDialog
+                open={publishOpen}
+                onOpenChange={setPublishOpen}
+                projectId={projectId}
+                projectName={projectName}
+                report={report}
+                dateRange={dateRange}
+              />
+            )}
 
             {/* Metrics Summary */}
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">

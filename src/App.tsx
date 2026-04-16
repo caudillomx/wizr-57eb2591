@@ -14,6 +14,7 @@ import RestablecerContrasena from "./pages/RestablecerContrasena";
 import SolicitarAcceso from "./pages/SolicitarAcceso";
 import ProjectWizard from "./pages/ProjectWizard";
 import NotFound from "./pages/NotFound";
+import PublicReportPage from "./pages/PublicReportPage";
 
 
 // Dashboard pages
@@ -124,6 +125,9 @@ const AppRoutes = () => {
         <Route path="tendencias" element={<Navigate to="/dashboard/panorama" replace />} />
         <Route path="alertas" element={<Navigate to="/dashboard/panorama" replace />} />
       </Route>
+
+      {/* Public shared report (no auth) */}
+      <Route path="/r/:token" element={<PublicReportPage />} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
