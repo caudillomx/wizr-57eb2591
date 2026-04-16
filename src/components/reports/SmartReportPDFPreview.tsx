@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState, useEffect } from "react";
+import { forwardRef, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type {
@@ -9,7 +9,7 @@ import type {
   TimelinePoint,
   ReportType,
 } from "@/hooks/useSmartReport";
-import logoUrl from "@/assets/wizr-logo-full-transparent.png";
+import { LOGO_WHITE_B64 } from "@/lib/reports/logoBase64";
 
 /* ─── constants ─── */
 const HEADER_BG = "#1e1b4b";
@@ -62,21 +62,7 @@ const reportTypeBadge: Record<string, { bg: string; label: string }> = {
   comparative: { bg: "#0891b2", label: "COMPARATIVO" },
 };
 
-/* ─── logo loader ─── */
-function useLogoBase64() {
-  const [src, setSrc] = useState<string>("");
-  useEffect(() => {
-    fetch(logoUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => setSrc(reader.result as string);
-        reader.readAsDataURL(blob);
-      })
-      .catch(() => setSrc(""));
-  }, []);
-  return src;
-}
+/* ─── logo (embedded base64 for reliable rendering) ─── */
 
 /* ─── Inline markdown parser ─── */
 
@@ -297,7 +283,7 @@ interface Props {
 // eslint-disable-next-line react/display-name
 export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
   ({ report, projectName, dateRange, reportType = "brief" }, ref) => {
-    const logoBase64 = useLogoBase64();
+    const logoBase64 = LOGO_WHITE_B64;
     const total = report.metrics.totalMentions || 1;
     const posPct = Math.round((report.metrics.positiveCount / total) * 100);
     const neuPct = Math.round((report.metrics.neutralCount / total) * 100);
@@ -391,9 +377,9 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           {/* Logo left */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
             {logoBase64 ? (
-              <img src={logoBase64} alt="Wizr" style={{ height: "28px", objectFit: "contain" }} />
+              <img src={logoBase64} alt="Wizr" style={{ height: "44px", objectFit: "contain" }} />
             ) : (
-              <span style={{ fontSize: "13px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
+              <span style={{ fontSize: "16px", color: "#e2e8f0", letterSpacing: "0.08em", fontWeight: 700 }}>WIZR</span>
             )}
           </div>
 
@@ -695,7 +681,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
         <div style={{ backgroundColor: HEADER_BG, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             {logoBase64 ? (
-              <img src={logoBase64} alt="Wizr" style={{ height: "16px", objectFit: "contain" }} />
+              <img src={logoBase64} alt="Wizr" style={{ height: "22px", objectFit: "contain" }} />
             ) : (
               <>
                 <div style={{ width: "20px", height: "20px", backgroundColor: ACCENT, borderRadius: "5px", display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -183,9 +183,9 @@ export function buildReportHTML(
     : "";
 
   // ── HEADER (compact, white logo on dark bg) ──
-  const header = `<div style="background:${C.primary};padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
+  const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:40px;filter:brightness(10);">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:52px;filter:brightness(10);">
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
@@ -342,7 +342,7 @@ export function buildReportHTML(
 
   // ── FOOTER (compact, white logo on dark bg) ──
   const footer = `<div style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
-    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:16px;filter:brightness(10);">
+    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:22px;filter:brightness(10);">
     <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
   </div>`;
 
@@ -376,11 +376,13 @@ strong{font-weight:700;color:${C.primary};}
   body{width:100%;margin:0;padding:0;}
   .report-section{page-break-inside:auto;}
   .section-header{page-break-after:avoid;}
-  .avoid-break{page-break-inside:avoid;}
-  .finding-item{page-break-inside:avoid;}
-  .narrative-card{page-break-inside:avoid;}
+  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
+  .finding-item{page-break-inside:avoid;break-inside:avoid;}
+  .narrative-card{page-break-inside:avoid;break-inside:avoid;}
   table{page-break-inside:auto;}
   tr{page-break-inside:avoid;page-break-after:auto;}
+  p{orphans:3;widows:3;page-break-inside:avoid;break-inside:avoid;}
+  div[style*="border-left"]{page-break-inside:avoid;break-inside:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
