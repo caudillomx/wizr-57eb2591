@@ -376,11 +376,13 @@ strong{font-weight:700;color:${C.primary};}
   body{width:100%;margin:0;padding:0;}
   .report-section{page-break-inside:auto;}
   .section-header{page-break-after:avoid;}
-  .avoid-break{page-break-inside:avoid;}
-  .finding-item{page-break-inside:avoid;}
-  .narrative-card{page-break-inside:avoid;}
+  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
+  .finding-item{page-break-inside:avoid;break-inside:avoid;}
+  .narrative-card{page-break-inside:avoid;break-inside:avoid;}
   table{page-break-inside:auto;}
   tr{page-break-inside:avoid;page-break-after:auto;}
+  p{orphans:3;widows:3;page-break-inside:avoid;break-inside:avoid;}
+  div[style*="border-left"]{page-break-inside:avoid;break-inside:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
