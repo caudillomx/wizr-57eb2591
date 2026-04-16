@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Sparkles,
   FileText,
@@ -15,7 +14,6 @@ import {
   CheckCircle2,
   Filter,
   Target,
-  Wand2,
   BookOpen,
   BarChart3,
   Download,
@@ -85,8 +83,6 @@ export function SmartReportGenerator({
   const { generateReport, isGenerating, report, clearReport } = useSmartReport();
   
   const [strategicFocus, setStrategicFocus] = useState("");
-  const [useClaudeHTML, setUseClaudeHTML] = useState(false);
-  
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
 
@@ -367,21 +363,10 @@ export function SmartReportGenerator({
 
             {/* Download Section — Resumen vs Completo */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Descargar Reporte
-                </h4>
-                <div className="flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-primary" />
-                  <Label htmlFor="claude-toggle" className="text-sm cursor-pointer">Diseño IA (Claude)</Label>
-                  <Switch
-                    id="claude-toggle"
-                    checked={useClaudeHTML}
-                    onCheckedChange={setUseClaudeHTML}
-                  />
-                </div>
-              </div>
+              <h4 className="font-medium flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Exportar Reporte
+              </h4>
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-lg border bg-muted/20 space-y-2">
@@ -394,15 +379,6 @@ export function SmartReportGenerator({
                     report={report}
                     projectName={projectName}
                     dateRange={dateRange}
-                    selectedTemplate="executive"
-                    editedTemplate={report.templates?.executive || ""}
-                    useClaudeHTML={useClaudeHTML}
-                    rawMentions={filteredMentions}
-                    projectAudience={projectAudience}
-                    projectObjective={projectObjective}
-                    strategicContext={strategicContext}
-                    strategicFocus={strategicFocus}
-                    entityNames={filteredEntityNames}
                     pdfFormat="summary"
                   />
                 </div>
@@ -416,15 +392,6 @@ export function SmartReportGenerator({
                     report={report}
                     projectName={projectName}
                     dateRange={dateRange}
-                    selectedTemplate="executive"
-                    editedTemplate={report.templates?.executive || ""}
-                    useClaudeHTML={useClaudeHTML}
-                    rawMentions={filteredMentions}
-                    projectAudience={projectAudience}
-                    projectObjective={projectObjective}
-                    strategicContext={strategicContext}
-                    strategicFocus={strategicFocus}
-                    entityNames={filteredEntityNames}
                     pdfFormat="full"
                   />
                 </div>
