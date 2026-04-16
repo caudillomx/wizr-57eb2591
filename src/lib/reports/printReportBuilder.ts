@@ -1,12 +1,22 @@
 import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, NarrativeInfo } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { LOGO_COLOR_B64 } from "./logoBase64";
+import { LOGO_WHITE_B64 } from "./logoBase64";
 
 interface DateRange {
   start: string;
   end: string;
   label: string;
+}
+
+interface ReportBlock {
+  estimatedHeight: number;
+  html: string;
+}
+
+interface ReportPage {
+  blocks: ReportBlock[];
+  isFirst: boolean;
 }
 
 // ── palette ──
@@ -62,15 +72,62 @@ function detectBadge(report: SmartReportContent, isSummary: boolean): { label: s
 }
 
 function section(title: string, body: string, headerBg = C.accent): string {
-  // Header + body wrapped so the section title never gets orphaned at the bottom of a page.
-  // The outer .report-section keeps a small top margin; the .section-header-wrap pins the
-  // title to the first piece of content via break-inside:avoid.
-  return `<div class="report-section" style="margin-bottom:14px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);background:${C.white};">
+  return `<div class="report-section" style="border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);background:${C.white};">
     <div class="section-header-wrap" style="break-inside:avoid;page-break-inside:avoid;">
       <div class="section-header" style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
     </div>
     <div class="section-body" style="padding:14px 16px;background:${C.white};">${body}</div>
   </div>`;
+}
+
+const PAGE_HEIGHT_PX = 1123;
+const FOOTER_HEIGHT_PX = 50;
+const FIRST_PAGE_CHROME_PX = 256;
+const CONTINUATION_CHROME_PX = 86;
+const PAGE_VERTICAL_BUFFER_PX = 32;
+
+function estimateTextLines(text: string, charsPerLine = 96): number {
+  const plainText = text
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!plainText) return 1;
+  return Math.max(1, Math.ceil(plainText.length / charsPerLine));
+}
+
+function paginateBlocks(blocks: ReportBlock[]): ReportPage[] {
+  const pages: ReportPage[] = [];
+  let currentPage: ReportPage = { blocks: [], isFirst: true };
+
+  const getAvailableHeight = (isFirst: boolean) =>
+    PAGE_HEIGHT_PX
+    - FOOTER_HEIGHT_PX
+    - (isFirst ? FIRST_PAGE_CHROME_PX : CONTINUATION_CHROME_PX)
+    - PAGE_VERTICAL_BUFFER_PX;
+
+  let usedHeight = 0;
+
+  blocks.forEach((block) => {
+    const blockHeight = Math.max(80, block.estimatedHeight);
+    const availableHeight = getAvailableHeight(currentPage.isFirst);
+    const needsNewPage = currentPage.blocks.length > 0 && usedHeight + blockHeight > availableHeight;
+
+    if (needsNewPage) {
+      pages.push(currentPage);
+      currentPage = { blocks: [], isFirst: false };
+      usedHeight = 0;
+    }
+
+    currentPage.blocks.push(block);
+    usedHeight += blockHeight;
+  });
+
+  if (currentPage.blocks.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
 }
 
 // ── Highlight card for key insights ──
@@ -190,7 +247,7 @@ export function buildReportHTML(
   // ── HEADER (compact, white logo on dark bg) ──
   const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="${LOGO_COLOR_B64}" alt="Wizr" style="height:34px;width:auto;display:block;filter:brightness(0) invert(1);" />
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:34px;width:auto;display:block;" />
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
@@ -232,12 +289,15 @@ export function buildReportHTML(
   </div>`;
 
   // ── SECTIONS ──
-  const sections: string[] = [];
+  const blocks: ReportBlock[] = [];
 
   // 1. Executive Summary with highlighted text
-  sections.push(section("Resumen Ejecutivo",
-    `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`
-  ));
+  blocks.push({
+    estimatedHeight: 120 + estimateTextLines(report.summary, isSummary ? 110 : 100) * 18,
+    html: section("Resumen Ejecutivo",
+      `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`
+    ),
+  });
 
   // 2. Data Visualization (full only)
   if (!isSummary) {
@@ -249,11 +309,16 @@ export function buildReportHTML(
     ].filter(Boolean);
     if (charts.length > 0) {
       const grid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${charts.join("")}</div>`;
-      sections.push(section("Visualización de Datos", grid));
+      blocks.push({
+        estimatedHeight: 280,
+        html: section("Visualización de Datos", grid),
+      });
     }
   }
 
-  if (isSummary) sections.push(sectionSeparator);
+  if (isSummary) {
+    blocks.push({ estimatedHeight: 26, html: sectionSeparator });
+  }
 
   // 3. Key Findings — first one as highlight card, rest as numbered
   const findings = isSummary ? report.keyFindings.slice(0, 3) : report.keyFindings;
@@ -268,9 +333,14 @@ export function buildReportHTML(
       </div>`;
     });
   }
-  sections.push(section("Hallazgos Clave", findingsHtml));
+  blocks.push({
+    estimatedHeight: 100 + findings.reduce((acc, item) => acc + 38 + estimateTextLines(item, 92) * 14, 0),
+    html: section("Hallazgos Clave", findingsHtml),
+  });
 
-  if (isSummary) sections.push(sectionSeparator);
+  if (isSummary) {
+    blocks.push({ estimatedHeight: 26, html: sectionSeparator });
+  }
 
   // 4. Influencers table
   const infs = isSummary ? report.influencers.slice(0, 5) : report.influencers;
@@ -296,10 +366,15 @@ export function buildReportHTML(
       </tr>`;
     }).join("");
     const table = `<table style="width:100%;border-collapse:collapse;">${headerRow}${rows}</table>`;
-    sections.push(section("Influenciadores", table));
+    blocks.push({
+      estimatedHeight: 130 + infs.length * 34,
+      html: section("Influenciadores", table),
+    });
   }
 
-  if (isSummary) sections.push(sectionSeparator);
+  if (isSummary) {
+    blocks.push({ estimatedHeight: 26, html: sectionSeparator });
+  }
 
   // 5. Narratives (full only) — as highlight cards
   if (!isSummary && report.narratives.length > 0) {
@@ -314,7 +389,10 @@ export function buildReportHTML(
         <p style="font-size:10px;color:${C.textGray};line-height:1.55;margin:0;">${highlightText(n.description)}</p>
       </div>`;
     }).join("");
-    sections.push(section("Principales Narrativas", narrativesHtml));
+    blocks.push({
+      estimatedHeight: 110 + report.narratives.reduce((acc, narrative) => acc + 72 + estimateTextLines(`${narrative.narrative} ${narrative.description}`, 96) * 12, 0),
+      html: section("Principales Narrativas", narrativesHtml),
+    });
   }
 
   // 6. Recommendations — first as highlight card
@@ -329,9 +407,14 @@ export function buildReportHTML(
       </div>`;
     });
   }
-  sections.push(section("Recomendaciones", recsHtml));
+  blocks.push({
+    estimatedHeight: 100 + recs.reduce((acc, item) => acc + 42 + estimateTextLines(item, 94) * 14, 0),
+    html: section("Recomendaciones", recsHtml),
+  });
 
-  if (isSummary) sections.push(sectionSeparator);
+  if (isSummary) {
+    blocks.push({ estimatedHeight: 26, html: sectionSeparator });
+  }
 
   // 7. Conclusions
   if (report.conclusions && report.conclusions.length > 0) {
@@ -342,12 +425,25 @@ export function buildReportHTML(
         <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
       </div>`
     ).join("");
-    sections.push(section("Conclusiones", bodyWithBullets, C.primary));
+    blocks.push({
+      estimatedHeight: 96 + concs.reduce((acc, item) => acc + 34 + estimateTextLines(item, 96) * 14, 0),
+      html: section("Conclusiones", bodyWithBullets, C.primary),
+    });
   }
 
+  const pages = paginateBlocks(blocks);
+
+  const continuationHeader = `<div class="continuation-header">
+    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:20px;width:auto;display:block;" />
+    <div style="text-align:right;min-width:0;">
+      <div style="color:#fff;font-size:10px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px;">${escapeHtml(report.title)}</div>
+      <div style="color:${C.accentLight};font-size:8px;margin-top:2px;letter-spacing:0.5px;">${escapeHtml(dateRange.label)} · ${generatedDate}</div>
+    </div>
+  </div>`;
+
   // ── FOOTER (compact, white logo on dark bg) ──
-  const footer = `<div class="report-footer" style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
-    <img src="${LOGO_COLOR_B64}" alt="Wizr" style="height:18px;width:auto;display:block;filter:brightness(0) invert(1);" />
+  const footer = `<div class="report-footer" style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:18px;width:auto;display:block;" />
     <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
   </div>`;
 
@@ -373,13 +469,43 @@ body{
   color-adjust:exact !important;
 }
 strong{font-weight:700;color:${C.primary};}
+.pdf-page{
+  width:794px;
+  min-height:${PAGE_HEIGHT_PX}px;
+  display:flex;
+  flex-direction:column;
+  background:${C.white};
+  page-break-after:always;
+  break-after:page;
+  overflow:hidden;
+}
+.pdf-page:last-child{page-break-after:auto;break-after:auto;}
+.page-content{
+  flex:1;
+  padding:0 20px 14px;
+}
+.page-content > .pdf-section-block{
+  margin-bottom:14px;
+}
+.page-content > .pdf-section-block:last-child{
+  margin-bottom:0;
+}
+.continuation-header{
+  background:${C.primary};
+  padding:12px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
 @page{
   margin:0;
   size:A4;
 }
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .report-section{page-break-inside:auto;break-inside:auto;}
+  .report-section{page-break-inside:avoid;break-inside:avoid;}
+  .pdf-section-block{page-break-inside:avoid;break-inside:avoid;}
   .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
   .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
   .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
@@ -392,22 +518,23 @@ strong{font-weight:700;color:${C.primary};}
   .report-footer{page-break-inside:avoid;break-inside:avoid;page-break-before:avoid;break-before:avoid;}
 }
 @media screen{
-  body{padding-bottom:30px;}
+  body{padding-bottom:30px;background:${C.borderLight};}
+  .pdf-page{box-shadow:0 8px 24px rgba(15,23,42,0.08);margin-bottom:20px;}
 }
 </style>
 </head>
 <body>
-<div data-pdf-section="header">
-${header}
-${metricsRow}
-${sentBar}
-</div>
-<div style="padding:0 20px 14px;">
-${sections.map((s, i) => `<div data-pdf-section="section-${i}">${s}</div>`).join("\n")}
-</div>
-<div data-pdf-section="footer">
-${footer}
-</div>
+${pages.map((page, pageIndex) => `
+  <div class="pdf-page" data-pdf-section="page-${pageIndex + 1}">
+    ${page.isFirst
+      ? `<div class="page-intro">${header}${metricsRow}${sentBar}</div>`
+      : continuationHeader}
+    <div class="page-content">
+      ${page.blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="page-${pageIndex + 1}-block-${blockIndex + 1}">${block.html}</div>`).join("\n")}
+    </div>
+    ${footer}
+  </div>
+`).join("\n")}
 </body>
 </html>`;
 }
