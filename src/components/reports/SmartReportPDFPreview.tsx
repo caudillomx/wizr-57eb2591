@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState, useEffect } from "react";
+import { forwardRef, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type {
@@ -9,7 +9,7 @@ import type {
   TimelinePoint,
   ReportType,
 } from "@/hooks/useSmartReport";
-import logoUrl from "@/assets/wizr-logo-full-transparent.png";
+import { LOGO_WHITE_B64 } from "@/lib/reports/logoBase64";
 
 /* ─── constants ─── */
 const HEADER_BG = "#1e1b4b";
@@ -62,21 +62,7 @@ const reportTypeBadge: Record<string, { bg: string; label: string }> = {
   comparative: { bg: "#0891b2", label: "COMPARATIVO" },
 };
 
-/* ─── logo loader ─── */
-function useLogoBase64() {
-  const [src, setSrc] = useState<string>("");
-  useEffect(() => {
-    fetch(logoUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => setSrc(reader.result as string);
-        reader.readAsDataURL(blob);
-      })
-      .catch(() => setSrc(""));
-  }, []);
-  return src;
-}
+/* ─── logo (embedded base64 for reliable rendering) ─── */
 
 /* ─── Inline markdown parser ─── */
 
