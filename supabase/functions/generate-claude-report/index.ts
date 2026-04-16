@@ -85,45 +85,36 @@ function buildReportContext(body: ReportRequest): string {
   const report = body.precomputedReport;
   if (report) {
     const sourceLines = report.sourceBreakdown
-      .slice(0, EXTENSION_CONFIG[body.extension].maxSources)
-      .map((item) => `- ${item.source}: ${item.count} menciones, ${item.negative} negativas, ${item.positive} positivas, ${item.neutral} neutrales`)
-      .join("\n");
+      .slice(0, Math.min(EXTENSION_CONFIG[body.extension].maxSources, 4))
+      .map((item) => `${item.source}: ${item.count} menciones, neg ${item.negative}, pos ${item.positive}`)
+      .join(" | ");
 
     const influencerLines = report.influencers
-      .slice(0, EXTENSION_CONFIG[body.extension].maxAuthors)
-      .map((item, index) => `${index + 1}. ${item.name} [${item.platform}]: ${item.mentions} menciones, alcance ${item.reach}, tono ${item.sentiment}`)
-      .join("\n");
+      .slice(0, Math.min(EXTENSION_CONFIG[body.extension].maxAuthors, 4))
+      .map((item) => `${item.name} [${item.platform}] ${item.mentions} menciones, ${item.sentiment}`)
+      .join(" | ");
 
     const timelineLines = report.timeline
-      .slice(0, EXTENSION_CONFIG[body.extension].maxTimelinePoints)
-      .map((item) => `- ${item.date}: ${item.count} menciones (${item.negative} negativas, ${item.positive} positivas)`)
-      .join("\n");
+      .slice(0, Math.min(EXTENSION_CONFIG[body.extension].maxTimelinePoints, 5))
+      .map((item) => `${item.date}: ${item.count}`)
+      .join(" | ");
 
     const narrativeLines = report.narratives
-      .slice(0, 4)
-      .map((item, index) => `${index + 1}. ${item.narrative}: ${item.description} (${item.mentions} menciones, ${item.sentiment}, tendencia ${item.trend})`)
-      .join("\n");
+      .slice(0, 3)
+      .map((item) => `${item.narrative} (${item.mentions}, ${item.sentiment}, ${item.trend})`)
+      .join(" | ");
 
     return [
-      "RESUMEN CUANTITATIVO:",
-      `- Total de menciones: ${report.metrics.totalMentions}`,
-      `- Positivas: ${report.metrics.positiveCount}`,
-      `- Negativas: ${report.metrics.negativeCount}`,
-      `- Neutrales: ${report.metrics.neutralCount}`,
-      `- Fuentes principales: ${report.metrics.topSources.join(", ") || "N/D"}`,
-      `- Impresiones estimadas: ${report.metrics.estimatedImpressions.toLocaleString()}`,
-      `- Alcance estimado: ${report.metrics.estimatedReach.toLocaleString()}`,
-      `- Autores únicos: ${report.totalUniqueAuthors}`,
-      "",
-      sourceLines ? `FUENTES PRINCIPALES:\n${sourceLines}` : "",
-      influencerLines ? `INFLUENCIADORES CLAVE:\n${influencerLines}` : "",
-      timelineLines ? `TIMELINE:\n${timelineLines}` : "",
-      narrativeLines ? `NARRATIVAS:\n${narrativeLines}` : "",
-      report.summary ? `RESUMEN EJECUTIVO BASE:\n${report.summary}` : "",
-      report.keyFindings?.length ? `HALLAZGOS BASE:\n${report.keyFindings.slice(0, 6).map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
-      report.recommendations?.length ? `RECOMENDACIONES BASE:\n${report.recommendations.slice(0, 6).map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
-      report.conclusions?.length ? `CONCLUSIONES BASE:\n${report.conclusions.slice(0, 4).map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
-    ].filter(Boolean).join("\n\n");
+      `KPIS: total ${report.metrics.totalMentions}, positivas ${report.metrics.positiveCount}, negativas ${report.metrics.negativeCount}, neutrales ${report.metrics.neutralCount}, impresiones ${report.metrics.estimatedImpressions}, alcance ${report.metrics.estimatedReach}, autores ${report.totalUniqueAuthors}`,
+      sourceLines ? `FUENTES: ${sourceLines}` : "",
+      influencerLines ? `INFLUENCIADORES: ${influencerLines}` : "",
+      timelineLines ? `TIMELINE: ${timelineLines}` : "",
+      narrativeLines ? `NARRATIVAS: ${narrativeLines}` : "",
+      report.summary ? `RESUMEN BASE: ${report.summary.slice(0, 900)}` : "",
+      report.keyFindings?.length ? `HALLAZGOS BASE: ${report.keyFindings.slice(0, 4).map((item, index) => `${index + 1}) ${item.slice(0, 220)}`).join(" | ")}` : "",
+      report.recommendations?.length ? `RECOMENDACIONES BASE: ${report.recommendations.slice(0, 4).map((item, index) => `${index + 1}) ${item.slice(0, 220)}`).join(" | ")}` : "",
+      report.conclusions?.length ? `CONCLUSIONES BASE: ${report.conclusions.slice(0, 3).map((item, index) => `${index + 1}) ${item.slice(0, 220)}`).join(" | ")}` : "",
+    ].filter(Boolean).join("\n");
   }
 
   const mentions = body.mentions || [];
@@ -235,81 +226,41 @@ function buildPrompt(body: ReportRequest): string {
 
   const mentionsSample = precomputedReport
     ? precomputedReport.influencers
-        .slice(0, cfg.sampleCount)
-        .map((item) => `[${item.platform}] autor ${item.name} | ${item.sentiment} | ${item.mentions} menciones | ${item.reach}`)
-    : mentions.slice(0, cfg.sampleCount).map((m) => {
+        .slice(0, Math.min(cfg.sampleCount, 4))
+        .map((item) => `[${item.platform}] ${item.name} | ${item.sentiment} | ${item.mentions}`)
+    : mentions.slice(0, Math.min(cfg.sampleCount, 4)).map((m) => {
         const meta = m.raw_metadata;
         const author = (meta?.author || meta?.author_name || meta?.authorUsername || null) as string | null;
-        return `[${normalizeSource(m.source_domain)}] ${(m.published_at || m.created_at)?.split("T")[0] || "?"} | ${m.sentiment || "?"} | ${author || "anon"} | ${(m.title || m.description || "").slice(0, 120)}`;
+        return `[${normalizeSource(m.source_domain)}] ${(m.published_at || m.created_at)?.split("T")[0] || "?"} | ${m.sentiment || "?"} | ${author || "anon"}`;
       });
 
-  return `You are an expert information designer, data journalist, and strategic communications analyst specializing in digital monitoring reports for institutional clients in Mexico and Latin America.
+  return `Return ONLY a complete HTML document starting with <!DOCTYPE html> in Spanish (es-MX) for a 794px-wide report optimized for html2canvas.
 
-In ONE response, analyze the data and return a COMPLETE self-contained HTML report ready for html2canvas. Return ONLY HTML starting with <!DOCTYPE html>.
+PROJECT
+- ${projectName}
+- ${dateRange.label}
+- Tipo: ${reportType}
+- Extensión: ${extension}
+- Audiencia: ${projectAudience}
+- Objetivo: ${projectObjective}
+${strategicContext ? `- Contexto: ${strategicContext}` : ""}
+${strategicFocus ? `- Enfoque: ${strategicFocus}` : ""}
+${entityNames?.length ? `- Entidades: ${entityNames.join(", ")}` : ""}
 
-CONTEXT
-- Project: ${projectName}
-- Period: ${dateRange.label} (${dateRange.start} to ${dateRange.end})
-- Report type: ${reportType}
-- Extension: ${extension}
-- Audience: ${projectAudience}
-- Objective: ${projectObjective}
-${strategicContext ? `- Strategic context: ${strategicContext}` : ""}
-${strategicFocus ? `- Strategic focus: ${strategicFocus}` : ""}
-${entityNames?.length ? `- Monitored entities: ${entityNames.join(", ")}` : ""}
-
-ANALYSIS SUMMARY
+DATA
 ${contextSummary}
 
-REFERENCE SAMPLE (${mentionsSample.length}${precomputedReport ? " precomputed" : ` of ${mentions.length}`})
+REFERENCE
 ${mentionsSample.join("\n")}
 
-HTML RULES
-- Fixed width 794px body
-- One <style> block only
-- No JavaScript
-- No SVG or canvas charts
-- Use only HTML/CSS bars
-- Use Inter from Google Fonts
-- All text in Spanish (es-MX)
-- Keep the document efficient enough for html2canvas capture
-
-VISUAL SYSTEM
-- Crisis accent: #dc2626
-- Brief accent: #6366f1
-- Thematic accent: #7c3aed
-- Comparative accent: #0f766e
-- Text: #111827 / #374151 / metadata #6b7280
-- Surface: #f8fafc, border: #e2e8f0
-- Sentiment: positive #22c55e, negative #ef4444, neutral #94a3b8
-
-CRITICAL RENDERING RULES
-- Numbered circles MUST use inline-block + line-height centering, never flex centering
-- Chart labels must be exactly 140px wide
-- Timeline must show max 7 points
-- Every section and list item must use page-break-inside: avoid; break-inside: avoid;
-- Recommendations section should use page-break-before: always only if needed for readability
-
-MANDATORY ORDER
-1. Header
-2. Metrics row
-3. Sentiment bar
-4. Crisis banner only if reportType=crisis
-5. Executive summary
-6. Data visualization (2-column grid)
-7. Key findings
-8. Influencers table
-9. Main narratives
-10. Strategic recommendations
-11. Conclusions
-12. Footer
-
-QUALITY BAR
-- Findings must cite sources, authors or numbers
-- Recommendations must name platforms, timelines and actions
-- Conclusions must synthesize, not repeat findings
-- Keep layout dense, elegant and capture-safe for html2canvas
-- If a section is short, add one compact “Dato destacado” card
+RENDER RULES
+- Un solo bloque <style>
+- Sin JavaScript, sin SVG, sin canvas
+- Usar solo HTML/CSS
+- Mantener layout ligero y denso
+- Secciones obligatorias: header, metrics, summary, findings, influencers, narratives, recommendations, conclusions, footer
+- Círculos numerados con inline-block
+- Evitar page-break-inside
 
 Return the final HTML now.`;
 }
