@@ -136,7 +136,26 @@ export function SmartReportPDFGenerator({
       const result = await Promise.race([
         supabase.functions.invoke("generate-claude-report", {
           body: {
-            precomputedReport: report,
+            precomputedReport: {
+              title: report.title,
+              summary: report.summary,
+              keyFindings: report.keyFindings.slice(0, 4),
+              recommendations: report.recommendations.slice(0, 4),
+              conclusions: report.conclusions?.slice(0, 3),
+              metrics: report.metrics,
+              sourceBreakdown: report.sourceBreakdown.slice(0, 4),
+              influencers: report.influencers.slice(0, 4).map((item) => ({
+                name: item.name,
+                username: item.username,
+                platform: item.platform,
+                mentions: item.mentions,
+                sentiment: item.sentiment,
+                reach: item.reach,
+              })),
+              timeline: report.timeline.slice(0, 5),
+              narratives: report.narratives.slice(0, 3),
+              totalUniqueAuthors: report.totalUniqueAuthors,
+            },
             reportType: reportType || "brief",
             extension,
             projectName,
