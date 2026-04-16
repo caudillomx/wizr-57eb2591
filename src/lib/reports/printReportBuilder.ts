@@ -1,6 +1,7 @@
 import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, NarrativeInfo } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { LOGO_WHITE_B64, LOGO_COLOR_B64 } from "./logoBase64";
 
 interface DateRange {
   start: string;
@@ -23,12 +24,6 @@ const C = {
   border: "#e2e8f0",
   borderLight: "#f1f5f9",
 };
-
-// ── White logo for dark backgrounds ──
-const LOGO_WHITE_B64 = "data:image/png;base64,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";
-
-// ── Color logo for light backgrounds ──
-const LOGO_COLOR_B64 = "data:image/png;base64,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";
 
 function sentColor(s: string) {
   if (s === "positivo") return C.positive;
@@ -67,26 +62,24 @@ function detectBadge(report: SmartReportContent, isSummary: boolean): { label: s
 }
 
 function section(title: string, body: string, headerBg = C.accent): string {
-  return `<section style="margin-bottom:20px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div style="background:${headerBg};color:#fff;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:10px 18px;">${escapeHtml(title)}</div>
-    <div style="padding:18px 20px;background:${C.white};">${body}</div>
-  </section>`;
+  return `<div class="report-section" style="margin-bottom:14px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+    <div style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
+    <div style="padding:14px 16px;background:${C.white};">${body}</div>
+  </div>`;
 }
 
 // ── Highlight card for key insights ──
 function insightCard(text: string, icon: string, color: string): string {
-  return `<div style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;">
-    <span style="font-size:16px;flex-shrink:0;margin-top:1px;">${icon}</span>
-    <p style="font-size:11.5px;line-height:1.65;color:${C.textDark};margin:0;">${text}</p>
+  return `<div style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
+    <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
+    <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${text}</p>
   </div>`;
 }
 
 // ── Bold key phrases in text ──
 function highlightText(text: string): string {
   const escaped = escapeHtml(text);
-  // Bold numbers with % or K/M
   let result = escaped.replace(/(\d[\d,.]*\s*(?:%|menciones|interacciones|M\b|K\b))/gi, '<strong>$1</strong>');
-  // Bold quoted terms
   result = result.replace(/&#39;([^&#]+?)&#39;/g, "<strong>'$1'</strong>");
   result = result.replace(/'([^']+?)'/g, "<strong>'$1'</strong>");
   return result;
@@ -101,15 +94,15 @@ function chartPlatformBars(sources: SourceBreakdown[]): string {
   const rows = data.map((s, i) => {
     const pct = (s.count / max) * 100;
     const color = i < 3 ? C.accent : C.neutral;
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="min-width:105px;font-size:9px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
-      <div style="flex:1;background:${C.borderLight};border-radius:4px;height:18px;overflow:hidden;">
-        <div style="width:${pct}%;background:${color};height:100%;border-radius:4px;min-width:2px;"></div>
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
+      <div style="flex:1;background:${C.borderLight};border-radius:3px;height:14px;overflow:hidden;">
+        <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
-      <span style="font-size:10px;font-weight:700;min-width:30px;color:${C.textDark};">${s.count}</span>
+      <span style="font-size:9px;font-weight:700;min-width:28px;color:${C.textDark};">${s.count}</span>
     </div>`;
   }).join("");
-  return `<div style="padding:4px;"><div style="font-size:10px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Menciones por Plataforma</div>${rows}</div>`;
+  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Menciones por Plataforma</div>${rows}</div>`;
 }
 
 function chartDailyBars(timeline: TimelinePoint[]): string {
@@ -122,13 +115,13 @@ function chartDailyBars(timeline: TimelinePoint[]): string {
     const color = i === maxIdx ? C.negative : C.accent;
     const dayLabel = t.date.slice(5);
     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
-      <span style="font-size:8px;font-weight:700;margin-bottom:3px;color:${C.textDark};">${t.count}</span>
-      <div style="width:65%;background:${color};border-radius:3px 3px 0 0;height:${Math.max(pct * 0.6, 4)}px;"></div>
-      <span style="font-size:7.5px;color:${C.textGray};margin-top:4px;">${dayLabel}</span>
+      <span style="font-size:7px;font-weight:700;margin-bottom:2px;color:${C.textDark};">${t.count}</span>
+      <div style="width:60%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(pct * 0.5, 3)}px;"></div>
+      <span style="font-size:7px;color:${C.textGray};margin-top:2px;">${dayLabel}</span>
     </div>`;
   }).join("");
-  return `<div style="padding:4px;"><div style="font-size:10px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Evolución Diaria</div>
-    <div style="display:flex;align-items:flex-end;height:80px;gap:3px;">${bars}</div></div>`;
+  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Evolución Diaria</div>
+    <div style="display:flex;align-items:flex-end;height:60px;gap:2px;">${bars}</div></div>`;
 }
 
 function chartSentimentByPlatform(sources: SourceBreakdown[]): string {
@@ -139,16 +132,16 @@ function chartSentimentByPlatform(sources: SourceBreakdown[]): string {
     const posPct = (s.positive / total) * 100;
     const neuPct = (s.neutral / total) * 100;
     const negPct = (s.negative / total) * 100;
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="min-width:105px;font-size:9px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
-      <div style="flex:1;display:flex;height:18px;border-radius:4px;overflow:hidden;">
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
+      <div style="flex:1;display:flex;height:14px;border-radius:3px;overflow:hidden;">
         <div style="width:${posPct}%;background:${C.positive};"></div>
         <div style="width:${neuPct}%;background:${C.neutral};"></div>
         <div style="width:${negPct}%;background:${C.negative};"></div>
       </div>
     </div>`;
   }).join("");
-  return `<div style="padding:4px;"><div style="font-size:10px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Sentimiento por Plataforma</div>${rows}</div>`;
+  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Sentimiento por Plataforma</div>${rows}</div>`;
 }
 
 function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
@@ -158,15 +151,15 @@ function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
   const rows = data.map(inf => {
     const val = parseInt(inf.reach?.replace(/\D/g, "") || "0") || inf.mentions;
     const pct = (val / maxReach) * 100;
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="min-width:105px;font-size:9px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(inf.name || inf.username)}</span>
-      <div style="flex:1;background:${C.borderLight};border-radius:4px;height:18px;overflow:hidden;">
-        <div style="width:${pct}%;background:${sentColor(inf.sentiment)};height:100%;border-radius:4px;min-width:2px;"></div>
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(inf.name || inf.username)}</span>
+      <div style="flex:1;background:${C.borderLight};border-radius:3px;height:14px;overflow:hidden;">
+        <div style="width:${pct}%;background:${sentColor(inf.sentiment)};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
-      <span style="font-size:10px;font-weight:700;min-width:35px;color:${C.textDark};">${fmtNum(val)}</span>
+      <span style="font-size:9px;font-weight:700;min-width:32px;color:${C.textDark};">${fmtNum(val)}</span>
     </div>`;
   }).join("");
-  return `<div style="padding:4px;"><div style="font-size:10px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Top Influenciadores</div>${rows}</div>`;
+  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Top Influenciadores</div>${rows}</div>`;
 }
 
 // ── main builder ──
@@ -183,32 +176,32 @@ export function buildReportHTML(
   const negPct = ((report.metrics.negativeCount / total) * 100).toFixed(1);
   const posPct = ((report.metrics.positiveCount / total) * 100).toFixed(1);
 
-  const summaryFontSize = isSummary ? "13px" : "12px";
-  const summaryLineHeight = isSummary ? "1.85" : "1.7";
+  const summaryFontSize = isSummary ? "12px" : "11px";
+  const summaryLineHeight = isSummary ? "1.75" : "1.65";
   const sectionSeparator = isSummary
-    ? `<hr style="border:none;border-top:1.5px solid ${C.border};margin:24px 0;">`
+    ? `<hr style="border:none;border-top:1.5px solid ${C.border};margin:16px 0;">`
     : "";
 
-  // ── HEADER (white logo on dark bg) ──
-  const header = `<div style="background:${C.primary};padding:28px 32px;display:flex;align-items:center;justify-content:space-between;">
-    <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:32px;">
+  // ── HEADER (compact, white logo on dark bg) ──
+  const header = `<div style="background:${C.primary};padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:28px;filter:brightness(10);">
     </div>
     <div style="text-align:right;">
-      <span style="background:${badge.bg};color:#fff;font-size:9px;font-weight:700;padding:4px 14px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
-      <div style="color:#fff;font-size:15px;font-weight:600;margin-top:10px;max-width:480px;">${escapeHtml(report.title)}</div>
-      <div style="color:${C.accentLight};font-size:10.5px;margin-top:5px;">${escapeHtml(dateRange.label)} · ${generatedDate}</div>
+      <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
+      <div style="color:#fff;font-size:13px;font-weight:600;margin-top:8px;max-width:440px;">${escapeHtml(report.title)}</div>
+      <div style="color:${C.accentLight};font-size:9.5px;margin-top:4px;">${escapeHtml(dateRange.label)} · ${generatedDate}</div>
     </div>
   </div>`;
 
-  // ── METRICS ROW ──
+  // ── METRICS ROW (compact) ──
   const metricCell = (value: string, label: string, color = C.textDark) =>
-    `<div style="flex:1;text-align:center;padding:16px 8px;">
-      <div style="font-size:22px;font-weight:700;color:${color};line-height:1.2;">${value}</div>
-      <div style="font-size:9px;color:${C.textGray};margin-top:5px;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${label}</div>
+    `<div style="flex:1;text-align:center;padding:10px 6px;">
+      <div style="font-size:18px;font-weight:700;color:${color};line-height:1.2;">${value}</div>
+      <div style="font-size:8px;color:${C.textGray};margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${label}</div>
     </div>`;
-  const sep = `<div style="width:1px;background:${C.border};margin:10px 0;"></div>`;
-  const metricsRow = `<div style="display:flex;align-items:stretch;border:1px solid ${C.border};border-radius:8px;margin:20px 28px;background:${C.white};box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+  const sep = `<div style="width:1px;background:${C.border};margin:8px 0;"></div>`;
+  const metricsRow = `<div style="display:flex;align-items:stretch;border:1px solid ${C.border};border-radius:6px;margin:14px 20px;background:${C.white};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
     ${metricCell(fmtNum(report.metrics.estimatedImpressions), "Impresiones Est.")}${sep}
     ${metricCell(report.metrics.totalMentions.toString(), "Total Menciones")}${sep}
     ${metricCell(fmtNum(report.metrics.estimatedReach), "Alcance Est.")}${sep}
@@ -216,20 +209,20 @@ export function buildReportHTML(
     ${metricCell(posPct + "%", "% Positivo", C.positive)}
   </div>`;
 
-  // ── SENTIMENT BAR ──
+  // ── SENTIMENT BAR (compact) ──
   const posW = report.metrics.positiveCount / total * 100;
   const neuW = report.metrics.neutralCount / total * 100;
   const negW = report.metrics.negativeCount / total * 100;
-  const sentBar = `<div style="padding:8px 28px 20px;">
-    <div style="display:flex;height:26px;border-radius:13px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.12);">
+  const sentBar = `<div style="padding:4px 20px 12px;">
+    <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.12);">
       <div style="width:${posW}%;background:${C.positive};"></div>
       <div style="width:${neuW}%;background:${C.neutral};"></div>
       <div style="width:${negW}%;background:${C.negative};"></div>
     </div>
-    <div style="display:flex;gap:24px;margin-top:10px;font-size:10px;color:${C.textGray};font-weight:500;">
-      <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${C.positive};display:inline-block;"></span>Positivo ${posW.toFixed(0)}%</span>
-      <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${C.neutral};display:inline-block;"></span>Neutral ${neuW.toFixed(0)}%</span>
-      <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${C.negative};display:inline-block;"></span>Negativo ${negW.toFixed(0)}%</span>
+    <div style="display:flex;gap:20px;margin-top:6px;font-size:9px;color:${C.textGray};font-weight:500;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:${C.positive};display:inline-block;"></span>Positivo ${posW.toFixed(0)}%</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:${C.neutral};display:inline-block;"></span>Neutral ${neuW.toFixed(0)}%</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:${C.negative};display:inline-block;"></span>Negativo ${negW.toFixed(0)}%</span>
     </div>
   </div>`;
 
@@ -250,7 +243,7 @@ export function buildReportHTML(
       chartTopInfluencersBars(report.influencers),
     ].filter(Boolean);
     if (charts.length > 0) {
-      const grid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">${charts.join("")}</div>`;
+      const grid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${charts.join("")}</div>`;
       sections.push(section("Visualización de Datos", grid));
     }
   }
@@ -261,14 +254,12 @@ export function buildReportHTML(
   const findings = isSummary ? report.keyFindings.slice(0, 3) : report.keyFindings;
   let findingsHtml = "";
   if (findings.length > 0) {
-    // First finding as a highlight card
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
     findingsHtml += insightCard(highlightText(findings[0]), "🔍", firstSentiment);
-    // Rest as numbered items
     findings.slice(1).forEach((f, i) => {
-      findingsHtml += `<div class="finding-item" style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;">
-        <div style="min-width:28px;height:28px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-        <p style="font-size:11.5px;line-height:1.7;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+      findingsHtml += `<div class="finding-item" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
+        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
       </div>`;
     });
   }
@@ -280,23 +271,23 @@ export function buildReportHTML(
   const infs = isSummary ? report.influencers.slice(0, 5) : report.influencers;
   if (infs.length > 0) {
     const headerRow = `<tr style="background:${C.primary};">
-      <th style="padding:10px 14px;font-size:9px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">#</th>
-      <th style="padding:10px 14px;font-size:9px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Perfil</th>
-      <th style="padding:10px 14px;font-size:9px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Red</th>
-      <th style="padding:10px 14px;font-size:9px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Menciones</th>
-      <th style="padding:10px 14px;font-size:9px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Sentimiento</th>
-      <th style="padding:10px 14px;font-size:9px;text-align:right;color:#fff;font-weight:600;letter-spacing:0.5px;">Interacciones</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">#</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Perfil</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Red</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Menciones</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Sentimiento</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:right;color:#fff;font-weight:600;letter-spacing:0.5px;">Interacciones</th>
     </tr>`;
     const rows = infs.map((inf, i) => {
       const bg = i % 2 === 0 ? C.white : C.cardBg;
       const sentBg = `${sentColor(inf.sentiment)}15`;
       return `<tr style="background:${bg};">
-        <td style="padding:8px 14px;font-size:10px;color:${C.textGray};">${i + 1}</td>
-        <td style="padding:8px 14px;font-size:10.5px;font-weight:600;color:${C.textDark};">${escapeHtml(inf.name || inf.username)}</td>
-        <td style="padding:8px 14px;font-size:10px;color:${C.textGray};">${escapeHtml(inf.platform)}</td>
-        <td style="padding:8px 14px;font-size:10.5px;text-align:center;color:${C.textDark};font-weight:600;">${inf.mentions}</td>
-        <td style="padding:8px 14px;font-size:10px;text-align:center;"><span style="background:${sentBg};color:${sentColor(inf.sentiment)};font-weight:700;padding:3px 10px;border-radius:10px;font-size:9px;">${sentLabel(inf.sentiment)}</span></td>
-        <td style="padding:8px 14px;font-size:10.5px;text-align:right;font-weight:600;color:${C.textDark};">${escapeHtml(inf.reach || "—")}</td>
+        <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${i + 1}</td>
+        <td style="padding:5px 10px;font-size:9.5px;font-weight:600;color:${C.textDark};">${escapeHtml(inf.name || inf.username)}</td>
+        <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${escapeHtml(inf.platform)}</td>
+        <td style="padding:5px 10px;font-size:9.5px;text-align:center;color:${C.textDark};font-weight:600;">${inf.mentions}</td>
+        <td style="padding:5px 10px;font-size:9px;text-align:center;"><span style="background:${sentBg};color:${sentColor(inf.sentiment)};font-weight:700;padding:2px 8px;border-radius:10px;font-size:8px;">${sentLabel(inf.sentiment)}</span></td>
+        <td style="padding:5px 10px;font-size:9.5px;text-align:right;font-weight:600;color:${C.textDark};">${escapeHtml(inf.reach || "—")}</td>
       </tr>`;
     }).join("");
     const table = `<table style="width:100%;border-collapse:collapse;">${headerRow}${rows}</table>`;
@@ -309,13 +300,13 @@ export function buildReportHTML(
   if (!isSummary && report.narratives.length > 0) {
     const narrativesHtml = report.narratives.map(n => {
       const trendIcon = n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️";
-      return `<div class="narrative-card" style="border:1px solid ${C.border};border-radius:8px;padding:14px 16px;margin-bottom:12px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <span style="font-size:12.5px;font-weight:700;color:${C.textDark};">${escapeHtml(n.narrative)}</span>
-          <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:9px;padding:3px 10px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
-          <span style="font-size:9px;color:${C.textGray};font-weight:500;">${trendIcon} <strong>${n.mentions}</strong> menciones · ${n.trend}</span>
+      return `<div class="narrative-card" style="border:1px solid ${C.border};border-radius:6px;padding:10px 14px;margin-bottom:10px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;color:${C.textDark};">${escapeHtml(n.narrative)}</span>
+          <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
+          <span style="font-size:8px;color:${C.textGray};font-weight:500;">${trendIcon} <strong>${n.mentions}</strong> menciones · ${n.trend}</span>
         </div>
-        <p style="font-size:11px;color:${C.textGray};line-height:1.65;margin:0;">${highlightText(n.description)}</p>
+        <p style="font-size:10px;color:${C.textGray};line-height:1.55;margin:0;">${highlightText(n.description)}</p>
       </div>`;
     }).join("");
     sections.push(section("Principales Narrativas", narrativesHtml));
@@ -327,9 +318,9 @@ export function buildReportHTML(
   if (recs.length > 0) {
     recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
-      recsHtml += `<div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;">
-        <div style="min-width:28px;height:28px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-        <p style="font-size:11.5px;line-height:1.7;color:${C.textDark};margin:0;">${highlightText(r)}</p>
+      recsHtml += `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
+        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
       </div>`;
     });
   }
@@ -341,18 +332,18 @@ export function buildReportHTML(
   if (report.conclusions && report.conclusions.length > 0) {
     const concs = isSummary ? report.conclusions.slice(0, 2) : report.conclusions;
     const bodyWithBullets = concs.map(c =>
-      `<div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;">
-        <span style="min-width:8px;height:8px;border-radius:50%;background:${C.accent};display:block;margin-top:6px;flex-shrink:0;"></span>
-        <p style="font-size:11.5px;line-height:1.7;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+      `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+        <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
+        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
       </div>`
     ).join("");
     sections.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // ── FOOTER (white logo on dark bg) ──
-  const footer = `<div style="background:${C.primary};padding:16px 32px;display:flex;align-items:center;justify-content:space-between;margin-top:24px;">
-    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:20px;">
-    <span style="color:${C.accentLight};font-size:9.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
+  // ── FOOTER (compact, white logo on dark bg) ──
+  const footer = `<div style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
+    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:16px;filter:brightness(10);">
+    <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
   </div>`;
 
   return `<!DOCTYPE html>
@@ -367,7 +358,7 @@ export function buildReportHTML(
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   font-family:'Inter',sans-serif;
-  font-size:12px;
+  font-size:11px;
   color:${C.textDark};
   background:#fff;
   width:794px;
@@ -378,18 +369,19 @@ body{
 }
 strong{font-weight:700;color:${C.primary};}
 @page{
-  margin:8mm 0 8mm 0;
+  margin:0;
   size:A4;
 }
 @media print{
   body{width:100%;margin:0;padding:0;}
-  section{break-inside:avoid;}
-  table{break-inside:avoid;}
-  .narrative-card{break-inside:avoid;}
-  .finding-item{break-inside:avoid;}
+  .report-section{page-break-inside:auto;}
+  table{page-break-inside:auto;}
+  tr{page-break-inside:avoid;page-break-after:auto;}
+  .narrative-card{page-break-inside:avoid;}
+  .finding-item{page-break-inside:avoid;}
 }
 @media screen{
-  body{padding-bottom:40px;}
+  body{padding-bottom:30px;}
 }
 </style>
 </head>
@@ -397,7 +389,7 @@ strong{font-weight:700;color:${C.primary};}
 ${header}
 ${metricsRow}
 ${sentBar}
-<div style="padding:0 28px 20px;">
+<div style="padding:0 20px 14px;">
 ${sections.join("\n")}
 </div>
 ${footer}
