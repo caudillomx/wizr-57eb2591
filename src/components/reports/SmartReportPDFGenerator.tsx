@@ -136,7 +136,7 @@ export function SmartReportPDFGenerator({
       const result = await Promise.race([
         supabase.functions.invoke("generate-claude-report", {
           body: {
-            mentions: rawMentions || [],
+            precomputedReport: report,
             reportType: reportType || "brief",
             extension,
             projectName,
