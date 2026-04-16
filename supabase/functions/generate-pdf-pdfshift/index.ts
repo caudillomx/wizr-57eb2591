@@ -9,7 +9,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { html, filename } = await req.json();
+    console.log("[pdfshift] request received, content-length:", req.headers.get("content-length"));
+    const body = await req.json();
+    const { html, filename } = body;
+    console.log("[pdfshift] html length:", html?.length, "filename:", filename);
     if (!html) throw new Error("No HTML provided");
 
     const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
