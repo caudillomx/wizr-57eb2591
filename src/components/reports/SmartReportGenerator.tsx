@@ -18,9 +18,10 @@ import {
   Wand2,
   BookOpen,
   BarChart3,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSmartReport, ReportFormat, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
+import { useSmartReport, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
@@ -119,9 +120,9 @@ export function SmartReportGenerator({
     return breakdown;
   }, [filteredMentions]);
 
-  const handleGenerate = async (format: ReportFormat) => {
+  const handleGenerate = async () => {
     const config: SmartReportConfig = {
-      reportFormat: format,
+      reportFormat: "full",
       projectName,
       projectAudience,
       projectObjective,
@@ -231,40 +232,24 @@ export function SmartReportGenerator({
               )}
             </div>
 
-            {/* Generate Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                className="h-auto py-4 flex flex-col items-center gap-2"
-                onClick={() => handleGenerate("summary")}
-                disabled={isGenerating || filteredMentions.length === 0}
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <FileText className="h-5 w-5 text-primary" />
-                )}
-                <div className="text-center">
-                  <div className="font-medium text-sm">Generar Resumen</div>
-                  <div className="text-xs text-muted-foreground">1-2 páginas • Para compartir rápido</div>
-                </div>
-              </Button>
-              <Button
-                className="h-auto py-4 flex flex-col items-center gap-2"
-                onClick={() => handleGenerate("full")}
-                disabled={isGenerating || filteredMentions.length === 0}
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <BookOpen className="h-5 w-5" />
-                )}
-                <div className="text-center">
-                  <div className="font-medium text-sm">Generar Reporte Completo</div>
-                  <div className="text-xs text-muted-foreground/80">4-6 páginas • Análisis integral</div>
-                </div>
-              </Button>
-            </div>
+            {/* Single Generate Button */}
+            <Button
+              className="w-full"
+              onClick={handleGenerate}
+              disabled={isGenerating || filteredMentions.length === 0}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generando reporte inteligente...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generar Reporte ({filteredMentions.length} menciones)
+                </>
+              )}
+            </Button>
           </div>
         )}
 
@@ -380,10 +365,13 @@ export function SmartReportGenerator({
 
             <Separator />
 
-            {/* Download */}
-            <div className="space-y-3">
+            {/* Download Section — Resumen vs Completo */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">Descargar Reporte</h4>
+                <h4 className="font-medium flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Descargar Reporte
+                </h4>
                 <div className="flex items-center gap-2">
                   <Wand2 className="h-4 w-4 text-primary" />
                   <Label htmlFor="claude-toggle" className="text-sm cursor-pointer">Diseño IA (Claude)</Label>
@@ -394,21 +382,52 @@ export function SmartReportGenerator({
                   />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <SmartReportPDFGenerator
-                  report={report}
-                  projectName={projectName}
-                  dateRange={dateRange}
-                  selectedTemplate="executive"
-                  editedTemplate={report.templates?.executive || ""}
-                  useClaudeHTML={useClaudeHTML}
-                  rawMentions={filteredMentions}
-                  projectAudience={projectAudience}
-                  projectObjective={projectObjective}
-                  strategicContext={strategicContext}
-                  strategicFocus={strategicFocus}
-                  entityNames={filteredEntityNames}
-                />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-lg border bg-muted/20 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-sm">Resumen</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">1-2 páginas. Brief ejecutivo, KPIs, top hallazgos y recomendaciones clave.</p>
+                  <SmartReportPDFGenerator
+                    report={report}
+                    projectName={projectName}
+                    dateRange={dateRange}
+                    selectedTemplate="executive"
+                    editedTemplate={report.templates?.executive || ""}
+                    useClaudeHTML={useClaudeHTML}
+                    rawMentions={filteredMentions}
+                    projectAudience={projectAudience}
+                    projectObjective={projectObjective}
+                    strategicContext={strategicContext}
+                    strategicFocus={strategicFocus}
+                    entityNames={filteredEntityNames}
+                    pdfFormat="summary"
+                  />
+                </div>
+                <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-sm">Reporte Completo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">4-6 páginas. Análisis integral con narrativas, influenciadores y visualizaciones.</p>
+                  <SmartReportPDFGenerator
+                    report={report}
+                    projectName={projectName}
+                    dateRange={dateRange}
+                    selectedTemplate="executive"
+                    editedTemplate={report.templates?.executive || ""}
+                    useClaudeHTML={useClaudeHTML}
+                    rawMentions={filteredMentions}
+                    projectAudience={projectAudience}
+                    projectObjective={projectObjective}
+                    strategicContext={strategicContext}
+                    strategicFocus={strategicFocus}
+                    entityNames={filteredEntityNames}
+                    pdfFormat="full"
+                  />
+                </div>
               </div>
             </div>
 
