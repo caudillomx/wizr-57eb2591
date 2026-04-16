@@ -377,12 +377,9 @@ strong{font-weight:700;color:${C.primary};}
   .report-section{page-break-inside:auto;}
   .section-header{page-break-after:avoid;}
   .avoid-break{page-break-inside:avoid;break-inside:avoid;}
-  .finding-item{page-break-inside:avoid;break-inside:avoid;}
-  .narrative-card{page-break-inside:avoid;break-inside:avoid;}
   table{page-break-inside:auto;}
   tr{page-break-inside:avoid;page-break-after:auto;}
   p{orphans:3;widows:3;page-break-inside:avoid;break-inside:avoid;}
-  div[style*="border-left"]{page-break-inside:avoid;break-inside:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
@@ -390,13 +387,17 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
+<div data-pdf-section="header">
 ${header}
 ${metricsRow}
 ${sentBar}
-<div style="padding:0 20px 14px;">
-${sections.join("\n")}
 </div>
+<div style="padding:0 20px 14px;">
+${sections.map((s, i) => `<div data-pdf-section="section-${i}">${s}</div>`).join("\n")}
+</div>
+<div data-pdf-section="footer">
 ${footer}
+</div>
 </body>
 </html>`;
 }
