@@ -362,24 +362,9 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // ── RUNNING HEADER (fixed on every page via @page margin box) ──
-  const runningHeader = `<div class="running-header">
-    <div class="running-header-inner">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="running-header-logo" />
-      <div class="running-header-meta">
-        <div class="running-header-project">${escapeHtml(projectName)}</div>
-        <div class="running-header-date">${escapeHtml(dateRange.label)}</div>
-      </div>
-    </div>
-  </div>`;
-
-  // ── RUNNING FOOTER (fixed on every page, includes "Página X de Y") ──
-  const runningFooter = `<div class="running-footer">
-    <div class="running-footer-inner">
-      <span class="running-footer-text">Generado con Wizr · ${generatedDate}</span>
-      <span class="running-footer-pages">Página <span class="page-num"></span> de <span class="page-total"></span></span>
-    </div>
-  </div>`;
+  // Header context: project + report type + date range
+  const headerContext = `${escapeHtml(projectName)} · ${escapeHtml(badge.label)} · ${escapeHtml(dateRange.label)}`;
+  const headerSubtitle = escapeHtml(report.title);
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -408,19 +393,63 @@ strong{font-weight:700;color:${C.primary};}
 .report-content > .pdf-section-block{ margin-bottom:14px; }
 .report-content > .pdf-section-block:last-child{ margin-bottom:0; }
 
-/* Running header/footer — hidden on screen, shown as fixed bands in print */
-.running-header,.running-footer{ display:none; }
-
 @page{
-  margin:0;
   size:A4;
+  margin: 82px 0 44px 0;
+
+  @top-left{
+    content: "";
+    background-color: ${C.primary};
+    background-image: url("${LOGO_WHITE_B64}");
+    background-repeat: no-repeat;
+    background-position: 22px center;
+    background-size: auto 46px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  @top-right{
+    content: "${headerContext.replace(/"/g, '\\"')}\\A ${headerSubtitle.replace(/"/g, '\\"')}";
+    white-space: pre;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    text-align: right;
+    line-height: 1.5;
+    padding: 18px 26px 0 0;
+    margin: 0;
+  }
+  @bottom-left{
+    content: "Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
+    background-color: ${C.primary};
+    color: ${C.accentLight};
+    font-family: 'Inter', sans-serif;
+    font-size: 8.5px;
+    letter-spacing: 0.4px;
+    padding: 0 0 0 24px;
+    width: 100%;
+    margin: 0;
+    vertical-align: middle;
+  }
+  @bottom-right{
+    content: "Página " counter(page) " de " counter(pages);
+    background-color: ${C.primary};
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    padding: 0 24px 0 0;
+    margin: 0;
+    vertical-align: middle;
+  }
 }
+
 @media print{
   body{width:100%;margin:0;padding:0;}
-
-  /* Reserve space top & bottom on EVERY page for the fixed header/footer */
-  .report-shell{ padding-top:72px; padding-bottom:48px; }
-  .report-content{ padding-bottom:18px; }
+  .report-shell{ padding:0; }
+  .report-content{ padding:0 20px 12px; }
   .report-content > .pdf-section-block{ margin-bottom:14px; padding-bottom:8px; }
   .report-section{ page-break-inside:auto; break-inside:auto; margin-bottom:6px; }
   .pdf-section-block{ page-break-inside:auto; break-inside:auto; }
@@ -436,51 +465,7 @@ strong{font-weight:700;color:${C.primary};}
   p{ orphans:2; widows:2; }
   h1,h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
 
-  /* Fixed running header — appears at the top of every page */
-  .running-header{
-    display:block;
-    position:fixed;
-    top:0; left:0; right:0;
-    height:62px;
-    background:${C.primary};
-    z-index:1000;
-  }
-  .running-header-inner{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    height:100%;
-    padding:0 24px;
-  }
-  .running-header-logo{ height:42px; width:auto; display:block; }
-  .running-header-meta{ text-align:right; }
-  .running-header-project{ color:#fff; font-size:11px; font-weight:600; line-height:1.2; }
-  .running-header-date{ color:${C.accentLight}; font-size:9px; margin-top:3px; letter-spacing:0.3px; }
-
-  /* Fixed running footer — appears at the bottom of every page with "Página X de Y" */
-  .running-footer{
-    display:block;
-    position:fixed;
-    bottom:0; left:0; right:0;
-    height:36px;
-    background:${C.primary};
-    z-index:1000;
-  }
-  .running-footer-inner{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    height:100%;
-    padding:0 24px;
-  }
-  .running-footer-text{ color:${C.accentLight}; font-size:8.5px; letter-spacing:0.5px; }
-  .running-footer-pages{ color:#fff; font-size:9px; font-weight:600; letter-spacing:0.5px; }
-
-  /* PDFShift / paged-media: live page counters */
-  .page-num::before{ content: counter(page); }
-  .page-total::before{ content: counter(pages); }
-
-  /* Hide the in-flow page-intro header — running-header takes its place */
+  /* Hide the in-flow page-intro header — @page top margin takes its place */
   .page-intro-header{ display:none; }
 }
 @media screen{
@@ -490,8 +475,6 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
-  ${runningHeader}
-  ${runningFooter}
   <div class="report-shell">
     <div class="page-intro">
       <div class="page-intro-header">${header}</div>
