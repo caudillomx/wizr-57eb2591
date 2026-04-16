@@ -32,9 +32,9 @@ interface ReportRequest {
 }
 
 const EXTENSION_CONFIG = {
-  micro: { sampleCount: 5, maxTokens: 4000, maxSources: 5, maxAuthors: 4, maxKeywords: 5, maxExamples: 2, maxTimelinePoints: 5 },
-  short: { sampleCount: 8, maxTokens: 5000, maxSources: 6, maxAuthors: 5, maxKeywords: 6, maxExamples: 3, maxTimelinePoints: 6 },
-  medium: { sampleCount: 12, maxTokens: 6000, maxSources: 7, maxAuthors: 6, maxKeywords: 7, maxExamples: 3, maxTimelinePoints: 7 },
+  micro: { sampleCount: 5, maxTokens: 6000, maxSources: 5, maxAuthors: 4, maxKeywords: 5, maxExamples: 2, maxTimelinePoints: 5 },
+  short: { sampleCount: 8, maxTokens: 9000, maxSources: 6, maxAuthors: 5, maxKeywords: 6, maxExamples: 3, maxTimelinePoints: 6 },
+  medium: { sampleCount: 12, maxTokens: 12000, maxSources: 7, maxAuthors: 6, maxKeywords: 7, maxExamples: 3, maxTimelinePoints: 7 },
 } as const;
 
 type ExtensionKey = keyof typeof EXTENSION_CONFIG;
@@ -280,7 +280,7 @@ serve(async (req) => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5",
+          model: "claude-sonnet-4-5",
           max_tokens: EXTENSION_CONFIG[body.extension].maxTokens,
           temperature: 0.4,
           messages: [{ role: "user", content: buildPrompt(body) }],

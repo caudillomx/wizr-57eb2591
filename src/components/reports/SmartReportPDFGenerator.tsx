@@ -166,6 +166,14 @@ export function SmartReportPDFGenerator({
       iframe.contentDocument?.write(html);
       iframe.contentDocument?.close();
 
+      // Wait for initial layout
+      await new Promise(r => setTimeout(r, 300));
+
+      // Set explicit height from actual document content
+      const scrollHeight = iframe.contentDocument?.body?.scrollHeight || 2000;
+      iframe.style.height = scrollHeight + "px";
+
+      // Wait for fonts and full render
       await new Promise(r => setTimeout(r, 1600));
 
       const canvas = await html2canvas(iframe.contentDocument!.body, {
