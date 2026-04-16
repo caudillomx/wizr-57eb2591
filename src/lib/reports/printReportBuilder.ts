@@ -247,7 +247,7 @@ export function buildReportHTML(
   // ── HEADER (compact, white logo on dark bg) ──
   const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="${LOGO_COLOR_B64}" alt="Wizr" style="height:34px;width:auto;display:block;filter:brightness(0) invert(1);" />
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:34px;width:auto;display:block;" />
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
