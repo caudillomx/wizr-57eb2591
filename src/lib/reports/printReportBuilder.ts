@@ -1,7 +1,7 @@
 import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, NarrativeInfo } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { LOGO_WHITE_B64, LOGO_COLOR_B64 } from "./logoBase64";
+import { LOGO_COLOR_B64 } from "./logoBase64";
 
 interface DateRange {
   start: string;
@@ -185,7 +185,7 @@ export function buildReportHTML(
   // ── HEADER (compact, white logo on dark bg) ──
   const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:52px;filter:brightness(10);">
+      <div style="color:${C.white};font-size:28px;font-weight:800;letter-spacing:1px;line-height:1;">WIZR</div>
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
@@ -342,7 +342,7 @@ export function buildReportHTML(
 
   // ── FOOTER (compact, white logo on dark bg) ──
   const footer = `<div style="background:${C.primary};padding:12px 24px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
-    <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:22px;filter:brightness(10);">
+    <span style="color:${C.white};font-size:14px;font-weight:800;letter-spacing:0.8px;line-height:1;">WIZR</span>
     <span style="color:${C.accentLight};font-size:8.5px;letter-spacing:0.5px;">Generado con Wizr · ${generatedDate}</span>
   </div>`;
 
