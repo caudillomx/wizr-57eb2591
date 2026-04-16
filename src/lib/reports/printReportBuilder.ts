@@ -406,29 +406,6 @@ strong{font-weight:700;color:${C.primary};}
   size:A4;
   margin: 92px 0 44px 0;
 
-  @top-left{
-    content: "";
-    background-color: ${C.primary};
-    background-image: url("${LOGO_WHITE_B64}");
-    background-repeat: no-repeat;
-    background-position: 24px center;
-    background-size: auto 60px;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  @top-right{
-    content: "${headerContext.replace(/"/g, '\\"')} — ${headerSubtitle.replace(/"/g, '\\"')}";
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    text-align: right;
-    line-height: 1.4;
-    padding: 0 28px 0 0;
-    margin: 0;
-    vertical-align: middle;
-  }
   @bottom-left{
     content: "Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
     background-color: ${C.primary};
@@ -455,8 +432,59 @@ strong{font-weight:700;color:${C.primary};}
   }
 }
 
+.running-header{ display:none; }
+
 @media print{
   body{width:100%;margin:0;padding:0;}
+  .running-header{
+    display:block;
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    height:72px;
+    background:${C.primary};
+    z-index:999;
+    box-sizing:border-box;
+  }
+  .running-header-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    height:100%;
+    padding:0 26px;
+  }
+  .running-header-logo{
+    height:56px;
+    width:auto;
+    display:block;
+    flex-shrink:0;
+  }
+  .running-header-copy{
+    min-width:0;
+    max-width:72%;
+    text-align:right;
+    color:#fff;
+  }
+  .running-header-context{
+    font-size:10px;
+    line-height:1.35;
+    font-weight:600;
+    color:${C.accentLight};
+    letter-spacing:0.2px;
+  }
+  .running-header-title{
+    font-size:11px;
+    line-height:1.35;
+    font-weight:700;
+    color:#fff;
+    margin-top:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
   .report-shell{ padding:0; }
   .report-content{ padding:0 20px 12px; }
   .report-content > .pdf-section-block{ margin-bottom:14px; padding-bottom:8px; }
@@ -473,8 +501,6 @@ strong{font-weight:700;color:${C.primary};}
   tr{ page-break-inside:avoid; page-break-after:auto; break-inside:avoid; }
   p{ orphans:2; widows:2; }
   h1,h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
-
-  /* Hide the in-flow page-intro header — @page top margin takes its place */
   .page-intro-header{ display:none; }
 }
 @media screen{
@@ -484,6 +510,7 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
+  ${runningHeader}
   <div class="report-shell">
     <div class="page-intro">
       <div class="page-intro-header">${header}</div>
