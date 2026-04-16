@@ -375,10 +375,12 @@ strong{font-weight:700;color:${C.primary};}
 @media print{
   body{width:100%;margin:0;padding:0;}
   .report-section{page-break-inside:auto;}
+  .section-header{page-break-after:avoid;}
+  .avoid-break{page-break-inside:avoid;}
+  .finding-item{page-break-inside:avoid;}
+  .narrative-card{page-break-inside:avoid;}
   table{page-break-inside:auto;}
   tr{page-break-inside:avoid;page-break-after:auto;}
-  .narrative-card{page-break-inside:avoid;}
-  .finding-item{page-break-inside:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
