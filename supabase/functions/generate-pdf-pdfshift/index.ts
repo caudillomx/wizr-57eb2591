@@ -1,18 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
     console.log("[pdfshift] request received, content-length:", req.headers.get("content-length"));
     const body = await req.json();
     const { html, filename } = body;
     console.log("[pdfshift] html length:", html?.length, "filename:", filename);
+
     if (!html) throw new Error("No HTML provided");
 
     const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
@@ -21,7 +19,7 @@ serve(async (req) => {
     const response = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
       method: "POST",
       headers: {
-        "Authorization": `Basic ${btoa(`api:${PDFSHIFT_API_KEY}`)}`,
+        Authorization: `Basic ${btoa(`api:${PDFSHIFT_API_KEY}`)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -47,14 +45,18 @@ serve(async (req) => {
     }
     const pdfBase64 = btoa(binary);
 
-    return new Response(
-      JSON.stringify({ pdf: pdfBase64, filename: filename || "reporte.pdf" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ pdf: pdfBase64, filename: filename || "reporte.pdf" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
+    console.error("[pdfshift] error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
