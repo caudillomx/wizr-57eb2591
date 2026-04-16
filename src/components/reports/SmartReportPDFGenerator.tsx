@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { FileText, BookOpen, Printer, FileDown, Loader2 } from "lucide-react";
+import { Printer, FileDown, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
 import type { SmartReportContent } from "@/hooks/useSmartReport";
 import { buildReportHTML } from "@/lib/reports/printReportBuilder";
 import { useToast } from "@/hooks/use-toast";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { supabase } from "@/integrations/supabase/client";
 
 export type PDFFormat = "summary" | "full";
 
@@ -29,13 +29,6 @@ function trimReportForSummary(report: SmartReportContent): SmartReportContent {
   };
 }
 
-// A4 dimensions in mm
-const A4_W = 210;
-const A4_H = 297;
-const MARGIN = 0; // full-bleed, margins are built into the HTML
-const CONTENT_W = A4_W - MARGIN * 2;
-const SECTION_GAP = 1; // mm between sections
-
 export function SmartReportPDFGenerator({
   report,
   projectName,
@@ -46,7 +39,7 @@ export function SmartReportPDFGenerator({
   const { toast } = useToast();
   const isSummary = pdfFormat === "summary";
 
-  /** Open in new tab for print preview (existing behavior) */
+  /** Web preview via window.open (for quick browser print) */
   const handlePreview = () => {
     const reportData = isSummary ? trimReportForSummary(report) : report;
     const html = buildReportHTML(reportData, projectName, dateRange, isSummary);
@@ -57,124 +50,35 @@ export function SmartReportPDFGenerator({
     win.onload = () => setTimeout(() => win.print(), 300);
   };
 
-  /** Generate PDF via html2canvas section-by-section capture */
+  /** Generate PDF via PDFShift edge function */
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
     try {
       const reportData = isSummary ? trimReportForSummary(report) : report;
       const html = buildReportHTML(reportData, projectName, dateRange, isSummary);
+      const filename = `${isSummary ? "resumen" : "reporte_completo"}_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
 
-      // Create hidden container to render the report
-      const container = document.createElement("div");
-      container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;z-index:-1;";
-      document.body.appendChild(container);
-
-      // Create iframe to isolate styles
-      const iframe = document.createElement("iframe");
-      iframe.style.cssText = "width:794px;height:5000px;border:none;";
-      container.appendChild(iframe);
-
-      await new Promise<void>((resolve) => {
-        iframe.onload = () => resolve();
-        iframe.srcdoc = html;
+      const { data, error } = await supabase.functions.invoke("generate-pdf-pdfshift", {
+        body: { html, filename },
       });
 
-      // Wait for fonts & images
-      await new Promise((r) => setTimeout(r, 800));
+      if (error) throw new Error(error.message);
+      if (!data?.pdf) throw new Error(data?.error || "No PDF returned");
 
-      const iframeDoc = iframe.contentDocument;
-      if (!iframeDoc) throw new Error("Cannot access iframe document");
+      const binary = atob(data.pdf);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
 
-      // Find all sections
-      const sectionEls = Array.from(
-        iframeDoc.querySelectorAll("[data-pdf-section]")
-      ) as HTMLElement[];
-
-      if (sectionEls.length === 0) throw new Error("No sections found");
-
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-      let currentY = MARGIN;
-      let isFirstPage = true;
-
-      for (let i = 0; i < sectionEls.length; i++) {
-        const el = sectionEls[i];
-
-        const canvas = await html2canvas(el, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: 794,
-        });
-
-        const imgWidthPx = canvas.width / 2;
-        const imgHeightPx = canvas.height / 2;
-        const scaleFactor = CONTENT_W / imgWidthPx;
-        const heightMM = imgHeightPx * scaleFactor;
-
-        // Check if section fits on current page
-        const remainingSpace = A4_H - currentY - MARGIN;
-
-        if (heightMM > remainingSpace && !isFirstPage) {
-          // Doesn't fit — new page
-          pdf.addPage();
-          currentY = MARGIN;
-        }
-
-        // If a single section is taller than one full page, we need to split it
-        if (heightMM > A4_H - MARGIN * 2) {
-          // Draw as much as fits, then continue on next pages
-          const pageContentH = A4_H - MARGIN * 2;
-          const totalPages = Math.ceil(heightMM / pageContentH);
-          
-          for (let p = 0; p < totalPages; p++) {
-            if (p > 0) {
-              pdf.addPage();
-              currentY = MARGIN;
-            }
-            
-            // Calculate source crop in canvas pixels
-            const srcY = (p * pageContentH / scaleFactor) * 2;
-            const srcH = Math.min(
-              (pageContentH / scaleFactor) * 2,
-              canvas.height - srcY
-            );
-            
-            if (srcH <= 0) break;
-
-            // Create cropped canvas
-            const cropCanvas = document.createElement("canvas");
-            cropCanvas.width = canvas.width;
-            cropCanvas.height = srcH;
-            const ctx = cropCanvas.getContext("2d");
-            if (ctx) {
-              ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-              const cropImg = cropCanvas.toDataURL("image/png");
-              const cropHMM = (srcH / 2) * scaleFactor;
-              pdf.addImage(cropImg, "PNG", MARGIN, currentY, CONTENT_W, cropHMM);
-              currentY += cropHMM;
-            }
-          }
-        } else {
-          const imgData = canvas.toDataURL("image/png");
-          pdf.addImage(imgData, "PNG", MARGIN, currentY, CONTENT_W, heightMM);
-          currentY += heightMM + SECTION_GAP;
-        }
-
-        isFirstPage = false;
-      }
-
-      // Clean up
-      document.body.removeChild(container);
-
-      // Save
-      const safeTitle = projectName.replace(/\s+/g, "_").substring(0, 40);
-      const suffix = isSummary ? "Resumen" : "Completo";
-      pdf.save(`Reporte_${safeTitle}_${suffix}.pdf`);
-
-      toast({ title: "PDF generado", description: "El archivo se descargó exitosamente" });
+      toast({ title: "PDF generado", description: filename });
     } catch (err) {
-      console.error("PDF generation error:", err);
+      console.error("PDFShift error:", err);
       toast({
         title: "Error al generar PDF",
         description: err instanceof Error ? err.message : "Error desconocido",
