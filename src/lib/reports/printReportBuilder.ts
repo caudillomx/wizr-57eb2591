@@ -115,13 +115,13 @@ function chartDailyBars(timeline: TimelinePoint[]): string {
     const color = i === maxIdx ? C.negative : C.accent;
     const dayLabel = t.date.slice(5);
     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
-      <span style="font-size:7px;font-weight:700;margin-bottom:2px;color:${C.textDark};">${t.count}</span>
-      <div style="width:60%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(pct * 0.5, 3)}px;"></div>
-      <span style="font-size:7px;color:${C.textGray};margin-top:2px;">${dayLabel}</span>
+      <span style="font-size:7px;font-weight:700;color:${C.textDark};margin-bottom:3px;">${t.count}</span>
+      <div style="width:55%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(pct * 0.45, 3)}px;"></div>
+      <span style="font-size:7px;color:${C.textGray};margin-top:3px;">${dayLabel}</span>
     </div>`;
   }).join("");
-  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Evolución Diaria</div>
-    <div style="display:flex;align-items:flex-end;height:60px;gap:2px;">${bars}</div></div>`;
+  return `<div><div style="font-size:9px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Evolución Diaria de Menciones</div>
+    <div style="display:flex;align-items:flex-end;height:55px;gap:3px;">${bars}</div></div>`;
 }
 
 function chartSentimentByPlatform(sources: SourceBreakdown[]): string {
@@ -255,9 +255,9 @@ export function buildReportHTML(
   let findingsHtml = "";
   if (findings.length > 0) {
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
-    findingsHtml += insightCard(highlightText(findings[0]), "🔍", firstSentiment);
+    findingsHtml += `<div class="avoid-break">${insightCard(highlightText(findings[0]), "🔍", firstSentiment)}</div>`;
     findings.slice(1).forEach((f, i) => {
-      findingsHtml += `<div class="finding-item" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+      findingsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
         <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
         <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
       </div>`;
@@ -300,7 +300,7 @@ export function buildReportHTML(
   if (!isSummary && report.narratives.length > 0) {
     const narrativesHtml = report.narratives.map(n => {
       const trendIcon = n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️";
-      return `<div class="narrative-card" style="border:1px solid ${C.border};border-radius:6px;padding:10px 14px;margin-bottom:10px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
+      return `<div class="avoid-break" style="border:1px solid ${C.border};border-radius:6px;padding:10px 14px;margin-bottom:10px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
           <span style="font-size:11px;font-weight:700;color:${C.textDark};">${escapeHtml(n.narrative)}</span>
           <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
