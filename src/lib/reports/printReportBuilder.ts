@@ -63,14 +63,14 @@ function detectBadge(report: SmartReportContent, isSummary: boolean): { label: s
 
 function section(title: string, body: string, headerBg = C.accent): string {
   return `<div class="report-section" style="margin-bottom:14px;border-radius:6px;overflow:hidden;border:1px solid ${C.border};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
+    <div class="section-header" style="background:${headerBg};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${escapeHtml(title)}</div>
     <div style="padding:14px 16px;background:${C.white};">${body}</div>
   </div>`;
 }
 
 // ── Highlight card for key insights ──
 function insightCard(text: string, icon: string, color: string): string {
-  return `<div style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
+  return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
     <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
     <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${text}</p>
   </div>`;
@@ -183,9 +183,9 @@ export function buildReportHTML(
     : "";
 
   // ── HEADER (compact, white logo on dark bg) ──
-  const header = `<div style="background:${C.primary};padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
+  const header = `<div style="background:${C.primary};padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:28px;filter:brightness(10);">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:40px;filter:brightness(10);">
     </div>
     <div style="text-align:right;">
       <span style="background:${badge.bg};color:#fff;font-size:8px;font-weight:700;padding:3px 12px;border-radius:3px;text-transform:uppercase;letter-spacing:1px;">${badge.label}</span>
@@ -318,7 +318,7 @@ export function buildReportHTML(
   if (recs.length > 0) {
     recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
-      recsHtml += `<div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+      recsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
         <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
         <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
       </div>`;
@@ -375,10 +375,12 @@ strong{font-weight:700;color:${C.primary};}
 @media print{
   body{width:100%;margin:0;padding:0;}
   .report-section{page-break-inside:auto;}
+  .section-header{page-break-after:avoid;}
+  .avoid-break{page-break-inside:avoid;}
+  .finding-item{page-break-inside:avoid;}
+  .narrative-card{page-break-inside:avoid;}
   table{page-break-inside:auto;}
   tr{page-break-inside:avoid;page-break-after:auto;}
-  .narrative-card{page-break-inside:avoid;}
-  .finding-item{page-break-inside:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;}
