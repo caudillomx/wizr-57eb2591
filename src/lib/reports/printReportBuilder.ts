@@ -362,24 +362,9 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // ── RUNNING HEADER (fixed on every page via @page margin box) ──
-  const runningHeader = `<div class="running-header">
-    <div class="running-header-inner">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="running-header-logo" />
-      <div class="running-header-meta">
-        <div class="running-header-project">${escapeHtml(projectName)}</div>
-        <div class="running-header-date">${escapeHtml(dateRange.label)}</div>
-      </div>
-    </div>
-  </div>`;
-
-  // ── RUNNING FOOTER (fixed on every page, includes "Página X de Y") ──
-  const runningFooter = `<div class="running-footer">
-    <div class="running-footer-inner">
-      <span class="running-footer-text">Generado con Wizr · ${generatedDate}</span>
-      <span class="running-footer-pages">Página <span class="page-num"></span> de <span class="page-total"></span></span>
-    </div>
-  </div>`;
+  // Header context: project + report type + date range
+  const headerContext = `${escapeHtml(projectName)} · ${escapeHtml(badge.label)} · ${escapeHtml(dateRange.label)}`;
+  const headerSubtitle = escapeHtml(report.title);
 
   return `<!DOCTYPE html>
 <html lang="es">
