@@ -10,18 +10,17 @@ import { Switch } from "@/components/ui/switch";
 import {
   Sparkles,
   FileText,
-  AlertTriangle,
-  BarChart3,
-  GitCompare,
   Loader2,
   RefreshCw,
   CheckCircle2,
   Filter,
   Target,
   Wand2,
+  BookOpen,
+  BarChart3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSmartReport, ReportType, ReportExtension, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
+import { useSmartReport, ReportFormat, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
 import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
@@ -45,19 +44,6 @@ interface SmartReportGeneratorProps {
     label: string;
   };
 }
-
-const REPORT_TYPES: { value: ReportType; label: string; icon: typeof FileText; description: string }[] = [
-  { value: "brief", label: "Brief Diario/Semanal", icon: FileText, description: "Resumen ejecutivo del periodo" },
-  { value: "crisis", label: "Alerta de Crisis", icon: AlertTriangle, description: "Documento urgente sobre eventos críticos" },
-  { value: "thematic", label: "Análisis Temático", icon: BarChart3, description: "Profundización en un tema detectado" },
-  { value: "comparative", label: "Reporte Comparativo", icon: GitCompare, description: "Benchmark entre entidades" },
-];
-
-const EXTENSIONS: { value: ReportExtension; label: string; description: string }[] = [
-  { value: "micro", label: "Micro", description: "1-2 párrafos • WhatsApp, tweets" },
-  { value: "short", label: "Corto", description: "1 página • Executive summary" },
-  { value: "medium", label: "Medio", description: "2-3 páginas • Análisis detallado" },
-];
 
 const SOURCE_TYPES = [
   { value: "__all__", label: "Todas las fuentes" },
@@ -97,8 +83,6 @@ export function SmartReportGenerator({
   const { toast } = useToast();
   const { generateReport, isGenerating, report, clearReport } = useSmartReport();
   
-  const [reportType, setReportType] = useState<ReportType>("brief");
-  const [extension, setExtension] = useState<ReportExtension>("short");
   const [strategicFocus, setStrategicFocus] = useState("");
   const [useClaudeHTML, setUseClaudeHTML] = useState(false);
   
@@ -124,7 +108,6 @@ export function SmartReportGenerator({
     return entity ? [entity.nombre] : entityNames;
   }, [entityFilter, entities, entityNames]);
 
-  // Sentiment data for charts
   const sentimentData = useMemo(() => {
     const breakdown = { positivo: 0, negativo: 0, neutral: 0, sinAnalizar: 0 };
     filteredMentions.forEach(m => {
@@ -136,10 +119,9 @@ export function SmartReportGenerator({
     return breakdown;
   }, [filteredMentions]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (format: ReportFormat) => {
     const config: SmartReportConfig = {
-      reportType,
-      extension,
+      reportFormat: format,
       projectName,
       projectAudience,
       projectObjective,
@@ -161,64 +143,16 @@ export function SmartReportGenerator({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Reportes Inteligentes
+          Reporte Inteligente
         </CardTitle>
         <CardDescription>
-          Genera productos de inteligencia listos para publicar en múltiples formatos
+          Genera un análisis integral con brief ejecutivo, narrativas, influenciadores y recomendaciones
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Configuration */}
         {!report && (
           <div className="space-y-4">
-            {/* Report Type Selection */}
-            <div className="space-y-2">
-              <Label>Tipo de Reporte</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {REPORT_TYPES.map((type) => {
-                  const Icon = type.icon;
-                  const isSelected = reportType === type.value;
-                  return (
-                    <button
-                      key={type.value}
-                      onClick={() => setReportType(type.value)}
-                      className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/50"
-                      }`}
-                    >
-                      <Icon className={`h-5 w-5 mt-0.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                      <div>
-                        <div className={`font-medium text-sm ${isSelected ? "text-primary" : ""}`}>{type.label}</div>
-                        <div className="text-xs text-muted-foreground">{type.description}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Extension Selection */}
-            <div className="space-y-2">
-              <Label>Extensión</Label>
-              <Select value={extension} onValueChange={(v) => setExtension(v as ReportExtension)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXTENSIONS.map((ext) => (
-                    <SelectItem key={ext.value} value={ext.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{ext.label}</span>
-                        <span className="text-xs text-muted-foreground">{ext.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Strategic Focus */}
             <div className="space-y-2 p-4 rounded-lg border border-primary/30 bg-primary/5">
               <div className="flex items-center gap-2">
@@ -237,7 +171,7 @@ export function SmartReportGenerator({
                 className="text-sm min-h-[80px]"
               />
               <p className="text-xs text-muted-foreground">
-                Define el ángulo específico del análisis. La IA enfocará el reporte en este contexto.
+                Define el ángulo específico del análisis. La IA interpretará el sentimiento y las narrativas en función de este contexto.
               </p>
             </div>
 
@@ -297,23 +231,40 @@ export function SmartReportGenerator({
               )}
             </div>
 
-            <Button
-              className="w-full"
-              onClick={handleGenerate}
-              disabled={isGenerating || filteredMentions.length === 0}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generando reporte inteligente...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generar Reporte ({filteredMentions.length} menciones)
-                </>
-              )}
-            </Button>
+            {/* Generate Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-center gap-2"
+                onClick={() => handleGenerate("summary")}
+                disabled={isGenerating || filteredMentions.length === 0}
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileText className="h-5 w-5 text-primary" />
+                )}
+                <div className="text-center">
+                  <div className="font-medium text-sm">Generar Resumen</div>
+                  <div className="text-xs text-muted-foreground">1-2 páginas • Para compartir rápido</div>
+                </div>
+              </Button>
+              <Button
+                className="h-auto py-4 flex flex-col items-center gap-2"
+                onClick={() => handleGenerate("full")}
+                disabled={isGenerating || filteredMentions.length === 0}
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <BookOpen className="h-5 w-5" />
+                )}
+                <div className="text-center">
+                  <div className="font-medium text-sm">Generar Reporte Completo</div>
+                  <div className="text-xs text-muted-foreground/80">4-6 páginas • Análisis integral</div>
+                </div>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -351,7 +302,7 @@ export function SmartReportGenerator({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-primary" />
-                  Principales Narrativas
+                  Análisis Narrativo
                 </h4>
                 <div className="space-y-2">
                   {report.narratives.map((n, i) => (
@@ -381,6 +332,17 @@ export function SmartReportGenerator({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Entity Comparison (conditional) */}
+            {report.entityComparison && (
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-orange-500" />
+                  Comparación entre Entidades
+                </h4>
+                <p className="text-sm text-muted-foreground">{report.entityComparison}</p>
               </div>
             )}
 
@@ -439,7 +401,6 @@ export function SmartReportGenerator({
                   dateRange={dateRange}
                   selectedTemplate="executive"
                   editedTemplate={report.templates?.executive || ""}
-                  reportType={reportType}
                   useClaudeHTML={useClaudeHTML}
                   rawMentions={filteredMentions}
                   projectAudience={projectAudience}
@@ -447,7 +408,6 @@ export function SmartReportGenerator({
                   strategicContext={strategicContext}
                   strategicFocus={strategicFocus}
                   entityNames={filteredEntityNames}
-                  extension={extension}
                 />
               </div>
             </div>
