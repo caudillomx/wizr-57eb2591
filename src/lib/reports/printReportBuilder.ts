@@ -380,9 +380,9 @@ strong{font-weight:700;color:${C.primary};}
 @media print{
   body{width:100%;margin:0;padding:0;}
   .report-section{page-break-inside:auto;break-inside:auto;}
+  .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
   .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
-  .section-header + div > .avoid-break:first-child,
-  .section-header + div > div:first-child{page-break-before:avoid;break-before:avoid;}
+  .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
   .avoid-break{page-break-inside:avoid;break-inside:avoid;}
   table{page-break-inside:auto;}
   thead{display:table-header-group;}
