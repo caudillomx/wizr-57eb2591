@@ -536,9 +536,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         mediaInsight: { type: "string" },
         platformsInsight: { type: "string" },
         entityComparison: { type: "string" },
-        keyFindings: { type: "array", minItems: 3, items: { type: "string" } },
+        keyFindings: { type: "array", minItems: 6, maxItems: 8, items: { type: "string", minLength: 280 } },
         conclusions: { type: "array", items: { type: "string" } },
-        recommendations: { type: "array", minItems: 3, items: { type: "string" } },
+        recommendations: { type: "array", minItems: 5, maxItems: 7, items: { type: "string", minLength: 320 } },
         narratives: {
           type: "array",
           minItems: 4,
