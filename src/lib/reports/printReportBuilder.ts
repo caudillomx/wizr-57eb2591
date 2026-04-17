@@ -396,7 +396,7 @@ html,body{width:100%;height:${HEADER_HEIGHT_MM}mm;overflow:hidden;margin:0;paddi
 .cell.right{text-align:right;color:#fff;overflow:hidden;}
 .logo{height:11mm;width:auto;display:block;}
 .ctx{display:block;font-size:8pt;line-height:1.1;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{display:block;font-size:9.5pt;line-height:1.1;font-weight:700;color:#fff;margin-top:0.8mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{display:-webkit-box;font-size:8pt;line-height:1.05;font-weight:700;color:#fff;margin-top:0.8mm;white-space:normal;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;max-height:6mm;}
 </style></head><body>
 <div class="bar">
   <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
