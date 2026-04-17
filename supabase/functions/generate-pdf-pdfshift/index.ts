@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       use_print: true,
       format: "A4",
       margin: {
-        top: header ? "24mm" : "0mm",
+        top: header ? "36mm" : "0mm",
         right: "0mm",
         bottom: footer ? "14mm" : "0mm",
         left: "0mm",
