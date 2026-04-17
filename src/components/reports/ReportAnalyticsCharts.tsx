@@ -13,6 +13,7 @@ import type { SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } 
 interface ReportAnalyticsChartsProps {
   sourceBreakdown: SourceBreakdown[];
   influencers: InfluencerInfo[];
+  mediaOutlets?: MediaOutletInfo[];
   timeline: TimelinePoint[];
   sentimentData: {
     positivo: number;
