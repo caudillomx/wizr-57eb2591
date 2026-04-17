@@ -320,9 +320,9 @@ serve(async (req) => {
     // Limit to 5 profiles max
     const limitedProfiles = profiles.slice(0, 5);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
     // Analyze each profile
@@ -332,7 +332,7 @@ serve(async (req) => {
       if (!profile.posts || profile.posts.length === 0) continue;
       
       try {
-        const analysis = await analyzeProfile(profile, dateRange, LOVABLE_API_KEY);
+        const analysis = await analyzeProfile(profile, dateRange, ANTHROPIC_API_KEY);
         profilesWithAnalysis.push({
           profileId: profile.profileName, // Using name as ID
           profileName: profile.profileName,
@@ -367,7 +367,7 @@ serve(async (req) => {
     // Generate comparison if multiple profiles
     let comparison: ComparativeAnalysis["comparison"] = undefined;
     if (profilesWithAnalysis.length > 1) {
-      comparison = await generateComparison(profilesWithAnalysis, LOVABLE_API_KEY);
+      comparison = await generateComparison(profilesWithAnalysis, ANTHROPIC_API_KEY);
     }
 
     // Return result - maintain backwards compatibility for single profile
