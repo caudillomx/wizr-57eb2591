@@ -468,7 +468,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:88px 0 44px 0;
+  margin:0 0 44px 0;
 
   @bottom-left{
     content:"Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
@@ -506,7 +506,7 @@ strong{font-weight:700;color:${C.primary};}
     right:0;
     z-index:999;
   }
-  .report-shell{padding:0;}
+  .report-shell{padding-top:84px;}
   .page-intro{page-break-inside:avoid;break-inside:avoid;}
   .page-intro-header{display:none;}
   .report-content{padding:0 20px 12px;}
