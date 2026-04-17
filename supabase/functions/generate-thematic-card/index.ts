@@ -300,56 +300,40 @@ ${mentionsContent}`;
       };
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [toolDefinition],
-        tool_choice: {
-          type: "function",
-          function: {
-            name: cardType === "conversation_analysis"
-              ? "generate_conversation_analysis"
-              : "generate_informative_card",
-          },
-        },
-      }),
-    });
+    const toolName = cardType === "conversation_analysis"
+      ? "generate_conversation_analysis"
+      : "generate_informative_card";
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    let content: any;
+    try {
+      content = await callClaudeTool({
+        apiKey: ANTHROPIC_API_KEY,
+        systemPrompt,
+        userPrompt,
+        toolName,
+        toolDescription: toolDefinition.function.description,
+        toolSchema: toolDefinition.function.parameters,
+        maxTokens: 4000,
+        temperature: 0.2,
+        timeoutMs: 110000,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "RATE_LIMIT") {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (msg === "PAYMENT_REQUIRED") {
         return new Response(
           JSON.stringify({ error: "Payment required. Please add credits to your workspace." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      console.error("Claude error:", msg);
+      throw err;
     }
-
-    const aiResponse = await response.json();
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (!toolCall) {
-      throw new Error("Invalid AI response structure");
-    }
-
-    const content = JSON.parse(toolCall.function.arguments);
 
     return new Response(
       JSON.stringify({ success: true, content }),
