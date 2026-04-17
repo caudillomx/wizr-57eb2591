@@ -453,7 +453,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:0;
+  margin:${HEADER_HEIGHT_MM}mm 0 ${FOOTER_HEIGHT_MM}mm 0;
 }
 
 @media print{
