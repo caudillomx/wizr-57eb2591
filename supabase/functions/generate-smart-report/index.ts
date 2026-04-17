@@ -177,41 +177,39 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
   const findings: string[] = [];
 
   findings.push(
-    `De las ${metrics.totalMentions} menciones recopiladas en el periodo, ${metrics.negativeCount} fueron negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). Este reparto confirma que el tono dominante del ecosistema no es marginal, sino una señal consistente en la muestra analizada. Estratégicamente, esta relación entre volumen y sentimiento sugiere priorizar decisiones de posicionamiento con base en riesgo reputacional y no solo en alcance bruto.`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. Esta proporción es el insumo base para evaluar, contra el Enfoque Estratégico definido para el proyecto, qué casos o actores listados están concentrando la carga reputacional negativa observada.`
   );
 
   if (sortedSources.length > 0) {
     const topThree = sortedSources.slice(0, 3).map(([source, data]) => `${source} (${data.count})`).join(", ");
     const mainSource = sortedSources[0];
+    const mainShare = metrics.totalMentions > 0 ? Math.round((mainSource[1].count / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `La cobertura se concentró sobre todo en ${topThree}, con ${mainSource[0]} al frente del volumen observado. Esta concentración indica que el encuadre público del periodo dependió de un número acotado de plataformas y medios, más que de una dispersión homogénea entre canales. Para la lectura estratégica, esto permite identificar con mayor precisión dónde se está formando la percepción dominante y qué espacios merecen respuesta prioritaria.`
+      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales. Conviene cruzar este reparto con los actores y casos del Enfoque Estratégico para definir en cuáles de esas plataformas la presión reputacional está realmente afectando los elementos que importan a la audiencia destinataria.`
     );
   }
 
   if (sortedAuthors.length > 0) {
     const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
     findings.push(
-      `Entre las voces con mayor tracción destacaron ${topAuthors}. Esto sugiere que la conversación no solo estuvo impulsada por medios o plataformas, sino también por emisores concretos con capacidad de amplificación y arrastre de engagement. En términos estratégicos, identificar a estos nodos ayuda a distinguir entre ruido distribuido y focos reales de incidencia narrativa.`
+      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. Para que este dato sea accionable hay que contrastar a cada uno contra el Enfoque Estratégico: ¿están abordando los casos, riesgos u oportunidades específicos que el proyecto definió como críticos, o se trata de cobertura tangencial que no toca esos elementos?`
     );
   }
 
   if (sortedDays.length > 0) {
     const [peakDay, peakCount] = sortedDays[0];
+    const peakShare = metrics.totalMentions > 0 ? Math.round((peakCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `El mayor pico de actividad se registró el ${peakDay}, con ${peakCount} menciones dentro del periodo monitoreado. La existencia de un día claramente dominante indica que hubo un momento de aceleración informativa o social que funcionó como ancla de la conversación. Para la toma de decisiones, este tipo de concentración temporal permite reconstruir detonadores y separar picos coyunturales de tendencias con mayor persistencia.`
+      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido. El paso siguiente es identificar qué hecho específico —vinculado a los casos o actores listados en el Enfoque Estratégico— operó como ancla de esa jornada, para distinguir entre coyuntura aislada y un episodio que tensiona directamente las prioridades del proyecto.`
     );
   }
 
   if (sortedKeywords.length > 0) {
     const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
     findings.push(
-      `Los términos con mayor reiteración en las menciones fueron ${topTerms}. Este patrón revela cuáles son los conceptos, actores o marcos interpretativos que estructuran la conversación más allá de titulares aislados. Estratégicamente, la recurrencia de estos términos sirve para entender qué asociaciones mentales están ganando densidad y cuáles podrían consolidarse como narrativa estable si no se corrigen o redirigen.`
+      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La pregunta operativa es si esos términos son los mismos que el Enfoque Estratégico identifica como núcleo del riesgo o de la oportunidad: cuando coinciden, el ecosistema está validando el mapa estratégico del proyecto; cuando aparecen términos no previstos con peso alto, hay que revisar si el Enfoque debe ampliarse.`
     );
   }
-
-  findings.push(
-    `La conversación observada combina volumen suficiente con reiteración temática, lo que sugiere un ecosistema más organizado de lo que aparenta una lectura superficial del feed de menciones. No se trata solo de impactos aislados, sino de señales que se repiten en distintos puntos del periodo y entre distintos tipos de fuente. Esa consistencia eleva la necesidad de interpretar el fenómeno como una trayectoria reputacional en desarrollo y no como ruido pasajero.`
-  );
 
   if (sortedSources.length > 1) {
     const socialCount = mentions.filter((m) => {
@@ -219,8 +217,9 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
       return ["twitter", "x.com", "facebook", "instagram", "tiktok", "youtube", "linkedin", "reddit"].some((token) => source.includes(token));
     }).length;
     const mediaCount = Math.max(0, mentions.length - socialCount);
+    const socialShare = metrics.totalMentions > 0 ? Math.round((socialCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `La mezcla entre redes sociales (${socialCount} menciones) y medios digitales (${mediaCount} menciones) muestra que el tema circuló en espacios con lógicas de amplificación distintas. Mientras las redes tienden a acelerar tono, reacción y polarización, los medios aportan registro, legitimación y permanencia documental del asunto. Esa combinación aumenta la probabilidad de que una conversación intensa trascienda del corto plazo y se convierta en referencia reputacional más durable.`
+      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? "El predominio de redes sugiere una conversación impulsada por reacción social más que por cobertura editorial estructurada" : mediaCount >= socialCount ? "El peso de medios digitales eleva la durabilidad reputacional del tema porque deja huella verificable" : "El equilibrio entre ambos canales obliga a gestionar simultáneamente velocidad de respuesta y consistencia documental"}, lo cual debe leerse contra los riesgos y oportunidades que el Enfoque Estratégico señala como prioritarios.`
     );
   }
 
