@@ -678,7 +678,67 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
             </div>
           )}
 
-          {/* — Recomendaciones Estratégicas — */}
+          {/* — Términos Destacados (Keyword Cloud) — */}
+          {(report as { keywords?: { term: string; count: number; sentiment: string }[] }).keywords && (report as { keywords?: { term: string; count: number; sentiment: string }[] }).keywords!.length > 0 && (
+            <div data-pdf-section style={SECTION_STYLE}>
+              <SectionHeader title="Términos Destacados" isCrisis={isCrisis} />
+              <SectionBody>
+                {(() => {
+                  const kws = (report as { keywords: { term: string; count: number; sentiment: string }[] }).keywords;
+                  const maxC = Math.max(...kws.map(k => k.count), 1);
+                  const minC = Math.min(...kws.map(k => k.count), 1);
+                  const range = Math.max(1, maxC - minC);
+                  const KW_SENT: Record<string, { bg: string; text: string; border: string }> = {
+                    positivo: { bg: "#ecfdf5", text: "#166534", border: "#bbf7d0" },
+                    negativo: { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
+                    mixto: { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+                    neutral: { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" },
+                  };
+                  const insight = (report as { keywordsInsight?: string }).keywordsInsight;
+                  return (
+                    <>
+                      <p style={{ fontSize: "10px", color: "#64748b", marginBottom: "10px", lineHeight: 1.5 }}>
+                        Conceptos más recurrentes en la conversación, dimensionados por frecuencia y coloreados por sentimiento.
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center", padding: "8px 4px" }}>
+                        {kws.map((k, i) => {
+                          const norm = (k.count - minC) / range;
+                          const fontSize = 10 + Math.round(norm * 9); // 10..19px
+                          const opacity = 0.75 + norm * 0.25;
+                          const s = KW_SENT[k.sentiment] || KW_SENT.mixto;
+                          return (
+                            <span key={i} style={{
+                              display: "inline-flex", alignItems: "baseline", gap: "4px",
+                              borderRadius: "999px", padding: "3px 10px",
+                              backgroundColor: s.bg, color: s.text, border: `1px solid ${s.border}`,
+                              fontSize: `${fontSize}px`, fontWeight: 700, lineHeight: 1.25, opacity,
+                            }}>
+                              {k.term}
+                              <span style={{ fontSize: "8px", fontWeight: 500, opacity: 0.7 }}>{k.count}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px", fontSize: "9px", color: "#475569", justifyContent: "center" }}>
+                        {(["positivo","negativo","mixto","neutral"] as const).map(sk => (
+                          <span key={sk} style={{ display: "inline-flex", alignItems: "center", gap: "4px", textTransform: "capitalize" }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: KW_SENT[sk].text, display: "inline-block" }} />
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                      {insight && (
+                        <p style={{ fontSize: "10px", color: "#475569", marginTop: "10px", lineHeight: 1.6, fontStyle: "italic", borderLeft: `2px solid ${ACCENT}`, paddingLeft: "10px" }}>
+                          {insight}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </SectionBody>
+            </div>
+          )}
+
           <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Recomendaciones Estratégicas" isCrisis={isCrisis} />
             <SectionBody>
