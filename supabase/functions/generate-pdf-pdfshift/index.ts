@@ -26,7 +26,12 @@ Deno.serve(async (req) => {
       landscape: false,
       use_print: true,
       format: "A4",
-      margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
+      margin: {
+        top: header ? "24mm" : "0mm",
+        right: "0mm",
+        bottom: footer ? "14mm" : "0mm",
+        left: "0mm",
+      },
     };
     if (header) payload.header = header;
     if (footer) payload.footer = footer;
