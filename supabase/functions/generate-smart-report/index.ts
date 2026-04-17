@@ -478,9 +478,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         apiKey: ANTHROPIC_API_KEY,
         systemPrompt,
         userPrompt,
-        maxTokens: MAX_TOKENS + 1000,
+        maxTokens: MAX_TOKENS,
         temperature: 0.2,
-        timeoutMs: 220000,
+        timeoutMs: 140000,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
