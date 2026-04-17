@@ -467,7 +467,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:16px 0 44px 0;
+  margin:0 0 44px 0;
 
   @bottom-left{
     content:"Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
