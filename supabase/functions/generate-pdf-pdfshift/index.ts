@@ -11,8 +11,8 @@ Deno.serve(async (req) => {
     const { html, filename, header, footer } = body as {
       html?: string;
       filename?: string;
-      header?: { source: string; height: number; start_at?: number };
-      footer?: { source: string; height: number; start_at?: number };
+      header?: { source: string; height: number | string; start_at?: number };
+      footer?: { source: string; height: number | string; start_at?: number };
     };
     console.log("[pdfshift] html length:", html?.length, "filename:", filename);
 
@@ -21,20 +21,35 @@ Deno.serve(async (req) => {
     const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
     if (!PDFSHIFT_API_KEY) throw new Error("PDFSHIFT_API_KEY not configured");
 
+    const headerHeightPx = header ? Number(header.height) || 0 : 0;
+    const footerHeightPx = footer ? Number(footer.height) || 0 : 0;
+
     const payload: Record<string, unknown> = {
       source: html,
       landscape: false,
       use_print: true,
       format: "A4",
       margin: {
-        top: header ? "32mm" : "0mm",
+        top: header ? `${headerHeightPx + 16}px` : "0px",
         right: "0mm",
-        bottom: footer ? "14mm" : "0mm",
+        bottom: footer ? `${footerHeightPx + 10}px` : "0px",
         left: "0mm",
       },
     };
-    if (header) payload.header = header;
-    if (footer) payload.footer = footer;
+    if (header) {
+      payload.header = {
+        ...header,
+        height: `${headerHeightPx}`,
+        start_at: header.start_at ?? 1,
+      };
+    }
+    if (footer) {
+      payload.footer = {
+        ...footer,
+        height: `${footerHeightPx}`,
+        start_at: footer.start_at ?? 1,
+      };
+    }
 
     const response = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
       method: "POST",

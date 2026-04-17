@@ -188,8 +188,8 @@ function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
 
 export interface BuiltReport {
   html: string;
-  header: { source: string; height: number };
-  footer: { source: string; height: number };
+  header: { source: string; height: number; start_at?: number };
+  footer: { source: string; height: number; start_at?: number };
 }
 
 export function buildReportHTML(
@@ -492,7 +492,7 @@ strong{font-weight:700;color:${C.primary};}
 
   return {
     html,
-    header: { source: pdfHeaderSource, height: HEADER_HEIGHT_PX },
-    footer: { source: pdfFooterSource, height: FOOTER_HEIGHT_PX },
+    header: { source: pdfHeaderSource, height: HEADER_HEIGHT_PX, start_at: 1 },
+    footer: { source: pdfFooterSource, height: FOOTER_HEIGHT_PX, start_at: 1 },
   };
 }
