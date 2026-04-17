@@ -376,7 +376,7 @@ export function SmartReportGenerator({
                 Exportar Reporte
               </h4>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="p-4 rounded-lg border bg-muted/20 space-y-2">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
@@ -403,7 +403,33 @@ export function SmartReportGenerator({
                     pdfFormat="full"
                   />
                 </div>
+                <div className="p-4 rounded-lg border-2 border-indigo-500/40 bg-gradient-to-br from-indigo-500/10 to-violet-500/5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Presentation className="h-4 w-4 text-indigo-500" />
+                    <span className="font-medium text-sm">Reporte Visual</span>
+                    <span className="text-[10px] uppercase tracking-wide bg-indigo-500 text-white px-1.5 py-0.5 rounded font-bold">Nuevo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Presentación 16:9 con KPIs gigantes y gráficas. Visor interactivo + PDF landscape.</p>
+                  <Button
+                    onClick={() => setVisualOpen(true)}
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-2 border-indigo-500/40 hover:bg-indigo-500/10"
+                  >
+                    <Presentation className="h-4 w-4" />
+                    Abrir visor
+                  </Button>
+                </div>
               </div>
+
+              <VisualSlidesViewer
+                open={visualOpen}
+                onOpenChange={setVisualOpen}
+                report={report}
+                projectName={projectName}
+                dateRange={dateRange}
+              />
+
 
               {/* Publicar como link público */}
               {projectId && (
