@@ -537,6 +537,56 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
   return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Narrativas" });
 }
 
+function slideKeywordsCloud(report: SmartReportContent, projectName: string, page: number, total: number): string {
+  const kws = (report as { keywords?: { term: string; count: number; sentiment: string }[] }).keywords || [];
+  const insight = (report as { keywordsInsight?: string }).keywordsInsight || "Los términos anteriores configuran el vocabulario dominante del periodo y orientan dónde la conversación pone su foco.";
+  const maxC = Math.max(...kws.map((k) => k.count), 1);
+  const minC = Math.min(...kws.map((k) => k.count), 1);
+  const range = Math.max(1, maxC - minC);
+  const KW_SENT: Record<string, { bg: string; text: string; border: string }> = {
+    positivo: { bg: "#ECFDF5", text: "#166534", border: "#BBF7D0" },
+    negativo: { bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA" },
+    mixto: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+    neutral: { bg: "#F1F5F9", text: "#475569", border: "#E2E8F0" },
+  };
+  const chips = kws
+    .map((k) => {
+      const norm = (k.count - minC) / range;
+      const fontSize = 22 + Math.round(norm * 36); // 22..58 px
+      const opacity = 0.78 + norm * 0.22;
+      const s = KW_SENT[k.sentiment] || KW_SENT.mixto;
+      return `<span style="display:inline-flex;align-items:baseline;gap:10px;border-radius:999px;padding:10px 26px;background:${s.bg};color:${s.text};border:2px solid ${s.border};font-size:${fontSize}px;font-weight:800;line-height:1.15;letter-spacing:-0.01em;opacity:${opacity};">
+        ${esc(k.term)}<span style="font-size:${Math.max(14, Math.round(fontSize * 0.5))}px;font-weight:600;opacity:0.65;">${k.count}</span>
+      </span>`;
+    })
+    .join("");
+  const body = `
+    <div style="padding:150px 80px 90px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">05 · Términos Destacados</div>
+      <h2 style="font-size:46px;font-weight:800;margin:0 0 8px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">El vocabulario de la conversación</h2>
+      <div style="font-size:18px;color:${C.textMid};margin-bottom:24px;">Conceptos más recurrentes, dimensionados por frecuencia y coloreados por sentimiento dominante.</div>
+      <div style="background:${C.paperAlt};border-radius:22px;padding:42px 48px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
+        <div style="display:flex;flex-wrap:wrap;gap:14px 16px;justify-content:center;align-items:center;max-width:1700px;">
+          ${chips || `<div style="font-size:22px;color:${C.textMuted};">Sin términos destacados disponibles.</div>`}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:16px;">
+        <div style="display:flex;gap:18px;font-size:13px;color:${C.textMid};">
+          ${(["positivo","negativo","mixto","neutral"] as const).map(sk => `
+            <span style="display:inline-flex;align-items:center;gap:6px;text-transform:capitalize;">
+              <span style="width:12px;height:12px;border-radius:3px;background:${KW_SENT[sk].text};display:inline-block;"></span>${sk}
+            </span>
+          `).join("")}
+        </div>
+        <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:14px 22px;font-size:14px;line-height:1.5;color:${C.text};max-width:1100px;">
+          <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 500))}
+        </div>
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Términos" });
+}
+
 function slideInfluencers(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const top = report.influencers.slice(0, 6);
   const insight = report.influencersInsight || "Las voces anteriores concentran buena parte de la conversación: su tono y alcance marcan el ritmo de la narrativa pública.";
@@ -734,7 +784,7 @@ export function buildSlidesReport(
   dateRange: DateRange,
 ): BuiltSlides {
   const slidesArr: string[] = [];
-  const totalEstimate = 11;
+  const totalEstimate = 12;
 
   let p = 1;
   slidesArr.push(slideCover(report, projectName, dateRange, totalEstimate));
@@ -749,6 +799,10 @@ export function buildSlidesReport(
   }
   if (report.narratives.length > 0) {
     slidesArr.push(slideNarratives(report, projectName, p, totalEstimate));
+    p++;
+  }
+  if (((report as { keywords?: unknown[] }).keywords || []).length > 0) {
+    slidesArr.push(slideKeywordsCloud(report, projectName, p, totalEstimate));
     p++;
   }
   if (report.influencers.length > 0) {

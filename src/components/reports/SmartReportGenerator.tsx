@@ -413,6 +413,66 @@ export function SmartReportGenerator({
               </div>
             )}
 
+            {/* Keywords Cloud */}
+            {report.keywords && report.keywords.length > 0 && (() => {
+              const KW_SENT: Record<string, { bg: string; text: string; border: string }> = {
+                positivo: { bg: "hsl(142 76% 36% / 0.10)", text: "hsl(142 71% 28%)", border: "hsl(142 71% 36% / 0.35)" },
+                negativo: { bg: "hsl(0 84% 60% / 0.10)", text: "hsl(0 70% 40%)", border: "hsl(0 84% 60% / 0.35)" },
+                mixto: { bg: "hsl(38 92% 50% / 0.12)", text: "hsl(28 80% 38%)", border: "hsl(38 92% 50% / 0.40)" },
+                neutral: { bg: "hsl(215 16% 57% / 0.12)", text: "hsl(215 20% 35%)", border: "hsl(215 16% 57% / 0.35)" },
+              };
+              const maxC = Math.max(...report.keywords.map(k => k.count), 1);
+              const minC = Math.min(...report.keywords.map(k => k.count), 1);
+              const range = Math.max(1, maxC - minC);
+              return (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Términos destacados
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Conceptos más recurrentes en la conversación, dimensionados por frecuencia y coloreados por sentimiento.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2 items-center justify-center py-2">
+                      {report.keywords.map((k, i) => {
+                        const norm = (k.count - minC) / range; // 0..1
+                        const fontSize = 12 + Math.round(norm * 14); // 12..26 px
+                        const opacity = 0.65 + norm * 0.35;
+                        const s = KW_SENT[k.sentiment] || KW_SENT.mixto;
+                        return (
+                          <span
+                            key={i}
+                            className="inline-flex items-baseline gap-1 rounded-full border px-3 py-1 font-semibold transition-transform hover:scale-105 cursor-default"
+                            style={{ fontSize: `${fontSize}px`, lineHeight: 1.2, backgroundColor: s.bg, color: s.text, borderColor: s.border, opacity }}
+                            title={`${k.term} · ${k.count} apariciones · ${k.sentiment}`}
+                          >
+                            {k.term}
+                            <span className="text-[10px] font-medium opacity-70">{k.count}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground justify-center">
+                      {(["positivo","negativo","mixto","neutral"] as const).map(s => (
+                        <span key={s} className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: KW_SENT[s].text }} />
+                          <span className="capitalize">{s}</span>
+                        </span>
+                      ))}
+                    </div>
+                    {report.keywordsInsight && (
+                      <p className="text-xs text-muted-foreground border-l-2 border-primary/40 pl-3 italic">
+                        {report.keywordsInsight}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             {/* Key Findings & Recommendations */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">

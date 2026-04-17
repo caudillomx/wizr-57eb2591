@@ -42,6 +42,12 @@ interface NarrativeItem {
   trend: "creciente" | "decreciente" | "estable";
 }
 
+interface KeywordCloudItem {
+  term: string;
+  count: number;
+  sentiment: "positivo" | "negativo" | "neutral" | "mixto";
+}
+
 interface ReportContent {
   title: string;
   summary: string;
@@ -51,6 +57,8 @@ interface ReportContent {
   impactAssessment?: string;
   sentimentAnalysis?: string;
   narratives?: NarrativeItem[];
+  keywords?: KeywordCloudItem[];
+  keywordsInsight?: string;
   narrativesInsight?: string;
   timelineInsight?: string;
   influencersInsight?: string;
@@ -342,8 +350,9 @@ serve(async (req) => {
 - keyFindings: 5-8
 - recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
+- keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
 - conclusions: 3-5
-- Cada insight interpretativo (timelineInsight, narrativesInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
+- Cada insight interpretativo (timelineInsight, narrativesInsight, keywordsInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
 
     const entityComparisonInstruction = hasDistinctEntities
       ? `\n"entityComparison": "string - Párrafo comparando volumen, sentimiento y cobertura entre las entidades: ${entityNames!.join(', ')}. Incluye share of voice y diferenciadores."`
@@ -437,6 +446,14 @@ ${JSON.stringify(mentionsSummary, null, 2)}
     }
   ],
   "narrativesInsight": "string - 2-3 oraciones explicando qué dice el conjunto de narrativas sobre la conversación pública. Máx 320 caracteres.",
+  "keywords": [
+    {
+      "term": "string - palabra o término clave (1-3 palabras). NUNCA incluyas artículos, preposiciones, conjunciones, pronombres, verbos auxiliares ni stopwords. Ej válidos: 'litigio', 'transparencia financiera', 'bursátil'. Ej inválidos: 'el', 'de', 'que', 'para', 'con', 'una', 'son', 'fue', 'the', 'and', 'this'. Términos en español preferentemente, en minúscula salvo nombres propios.",
+      "count": "number - entero ≥ 1. Frecuencia aproximada de aparición en la muestra; usa la heurística de la muestra y los CONTEOS VERIFICADOS si aplica.",
+      "sentiment": "positivo | negativo | neutral | mixto - sentimiento dominante asociado al término en el corpus"
+    }
+  ],
+  "keywordsInsight": "string - 2-3 oraciones interpretando los términos dominantes y qué revelan sobre el encuadre de la conversación. Máx 280 caracteres.",
   "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
   "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
   "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
@@ -601,6 +618,50 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         };
       });
 
+    // ====== KEYWORDS CLOUD: sanitize + stopword filter + dedupe ======
+    const STOPWORDS = new Set<string>([
+      // ES
+      "el","la","los","las","un","una","unos","unas","de","del","al","a","y","o","u","e","que","qué","como","cómo","con","sin","por","para","en","sobre","entre","hasta","desde","contra","bajo","tras","durante","mediante","según","ante","es","son","fue","fueron","ser","está","están","estar","ha","han","he","hemos","han","habrá","será","fueron","muy","más","menos","ya","aún","aun","tan","tanto","mismo","misma","esto","esta","este","estos","estas","ese","esa","esos","esas","aquel","aquella","aquellos","aquellas","cuando","mientras","donde","quien","cual","cuales","si","sí","no","ni","pero","aunque","porque","sino","tras","luego","ayer","hoy","mañana","ahora","aquí","allí","ahí","allá","acá","quizá","tal","cada","todo","toda","todos","todas","otro","otra","otros","otras","mucho","mucha","muchos","muchas","poco","poca","pocos","pocas","alguno","alguna","algún","algunos","algunas","ninguno","ninguna","ningún","mi","mis","tu","tus","su","sus","nuestro","nuestra","nuestros","nuestras","yo","tú","él","ella","ellos","ellas","nosotros","ustedes","lo","les","le","se","me","te","nos","os","esto","eso","aquello","via","vía",
+      // EN
+      "the","a","an","and","or","of","in","on","for","to","with","without","by","from","at","as","is","are","was","were","be","been","being","this","that","these","those","it","its","they","their","them","there","here","but","if","then","than","so","such","also","more","less","most","least","very","much","many","few","one","two","other","another","some","any","no","not","only","own","same","just","into","over","under","between","about","after","before","during","while","because","through","again","further","up","down","out","off","once","new","old","via","i","you","we","he","she","my","your","our","your","his","her","mine","ours","theirs"
+    ]);
+    const cleanTerm = (t: string): string =>
+      t.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/^[^a-z0-9áéíóúñ]+|[^a-z0-9áéíóúñ]+$/giu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const isValidKeyword = (raw: string): boolean => {
+      if (!raw) return false;
+      const t = cleanTerm(raw);
+      if (t.length < 3) return false;
+      if (/^\d+$/.test(t)) return false;
+      // Reject if all words are stopwords
+      const words = t.split(/\s+/);
+      if (words.length > 3) return false;
+      const allStop = words.every(w => STOPWORDS.has(w));
+      if (allStop) return false;
+      return true;
+    };
+    const rawKeywords = Array.isArray((reportContent as { keywords?: unknown }).keywords) ? ((reportContent as { keywords: KeywordCloudItem[] }).keywords) : [];
+    const seenTerms = new Set<string>();
+    const safeKeywords: KeywordCloudItem[] = rawKeywords
+      .filter((k) => k && typeof k.term === "string" && isValidKeyword(k.term))
+      .map((k) => {
+        const c = Number(k.count);
+        const sentRaw = k.sentiment;
+        const sent: KeywordCloudItem["sentiment"] = sentRaw === "positivo" || sentRaw === "negativo" || sentRaw === "neutral" || sentRaw === "mixto" ? sentRaw : "mixto";
+        return { term: k.term.trim(), count: Number.isFinite(c) && c > 0 ? Math.round(c) : 1, sentiment: sent };
+      })
+      .filter((k) => {
+        const key = cleanTerm(k.term);
+        if (seenTerms.has(key)) return false;
+        seenTerms.add(key);
+        return true;
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 25);
+
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
@@ -610,6 +671,8 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
       narratives: safeNarratives,
+      keywords: safeKeywords.length > 0 ? safeKeywords : undefined,
+      keywordsInsight: (reportContent as { keywordsInsight?: string }).keywordsInsight || undefined,
       narrativesInsight: reportContent.narrativesInsight || undefined,
       timelineInsight: reportContent.timelineInsight || undefined,
       influencersInsight: reportContent.influencersInsight || undefined,
