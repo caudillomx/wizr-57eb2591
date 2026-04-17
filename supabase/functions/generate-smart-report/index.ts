@@ -81,7 +81,7 @@ interface ReportContent {
 }
 
 // Always generate full report; PDF trimming happens client-side
-const MAX_TOKENS = 6000;
+const MAX_TOKENS = 4000;
 
 // Detect if entity names are semantically the same (different capitalizations/variations of the same name)
 function areEntitiesDistinct(names: string[]): boolean {
@@ -241,9 +241,9 @@ serve(async (req) => {
 
     const detailedAnalysis = buildDetailedMentionAnalysis(mentions);
 
-    const mentionsSummary = mentions.slice(0, 50).map(m => ({
+    const mentionsSummary = mentions.slice(0, 30).map(m => ({
       title: m.title,
-      description: m.description?.substring(0, 250),
+      description: m.description?.substring(0, 180),
       source: m.source_domain,
       sentiment: m.sentiment,
       keywords: m.matched_keywords?.join(", "),
@@ -478,9 +478,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         apiKey: ANTHROPIC_API_KEY,
         systemPrompt,
         userPrompt,
-        maxTokens: MAX_TOKENS + 1000,
+        maxTokens: MAX_TOKENS,
         temperature: 0.2,
-        timeoutMs: 220000,
+        timeoutMs: 140000,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
