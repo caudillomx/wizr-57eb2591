@@ -81,7 +81,7 @@ interface ReportContent {
 }
 
 // Always generate full report; PDF trimming happens client-side
-const MAX_TOKENS = 6000;
+const MAX_TOKENS = 4000;
 
 // Detect if entity names are semantically the same (different capitalizations/variations of the same name)
 function areEntitiesDistinct(names: string[]): boolean {
