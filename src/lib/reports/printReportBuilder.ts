@@ -227,7 +227,7 @@ export function buildReportHTML(
       <div style="font-size:8px;color:${C.textGray};margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">${label}</div>
     </div>`;
   const sep = `<div style="width:1px;background:${C.border};margin:8px 0;"></div>`;
-  const metricsRow = `<div style="display:flex;align-items:stretch;border:1px solid ${C.border};border-radius:6px;margin:14px 20px;background:${C.white};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+  const metricsRow = `<div style="display:flex;align-items:stretch;border:1px solid ${C.border};border-radius:6px;margin:6px 20px 0;background:${C.white};box-shadow:0 1px 3px rgba(0,0,0,0.04);">
     ${metricCell(fmtNum(report.metrics.estimatedImpressions), "Impresiones Est.")}${sep}
     ${metricCell(report.metrics.totalMentions.toString(), "Total Menciones")}${sep}
     ${metricCell(fmtNum(report.metrics.estimatedReach), "Alcance Est.")}${sep}
@@ -238,7 +238,7 @@ export function buildReportHTML(
   const posW = (report.metrics.positiveCount / total) * 100;
   const neuW = (report.metrics.neutralCount / total) * 100;
   const negW = (report.metrics.negativeCount / total) * 100;
-  const sentBar = `<div style="padding:4px 20px 12px;">
+  const sentBar = `<div style="padding:2px 20px 8px;">
     <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.12);">
       <div style="width:${posW}%;background:${C.positive};"></div>
       <div style="width:${neuW}%;background:${C.neutral};"></div>
