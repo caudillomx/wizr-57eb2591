@@ -186,12 +186,18 @@ function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Top Influenciadores</div>${rows}</div>`;
 }
 
+export interface BuiltReport {
+  html: string;
+  header: { source: string; height: number };
+  footer: { source: string; height: number };
+}
+
 export function buildReportHTML(
   report: SmartReportContent,
   projectName: string,
   dateRange: DateRange,
   isSummary: boolean,
-): string {
+): BuiltReport {
   const badge = detectBadge(report, isSummary);
   const generatedDate = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
   const total = report.metrics.totalMentions || 1;
@@ -371,17 +377,39 @@ export function buildReportHTML(
 
   const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 68);
   const headerSubtitle = truncateText(report.title, 90);
-  const repeatedHeader = `<div class="print-repeat-header" aria-hidden="true">
-    <div class="print-repeat-header-inner">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="print-repeat-header-logo" />
-      <div class="print-repeat-header-copy">
-        <div class="print-repeat-header-context">${escapeHtml(headerContext)}</div>
-        <div class="print-repeat-header-title">${escapeHtml(headerSubtitle)}</div>
-      </div>
-    </div>
-  </div>`;
 
-  return `<!DOCTYPE html>
+  // PDFShift native header (repeated on every page, reserves space physically)
+  const HEADER_HEIGHT_PX = 90;
+  const FOOTER_HEIGHT_PX = 38;
+
+  const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+body{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 26px;gap:18px;}
+.logo{height:54px;width:auto;display:block;flex-shrink:0;}
+.copy{min-width:0;max-width:72%;text-align:right;color:#fff;}
+.ctx{font-size:10px;line-height:1.35;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{font-size:11px;line-height:1.35;font-weight:700;color:#fff;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style></head><body>
+<img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" />
+<div class="copy">
+  <div class="ctx">${escapeHtml(headerContext)}</div>
+  <div class="title">${escapeHtml(headerSubtitle)}</div>
+</div>
+</body></html>`;
+
+  const pdfFooterSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+body{width:100%;height:${FOOTER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#fff;}
+.left{font-size:8.5px;color:${C.accentLight};letter-spacing:0.4px;}
+.right{font-size:9px;font-weight:600;letter-spacing:0.4px;color:#fff;}
+</style></head><body>
+<div class="left">Generado con Wizr · ${escapeHtml(generatedDate)}</div>
+<div class="right">Página {{page}} de {{total}}</div>
+</body></html>`;
+
+  const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -404,112 +432,21 @@ body{
 }
 strong{font-weight:700;color:${C.primary};}
 .report-shell{background:${C.white};}
-.print-report-table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:${C.white};
-}
-.print-report-table td{
-  padding:0;
-  vertical-align:top;
-}
-.print-report-table thead{display:none;}
-.print-repeat-header{
-  display:none;
-  background:${C.primary};
-  height:72px;
-  box-sizing:border-box;
-}
-.print-repeat-header-inner{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:18px;
-  height:100%;
-  padding:0 26px;
-}
-.print-repeat-header-logo{
-  height:56px;
-  width:auto;
-  display:block;
-  flex-shrink:0;
-}
-.print-repeat-header-copy{
-  min-width:0;
-  max-width:72%;
-  text-align:right;
-  color:#fff;
-}
-.print-repeat-header-context{
-  font-size:10px;
-  line-height:1.35;
-  font-weight:600;
-  color:${C.accentLight};
-  letter-spacing:0.2px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.print-repeat-header-title{
-  font-size:11px;
-  line-height:1.35;
-  font-weight:700;
-  color:#fff;
-  margin-top:4px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
 .page-intro{padding-bottom:6px;}
-.report-content{padding:0 20px 18px;}
+.page-intro-header{display:none;}
+.report-content{padding:14px 20px 18px;}
 .report-content > .pdf-section-block{margin-bottom:14px;}
 .report-content > .pdf-section-block:last-child{margin-bottom:0;}
 
 @page{
   size:A4;
-  margin:0 0 44px 0;
-
-  @bottom-left{
-    content:"Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
-    background-color:${C.primary};
-    color:${C.accentLight};
-    font-family:'Inter',sans-serif;
-    font-size:8.5px;
-    letter-spacing:0.4px;
-    padding:0 0 0 24px;
-    width:100%;
-    margin:0;
-    vertical-align:middle;
-  }
-  @bottom-right{
-    content:"Página " counter(page) " de " counter(pages);
-    background-color:${C.primary};
-    color:#ffffff;
-    font-family:'Inter',sans-serif;
-    font-size:9px;
-    font-weight:600;
-    letter-spacing:0.4px;
-    padding:0 24px 0 0;
-    margin:0;
-    vertical-align:middle;
-  }
+  margin:0;
 }
 
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .print-repeat-header{
-    display:block;
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    z-index:999;
-  }
-  .report-shell{padding-top:84px;}
-  .page-intro{page-break-inside:avoid;break-inside:avoid;}
-  .page-intro-header{display:none;}
-  .report-content{padding:0 20px 12px;}
+  .report-shell{padding:0;}
+  .report-content{padding:14px 20px 12px;}
   .report-content > .pdf-section-block{margin-bottom:14px;padding-bottom:8px;}
   .report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
   .pdf-section-block{page-break-inside:auto;break-inside:auto;}
@@ -532,24 +469,21 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
-  ${repeatedHeader}
   <div class="report-shell">
-    <table class="print-report-table" role="presentation">
-      <tbody>
-        <tr class="print-intro-row">
-          <td>
-            <div class="page-intro">
-              <div class="page-intro-header">${header}</div>
-              ${metricsRow}${sentBar}
-            </div>
-            <div class="report-content">
-              ${blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="block-${blockIndex + 1}">${block}</div>`).join("\n")}
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="page-intro">
+      <div class="page-intro-header">${header}</div>
+      ${metricsRow}${sentBar}
+    </div>
+    <div class="report-content">
+      ${blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="block-${blockIndex + 1}">${block}</div>`).join("\n")}
+    </div>
   </div>
 </body>
 </html>`;
+
+  return {
+    html,
+    header: { source: pdfHeaderSource, height: HEADER_HEIGHT_PX },
+    footer: { source: pdfFooterSource, height: FOOTER_HEIGHT_PX },
+  };
 }

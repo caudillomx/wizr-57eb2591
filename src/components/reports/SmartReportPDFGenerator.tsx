@@ -42,10 +42,10 @@ export function SmartReportPDFGenerator({
   /** Web preview via window.open (for quick browser print) */
   const handlePreview = () => {
     const reportData = isSummary ? trimReportForSummary(report) : report;
-    const html = buildReportHTML(reportData, projectName, dateRange, isSummary);
+    const built = buildReportHTML(reportData, projectName, dateRange, isSummary);
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(html);
+    win.document.write(built.html);
     win.document.close();
     win.onload = () => setTimeout(() => win.print(), 300);
   };
@@ -55,11 +55,11 @@ export function SmartReportPDFGenerator({
     setIsGenerating(true);
     try {
       const reportData = isSummary ? trimReportForSummary(report) : report;
-      const html = buildReportHTML(reportData, projectName, dateRange, isSummary);
+      const built = buildReportHTML(reportData, projectName, dateRange, isSummary);
       const filename = `${isSummary ? "resumen" : "reporte_completo"}_${projectName.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`;
 
       const { data, error } = await supabase.functions.invoke("generate-pdf-pdfshift", {
-        body: { html, filename },
+        body: { html: built.html, filename, header: built.header, footer: built.footer },
       });
 
       if (error) throw new Error(error.message);
