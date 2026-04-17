@@ -375,8 +375,8 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 56);
-  const headerSubtitle = truncateText(report.title, 68);
+  const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 42);
+  const headerSubtitle = truncateText(report.title, 58);
 
   // PDFShift v3 expects header/footer height in mm (as string).
   // A4 = 210 x 297 mm. We reserve the band physically with these values.
@@ -391,18 +391,21 @@ export function buildReportHTML(
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
 html,body{width:100%;height:${HEADER_HEIGHT_MM}mm;overflow:hidden;margin:0;padding:0;background:${C.primary};}
 .bar{width:100%;height:${HEADER_HEIGHT_MM}mm;background:${C.primary};display:table;table-layout:fixed;}
-.cell{display:table-cell;vertical-align:middle;padding:${HEADER_PAD_TOP_MM}mm 12mm ${HEADER_PAD_BOTTOM_MM}mm 12mm;box-sizing:border-box;}
-.cell.left{width:55mm;}
+.cell{display:table-cell;vertical-align:middle;padding:${HEADER_PAD_TOP_MM}mm 10mm ${HEADER_PAD_BOTTOM_MM}mm 10mm;box-sizing:border-box;}
+.cell.left{width:40mm;}
 .cell.right{text-align:right;color:#fff;overflow:hidden;}
-.logo{height:11mm;width:auto;display:block;}
-.ctx{display:block;font-size:8pt;line-height:1.1;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{display:-webkit-box;font-size:8pt;line-height:1.05;font-weight:700;color:#fff;margin-top:0.8mm;white-space:normal;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;max-height:6mm;}
+.logo{height:10mm;width:auto;display:block;}
+.text-wrap{display:block;width:100%;max-width:145mm;margin-left:auto;overflow:hidden;}
+.ctx{display:block;max-width:145mm;font-size:7pt;line-height:1.1;font-weight:600;color:${C.accentLight};letter-spacing:0.15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{display:block;max-width:145mm;font-size:7.6pt;line-height:1.1;font-weight:700;color:#fff;margin-top:0.7mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
 <div class="bar">
   <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
   <div class="cell right">
-    <div class="ctx">${escapeHtml(headerContext)}</div>
-    <div class="title">${escapeHtml(headerSubtitle)}</div>
+    <div class="text-wrap">
+      <div class="ctx">${escapeHtml(headerContext)}</div>
+      <div class="title">${escapeHtml(headerSubtitle)}</div>
+    </div>
   </div>
 </div>
 </body></html>`;
