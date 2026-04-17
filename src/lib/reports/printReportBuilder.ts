@@ -448,7 +448,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:0;
+  margin:24mm 0 14mm 0;
 }
 
 @media print{
