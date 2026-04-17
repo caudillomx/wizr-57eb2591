@@ -24,7 +24,8 @@ import type { Mention } from "@/hooks/useMentions";
 import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
-import { Globe } from "lucide-react";
+import { VisualSlidesViewer } from "./VisualSlidesViewer";
+import { Globe, Presentation } from "lucide-react";
 
 interface Entity {
   id: string;

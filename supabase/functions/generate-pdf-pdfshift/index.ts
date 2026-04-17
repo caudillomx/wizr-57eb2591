@@ -8,13 +8,15 @@ Deno.serve(async (req) => {
   try {
     console.log("[pdfshift] request received, content-length:", req.headers.get("content-length"));
     const body = await req.json();
-    const { html, filename, header, footer } = body as {
+    const { html, filename, header, footer, landscape, format: pageFormat } = body as {
       html?: string;
       filename?: string;
       header?: { source: string; height: string; start_at?: number };
       footer?: { source: string; height: string; start_at?: number };
+      landscape?: boolean;
+      format?: string;
     };
-    console.log("[pdfshift] html length:", html?.length, "filename:", filename);
+    console.log("[pdfshift] html length:", html?.length, "filename:", filename, "landscape:", landscape, "format:", pageFormat);
 
     if (!html) throw new Error("No HTML provided");
 
@@ -25,9 +27,9 @@ Deno.serve(async (req) => {
     // numbers as mm — that's what was breaking the layout.
     const payload: Record<string, unknown> = {
       source: html,
-      landscape: false,
+      landscape: landscape ?? false,
       use_print: true,
-      format: "A4",
+      format: pageFormat ?? "A4",
       margin: {
         top: "0mm",
         right: "0mm",
