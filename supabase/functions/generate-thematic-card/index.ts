@@ -392,55 +392,42 @@ ${mentionsContext}
 
 INSTRUCCIÓN: Regenera SOLO la sección "${sectionConfig.label}" con contenido fresco y diferente, pero manteniéndolo coherente con el contexto. ${sectionConfig.instruction}`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [sectionConfig.tool],
-      tool_choice: { type: "function", function: { name: sectionConfig.tool.function.name } },
-    }),
-  });
-
-  if (!response.ok) {
-    if (response.status === 429) {
+  let regeneratedContent: any;
+  try {
+    regeneratedContent = await callClaudeTool({
+      apiKey,
+      systemPrompt,
+      userPrompt,
+      toolName: sectionConfig.tool.function.name,
+      toolDescription: `Regenerate ${sectionConfig.label}`,
+      toolSchema: sectionConfig.tool.function.parameters,
+      maxTokens: 2500,
+      temperature: 0.3,
+      timeoutMs: 90000,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === "RATE_LIMIT") {
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (response.status === 402) {
+    if (msg === "PAYMENT_REQUIRED") {
       return new Response(
         JSON.stringify({ error: "Payment required. Please add credits to your workspace." }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
-    throw new Error(`AI gateway error: ${response.status}`);
+    console.error("Claude regeneration error:", msg);
+    throw err;
   }
-
-  const aiResponse = await response.json();
-  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-
-  if (!toolCall) {
-    throw new Error("Invalid AI response structure");
-  }
-
-  const regeneratedContent = JSON.parse(toolCall.function.arguments);
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
+    JSON.stringify({
+      success: true,
       section,
-      content: regeneratedContent[section] || regeneratedContent.value 
+      content: regeneratedContent[section] || regeneratedContent.value
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
