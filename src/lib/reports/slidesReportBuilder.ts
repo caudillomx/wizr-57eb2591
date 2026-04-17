@@ -330,7 +330,7 @@ function slideCover(report: SmartReportContent, projectName: string, dateRange: 
 
         <!-- Footer tag -->
         <div style="position:absolute;bottom:48px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:0.28em;color:${C.textMid};text-transform:uppercase;font-weight:700;z-index:5;">
-          wizr.com.mx
+          wizr.mx
         </div>
       </div>
     </div>
