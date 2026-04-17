@@ -379,7 +379,7 @@ export function buildReportHTML(
   const headerSubtitle = truncateText(report.title, 68);
 
   // PDFShift native header (repeated on every page, reserves space physically)
-  const HEADER_HEIGHT_PX = 136;
+  const HEADER_HEIGHT_PX = 112;
   const FOOTER_HEIGHT_PX = 34;
 
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -387,12 +387,12 @@ export function buildReportHTML(
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
 html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;padding:0;background:${C.primary};}
 .bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:table;table-layout:fixed;}
-.cell{display:table-cell;vertical-align:middle;padding:0 36px;}
-.cell.left{width:auto;}
-.cell.right{text-align:right;color:#fff;}
-.logo{height:60px;width:auto;display:block;}
-.ctx{font-size:14px;line-height:1.3;font-weight:600;color:${C.accentLight};letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{font-size:16px;line-height:1.3;font-weight:700;color:#fff;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cell{display:table-cell;vertical-align:middle;padding:10px 36px;box-sizing:border-box;}
+.cell.left{width:240px;}
+.cell.right{text-align:right;color:#fff;overflow:hidden;}
+.logo{height:50px;width:auto;display:block;}
+.ctx{display:block;font-size:12px;line-height:1.2;font-weight:600;color:${C.accentLight};letter-spacing:0.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{display:block;font-size:14px;line-height:1.2;font-weight:700;color:#fff;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
 <div class="bar">
   <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
@@ -449,7 +449,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:42mm 0 14mm 0;
+  margin:32mm 0 14mm 0;
 }
 
 @media print{
