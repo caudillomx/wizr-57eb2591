@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callClaudeTool } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,113 +129,80 @@ ${topPosts.map((p, i) => `${i+1}. (Eng: ${p.engagement}) ${p.message.substring(0
 TODOS LOS POSTS:
 ${postsContent}`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "narrative_analysis",
-            description: "Return detailed narrative analysis of social media content",
-            parameters: {
-              type: "object",
-              properties: {
-                dominantNarratives: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      theme: { type: "string", description: "Nombre específico del tema/narrativa (NO genérico)" },
-                      description: { type: "string", description: "Descripción detallada de la narrativa con contexto" },
-                      frequency: { type: "number", description: "Porcentaje de posts que usan esta narrativa (0-100)" },
-                      sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
-                      examplePosts: { 
-                        type: "array", 
-                        items: { type: "string" },
-                        description: "2-3 fragmentos textuales REALES de los posts como ejemplo"
-                      }
-                    },
-                    required: ["theme", "description", "frequency", "sentiment", "examplePosts"]
-                  }
-                },
-                toneAnalysis: {
-                  type: "object",
-                  properties: {
-                    overall: { type: "string", enum: ["formal", "informal", "mixed"] },
-                    emotionalTone: { type: "string", description: "Tono emocional específico: Inspirador, Informativo, Promocional, Educativo, Urgente, etc." },
-                    callToAction: { type: "boolean" }
-                  },
-                  required: ["overall", "emotionalTone", "callToAction"]
-                },
-                topHashtags: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      tag: { type: "string" },
-                      count: { type: "number" }
-                    },
-                    required: ["tag", "count"]
-                  }
-                },
-                contentStrategy: {
-                  type: "object",
-                  properties: {
-                    primaryFocus: { type: "string", description: "Enfoque principal ESPECÍFICO, no genérico" },
-                    strengths: { 
-                      type: "array", 
-                      items: { type: "string" },
-                      description: "3-4 fortalezas específicas con justificación"
-                    },
-                    opportunities: { 
-                      type: "array", 
-                      items: { type: "string" },
-                      description: "2-3 oportunidades de mejora concretas y accionables"
-                    }
-                  },
-                  required: ["primaryFocus", "strengths", "opportunities"]
-                },
-                summary: { type: "string", description: "Resumen ejecutivo de 3-4 oraciones con datos específicos y una observación diferenciadora" }
-              },
-              required: ["dominantNarratives", "toneAnalysis", "topHashtags", "contentStrategy", "summary"]
+  const toolSchema = {
+    type: "object",
+    properties: {
+      dominantNarratives: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            theme: { type: "string", description: "Nombre específico del tema/narrativa (NO genérico)" },
+            description: { type: "string", description: "Descripción detallada de la narrativa con contexto" },
+            frequency: { type: "number", description: "Porcentaje de posts que usan esta narrativa (0-100)" },
+            sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
+            examplePosts: {
+              type: "array",
+              items: { type: "string" },
+              description: "2-3 fragmentos textuales REALES de los posts como ejemplo"
             }
-          }
+          },
+          required: ["theme", "description", "frequency", "sentiment", "examplePosts"]
         }
-      ],
-      tool_choice: { type: "function", function: { name: "narrative_analysis" } },
-    }),
+      },
+      toneAnalysis: {
+        type: "object",
+        properties: {
+          overall: { type: "string", enum: ["formal", "informal", "mixed"] },
+          emotionalTone: { type: "string", description: "Tono emocional específico: Inspirador, Informativo, Promocional, Educativo, Urgente, etc." },
+          callToAction: { type: "boolean" }
+        },
+        required: ["overall", "emotionalTone", "callToAction"]
+      },
+      topHashtags: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            tag: { type: "string" },
+            count: { type: "number" }
+          },
+          required: ["tag", "count"]
+        }
+      },
+      contentStrategy: {
+        type: "object",
+        properties: {
+          primaryFocus: { type: "string", description: "Enfoque principal ESPECÍFICO, no genérico" },
+          strengths: {
+            type: "array",
+            items: { type: "string" },
+            description: "3-4 fortalezas específicas con justificación"
+          },
+          opportunities: {
+            type: "array",
+            items: { type: "string" },
+            description: "2-3 oportunidades de mejora concretas y accionables"
+          }
+        },
+        required: ["primaryFocus", "strengths", "opportunities"]
+      },
+      summary: { type: "string", description: "Resumen ejecutivo de 3-4 oraciones con datos específicos y una observación diferenciadora" }
+    },
+    required: ["dominantNarratives", "toneAnalysis", "topHashtags", "contentStrategy", "summary"]
+  };
+
+  return await callClaudeTool<NarrativeAnalysis>({
+    apiKey,
+    systemPrompt,
+    userPrompt,
+    toolName: "narrative_analysis",
+    toolDescription: "Return detailed narrative analysis of social media content",
+    toolSchema,
+    maxTokens: 4000,
+    temperature: 0.2,
+    timeoutMs: 90000,
   });
-
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error("RATE_LIMIT");
-    }
-    if (response.status === 402) {
-      throw new Error("PAYMENT_REQUIRED");
-    }
-    const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
-    throw new Error(`AI gateway error: ${response.status}`);
-  }
-
-  const aiResponse = await response.json();
-  
-  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall || toolCall.function.name !== "narrative_analysis") {
-    throw new Error("Invalid AI response structure");
-  }
-
-  return JSON.parse(toolCall.function.arguments);
 }
 
 // Generate comparative insights
