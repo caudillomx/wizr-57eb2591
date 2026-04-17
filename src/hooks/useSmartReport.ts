@@ -151,46 +151,115 @@ export function useSmartReport() {
       return null;
     };
 
+    // ===== HÍBRIDO: separar Influenciadores (redes) vs Medios digitales =====
+    const SOCIAL_DOMAINS = ["twitter.com", "x.com", "facebook.com", "instagram.com", "tiktok.com", "youtube.com", "reddit.com", "linkedin.com"];
+    const KNOWN_MEDIA_BRANDS: Record<string, string> = {
+      "elfinanciero": "El Financiero", "eleconomista": "El Economista", "expansion": "Expansión",
+      "reforma": "Reforma", "eluniversal": "El Universal", "milenio": "Milenio",
+      "excelsior": "Excélsior", "jornada": "La Jornada", "forbes": "Forbes",
+      "bloomberg": "Bloomberg", "reuters": "Reuters", "informador": "El Informador",
+      "proceso": "Proceso", "animalpolitico": "Animal Político", "aristeguinoticias": "Aristegui Noticias",
+      "sinembargo": "Sin Embargo", "sdpnoticias": "SDP Noticias", "hrratings": "HR Ratings",
+      "cbonds": "Cbonds", "polemon": "Polemón", "infobae": "Infobae", "elpais": "El País",
+    };
+    const formatDomainAsName = (domain: string): string => {
+      const clean = domain.replace(/^(www\.|m\.|amp\.)/, "").replace(/\.(com|org|net|mx|es|co|io|info|gov|edu)(\.\w+)?$/, "");
+      const key = clean.replace(/[-_.]/g, "").toLowerCase();
+      if (KNOWN_MEDIA_BRANDS[key]) return KNOWN_MEDIA_BRANDS[key];
+      return clean.split(/[-_.]/).filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" ");
+    };
+    const isSocialDomain = (d: string) => SOCIAL_DOMAINS.includes(d);
+    const isKnownMediaDomain = (d: string) => {
+      const clean = d.replace(/^(www\.|m\.|amp\.)/, "").replace(/\.(com|org|net|mx|es|co|io|info|gov|edu)(\.\w+)?$/, "");
+      const key = clean.replace(/[-_.]/g, "").toLowerCase();
+      return Boolean(KNOWN_MEDIA_BRANDS[key]);
+    };
+
+    // Influencers: solo menciones de redes sociales (con autor identificable)
     const authorMap: Record<string, { name: string; username: string; avatarUrl: string | null; platform: string; mentions: number; sentiments: string[]; engagement: number }> = {};
+    // Media outlets: agrupados por dominio
+    const outletMap: Record<string, { name: string; domain: string; articles: number; sentiments: string[]; lastPublishedAt: string | null }> = {};
+
     mentions.forEach(m => {
       const meta = m.raw_metadata as Record<string, unknown> | null;
+      const normalizedPlatform = normalizeDomain(m.source_domain || "unknown");
+      const isSocial = isSocialDomain(normalizedPlatform);
+      const isKnownMedia = isKnownMediaDomain(normalizedPlatform);
+
+      // Heurística híbrida
       let authorName = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
       let username = (meta?.authorUsername || meta?.author_username || "") as string;
       const avatarUrl = (meta?.authorAvatarUrl || meta?.author_avatar_url || meta?.profileImageUrl || null) as string | null;
 
       if (!authorName) {
         const inferred = inferAuthorFromText(m.title, m.description, m.url);
-        if (inferred) {
-          authorName = inferred;
-          username = inferred;
-        } else {
-          return;
-        }
+        if (inferred) { authorName = inferred; username = inferred; }
       }
 
-      const normalizedPlatform = normalizeDomain(m.source_domain || "unknown");
-      const key = `${authorName.toLowerCase()}@${normalizedPlatform}`;
-      if (!authorMap[key]) {
-        authorMap[key] = { name: authorName, username: username || authorName, avatarUrl, platform: normalizedPlatform, mentions: 0, sentiments: [], engagement: 0 };
+      // Decisión: ¿Influencer o Medio?
+      // - Red social conocida + autor → Influencer
+      // - Dominio de medio conocido → Medio
+      // - Resto: si tiene autor con @ → Influencer; si tiene título → Medio
+      const goToInfluencer = isSocial && Boolean(authorName);
+      const goToMedia = !goToInfluencer && (isKnownMedia || (!isSocial && Boolean(m.title)));
+
+      if (goToInfluencer && authorName) {
+        const key = `${authorName.toLowerCase()}@${normalizedPlatform}`;
+        if (!authorMap[key]) {
+          authorMap[key] = { name: authorName, username: username || authorName, avatarUrl, platform: normalizedPlatform, mentions: 0, sentiments: [], engagement: 0 };
+        }
+        authorMap[key].mentions++;
+        if (m.sentiment) authorMap[key].sentiments.push(m.sentiment);
+        const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0);
+        authorMap[key].engagement += eng;
+      } else if (goToMedia) {
+        const domain = normalizedPlatform;
+        if (!outletMap[domain]) {
+          outletMap[domain] = { name: formatDomainAsName(domain), domain, articles: 0, sentiments: [], lastPublishedAt: null };
+        }
+        outletMap[domain].articles++;
+        if (m.sentiment) outletMap[domain].sentiments.push(m.sentiment);
+        const pubDate = m.published_at || m.created_at;
+        if (pubDate && (!outletMap[domain].lastPublishedAt || pubDate > outletMap[domain].lastPublishedAt!)) {
+          outletMap[domain].lastPublishedAt = pubDate;
+        }
       }
-      authorMap[key].mentions++;
-      if (m.sentiment) authorMap[key].sentiments.push(m.sentiment);
-      const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0);
-      authorMap[key].engagement += eng;
     });
+
+    const computeDominantSentiment = (sentiments: string[]): "positivo" | "negativo" | "neutral" | "mixto" => {
+      if (!sentiments.length) return "neutral";
+      const neg = sentiments.filter(s => s === "negativo").length / sentiments.length;
+      const pos = sentiments.filter(s => s === "positivo").length / sentiments.length;
+      if (neg > 0.5) return "negativo";
+      if (pos > 0.5) return "positivo";
+      const neu = sentiments.filter(s => s === "neutral").length / sentiments.length;
+      if (neu > 0.5) return "neutral";
+      return "mixto";
+    };
+
     const influencers: InfluencerInfo[] = Object.values(authorMap)
       .sort((a, b) => b.engagement - a.engagement || b.mentions - a.mentions)
       .slice(0, 20)
-      .map(a => {
-        const negRatio = a.sentiments.filter(s => s === "negativo").length / (a.sentiments.length || 1);
-        const posRatio = a.sentiments.filter(s => s === "positivo").length / (a.sentiments.length || 1);
-        const sentiment = negRatio > 0.5 ? "negativo" : posRatio > 0.5 ? "positivo" : "mixto";
-        return {
-          name: a.name, username: a.username, avatarUrl: a.avatarUrl, platform: a.platform,
-          mentions: a.mentions, sentiment,
-          reach: a.engagement > 0 ? `${a.engagement.toLocaleString()} interacciones` : "N/D",
-        };
-      });
+      .map(a => ({
+        name: a.name, username: a.username, avatarUrl: a.avatarUrl, platform: a.platform,
+        mentions: a.mentions,
+        sentiment: computeDominantSentiment(a.sentiments),
+        reach: a.engagement > 0 ? `${a.engagement.toLocaleString()} interacciones` : "N/D",
+      }));
+
+    const mediaOutlets: MediaOutletInfo[] = Object.values(outletMap)
+      .sort((a, b) => b.articles - a.articles)
+      .slice(0, 20)
+      .map(o => ({
+        name: o.name,
+        domain: o.domain,
+        articles: o.articles,
+        sentiment: computeDominantSentiment(o.sentiments),
+        positive: o.sentiments.filter(s => s === "positivo").length,
+        negative: o.sentiments.filter(s => s === "negativo").length,
+        neutral: o.sentiments.filter(s => s === "neutral").length,
+        lastPublishedAt: o.lastPublishedAt,
+      }));
 
     const dayMap: Record<string, { count: number; negative: number; positive: number }> = {};
     mentions.forEach(m => {
@@ -226,9 +295,9 @@ export function useSmartReport() {
     });
 
     const estimatedReach = Math.round(estimatedImpressions * 0.65);
-    const totalUniqueAuthors = Object.keys(authorMap).length;
+    const totalUniqueAuthors = Object.keys(authorMap).length + Object.keys(outletMap).length;
 
-    return { sourceBreakdown, influencers, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors };
+    return { sourceBreakdown, influencers, mediaOutlets, timeline, estimatedImpressions, estimatedReach, totalUniqueAuthors };
   };
 
   const generateReport = async (
