@@ -572,6 +572,25 @@ SOBRE "narratives": Identifica ENTRE 3 Y 5 NARRATIVAS TEMÁTICAS (ideas/argument
       };
     }
 
+    const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
+    const totalForFallback = metrics.totalMentions || 1;
+    const narrativeFallbackBase = rawNarratives.length > 0 ? Math.max(1, Math.round(totalForFallback / rawNarratives.length / 2)) : 1;
+    const safeNarratives: NarrativeItem[] = rawNarratives
+      .slice(0, 5)
+      .map((n: Partial<NarrativeItem> & { mentions?: unknown }) => {
+        const mNum = Number(n?.mentions);
+        const safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        const sent = n?.sentiment;
+        const tr = n?.trend;
+        return {
+          narrative: String(n?.narrative || "Narrativa identificada"),
+          description: String(n?.description || ""),
+          mentions: safeMentions,
+          sentiment: (sent === "positivo" || sent === "negativo" || sent === "mixto") ? sent : "mixto",
+          trend: (tr === "creciente" || tr === "decreciente" || tr === "estable") ? tr : "estable",
+        };
+      });
+
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
@@ -580,7 +599,12 @@ SOBRE "narratives": Identifica ENTRE 3 Y 5 NARRATIVAS TEMÁTICAS (ideas/argument
       conclusions: reportContent.conclusions || [],
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
-      narratives: reportContent.narratives || [],
+      narratives: safeNarratives,
+      narrativesInsight: reportContent.narrativesInsight || undefined,
+      timelineInsight: reportContent.timelineInsight || undefined,
+      influencersInsight: reportContent.influencersInsight || undefined,
+      mediaInsight: reportContent.mediaInsight || undefined,
+      platformsInsight: reportContent.platformsInsight || undefined,
       entityComparison: reportContent.entityComparison || undefined,
       metrics,
       templates: {
