@@ -265,47 +265,73 @@ function slideCover(report: SmartReportContent, projectName: string, dateRange: 
   const negPct = Math.round((m.negativeCount / tot) * 100);
 
   const body = `
-    <!-- Decorative orange sparkles top-right -->
-    <div style="position:absolute;top:0;right:0;width:520px;height:520px;overflow:hidden;">
-      <div style="position:absolute;top:80px;right:80px;transform:scale(2.2);">
-        ${sparkles(C.orange, 0.9)}
-      </div>
-    </div>
-    <!-- Violet glow bottom-left -->
-    <div style="position:absolute;bottom:-200px;left:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.35;"></div>
+    <!-- Two-column layout: dark left, white right -->
+    <div style="position:absolute;inset:0;display:grid;grid-template-columns:1.35fr 1fr;">
+      <!-- LEFT: Dark panel with content -->
+      <div style="position:relative;overflow:hidden;padding:80px;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Violet glow bottom-left -->
+        <div style="position:absolute;bottom:-220px;left:-220px;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.4;pointer-events:none;"></div>
+        <!-- Orange sparkle accent top -->
+        <div style="position:absolute;top:40px;right:-40px;transform:scale(1.4);opacity:0.85;pointer-events:none;">
+          ${sparkles(C.orange, 0.9)}
+        </div>
 
-    <!-- Logo top-left (white variant) -->
-    <div style="position:absolute;top:64px;left:80px;display:flex;align-items:center;gap:18px;z-index:5;">
-      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:56px;filter:brightness(0) invert(1);"/>
-    </div>
+        <!-- Top: section eyebrow -->
+        <div style="position:relative;z-index:5;">
+          <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 22px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:100px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
+            <span style="font-size:13px;letter-spacing:0.25em;color:#fff;font-weight:700;text-transform:uppercase;">Reporte Visual · Inteligencia de Medios</span>
+          </div>
+        </div>
 
-    <!-- Main content -->
-    <div style="position:absolute;top:280px;left:80px;right:80px;z-index:5;">
-      <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 22px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:100px;margin-bottom:36px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
-        <span style="font-size:14px;letter-spacing:0.25em;color:#fff;font-weight:700;text-transform:uppercase;">Reporte Visual · Inteligencia de Medios</span>
-      </div>
-      <h1 style="font-size:120px;font-weight:800;line-height:0.95;margin:0 0 28px 0;letter-spacing:-0.035em;color:#fff;max-width:1500px;">${esc(projectName)}</h1>
-      <div style="font-size:30px;color:rgba(255,255,255,0.75);font-weight:400;letter-spacing:0.02em;">${dateLabel}</div>
-    </div>
+        <!-- Middle: title -->
+        <div style="position:relative;z-index:5;">
+          <h1 style="font-size:96px;font-weight:800;line-height:0.95;margin:0 0 24px 0;letter-spacing:-0.035em;color:#fff;">${esc(projectName)}</h1>
+          <div style="font-size:26px;color:rgba(255,255,255,0.75);font-weight:400;letter-spacing:0.02em;">${dateLabel}</div>
+        </div>
 
-    <!-- KPI strip bottom -->
-    <div style="position:absolute;bottom:120px;left:80px;right:80px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid rgba(255,255,255,0.15);padding-top:36px;z-index:5;">
-      <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Menciones</div>
-        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.totalMentions)}</div>
+        <!-- Bottom: KPI strip 2x2 -->
+        <div style="position:relative;z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:32px 48px;border-top:1px solid rgba(255,255,255,0.15);padding-top:32px;">
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Menciones</div>
+            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.totalMentions)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Alcance estimado</div>
+            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.estimatedReach)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Autores únicos</div>
+            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${report.totalUniqueAuthors || 0}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">% Negativo</div>
+            <div style="font-size:54px;font-weight:800;color:${C.orange};line-height:1;letter-spacing:-0.02em;">${negPct}%</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Alcance estimado</div>
-        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.estimatedReach)}</div>
-      </div>
-      <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Autores únicos</div>
-        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${report.totalUniqueAuthors || 0}</div>
-      </div>
-      <div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">% Negativo</div>
-        <div style="font-size:64px;font-weight:800;color:${C.orange};line-height:1;letter-spacing:-0.02em;">${negPct}%</div>
+
+      <!-- RIGHT: White panel with large Wizr logo -->
+      <div style="position:relative;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;">
+        <!-- Subtle violet accent shapes -->
+        <div style="position:absolute;top:-120px;right:-120px;width:360px;height:360px;border-radius:50%;background:${C.violetSoft};opacity:0.6;"></div>
+        <div style="position:absolute;bottom:-160px;left:-160px;width:420px;height:420px;border-radius:50%;background:${C.violetSoft};opacity:0.45;"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:${C.orange};box-shadow:0 0 0 14px rgba(255,107,44,0.12);"></div>
+
+        <!-- Logo big -->
+        <div style="position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:48px;padding:40px;">
+          <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="width:78%;max-width:520px;height:auto;display:block;"/>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span style="width:36px;height:2px;background:${C.violet};"></span>
+            <span style="font-size:13px;letter-spacing:0.32em;color:${C.violet};font-weight:800;text-transform:uppercase;">Media Intelligence</span>
+            <span style="width:36px;height:2px;background:${C.violet};"></span>
+          </div>
+        </div>
+
+        <!-- Footer tag -->
+        <div style="position:absolute;bottom:48px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:0.28em;color:${C.textMid};text-transform:uppercase;font-weight:700;z-index:5;">
+          wizr.com.mx
+        </div>
       </div>
     </div>
   `;
