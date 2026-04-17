@@ -393,9 +393,9 @@ function slideSentiment(report: SmartReportContent, projectName: string, page: n
               </div>
             `).join("")}
           </div>
-          <div style="background:${C.violetSoft};border-radius:16px;padding:26px 30px;font-size:18px;line-height:1.55;color:${C.text};overflow:hidden;">
+          <div style="background:${C.violetSoft};border-radius:16px;padding:24px 28px;font-size:17px;line-height:1.5;color:${C.text};">
             <div style="font-size:11px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:10px;">Lectura estratégica</div>
-            ${esc(truncate(interp, 720))}
+            ${esc(truncate(interp, 1100))}
           </div>
         </div>
       </div>
