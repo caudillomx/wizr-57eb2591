@@ -91,6 +91,7 @@ export function SmartReportGenerator({
   const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
   const [publishOpen, setPublishOpen] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
 
   const filteredMentions = useMemo(() => {
     return mentions.filter((m) => {
