@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
       use_print: true,
       format: "A4",
       margin: {
-        top: header ? `${headerHeightPx + 16}px` : "0px",
+        top: "0px",
         right: "0mm",
-        bottom: footer ? `${footerHeightPx + 10}px` : "0px",
+        bottom: "0px",
         left: "0mm",
       },
     };

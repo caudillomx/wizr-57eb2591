@@ -449,7 +449,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:0;
+  margin:${HEADER_HEIGHT_PX + 16}px 0 ${FOOTER_HEIGHT_PX + 10}px 0;
 }
 
 @media print{
