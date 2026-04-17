@@ -379,17 +379,17 @@ export function buildReportHTML(
   const headerSubtitle = truncateText(report.title, 68);
 
   // PDFShift native header (repeated on every page, reserves space physically)
-  const HEADER_HEIGHT_PX = 111;
+  const HEADER_HEIGHT_PX = 136;
   const FOOTER_HEIGHT_PX = 34;
 
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;}
+html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;padding:0;}
 body{background:transparent;}
-.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 36px;gap:27px;border-bottom:1px solid rgba(255,255,255,0.12);}
+.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:18px 36px;gap:27px;border-bottom:1px solid rgba(255,255,255,0.12);}
 .logo{height:51px;width:auto;display:block;flex-shrink:0;}
-.copy{min-width:0;max-width:68%;text-align:right;color:#fff;}
+.copy{min-width:0;max-width:68%;text-align:right;color:#fff;display:flex;flex-direction:column;justify-content:center;}
 .ctx{font-size:13.5px;line-height:1.3;font-weight:600;color:${C.accentLight};letter-spacing:0.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .title{font-size:15px;line-height:1.3;font-weight:700;color:#fff;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
@@ -448,7 +448,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:36mm 0 14mm 0;
+  margin:42mm 0 14mm 0;
 }
 
 @media print{
