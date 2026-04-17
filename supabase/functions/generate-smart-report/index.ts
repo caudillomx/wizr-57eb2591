@@ -480,7 +480,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         userPrompt,
         maxTokens: MAX_TOKENS + 1000,
         temperature: 0.2,
-        timeoutMs: 110000,
+        timeoutMs: 220000,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
