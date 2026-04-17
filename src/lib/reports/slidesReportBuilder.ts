@@ -301,54 +301,49 @@ function svgVerticalBarsNarratives(
 
 function slideCover(report: SmartReportContent, projectName: string, dateRange: DateRange, total: number): string {
   const dateLabel = `${format(new Date(dateRange.start), "d MMM", { locale: es })} — ${format(new Date(dateRange.end), "d MMM yyyy", { locale: es })}`;
-  const m = report.metrics;
-  const tot = m.totalMentions || 1;
-  const negPct = Math.round((m.negativeCount / tot) * 100);
 
   const body = `
-    <!-- Two-column layout: dark left, white right -->
+    <!-- Two-column layout: dark left (editorial), white right (logo) -->
     <div style="position:absolute;inset:0;display:grid;grid-template-columns:1.35fr 1fr;">
-      <!-- LEFT: Dark panel with content -->
-      <div style="position:relative;overflow:hidden;padding:80px;display:flex;flex-direction:column;justify-content:space-between;">
+      <!-- LEFT: Dark editorial panel -->
+      <div style="position:relative;overflow:hidden;padding:96px 88px;display:flex;flex-direction:column;justify-content:space-between;">
         <!-- Violet glow bottom-left -->
-        <div style="position:absolute;bottom:-220px;left:-220px;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.4;pointer-events:none;"></div>
-        <!-- Orange sparkle accent top -->
-        <div style="position:absolute;top:40px;right:-40px;transform:scale(1.4);opacity:0.85;pointer-events:none;">
+        <div style="position:absolute;bottom:-260px;left:-260px;width:780px;height:780px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.45;pointer-events:none;"></div>
+        <!-- Orange glow top-right -->
+        <div style="position:absolute;top:-180px;right:-180px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, rgba(255,107,44,0.18) 0%, transparent 70%);pointer-events:none;"></div>
+        <!-- Orange sparkle accent -->
+        <div style="position:absolute;top:60px;right:40px;transform:scale(1.6);opacity:0.85;pointer-events:none;">
           ${sparkles(C.orange, 0.9)}
         </div>
 
         <!-- Top: section eyebrow -->
         <div style="position:relative;z-index:5;">
-          <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 22px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:100px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
-            <span style="font-size:13px;letter-spacing:0.25em;color:#fff;font-weight:700;text-transform:uppercase;">Reporte Visual · Inteligencia de Medios</span>
+          <div style="display:inline-flex;align-items:center;gap:12px;padding:11px 24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:100px;backdrop-filter:blur(8px);">
+            <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};box-shadow:0 0 0 6px rgba(255,107,44,0.18);"></span>
+            <span style="font-size:13px;letter-spacing:0.28em;color:#fff;font-weight:700;text-transform:uppercase;">Reporte Visual · Inteligencia de Medios</span>
           </div>
         </div>
 
-        <!-- Middle: title -->
-        <div style="position:relative;z-index:5;">
-          <h1 style="font-size:96px;font-weight:800;line-height:0.95;margin:0 0 24px 0;letter-spacing:-0.035em;color:#fff;">${esc(projectName)}</h1>
-          <div style="font-size:26px;color:rgba(255,255,255,0.75);font-weight:400;letter-spacing:0.02em;">${dateLabel}</div>
+        <!-- Center: editorial title block -->
+        <div style="position:relative;z-index:5;display:flex;flex-direction:column;gap:36px;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <span style="width:64px;height:3px;background:${C.orange};"></span>
+            <span style="font-size:14px;letter-spacing:0.32em;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;">Periodo</span>
+            <span style="font-size:18px;color:rgba(255,255,255,0.85);font-weight:500;letter-spacing:0.01em;">${dateLabel}</span>
+          </div>
+          <h1 style="font-size:148px;font-weight:800;line-height:0.92;margin:0;letter-spacing:-0.045em;color:#fff;">${esc(projectName)}</h1>
+          <p style="font-size:24px;line-height:1.45;color:rgba(255,255,255,0.7);font-weight:400;max-width:780px;margin:0;">
+            Síntesis estratégica de la conversación pública: narrativas, sentimiento, voces clave y ventanas de incidencia para la toma de decisiones.
+          </p>
         </div>
 
-        <!-- Bottom: KPI strip 2x2 -->
-        <div style="position:relative;z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:32px 48px;border-top:1px solid rgba(255,255,255,0.15);padding-top:32px;">
-          <div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Menciones</div>
-            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.totalMentions)}</div>
+        <!-- Bottom: minimal author/footer line -->
+        <div style="position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.12);padding-top:28px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span style="font-size:11px;letter-spacing:0.32em;color:rgba(255,255,255,0.45);font-weight:700;text-transform:uppercase;">Elaborado por</span>
+            <span style="font-size:14px;color:rgba(255,255,255,0.85);font-weight:600;letter-spacing:0.04em;">Wizr · Análisis Estratégico</span>
           </div>
-          <div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Alcance estimado</div>
-            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.estimatedReach)}</div>
-          </div>
-          <div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">Autores únicos</div>
-            <div style="font-size:54px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${report.totalUniqueAuthors || 0}</div>
-          </div>
-          <div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:8px;">% Negativo</div>
-            <div style="font-size:54px;font-weight:800;color:${C.orange};line-height:1;letter-spacing:-0.02em;">${negPct}%</div>
-          </div>
+          <div style="font-size:11px;letter-spacing:0.32em;color:rgba(255,255,255,0.45);font-weight:700;text-transform:uppercase;">Confidencial</div>
         </div>
       </div>
 
