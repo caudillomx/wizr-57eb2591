@@ -51,6 +51,11 @@ interface ReportContent {
   impactAssessment?: string;
   sentimentAnalysis?: string;
   narratives?: NarrativeItem[];
+  narrativesInsight?: string;
+  timelineInsight?: string;
+  influencersInsight?: string;
+  mediaInsight?: string;
+  platformsInsight?: string;
   entityComparison?: string;
   metrics: {
     totalMentions: number;
