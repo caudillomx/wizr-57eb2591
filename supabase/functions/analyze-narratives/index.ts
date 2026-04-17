@@ -228,18 +228,7 @@ async function generateComparison(
 - Fortalezas: ${p.analysis.contentStrategy.strengths.join("; ")}`;
   }).join("\n\n---\n\n");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { 
-          role: "system", 
-          content: `Eres un ANALISTA SENIOR de comunicación digital. Tu tarea es comparar las estrategias de comunicación de ${profilesWithAnalysis.length} perfiles y generar INSIGHTS ACCIONABLES.
+  const systemPrompt = `Eres un ANALISTA SENIOR de comunicación digital. Tu tarea es comparar las estrategias de comunicación de ${profilesWithAnalysis.length} perfiles y generar INSIGHTS ACCIONABLES.
 
 PRINCIPIOS DE TU ANÁLISIS:
 1. ESPECIFICIDAD: Nombra perfiles específicos, no hables en genérico
@@ -247,11 +236,9 @@ PRINCIPIOS DE TU ANÁLISIS:
 3. COMPETITIVIDAD: ¿Quién lo hace mejor y por qué?
 4. ACCIONABILIDAD: Qué puede aprender cada uno de los otros
 
-NO uses frases genéricas como "todos tienen contenido interesante" o "cada uno tiene su estilo".` 
-        },
-        { 
-          role: "user", 
-          content: `Compara estos ${profilesWithAnalysis.length} perfiles y genera un análisis comparativo profundo:
+NO uses frases genéricas como "todos tienen contenido interesante" o "cada uno tiene su estilo".`;
+
+  const userPrompt = `Compara estos ${profilesWithAnalysis.length} perfiles y genera un análisis comparativo profundo:
 
 ${profileSummaries}
 
@@ -260,60 +247,50 @@ Identifica:
 2. Lo que hace ÚNICO a cada uno (su diferenciador)
 3. Quién tiene la mejor estrategia de engagement y por qué
 4. Quién tiene el tono más profesional/institucional
-5. Un INSIGHT GLOBAL de 2-3 oraciones que resuma la comparación con datos específicos` 
-        },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "comparative_analysis",
-            description: "Return detailed comparative analysis of multiple profiles",
-            parameters: {
-              type: "object",
-              properties: {
-                commonThemes: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "Temas específicos que comparten la mayoría, con evidencia"
-                },
-                differentiators: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      profileName: { type: "string" },
-                      uniqueAspect: { type: "string", description: "Lo que lo diferencia DE FORMA ESPECÍFICA" }
-                    },
-                    required: ["profileName", "uniqueAspect"]
-                  }
-                },
-                leaderInEngagement: { type: "string", description: "Nombre del perfil con mejor estrategia de engagement y por qué" },
-                mostFormalTone: { type: "string", description: "Nombre del perfil con tono más formal/institucional" },
-                overallInsight: { type: "string", description: "Insight clave de 2-3 oraciones CON DATOS ESPECÍFICOS que resuma la comparación" }
-              },
-              required: ["commonThemes", "differentiators", "overallInsight"]
-            }
-          }
+5. Un INSIGHT GLOBAL de 2-3 oraciones que resuma la comparación con datos específicos`;
+
+  const toolSchema = {
+    type: "object",
+    properties: {
+      commonThemes: {
+        type: "array",
+        items: { type: "string" },
+        description: "Temas específicos que comparten la mayoría, con evidencia"
+      },
+      differentiators: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            profileName: { type: "string" },
+            uniqueAspect: { type: "string", description: "Lo que lo diferencia DE FORMA ESPECÍFICA" }
+          },
+          required: ["profileName", "uniqueAspect"]
         }
-      ],
-      tool_choice: { type: "function", function: { name: "comparative_analysis" } },
-    }),
-  });
+      },
+      leaderInEngagement: { type: "string", description: "Nombre del perfil con mejor estrategia de engagement y por qué" },
+      mostFormalTone: { type: "string", description: "Nombre del perfil con tono más formal/institucional" },
+      overallInsight: { type: "string", description: "Insight clave de 2-3 oraciones CON DATOS ESPECÍFICOS que resuma la comparación" }
+    },
+    required: ["commonThemes", "differentiators", "overallInsight"]
+  };
 
-  if (!response.ok) {
-    console.error("Comparison error:", response.status);
+  try {
+    return await callClaudeTool<NonNullable<ComparativeAnalysis["comparison"]>>({
+      apiKey,
+      systemPrompt,
+      userPrompt,
+      toolName: "comparative_analysis",
+      toolDescription: "Return detailed comparative analysis of multiple profiles",
+      toolSchema,
+      maxTokens: 3000,
+      temperature: 0.2,
+      timeoutMs: 90000,
+    });
+  } catch (err) {
+    console.error("Comparison error:", err);
     return undefined;
   }
-
-  const aiResponse = await response.json();
-  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-  
-  if (!toolCall || toolCall.function.name !== "comparative_analysis") {
-    return undefined;
-  }
-
-  return JSON.parse(toolCall.function.arguments);
 }
 
 serve(async (req) => {
