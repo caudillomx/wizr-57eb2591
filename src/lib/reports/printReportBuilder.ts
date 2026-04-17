@@ -1,4 +1,4 @@
-import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, NarrativeInfo } from "@/hooks/useSmartReport";
+import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { LOGO_WHITE_B64 } from "./logoBase64";
@@ -9,7 +9,6 @@ interface DateRange {
   label: string;
 }
 
-// ── palette ──
 const C = {
   primary: "#1e1b4b",
   accent: "#6366f1",
@@ -52,6 +51,12 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function truncateText(text: string, maxLength: number): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
 function detectBadge(report: SmartReportContent, isSummary: boolean): { label: string; bg: string } {
   if (isSummary) return { label: "RESUMEN", bg: "#3b82f6" };
   const total = report.metrics.totalMentions || 1;
@@ -80,7 +85,6 @@ function estimateTextLines(text: string, charsPerLine = 96): number {
   return Math.max(1, Math.ceil(plainText.length / charsPerLine));
 }
 
-// ── Highlight card for key insights ──
 function insightCard(text: string, icon: string, color: string): string {
   return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
     <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
@@ -88,63 +92,65 @@ function insightCard(text: string, icon: string, color: string): string {
   </div>`;
 }
 
-// ── Bold key phrases in text ──
 function highlightText(text: string): string {
   const escaped = escapeHtml(text);
-  let result = escaped.replace(/(\d[\d,.]*\s*(?:%|menciones|interacciones|M\b|K\b))/gi, '<strong>$1</strong>');
+  let result = escaped.replace(/(\d[\d,.]*\s*(?:%|menciones|interacciones|M\b|K\b))/gi, "<strong>$1</strong>");
   result = result.replace(/&#39;([^&#]+?)&#39;/g, "<strong>'$1'</strong>");
   result = result.replace(/'([^']+?)'/g, "<strong>'$1'</strong>");
   return result;
 }
 
-// ── charts ──
-
 function chartPlatformBars(sources: SourceBreakdown[]): string {
   const data = sources.slice(0, 8);
   if (!data.length) return "";
-  const max = Math.max(...data.map(s => s.count), 1);
-  const rows = data.map((s, i) => {
-    const pct = (s.count / max) * 100;
-    const color = i < 3 ? C.accent : C.neutral;
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+  const max = Math.max(...data.map((s) => s.count), 1);
+  const rows = data
+    .map((s, i) => {
+      const pct = (s.count / max) * 100;
+      const color = i < 3 ? C.accent : C.neutral;
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
       <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
       <div style="flex:1;background:${C.borderLight};border-radius:3px;height:14px;overflow:hidden;">
         <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
       <span style="font-size:9px;font-weight:700;min-width:28px;color:${C.textDark};">${s.count}</span>
     </div>`;
-  }).join("");
+    })
+    .join("");
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Menciones por Plataforma</div>${rows}</div>`;
 }
 
 function chartDailyBars(timeline: TimelinePoint[]): string {
   const data = timeline.slice(0, 14);
   if (!data.length) return "";
-  const max = Math.max(...data.map(t => t.count), 1);
-  const maxIdx = data.indexOf(data.reduce((a, b) => a.count > b.count ? a : b));
-  const bars = data.map((t, i) => {
-    const pct = (t.count / max) * 100;
-    const color = i === maxIdx ? C.negative : C.accent;
-    const dayLabel = t.date.slice(5);
-    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+  const max = Math.max(...data.map((t) => t.count), 1);
+  const maxIdx = data.indexOf(data.reduce((a, b) => (a.count > b.count ? a : b)));
+  const bars = data
+    .map((t, i) => {
+      const pct = (t.count / max) * 100;
+      const color = i === maxIdx ? C.negative : C.accent;
+      const dayLabel = t.date.slice(5);
+      return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
       <span style="font-size:7px;font-weight:700;color:${C.textDark};margin-bottom:3px;">${t.count}</span>
       <div style="width:55%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(pct * 0.45, 3)}px;"></div>
       <span style="font-size:7px;color:${C.textGray};margin-top:3px;">${dayLabel}</span>
     </div>`;
-  }).join("");
+    })
+    .join("");
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:10px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Evolución Diaria de Menciones</div>
     <div style="display:flex;align-items:flex-end;height:55px;gap:3px;">${bars}</div></div>`;
 }
 
 function chartSentimentByPlatform(sources: SourceBreakdown[]): string {
-  const data = sources.filter(s => s.count > 0).slice(0, 8);
+  const data = sources.filter((s) => s.count > 0).slice(0, 8);
   if (!data.length) return "";
-  const rows = data.map(s => {
-    const total = s.count || 1;
-    const posPct = (s.positive / total) * 100;
-    const neuPct = (s.neutral / total) * 100;
-    const negPct = (s.negative / total) * 100;
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+  const rows = data
+    .map((s) => {
+      const total = s.count || 1;
+      const posPct = (s.positive / total) * 100;
+      const neuPct = (s.neutral / total) * 100;
+      const negPct = (s.negative / total) * 100;
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
       <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.source)}</span>
       <div style="flex:1;display:flex;height:14px;border-radius:3px;overflow:hidden;">
         <div style="width:${posPct}%;background:${C.positive};"></div>
@@ -152,29 +158,33 @@ function chartSentimentByPlatform(sources: SourceBreakdown[]): string {
         <div style="width:${negPct}%;background:${C.negative};"></div>
       </div>
     </div>`;
-  }).join("");
+    })
+    .join("");
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Sentimiento por Plataforma</div>${rows}</div>`;
 }
 
 function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
   const data = influencers.slice(0, 6);
   if (!data.length) return "";
-  const maxReach = Math.max(...data.map(inf => parseInt(inf.reach?.replace(/\D/g, "") || "0") || inf.mentions), 1);
-  const rows = data.map(inf => {
-    const val = parseInt(inf.reach?.replace(/\D/g, "") || "0") || inf.mentions;
-    const pct = (val / maxReach) * 100;
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+  const maxReach = Math.max(
+    ...data.map((inf) => parseInt(inf.reach?.replace(/\D/g, "") || "0") || inf.mentions),
+    1,
+  );
+  const rows = data
+    .map((inf) => {
+      const val = parseInt(inf.reach?.replace(/\D/g, "") || "0") || inf.mentions;
+      const pct = (val / maxReach) * 100;
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
       <span style="min-width:90px;font-size:8px;color:${C.textGray};text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(inf.name || inf.username)}</span>
       <div style="flex:1;background:${C.borderLight};border-radius:3px;height:14px;overflow:hidden;">
         <div style="width:${pct}%;background:${sentColor(inf.sentiment)};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
       <span style="font-size:9px;font-weight:700;min-width:32px;color:${C.textDark};">${fmtNum(val)}</span>
     </div>`;
-  }).join("");
+    })
+    .join("");
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Top Influenciadores</div>${rows}</div>`;
 }
-
-// ── main builder ──
 
 export function buildReportHTML(
   report: SmartReportContent,
@@ -194,7 +204,6 @@ export function buildReportHTML(
     ? `<hr style="border:none;border-top:1.5px solid ${C.border};margin:16px 0;">`
     : "";
 
-  // ── HEADER (compact, white logo on dark bg) ──
   const header = `<div style="background:${C.primary};padding:22px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
       <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:34px;width:auto;display:block;" />
@@ -206,7 +215,6 @@ export function buildReportHTML(
     </div>
   </div>`;
 
-  // ── METRICS ROW (compact) ──
   const metricCell = (value: string, label: string, color = C.textDark) =>
     `<div style="flex:1;text-align:center;padding:10px 6px;">
       <div style="font-size:18px;font-weight:700;color:${color};line-height:1.2;">${value}</div>
@@ -221,10 +229,9 @@ export function buildReportHTML(
     ${metricCell(posPct + "%", "% Positivo", C.positive)}
   </div>`;
 
-  // ── SENTIMENT BAR (compact) ──
-  const posW = report.metrics.positiveCount / total * 100;
-  const neuW = report.metrics.neutralCount / total * 100;
-  const negW = report.metrics.negativeCount / total * 100;
+  const posW = (report.metrics.positiveCount / total) * 100;
+  const neuW = (report.metrics.neutralCount / total) * 100;
+  const negW = (report.metrics.negativeCount / total) * 100;
   const sentBar = `<div style="padding:4px 20px 12px;">
     <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.12);">
       <div style="width:${posW}%;background:${C.positive};"></div>
@@ -238,17 +245,15 @@ export function buildReportHTML(
     </div>
   </div>`;
 
-  // ── SECTIONS ──
   const blocks: string[] = [];
 
-  // 1. Executive Summary with highlighted text
   blocks.push(
-    section("Resumen Ejecutivo",
-      `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`
-    )
+    section(
+      "Resumen Ejecutivo",
+      `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`,
+    ),
   );
 
-  // 2. Data Visualization (full only)
   if (!isSummary) {
     const charts = [
       chartPlatformBars(report.sourceBreakdown),
@@ -256,6 +261,7 @@ export function buildReportHTML(
       chartSentimentByPlatform(report.sourceBreakdown),
       chartTopInfluencersBars(report.influencers),
     ].filter(Boolean);
+
     if (charts.length > 0) {
       const grid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${charts.join("")}</div>`;
       blocks.push(section("Visualización de Datos", grid));
@@ -266,7 +272,6 @@ export function buildReportHTML(
     blocks.push(sectionSeparator);
   }
 
-  // 3. Key Findings — first one as highlight card, rest as numbered
   const findings = isSummary ? report.keyFindings.slice(0, 3) : report.keyFindings;
   let findingsHtml = "";
   if (findings.length > 0) {
@@ -285,7 +290,6 @@ export function buildReportHTML(
     blocks.push(sectionSeparator);
   }
 
-  // 4. Influencers table
   const infs = isSummary ? report.influencers.slice(0, 5) : report.influencers;
   if (infs.length > 0) {
     const headerRow = `<tr style="background:${C.primary};">
@@ -296,10 +300,11 @@ export function buildReportHTML(
       <th style="padding:7px 10px;font-size:8px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Sentimiento</th>
       <th style="padding:7px 10px;font-size:8px;text-align:right;color:#fff;font-weight:600;letter-spacing:0.5px;">Interacciones</th>
     </tr>`;
-    const rows = infs.map((inf, i) => {
-      const bg = i % 2 === 0 ? C.white : C.cardBg;
-      const sentBg = `${sentColor(inf.sentiment)}15`;
-      return `<tr style="background:${bg};">
+    const rows = infs
+      .map((inf, i) => {
+        const bg = i % 2 === 0 ? C.white : C.cardBg;
+        const sentBg = `${sentColor(inf.sentiment)}15`;
+        return `<tr style="background:${bg};">
         <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${i + 1}</td>
         <td style="padding:5px 10px;font-size:9.5px;font-weight:600;color:${C.textDark};">${escapeHtml(inf.name || inf.username)}</td>
         <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${escapeHtml(inf.platform)}</td>
@@ -307,7 +312,8 @@ export function buildReportHTML(
         <td style="padding:5px 10px;font-size:9px;text-align:center;"><span style="background:${sentBg};color:${sentColor(inf.sentiment)};font-weight:700;padding:2px 8px;border-radius:10px;font-size:8px;">${sentLabel(inf.sentiment)}</span></td>
         <td style="padding:5px 10px;font-size:9.5px;text-align:right;font-weight:600;color:${C.textDark};">${escapeHtml(inf.reach || "—")}</td>
       </tr>`;
-    }).join("");
+      })
+      .join("");
     const table = `<table style="width:100%;border-collapse:collapse;">${headerRow}${rows}</table>`;
     blocks.push(section("Influenciadores", table));
   }
@@ -316,11 +322,11 @@ export function buildReportHTML(
     blocks.push(sectionSeparator);
   }
 
-  // 5. Narratives (full only) — as highlight cards
   if (!isSummary && report.narratives.length > 0) {
-    const narrativesHtml = report.narratives.map(n => {
-      const trendIcon = n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️";
-      return `<div class="avoid-break" style="border:1px solid ${C.border};border-radius:6px;padding:10px 14px;margin-bottom:10px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
+    const narrativesHtml = report.narratives
+      .map((n) => {
+        const trendIcon = n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️";
+        return `<div class="avoid-break" style="border:1px solid ${C.border};border-radius:6px;padding:10px 14px;margin-bottom:10px;background:${C.cardBg};border-left:4px solid ${sentColor(n.sentiment)};">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
           <span style="font-size:11px;font-weight:700;color:${C.textDark};">${escapeHtml(n.narrative)}</span>
           <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
@@ -328,11 +334,11 @@ export function buildReportHTML(
         </div>
         <p style="font-size:10px;color:${C.textGray};line-height:1.55;margin:0;">${highlightText(n.description)}</p>
       </div>`;
-    }).join("");
+      })
+      .join("");
     blocks.push(section("Principales Narrativas", narrativesHtml));
   }
 
-  // 6. Recommendations — first as highlight card
   const recs = isSummary ? report.recommendations.slice(0, 2) : report.recommendations;
   let recsHtml = "";
   if (recs.length > 0) {
@@ -350,27 +356,27 @@ export function buildReportHTML(
     blocks.push(sectionSeparator);
   }
 
-  // 7. Conclusions
   if (report.conclusions && report.conclusions.length > 0) {
     const concs = isSummary ? report.conclusions.slice(0, 2) : report.conclusions;
-    const bodyWithBullets = concs.map(c =>
-      `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+    const bodyWithBullets = concs
+      .map(
+        (c) => `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
         <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
         <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
-      </div>`
-    ).join("");
+      </div>`,
+      )
+      .join("");
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  // Header context for running print header
-  const headerContext = `${projectName} · ${badge.label} · ${dateRange.label}`;
-  const headerSubtitle = report.title;
-  const runningHeader = `<div class="running-header" aria-hidden="true">
-    <div class="running-header-inner">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="running-header-logo" />
-      <div class="running-header-copy">
-        <div class="running-header-context">${escapeHtml(headerContext)}</div>
-        <div class="running-header-title">${escapeHtml(headerSubtitle)}</div>
+  const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 68);
+  const headerSubtitle = truncateText(report.title, 90);
+  const repeatedHeader = `<div class="print-repeat-header" aria-hidden="true">
+    <div class="print-repeat-header-inner">
+      <img src="${LOGO_WHITE_B64}" alt="Wizr" class="print-repeat-header-logo" />
+      <div class="print-repeat-header-copy">
+        <div class="print-repeat-header-context">${escapeHtml(headerContext)}</div>
+        <div class="print-repeat-header-title">${escapeHtml(headerSubtitle)}</div>
       </div>
     </div>
   </div>`;
@@ -397,128 +403,149 @@ body{
   color-adjust:exact !important;
 }
 strong{font-weight:700;color:${C.primary};}
-.report-shell{ background:${C.white}; }
-.report-content{ padding:0 20px 18px; }
-.report-content > .pdf-section-block{ margin-bottom:14px; }
-.report-content > .pdf-section-block:last-child{ margin-bottom:0; }
+.report-shell{background:${C.white};}
+.print-report-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  background:${C.white};
+}
+.print-report-table td{
+  padding:0;
+  vertical-align:top;
+}
+.print-report-table thead{display:none;}
+.print-repeat-header{
+  background:${C.primary};
+  height:72px;
+  box-sizing:border-box;
+}
+.print-repeat-header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  height:100%;
+  padding:0 26px;
+}
+.print-repeat-header-logo{
+  height:56px;
+  width:auto;
+  display:block;
+  flex-shrink:0;
+}
+.print-repeat-header-copy{
+  min-width:0;
+  max-width:72%;
+  text-align:right;
+  color:#fff;
+}
+.print-repeat-header-context{
+  font-size:10px;
+  line-height:1.35;
+  font-weight:600;
+  color:${C.accentLight};
+  letter-spacing:0.2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.print-repeat-header-title{
+  font-size:11px;
+  line-height:1.35;
+  font-weight:700;
+  color:#fff;
+  margin-top:4px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.page-intro{padding-bottom:6px;}
+.report-content{padding:0 20px 18px;}
+.report-content > .pdf-section-block{margin-bottom:14px;}
+.report-content > .pdf-section-block:last-child{margin-bottom:0;}
 
 @page{
   size:A4;
-  margin: 92px 0 44px 0;
+  margin:16px 0 44px 0;
 
   @bottom-left{
-    content: "Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
-    background-color: ${C.primary};
-    color: ${C.accentLight};
-    font-family: 'Inter', sans-serif;
-    font-size: 8.5px;
-    letter-spacing: 0.4px;
-    padding: 0 0 0 24px;
-    width: 100%;
-    margin: 0;
-    vertical-align: middle;
+    content:"Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
+    background-color:${C.primary};
+    color:${C.accentLight};
+    font-family:'Inter',sans-serif;
+    font-size:8.5px;
+    letter-spacing:0.4px;
+    padding:0 0 0 24px;
+    width:100%;
+    margin:0;
+    vertical-align:middle;
   }
   @bottom-right{
-    content: "Página " counter(page) " de " counter(pages);
-    background-color: ${C.primary};
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    padding: 0 24px 0 0;
-    margin: 0;
-    vertical-align: middle;
+    content:"Página " counter(page) " de " counter(pages);
+    background-color:${C.primary};
+    color:#ffffff;
+    font-family:'Inter',sans-serif;
+    font-size:9px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    padding:0 24px 0 0;
+    margin:0;
+    vertical-align:middle;
   }
 }
-
-.running-header{ display:none; }
 
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .running-header{
-    display:block;
-    position:fixed;
-    top:-92px;
-    left:0;
-    right:0;
-    height:72px;
-    background:${C.primary};
-    z-index:999;
-    box-sizing:border-box;
-  }
-  .running-header-inner{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:18px;
-    height:100%;
-    padding:0 26px;
-  }
-  .running-header-logo{
-    height:56px;
-    width:auto;
-    display:block;
-    flex-shrink:0;
-  }
-  .running-header-copy{
-    min-width:0;
-    max-width:72%;
-    text-align:right;
-    color:#fff;
-  }
-  .running-header-context{
-    font-size:10px;
-    line-height:1.35;
-    font-weight:600;
-    color:${C.accentLight};
-    letter-spacing:0.2px;
-  }
-  .running-header-title{
-    font-size:11px;
-    line-height:1.35;
-    font-weight:700;
-    color:#fff;
-    margin-top:4px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .report-shell{ padding:0; }
-  .report-content{ padding:0 20px 12px; }
-  .report-content > .pdf-section-block{ margin-bottom:14px; padding-bottom:8px; }
-  .report-section{ page-break-inside:auto; break-inside:auto; margin-bottom:6px; }
-  .pdf-section-block{ page-break-inside:auto; break-inside:auto; }
-  .section-header-wrap{ page-break-inside:avoid; break-inside:avoid; page-break-after:avoid; break-after:avoid; }
-  .section-header{ page-break-after:avoid; break-after:avoid; page-break-inside:avoid; break-inside:avoid; }
-  .section-body{ page-break-inside:auto; break-inside:auto; padding-bottom:6px; }
-  .section-body > *:first-child{ page-break-before:avoid; break-before:avoid; }
-  .section-body > *:last-child{ margin-bottom:14px; }
-  .avoid-break{ page-break-inside:avoid; break-inside:avoid; }
-  table{ page-break-inside:auto; }
-  thead{ display:table-header-group; }
-  tr{ page-break-inside:avoid; page-break-after:auto; break-inside:avoid; }
-  p{ orphans:2; widows:2; }
-  h1,h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
-  .page-intro-header{ display:none; }
+  .print-report-table thead{display:table-header-group;}
+  .print-repeat-header-cell{padding:0 0 12px 0;}
+  .report-shell{padding:0;}
+  .page-intro{page-break-inside:avoid;break-inside:avoid;}
+  .page-intro-header{display:none;}
+  .report-content{padding:0 20px 12px;}
+  .report-content > .pdf-section-block{margin-bottom:14px;padding-bottom:8px;}
+  .report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
+  .pdf-section-block{page-break-inside:auto;break-inside:auto;}
+  .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
+  .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
+  .section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
+  .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
+  .section-body > *:last-child{margin-bottom:14px;}
+  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
+  table{page-break-inside:auto;}
+  thead{display:table-header-group;}
+  tr{page-break-inside:auto;page-break-after:auto;break-inside:auto;}
+  p{orphans:2;widows:2;}
+  h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
 }
 @media screen{
-  body{ padding-bottom:30px; background:${C.borderLight}; }
-  .report-shell{ box-shadow:0 8px 24px rgba(15,23,42,0.08); }
+  body{padding-bottom:30px;background:${C.borderLight};}
+  .report-shell{box-shadow:0 8px 24px rgba(15,23,42,0.08);}
 }
 </style>
 </head>
 <body>
-  ${runningHeader}
   <div class="report-shell">
-    <div class="page-intro">
-      <div class="page-intro-header">${header}</div>
-      ${metricsRow}${sentBar}
-    </div>
-    <div class="report-content">
-      ${blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="block-${blockIndex + 1}">${block}</div>`).join("\n")}
-    </div>
+    <table class="print-report-table" role="presentation">
+      <thead>
+        <tr class="print-repeat-header-row">
+          <td class="print-repeat-header-cell">${repeatedHeader}</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="print-intro-row">
+          <td>
+            <div class="page-intro">
+              <div class="page-intro-header">${header}</div>
+              ${metricsRow}${sentBar}
+            </div>
+            <div class="report-content">
+              ${blocks.map((block, blockIndex) => `<div class="pdf-section-block" data-pdf-section="block-${blockIndex + 1}">${block}</div>`).join("\n")}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </body>
 </html>`;
