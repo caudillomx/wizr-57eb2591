@@ -424,8 +424,8 @@ function slideTimeline(report: SmartReportContent, projectName: string, page: nu
       <div style="background:${C.paperAlt};border-radius:20px;padding:28px 32px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
         ${svgAreaTimeline(report.timeline, 1680, 440)}
       </div>
-      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:17px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 420))}
+      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:16px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 800))}
       </div>
     </div>
   `;
@@ -465,8 +465,8 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
       <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">04 · Narrativas Dominantes</div>
       <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Las ${narr.length} ideas que circularon</h2>
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:18px;flex:1;min-height:0;">${cards}</div>
-      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -499,8 +499,8 @@ function slideInfluencers(report: SmartReportContent, projectName: string, page:
       <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">05 · Influenciadores Clave</div>
       <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Voces con mayor impacto en redes</h2>
       <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin influenciadores destacados.</div>`}</div>
-      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -532,8 +532,8 @@ function slideMediaOutlets(report: SmartReportContent, projectName: string, page
       <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">06 · Medios Digitales</div>
       <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Cobertura editorial dominante</h2>
       <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados.</div>`}</div>
-      <div style="margin-top:18px;background:${C.orangeSoft};border-left:4px solid ${C.orange};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      <div style="margin-top:16px;background:${C.orangeSoft};border-left:4px solid ${C.orange};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -551,8 +551,8 @@ function slideSourceMix(report: SmartReportContent, projectName: string, page: n
       <div style="background:${C.paperAlt};border-radius:20px;padding:36px 32px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
         ${data.length ? svgHorizontalBars(data, 1700, 60) : `<div style="font-size:22px;color:${C.textMuted};">Sin datos de plataforma.</div>`}
       </div>
-      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -569,7 +569,7 @@ function slideKeyFindings(report: SmartReportContent, projectName: string, page:
         <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;">${labels[i] || "Hallazgo"}</div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="flex:1;padding:26px 32px;display:flex;align-items:center;font-size:21px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(f, 380))}</div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(f, 600))}</div>
     </div>`,
     )
     .join("");
@@ -603,7 +603,7 @@ function slideRecommendations(report: SmartReportContent, projectName: string, p
         <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;background:${tag.color}15;color:${tag.color};padding:5px 12px;border-radius:100px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.15em;">
           <span style="width:6px;height:6px;border-radius:50%;background:${tag.color};"></span>${tag.label}
         </div>
-        <div style="font-size:20px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(r, 380))}</div>
+        <div style="font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(r, 600))}</div>
       </div>
     </div>`;
     })
@@ -639,7 +639,7 @@ function slideClosing(report: SmartReportContent, projectName: string, page: num
         <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
         <span style="font-size:13px;letter-spacing:0.28em;color:#fff;font-weight:800;text-transform:uppercase;">Conclusión del periodo</span>
       </div>
-      <p style="font-size:48px;font-weight:600;line-height:1.28;margin:0 0 56px 0;color:#fff;max-width:1500px;letter-spacing:-0.018em;">${esc(truncate(conclusion, 520))}</p>
+      <p style="font-size:42px;font-weight:600;line-height:1.3;margin:0 0 56px 0;color:#fff;max-width:1620px;letter-spacing:-0.018em;">${esc(truncate(conclusion, 800))}</p>
       <div style="height:1px;background:rgba(255,255,255,0.15);margin:32px 0;"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="display:flex;flex-direction:column;gap:4px;">
