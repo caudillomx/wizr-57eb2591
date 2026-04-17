@@ -451,8 +451,8 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
             <span style="font-size:14px;color:${sc};">${trendIcon(n.trend)}</span>
           </div>
         </div>
-        <div style="font-size:20px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
-        <div style="font-size:14px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 200))}</div>
+        <div style="font-size:19px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 110))}</div>
+        <div style="font-size:13.5px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 360))}</div>
         <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:12px;padding-left:8px;">
           <span style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;">Volumen</span>
           <span style="font-size:26px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}${pct > 0 ? ` <span style="font-size:13px;color:${C.textMuted};font-weight:600;">· ${pct}%</span>` : ""}</span>
