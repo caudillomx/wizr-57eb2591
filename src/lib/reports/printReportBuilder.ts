@@ -375,38 +375,46 @@ export function buildReportHTML(
     blocks.push(section("Conclusiones", bodyWithBullets, C.primary));
   }
 
-  const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 68);
-  const headerSubtitle = truncateText(report.title, 90);
+  const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 56);
+  const headerSubtitle = truncateText(report.title, 68);
 
   // PDFShift native header (repeated on every page, reserves space physically)
-  const HEADER_HEIGHT_PX = 90;
-  const FOOTER_HEIGHT_PX = 38;
+  const HEADER_HEIGHT_PX = 74;
+  const FOOTER_HEIGHT_PX = 34;
 
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-body{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 26px;gap:18px;}
-.logo{height:54px;width:auto;display:block;flex-shrink:0;}
-.copy{min-width:0;max-width:72%;text-align:right;color:#fff;}
-.ctx{font-size:10px;line-height:1.35;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{font-size:11px;line-height:1.35;font-weight:700;color:#fff;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;}
+body{background:transparent;}
+.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:18px;border-bottom:1px solid rgba(255,255,255,0.12);}
+.logo{height:34px;width:auto;display:block;flex-shrink:0;}
+.copy{min-width:0;max-width:68%;text-align:right;color:#fff;}
+.ctx{font-size:9px;line-height:1.3;font-weight:600;color:${C.accentLight};letter-spacing:0.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{font-size:10px;line-height:1.3;font-weight:700;color:#fff;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
-<img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" />
-<div class="copy">
-  <div class="ctx">${escapeHtml(headerContext)}</div>
-  <div class="title">${escapeHtml(headerSubtitle)}</div>
+<div class="bar">
+  <img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" />
+  <div class="copy">
+    <div class="ctx">${escapeHtml(headerContext)}</div>
+    <div class="title">${escapeHtml(headerSubtitle)}</div>
+  </div>
 </div>
 </body></html>`;
 
   const pdfFooterSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-body{width:100%;height:${FOOTER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#fff;}
-.left{font-size:8.5px;color:${C.accentLight};letter-spacing:0.4px;}
-.right{font-size:9px;font-weight:600;letter-spacing:0.4px;color:#fff;}
+html,body{width:100%;height:${FOOTER_HEIGHT_PX}px;overflow:hidden;}
+body{background:transparent;}
+.bar{width:100%;height:${FOOTER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#fff;border-top:1px solid rgba(255,255,255,0.12);}
+.left{font-size:8px;color:${C.accentLight};letter-spacing:0.3px;}
+.right{font-size:8.5px;font-weight:600;letter-spacing:0.3px;color:#fff;}
 </style></head><body>
-<div class="left">Generado con Wizr · ${escapeHtml(generatedDate)}</div>
-<div class="right">Página {{page}} de {{total}}</div>
+<div class="bar">
+  <div class="left">Generado con Wizr · ${escapeHtml(generatedDate)}</div>
+  <div class="right">Página {{page}} de {{total}}</div>
+</div>
 </body></html>`;
 
   const html = `<!DOCTYPE html>
