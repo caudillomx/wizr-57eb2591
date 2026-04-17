@@ -393,8 +393,8 @@ serve(async (req) => {
 
     const formatInstructions = `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
 - summary: 5-8 oraciones
-- keyFindings: 5-8
-- recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
+- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN ESTRATÉGICA para la marca/entidad en el contexto del proyecto. Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales.
+- recommendations: OBLIGATORIO entre 5 y 7 recomendaciones. Cada una con 3-4 oraciones (aprox. 380-600 caracteres) y debe responder explícitamente: (a) DECISIÓN directiva concreta, (b) RIESGO mitigado u OPORTUNIDAD capturada, (c) PLAZO sugerido (inmediato / 2-4 semanas / mes), (d) ÁREA responsable en términos genéricos ("área de comunicación estratégica", "equipo a cargo de asuntos públicos") sin inventar nombres ni cargos. Evita recomendaciones repetidas o variantes de la misma idea.
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
 - conclusions: 3-5
@@ -503,9 +503,9 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
   "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
   "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
-  "keyFindings": ["string - hallazgo específico citando fuentes y datos"],
+  "keyFindings": ["string - hallazgo de 3-5 oraciones con estructura QUÉ + DÓNDE/QUIÉN + IMPLICACIÓN ESTRATÉGICA, citando fuentes específicas y datos auditables. NUNCA un párrafo genérico ni una sola oración descriptiva."],
   "conclusions": ["string - conclusión ESTRATÉGICA integrando múltiples datos"],
-  "recommendations": ["string - recomendación de NIVEL DIRECTIVO: decisión de posicionamiento, gestión de riesgo reputacional u oportunidad de incidencia pública. NUNCA tarea operativa de monitoreo."],
+  "recommendations": ["string - recomendación de NIVEL DIRECTIVO de 3-4 oraciones que articule: decisión concreta + riesgo mitigado u oportunidad capturada + plazo (inmediato/2-4 semanas/mes) + área responsable genérica. NUNCA tarea operativa de monitoreo ni una sola línea suelta."],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
@@ -536,9 +536,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         mediaInsight: { type: "string" },
         platformsInsight: { type: "string" },
         entityComparison: { type: "string" },
-        keyFindings: { type: "array", minItems: 3, items: { type: "string" } },
+        keyFindings: { type: "array", minItems: 6, maxItems: 8, items: { type: "string", minLength: 280 } },
         conclusions: { type: "array", items: { type: "string" } },
-        recommendations: { type: "array", minItems: 3, items: { type: "string" } },
+        recommendations: { type: "array", minItems: 5, maxItems: 7, items: { type: "string", minLength: 320 } },
         narratives: {
           type: "array",
           minItems: 4,
