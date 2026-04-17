@@ -673,9 +673,9 @@ function slideKeyFindings(report: SmartReportContent, projectName: string, page:
   const labels = ["Riesgo", "Oportunidad", "Tendencia", "Señal"];
   const items = findings
     .map(
-      (f, i) => `<div style="display:flex;gap:24px;align-items:stretch;background:${C.paper};border:1px solid ${C.border};border-radius:18px;overflow:hidden;box-shadow:0 2px 12px rgba(11,10,31,0.04);">
-      <div style="background:linear-gradient(160deg,${C.violet} 0%,${C.violetGlow} 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
-        <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;">${labels[i] || "Hallazgo"}</div>
+      (f, i) => `<div style="display:flex;gap:24px;align-items:stretch;background:${C.paper};border:1px solid ${C.border};border-radius:18px;overflow:hidden;box-shadow:0 2px 12px rgba(11,10,31,0.04);min-height:150px;">
+      <div style="background:linear-gradient(160deg,${C.violet} 0%,${C.violetGlow} 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:160px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;white-space:nowrap;">${labels[i] || "Hallazgo"}</div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
       <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(f, 600))}</div>
