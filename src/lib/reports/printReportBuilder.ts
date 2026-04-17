@@ -439,7 +439,7 @@ strong{font-weight:700;color:${C.primary};}
   .running-header{
     display:block;
     position:fixed;
-    top:0;
+    top:-92px;
     left:0;
     right:0;
     height:72px;
