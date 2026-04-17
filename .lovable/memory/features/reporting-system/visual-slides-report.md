@@ -12,9 +12,12 @@ Tercera modalidad de exportación junto a Resumen/Completo. Mismo `SmartReportCo
 - **Visor web**: `src/components/reports/VisualSlidesViewer.tsx` (Dialog fullscreen). Reescala con `transform: scale()` para fit. Atajos: ←/→/Space, F (fullscreen), Esc.
 - **PDF landscape**: edge function `generate-pdf-pdfshift` extendida con `landscape` y `format` opcionales. Se invoca con `format: "1920x1080px"` y `landscape: true` → 1 slide = 1 página.
 
-### Estilo sandwich
-- Slide 1 (portada) y slide final (cierre): fondo oscuro `#0f172a → #1e1b4b` con logo blanco y KPIs gigantes.
-- Slides intermedios: fondo claro, accent indigo `#4f46e5`, KPIs de 64px, gráficas SVG inline.
+### Estilo editorial Wizr (v2)
+- **Sandwich**: Portada/cierre con `#0B0A1F` + glow violeta + sparkles naranja. Logo Wizr blanco (filter:invert).
+- **Slides contenido**: fondo `#FAFAFC`, header con logo Wizr color + section label, accent violeta `#3D1FD8` y naranja `#FF6B2C`.
+- **Tipografía**: Inter, h2 52-56px con tracking -0.025em, KPIs 64-72px con tracking -0.02em, eyebrows uppercase 12px tracking 0.3em.
+- **Numeración**: secciones tipo `01 ·`, `02 ·`, footers con padStart(2,'0').
+- **Logo Wizr**: importado como base64 en `src/lib/reports/wizrLogoColor.ts` (~120KB) desde `src/assets/wizr-logo-full.png`.
 
 ### Slides (orden, condicional según datos)
 1. Portada (KPIs gigantes)

@@ -1,6 +1,5 @@
 import type {
   SmartReportContent,
-  SourceBreakdown,
   InfluencerInfo,
   TimelinePoint,
   MediaOutletInfo,
@@ -8,7 +7,7 @@ import type {
 } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { LOGO_WHITE_B64 } from "./logoBase64";
+import { WIZR_LOGO_COLOR_B64 } from "./wizrLogoColor";
 
 interface DateRange {
   start: string;
@@ -16,31 +15,35 @@ interface DateRange {
   label: string;
 }
 
-// Sandwich palette: dark indigo for cover/closing, light slate for content
+// Wizr palette — refined for editorial slide deck
 const C = {
-  darkBg: "#0f172a",
-  darkBg2: "#1e1b4b",
-  darkAccent: "#a5b4fc",
-  lightBg: "#ffffff",
-  lightBg2: "#f8fafc",
-  primary: "#4f46e5",
-  primarySoft: "#eef2ff",
-  text: "#0f172a",
-  textMuted: "#64748b",
-  border: "#e2e8f0",
-  positive: "#22c55e",
-  negative: "#ef4444",
-  neutral: "#94a3b8",
-  warning: "#f59e0b",
+  // Dark (cover/closing)
+  ink: "#0B0A1F",
+  inkSoft: "#1A1638",
+  // Light (content)
+  paper: "#FAFAFC",
+  paperAlt: "#F2F1F8",
+  border: "#E5E3EE",
+  // Brand
+  violet: "#3D1FD8",
+  violetSoft: "#EBE8FB",
+  violetGlow: "#6B4FF5",
+  orange: "#FF6B2C",
+  orangeSoft: "#FFE9DD",
+  // Text
+  text: "#0B0A1F",
+  textMid: "#4A4760",
+  textMuted: "#8E8BA3",
+  // Sentiment
+  positive: "#22C55E",
+  negative: "#EF4444",
+  neutral: "#9CA3AF",
+  warning: "#F59E0B",
 };
 
 function esc(t: string | undefined | null): string {
   if (!t) return "";
-  return String(t)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function fmtNum(n: number): string {
@@ -65,9 +68,9 @@ function sentLabel(s: string): string {
 }
 
 function trendIcon(t: string): string {
-  if (t === "creciente") return "↗";
-  if (t === "decreciente") return "↘";
-  return "→";
+  if (t === "creciente") return "▲";
+  if (t === "decreciente") return "▼";
+  return "■";
 }
 
 function truncate(t: string, n: number): string {
@@ -75,35 +78,67 @@ function truncate(t: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…";
 }
 
-/** Slide chrome — base 1920x1080, scales via CSS transform when embedded */
+// Wizr sparkles — vector accent reused across slides
+function sparkles(color = C.orange, opacity = 1): string {
+  return `<svg width="180" height="180" viewBox="0 0 180 180" style="opacity:${opacity};">
+    <path d="M90 20 L96 50 L126 56 L96 62 L90 92 L84 62 L54 56 L84 50 Z" fill="${color}"/>
+    <path d="M150 90 L154 110 L174 114 L154 118 L150 138 L146 118 L126 114 L146 110 Z" fill="${color}"/>
+    <path d="M40 110 L43 124 L57 127 L43 130 L40 144 L37 130 L23 127 L37 124 Z" fill="${color}"/>
+  </svg>`;
+}
+
+/** Slide chrome — 1920x1080 base canvas */
 function slideShell(opts: {
-  bg: "dark" | "light";
+  bg: "dark" | "light" | "accent";
   pageNumber: number;
   total: number;
   projectName: string;
   body: string;
+  showHeader?: boolean;
+  sectionLabel?: string;
 }): string {
   const isDark = opts.bg === "dark";
-  const bg = isDark
-    ? `background: linear-gradient(135deg, ${C.darkBg} 0%, ${C.darkBg2} 100%);`
-    : `background: ${C.lightBg};`;
-  const fg = isDark ? "#ffffff" : C.text;
-  const subtle = isDark ? "rgba(255,255,255,0.55)" : C.textMuted;
+  const isAccent = opts.bg === "accent";
+  let bg: string;
+  let fg: string;
+  let subtle: string;
+  if (isDark) {
+    bg = `background: radial-gradient(ellipse at top right, ${C.inkSoft} 0%, ${C.ink} 60%);`;
+    fg = "#FFFFFF";
+    subtle = "rgba(255,255,255,0.5)";
+  } else if (isAccent) {
+    bg = `background: linear-gradient(135deg, ${C.violetSoft} 0%, ${C.paper} 100%);`;
+    fg = C.text;
+    subtle = C.textMuted;
+  } else {
+    bg = `background: ${C.paper};`;
+    fg = C.text;
+    subtle = C.textMuted;
+  }
+
+  const header = opts.showHeader === false ? "" : `
+    <header style="position:absolute;top:48px;left:80px;right:80px;display:flex;justify-content:space-between;align-items:center;z-index:5;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:34px;${isDark ? "filter:brightness(0) invert(1);" : ""}"/>
+      </div>
+      ${opts.sectionLabel ? `<div style="font-size:13px;letter-spacing:0.25em;color:${isDark ? "rgba(255,255,255,0.6)" : C.textMuted};font-weight:700;text-transform:uppercase;">${esc(opts.sectionLabel)}</div>` : ""}
+    </header>`;
 
   return `<section class="slide" style="position:relative;width:1920px;height:1080px;${bg}color:${fg};font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;page-break-after:always;break-after:page;">
+    ${header}
     ${opts.body}
-    <footer style="position:absolute;left:80px;right:80px;bottom:36px;display:flex;justify-content:space-between;align-items:center;font-size:18px;color:${subtle};letter-spacing:0.04em;">
-      <span style="font-weight:600;">${esc(opts.projectName)}</span>
-      <span>${opts.pageNumber} / ${opts.total}</span>
+    <footer style="position:absolute;left:80px;right:80px;bottom:36px;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:${subtle};letter-spacing:0.08em;z-index:5;">
+      <span style="font-weight:600;text-transform:uppercase;">${esc(opts.projectName)}</span>
+      <span style="font-variant-numeric:tabular-nums;">${String(opts.pageNumber).padStart(2, "0")} / ${String(opts.total).padStart(2, "0")}</span>
     </footer>
   </section>`;
 }
 
-// ---------- SVG chart helpers (work in both browser & PDFShift) ----------
+// ---------- SVG charts ----------
 
 function svgDonut(pos: number, neu: number, neg: number, size = 380): string {
   const total = Math.max(pos + neu + neg, 1);
-  const r = size / 2 - 30;
+  const r = size / 2 - 36;
   const cx = size / 2;
   const cy = size / 2;
   const circ = 2 * Math.PI * r;
@@ -117,7 +152,7 @@ function svgDonut(pos: number, neu: number, neg: number, size = 380): string {
     .map((s) => {
       const len = (s.val / total) * circ;
       const dash = `${len} ${circ - len}`;
-      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="48" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="56" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;
       offset += len;
       return el;
     })
@@ -126,18 +161,18 @@ function svgDonut(pos: number, neu: number, neg: number, size = 380): string {
   const domColor = dom === "Positivo" ? C.positive : dom === "Negativo" ? C.negative : C.neutral;
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     ${arcs}
-    <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="64" font-weight="800" fill="${C.text}">${total}</text>
-    <text x="${cx}" y="${cy + 30}" text-anchor="middle" font-size="22" fill="${C.textMuted}">menciones</text>
-    <text x="${cx}" y="${cy + 70}" text-anchor="middle" font-size="20" font-weight="700" fill="${domColor}">${dom}</text>
+    <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="72" font-weight="800" fill="${C.text}" font-family="'Inter',sans-serif">${total}</text>
+    <text x="${cx}" y="${cy + 28}" text-anchor="middle" font-size="18" fill="${C.textMuted}" letter-spacing="2">MENCIONES</text>
+    <text x="${cx}" y="${cy + 64}" text-anchor="middle" font-size="20" font-weight="700" fill="${domColor}">${dom.toUpperCase()}</text>
   </svg>`;
 }
 
-function svgAreaTimeline(timeline: TimelinePoint[], width = 1500, height = 380): string {
+function svgAreaTimeline(timeline: TimelinePoint[], width = 1620, height = 420): string {
   if (!timeline.length) return "";
   const data = timeline;
   const maxV = Math.max(...data.map((d) => d.count), 1);
   const padX = 60;
-  const padY = 40;
+  const padY = 60;
   const innerW = width - padX * 2;
   const innerH = height - padY * 2;
   const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
@@ -149,34 +184,45 @@ function svgAreaTimeline(timeline: TimelinePoint[], width = 1500, height = 380):
   const path = `M${padX},${padY + innerH} L${points.join(" L")} L${padX + (data.length - 1) * stepX},${padY + innerH} Z`;
   const linePath = `M${points.join(" L")}`;
 
-  // Mark peak
   const peakIdx = data.indexOf(data.reduce((a, b) => (a.count > b.count ? a : b)));
   const peak = data[peakIdx];
   const peakX = padX + peakIdx * stepX;
   const peakY = padY + innerH - (peak.count / maxV) * innerH;
 
-  // X-axis labels (every Nth)
+  // Y grid lines (4)
+  const grid = [0.25, 0.5, 0.75, 1].map((t) => {
+    const y = padY + innerH - innerH * t;
+    const v = Math.round(maxV * t);
+    return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" stroke="${C.border}" stroke-width="1" stroke-dasharray="4 6"/>
+      <text x="${padX - 12}" y="${y + 5}" text-anchor="end" font-size="14" fill="${C.textMuted}">${v}</text>`;
+  }).join("");
+
   const labelEvery = Math.max(1, Math.floor(data.length / 8));
   const xLabels = data
     .map((d, i) => {
       if (i % labelEvery !== 0 && i !== data.length - 1) return "";
       const x = padX + i * stepX;
       const lbl = d.date.slice(5);
-      return `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="16" fill="${C.textMuted}">${lbl}</text>`;
+      return `<text x="${x}" y="${height - 14}" text-anchor="middle" font-size="14" fill="${C.textMuted}">${lbl}</text>`;
     })
     .join("");
 
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <defs>
       <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${C.primary}" stop-opacity="0.4"/>
-        <stop offset="100%" stop-color="${C.primary}" stop-opacity="0.05"/>
+        <stop offset="0%" stop-color="${C.violet}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${C.violet}" stop-opacity="0.02"/>
       </linearGradient>
     </defs>
+    ${grid}
     <path d="${path}" fill="url(#areaGrad)"/>
-    <path d="${linePath}" fill="none" stroke="${C.primary}" stroke-width="3"/>
-    <circle cx="${peakX}" cy="${peakY}" r="9" fill="${C.negative}" stroke="#fff" stroke-width="3"/>
-    <text x="${peakX}" y="${peakY - 18}" text-anchor="middle" font-size="20" font-weight="700" fill="${C.negative}">Pico: ${peak.count}</text>
+    <path d="${linePath}" fill="none" stroke="${C.violet}" stroke-width="3.5" stroke-linejoin="round"/>
+    <line x1="${peakX}" y1="${padY}" x2="${peakX}" y2="${padY + innerH}" stroke="${C.orange}" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <circle cx="${peakX}" cy="${peakY}" r="11" fill="${C.orange}" stroke="#fff" stroke-width="3"/>
+    <g transform="translate(${peakX}, ${peakY - 28})">
+      <rect x="-50" y="-26" width="100" height="26" rx="13" fill="${C.orange}"/>
+      <text x="0" y="-7" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">PICO · ${peak.count}</text>
+    </g>
     ${xLabels}
   </svg>`;
 }
@@ -188,20 +234,22 @@ function svgHorizontalBars(
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => d.value), 1);
-  const labelW = 360;
-  const valueW = 120;
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const labelW = 320;
+  const valueW = 180;
   const barW = width - labelW - valueW - 60;
   const height = data.length * rowH + 20;
   const rows = data
     .map((d, i) => {
       const y = i * rowH + 10;
       const w = (d.value / max) * barW;
-      const color = d.color || C.primary;
+      const color = d.color || C.violet;
+      const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
       return `
-        <text x="${labelW - 20}" y="${y + rowH / 2 + 8}" text-anchor="end" font-size="22" font-weight="600" fill="${C.text}">${esc(truncate(d.label, 32))}</text>
-        <rect x="${labelW}" y="${y + 12}" width="${barW}" height="${rowH - 24}" rx="6" fill="${C.lightBg2}"/>
-        <rect x="${labelW}" y="${y + 12}" width="${w}" height="${rowH - 24}" rx="6" fill="${color}"/>
-        <text x="${labelW + barW + 20}" y="${y + rowH / 2 + 8}" font-size="22" font-weight="700" fill="${C.text}">${fmtNum(d.value)}</text>
+        <text x="${labelW - 20}" y="${y + rowH / 2 + 7}" text-anchor="end" font-size="20" font-weight="600" fill="${C.text}">${esc(truncate(d.label, 28))}</text>
+        <rect x="${labelW}" y="${y + 14}" width="${barW}" height="${rowH - 28}" rx="4" fill="${C.paperAlt}"/>
+        <rect x="${labelW}" y="${y + 14}" width="${w}" height="${rowH - 28}" rx="4" fill="${color}"/>
+        <text x="${labelW + barW + 20}" y="${y + rowH / 2 + 7}" font-size="20" font-weight="700" fill="${C.text}">${fmtNum(d.value)} <tspan font-size="14" font-weight="500" fill="${C.textMuted}">· ${pct}%</tspan></text>
       `;
     })
     .join("");
@@ -211,24 +259,57 @@ function svgHorizontalBars(
 // ---------- Slides ----------
 
 function slideCover(report: SmartReportContent, projectName: string, dateRange: DateRange, total: number): string {
-  const dateLabel = `${format(new Date(dateRange.start), "d 'de' MMMM", { locale: es })} – ${format(new Date(dateRange.end), "d 'de' MMMM yyyy", { locale: es })}`;
+  const dateLabel = `${format(new Date(dateRange.start), "d MMM", { locale: es })} — ${format(new Date(dateRange.end), "d MMM yyyy", { locale: es })}`;
+  const m = report.metrics;
+  const tot = m.totalMentions || 1;
+  const negPct = Math.round((m.negativeCount / tot) * 100);
+
   const body = `
-    <div style="position:absolute;top:80px;left:80px;display:flex;align-items:center;gap:18px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:48px;"/>
-      <span style="font-size:18px;letter-spacing:0.2em;color:${C.darkAccent};font-weight:600;">REPORTE VISUAL</span>
+    <!-- Decorative orange sparkles top-right -->
+    <div style="position:absolute;top:0;right:0;width:520px;height:520px;overflow:hidden;">
+      <div style="position:absolute;top:80px;right:80px;transform:scale(2.2);">
+        ${sparkles(C.orange, 0.9)}
+      </div>
     </div>
-    <div style="position:absolute;top:50%;left:80px;right:80px;transform:translateY(-50%);">
-      <div style="font-size:24px;color:${C.darkAccent};letter-spacing:0.15em;text-transform:uppercase;font-weight:600;margin-bottom:24px;">Inteligencia de medios</div>
-      <h1 style="font-size:96px;font-weight:800;line-height:1.05;margin:0 0 32px 0;letter-spacing:-0.02em;">${esc(projectName)}</h1>
-      <div style="font-size:32px;color:rgba(255,255,255,0.85);font-weight:400;">${dateLabel}</div>
-      <div style="margin-top:48px;display:flex;gap:48px;">
-        <div><div style="font-size:64px;font-weight:800;color:#fff;">${fmtNum(report.metrics.totalMentions)}</div><div style="font-size:18px;color:${C.darkAccent};text-transform:uppercase;letter-spacing:0.1em;">Menciones</div></div>
-        <div><div style="font-size:64px;font-weight:800;color:#fff;">${fmtNum(report.metrics.estimatedReach)}</div><div style="font-size:18px;color:${C.darkAccent};text-transform:uppercase;letter-spacing:0.1em;">Alcance estimado</div></div>
-        <div><div style="font-size:64px;font-weight:800;color:#fff;">${report.totalUniqueAuthors || 0}</div><div style="font-size:18px;color:${C.darkAccent};text-transform:uppercase;letter-spacing:0.1em;">Autores únicos</div></div>
+    <!-- Violet glow bottom-left -->
+    <div style="position:absolute;bottom:-200px;left:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.35;"></div>
+
+    <!-- Logo top-left (white variant) -->
+    <div style="position:absolute;top:64px;left:80px;display:flex;align-items:center;gap:18px;z-index:5;">
+      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:56px;filter:brightness(0) invert(1);"/>
+    </div>
+
+    <!-- Main content -->
+    <div style="position:absolute;top:280px;left:80px;right:80px;z-index:5;">
+      <div style="display:inline-flex;align-items:center;gap:12px;padding:10px 22px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:100px;margin-bottom:36px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
+        <span style="font-size:14px;letter-spacing:0.25em;color:#fff;font-weight:700;text-transform:uppercase;">Reporte Visual · Inteligencia de Medios</span>
+      </div>
+      <h1 style="font-size:120px;font-weight:800;line-height:0.95;margin:0 0 28px 0;letter-spacing:-0.035em;color:#fff;max-width:1500px;">${esc(projectName)}</h1>
+      <div style="font-size:30px;color:rgba(255,255,255,0.75);font-weight:400;letter-spacing:0.02em;">${dateLabel}</div>
+    </div>
+
+    <!-- KPI strip bottom -->
+    <div style="position:absolute;bottom:120px;left:80px;right:80px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid rgba(255,255,255,0.15);padding-top:36px;z-index:5;">
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Menciones</div>
+        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.totalMentions)}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Alcance estimado</div>
+        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${fmtNum(m.estimatedReach)}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">Autores únicos</div>
+        <div style="font-size:64px;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.02em;">${report.totalUniqueAuthors || 0}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.18em;font-weight:700;margin-bottom:10px;">% Negativo</div>
+        <div style="font-size:64px;font-weight:800;color:${C.orange};line-height:1;letter-spacing:-0.02em;">${negPct}%</div>
       </div>
     </div>
   `;
-  return slideShell({ bg: "dark", pageNumber: 1, total, projectName, body });
+  return slideShell({ bg: "dark", pageNumber: 1, total, projectName, body, showHeader: false });
 }
 
 function slideSummary(report: SmartReportContent, projectName: string, page: number, total: number): string {
@@ -238,221 +319,241 @@ function slideSummary(report: SmartReportContent, projectName: string, page: num
   const posPct = Math.round((m.positiveCount / tot) * 100);
   const summary = report.summary || "";
   const body = `
-    <div style="padding:96px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:18px;">Brief Ejecutivo</div>
-      <h2 style="font-size:48px;font-weight:800;margin:0 0 36px 0;line-height:1.15;color:${C.text};">${esc(report.title || "Resumen del período")}</h2>
-      <p style="font-size:26px;line-height:1.55;color:${C.text};margin:0 0 48px 0;max-width:1600px;">${esc(truncate(summary, 480))}</p>
-      <div style="margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
-        <div style="background:${C.primarySoft};border-radius:16px;padding:32px;">
-          <div style="font-size:18px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Menciones</div>
-          <div style="font-size:64px;font-weight:800;color:${C.primary};margin-top:8px;">${fmtNum(m.totalMentions)}</div>
-        </div>
-        <div style="background:#dcfce7;border-radius:16px;padding:32px;">
-          <div style="font-size:18px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Positivo</div>
-          <div style="font-size:64px;font-weight:800;color:${C.positive};margin-top:8px;">${posPct}%</div>
-        </div>
-        <div style="background:#fee2e2;border-radius:16px;padding:32px;">
-          <div style="font-size:18px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Negativo</div>
-          <div style="font-size:64px;font-weight:800;color:${C.negative};margin-top:8px;">${negPct}%</div>
-        </div>
-        <div style="background:#f1f5f9;border-radius:16px;padding:32px;">
-          <div style="font-size:18px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Alcance</div>
-          <div style="font-size:64px;font-weight:800;color:${C.text};margin-top:8px;">${fmtNum(m.estimatedReach)}</div>
-        </div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:grid;grid-template-columns:1.6fr 1fr;gap:64px;">
+      <div style="display:flex;flex-direction:column;">
+        <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">01 · Brief Ejecutivo</div>
+        <h2 style="font-size:56px;font-weight:800;margin:0 0 36px 0;line-height:1.05;color:${C.text};letter-spacing:-0.025em;">${esc(report.title || "Resumen del período")}</h2>
+        <div style="width:80px;height:4px;background:${C.orange};margin-bottom:32px;"></div>
+        <p style="font-size:24px;line-height:1.55;color:${C.textMid};margin:0;font-weight:400;">${esc(truncate(summary, 620))}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;justify-content:center;">
+        ${[
+          { label: "Menciones", val: fmtNum(m.totalMentions), color: C.violet, bg: C.violetSoft },
+          { label: "Positivo", val: posPct + "%", color: C.positive, bg: "#DCFCE7" },
+          { label: "Negativo", val: negPct + "%", color: C.negative, bg: "#FEE2E2" },
+          { label: "Alcance", val: fmtNum(m.estimatedReach), color: C.text, bg: C.paperAlt },
+        ].map((k) => `
+          <div style="background:${k.bg};border-radius:18px;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:18px;color:${C.textMid};text-transform:uppercase;letter-spacing:0.12em;font-weight:700;">${k.label}</div>
+            <div style="font-size:56px;font-weight:800;color:${k.color};line-height:1;letter-spacing:-0.02em;">${k.val}</div>
+          </div>
+        `).join("")}
       </div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Brief" });
 }
 
 function slideSentiment(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const m = report.metrics;
   const interp = report.sentimentAnalysis || "El análisis muestra el balance del sentimiento del periodo.";
   const body = `
-    <div style="padding:96px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:18px;">Pulso de Sentimiento</div>
-      <h2 style="font-size:48px;font-weight:800;margin:0 0 48px 0;color:${C.text};">Distribución del periodo</h2>
-      <div style="display:flex;gap:80px;align-items:center;flex:1;">
-        <div style="flex-shrink:0;">${svgDonut(m.positiveCount, m.neutralCount, m.negativeCount, 440)}</div>
-        <div style="flex:1;">
-          <div style="display:flex;flex-direction:column;gap:18px;margin-bottom:36px;">
-            <div style="display:flex;align-items:center;gap:18px;font-size:24px;"><span style="width:24px;height:24px;border-radius:6px;background:${C.positive};"></span>Positivo · <strong>${m.positiveCount}</strong></div>
-            <div style="display:flex;align-items:center;gap:18px;font-size:24px;"><span style="width:24px;height:24px;border-radius:6px;background:${C.neutral};"></span>Neutral · <strong>${m.neutralCount}</strong></div>
-            <div style="display:flex;align-items:center;gap:18px;font-size:24px;"><span style="width:24px;height:24px;border-radius:6px;background:${C.negative};"></span>Negativo · <strong>${m.negativeCount}</strong></div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">02 · Pulso de Sentimiento</div>
+      <h2 style="font-size:56px;font-weight:800;margin:0 0 48px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">¿Cómo se siente la conversación?</h2>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:80px;align-items:center;flex:1;">
+        <div style="flex-shrink:0;background:${C.paperAlt};border-radius:24px;padding:48px;">${svgDonut(m.positiveCount, m.neutralCount, m.negativeCount, 440)}</div>
+        <div style="display:flex;flex-direction:column;gap:24px;">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            ${[
+              { color: C.positive, label: "Positivo", val: m.positiveCount },
+              { color: C.neutral, label: "Neutral", val: m.neutralCount },
+              { color: C.negative, label: "Negativo", val: m.negativeCount },
+            ].map((s) => `
+              <div style="display:flex;align-items:center;gap:18px;padding:14px 20px;background:${C.paper};border:1px solid ${C.border};border-radius:12px;">
+                <span style="width:14px;height:36px;border-radius:4px;background:${s.color};"></span>
+                <span style="font-size:22px;color:${C.text};font-weight:600;flex:1;">${s.label}</span>
+                <span style="font-size:32px;font-weight:800;color:${s.color};letter-spacing:-0.02em;">${s.val}</span>
+              </div>
+            `).join("")}
           </div>
-          <div style="background:${C.lightBg2};border-left:6px solid ${C.primary};padding:28px 32px;border-radius:8px;font-size:22px;line-height:1.55;color:${C.text};">
-            ${esc(truncate(interp, 380))}
+          <div style="background:${C.violetSoft};border-radius:16px;padding:28px 32px;font-size:20px;line-height:1.55;color:${C.text};">
+            <div style="font-size:11px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:10px;">Lectura estratégica</div>
+            ${esc(truncate(interp, 360))}
           </div>
         </div>
       </div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Sentimiento" });
 }
 
 function slideTimeline(report: SmartReportContent, projectName: string, page: number, total: number): string {
-  const peak = report.timeline.length
-    ? report.timeline.reduce((a, b) => (a.count > b.count ? a : b))
-    : null;
+  const peak = report.timeline.length ? report.timeline.reduce((a, b) => (a.count > b.count ? a : b)) : null;
+  const totalMentions = report.timeline.reduce((s, t) => s + t.count, 0);
+  const avg = report.timeline.length ? Math.round(totalMentions / report.timeline.length) : 0;
   const body = `
-    <div style="padding:96px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:18px;">Volumen en el Tiempo</div>
-      <h2 style="font-size:48px;font-weight:800;margin:0 0 36px 0;color:${C.text};">Evolución diaria de menciones</h2>
-      <div style="background:${C.lightBg2};border-radius:16px;padding:36px;flex:1;display:flex;align-items:center;justify-content:center;">
-        ${svgAreaTimeline(report.timeline, 1620, 460)}
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">03 · Volumen en el Tiempo</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;">
+        <h2 style="font-size:56px;font-weight:800;margin:0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Evolución diaria</h2>
+        <div style="display:flex;gap:32px;">
+          <div><div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.18em;font-weight:700;">Promedio/día</div><div style="font-size:36px;font-weight:800;color:${C.text};line-height:1.1;">${avg}</div></div>
+          ${peak ? `<div><div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.18em;font-weight:700;">Pico</div><div style="font-size:36px;font-weight:800;color:${C.orange};line-height:1.1;">${peak.count}</div></div>` : ""}
+        </div>
       </div>
-      ${peak ? `<div style="margin-top:24px;font-size:22px;color:${C.textMuted};">Pico de actividad: <strong style="color:${C.text};">${peak.date}</strong> con <strong style="color:${C.negative};">${peak.count} menciones</strong>.</div>` : ""}
+      <div style="background:${C.paperAlt};border-radius:20px;padding:36px;flex:1;display:flex;align-items:center;justify-content:center;">
+        ${svgAreaTimeline(report.timeline, 1680, 500)}
+      </div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Timeline" });
 }
 
 function slideNarratives(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const narr = report.narratives.slice(0, 5);
   const totalMentions = report.metrics.totalMentions || 1;
+  const cols = narr.length <= 2 ? narr.length : narr.length <= 4 ? 2 : 3;
   const cards = narr
     .map((n: NarrativeInfo, i: number) => {
       const pct = Math.round((n.mentions / totalMentions) * 100);
       const sc = sentColor(n.sentiment);
-      return `<div style="background:${C.lightBg};border:2px solid ${C.border};border-left:8px solid ${sc};border-radius:14px;padding:26px 28px;display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
-          <div style="font-size:14px;font-weight:800;color:${C.primary};letter-spacing:0.1em;">NARRATIVA ${i + 1}</div>
+      return `<div style="background:${C.paper};border:1px solid ${C.border};border-radius:18px;padding:28px 30px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:6px;height:100%;background:${sc};"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-left:8px;">
+          <div style="font-size:11px;font-weight:800;color:${C.violet};letter-spacing:0.2em;">N° ${String(i + 1).padStart(2, "0")}</div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <span style="background:${sc};color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;text-transform:uppercase;">${sentLabel(n.sentiment)}</span>
-            <span style="font-size:18px;color:${C.textMuted};">${trendIcon(n.trend)}</span>
+            <span style="background:${sc}15;color:${sc};padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(n.sentiment)}</span>
+            <span style="font-size:14px;color:${sc};">${trendIcon(n.trend)}</span>
           </div>
         </div>
-        <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.3;">${esc(truncate(n.narrative, 90))}</div>
-        <div style="font-size:16px;color:${C.textMuted};line-height:1.45;">${esc(truncate(n.description, 180))}</div>
-        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:10px;">
-          <span style="font-size:13px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Volumen</span>
-          <span style="font-size:28px;font-weight:800;color:${C.text};">${n.mentions} <span style="font-size:16px;color:${C.textMuted};font-weight:500;">(${pct}%)</span></span>
+        <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
+        <div style="font-size:15px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 180))}</div>
+        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:14px;padding-left:8px;">
+          <span style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;">Volumen</span>
+          <span style="font-size:30px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${n.mentions} <span style="font-size:14px;color:${C.textMuted};font-weight:600;">· ${pct}%</span></span>
         </div>
       </div>`;
     })
     .join("");
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Narrativas Dominantes</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 32px 0;color:${C.text};">Top ${narr.length} ideas que circularon</h2>
-      <div style="display:grid;grid-template-columns:repeat(${narr.length <= 2 ? narr.length : narr.length <= 4 ? 2 : 3},1fr);gap:20px;flex:1;">
-        ${cards}
-      </div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">04 · Narrativas Dominantes</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Las ${narr.length} ideas que circularon</h2>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px;flex:1;">${cards}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Narrativas" });
 }
 
 function slideInfluencers(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const top = report.influencers.slice(0, 6);
   const rows = top
-    .map((inf, i) => {
+    .map((inf: InfluencerInfo, i) => {
       const reach = inf.reach || `${fmtNum(inf.mentions)} menciones`;
-      return `<div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:${i === 0 ? C.primarySoft : C.lightBg2};border-radius:14px;border:2px solid ${i === 0 ? C.primary : "transparent"};">
-        <div style="width:60px;height:60px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0;">${i + 1}</div>
+      const isTop = i === 0;
+      return `<div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:${isTop ? C.violetSoft : C.paper};border-radius:14px;border:1px solid ${isTop ? C.violet : C.border};">
+        <div style="width:52px;height:52px;border-radius:14px;background:${isTop ? C.violet : C.paperAlt};color:${isTop ? "#fff" : C.text};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:24px;font-weight:800;color:${C.text};line-height:1.2;">${esc(truncate(inf.name || inf.username, 36))}</div>
-          <div style="font-size:16px;color:${C.textMuted};margin-top:4px;">${esc(inf.platform)} · ${esc(reach)}</div>
+          <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.2;letter-spacing:-0.01em;">${esc(truncate(inf.name || inf.username, 36))}</div>
+          <div style="font-size:14px;color:${C.textMuted};margin-top:4px;letter-spacing:0.05em;">${esc(inf.platform).toUpperCase()} · ${esc(reach)}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:32px;font-weight:800;color:${C.text};">${inf.mentions}</div>
-          <div style="font-size:13px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">menciones</div>
+        <div style="text-align:right;min-width:100px;">
+          <div style="font-size:30px;font-weight:800;color:${C.text};line-height:1;letter-spacing:-0.02em;">${inf.mentions}</div>
+          <div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-top:4px;">menciones</div>
         </div>
-        <span style="background:${sentColor(inf.sentiment)};color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:700;text-transform:uppercase;">${sentLabel(inf.sentiment)}</span>
+        <span style="background:${sentColor(inf.sentiment)}15;color:${sentColor(inf.sentiment)};padding:6px 14px;border-radius:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(inf.sentiment)}</span>
       </div>`;
     })
     .join("");
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Influenciadores Clave</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 32px 0;color:${C.text};">Voces con mayor impacto en redes</h2>
-      <div style="display:flex;flex-direction:column;gap:14px;flex:1;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin influenciadores destacados en el periodo.</div>`}</div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">05 · Influenciadores Clave</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Voces con mayor impacto en redes</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;flex:1;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin influenciadores destacados.</div>`}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Influenciadores" });
 }
 
 function slideMediaOutlets(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const media = (report.mediaOutlets || []).slice(0, 6);
   const rows = media
     .map((m: MediaOutletInfo, i) => {
-      return `<div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:${i === 0 ? "#fef3c7" : C.lightBg2};border-radius:14px;border:2px solid ${i === 0 ? C.warning : "transparent"};">
-        <div style="width:60px;height:60px;border-radius:14px;background:${C.text};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0;">${i + 1}</div>
+      const isTop = i === 0;
+      return `<div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:${isTop ? C.orangeSoft : C.paper};border-radius:14px;border:1px solid ${isTop ? C.orange : C.border};">
+        <div style="width:52px;height:52px;border-radius:14px;background:${isTop ? C.orange : C.paperAlt};color:${isTop ? "#fff" : C.text};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:24px;font-weight:800;color:${C.text};line-height:1.2;">${esc(truncate(m.name, 40))}</div>
-          <div style="font-size:16px;color:${C.textMuted};margin-top:4px;">${esc(m.domain)}</div>
+          <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.2;letter-spacing:-0.01em;">${esc(truncate(m.name, 40))}</div>
+          <div style="font-size:14px;color:${C.textMuted};margin-top:4px;font-family:'Menlo',monospace;">${esc(m.domain)}</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:32px;font-weight:800;color:${C.text};">${m.articles}</div>
-          <div style="font-size:13px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">artículos</div>
+        <div style="text-align:right;min-width:100px;">
+          <div style="font-size:30px;font-weight:800;color:${C.text};line-height:1;letter-spacing:-0.02em;">${m.articles}</div>
+          <div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-top:4px;">artículos</div>
         </div>
-        <span style="background:${sentColor(m.sentiment)};color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:700;text-transform:uppercase;">${sentLabel(m.sentiment)}</span>
+        <span style="background:${sentColor(m.sentiment)}15;color:${sentColor(m.sentiment)};padding:6px 14px;border-radius:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(m.sentiment)}</span>
       </div>`;
     })
     .join("");
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Medios de Amplio Alcance</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 32px 0;color:${C.text};">Cobertura editorial dominante</h2>
-      <div style="display:flex;flex-direction:column;gap:14px;flex:1;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados en el periodo.</div>`}</div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">06 · Medios Digitales</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Cobertura editorial dominante</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;flex:1;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados.</div>`}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Medios" });
 }
 
 function slideSourceMix(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const sources = report.sourceBreakdown.slice(0, 8);
-  const data = sources.map((s) => ({ label: s.source, value: s.count, color: C.primary }));
+  const data = sources.map((s) => ({ label: s.source, value: s.count, color: C.violet }));
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Distribución por Plataforma</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 36px 0;color:${C.text};">¿Dónde sucede la conversación?</h2>
-      <div style="background:${C.lightBg2};border-radius:16px;padding:40px;flex:1;display:flex;align-items:center;justify-content:center;">
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">07 · Mix de Plataformas</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">¿Dónde sucede la conversación?</h2>
+      <div style="background:${C.paperAlt};border-radius:20px;padding:48px 40px;flex:1;display:flex;align-items:center;justify-content:center;">
         ${data.length ? svgHorizontalBars(data, 1700, 64) : `<div style="font-size:22px;color:${C.textMuted};">Sin datos de plataforma.</div>`}
       </div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Plataformas" });
 }
 
 function slideKeyFindings(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const findings = report.keyFindings.slice(0, 4);
   const items = findings
     .map(
-      (f, i) => `<div style="display:flex;gap:24px;align-items:flex-start;padding:24px 28px;background:${C.lightBg2};border-radius:14px;border-left:6px solid ${C.primary};">
-      <div style="width:56px;height:56px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0;">${i + 1}</div>
-      <div style="font-size:22px;line-height:1.5;color:${C.text};">${esc(truncate(f, 280))}</div>
+      (f, i) => `<div style="display:flex;gap:28px;align-items:flex-start;padding:28px 32px;background:${C.paper};border:1px solid ${C.border};border-radius:16px;">
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+        <div style="font-size:11px;color:${C.violet};font-weight:800;letter-spacing:0.2em;margin-bottom:6px;">HALLAZGO</div>
+        <div style="width:64px;height:64px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+      </div>
+      <div style="font-size:22px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(f, 320))}</div>
     </div>`,
     )
     .join("");
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Hallazgos Clave</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 36px 0;color:${C.text};">Lo más importante del periodo</h2>
-      <div style="display:flex;flex-direction:column;gap:18px;flex:1;">${items}</div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">08 · Hallazgos Clave</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Lo más importante del periodo</h2>
+      <div style="display:flex;flex-direction:column;gap:16px;flex:1;">${items}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Hallazgos" });
 }
 
 function slideRecommendations(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const recs = report.recommendations.slice(0, 4);
   const items = recs
     .map(
-      (r, i) => `<div style="display:flex;gap:24px;align-items:flex-start;padding:24px 28px;background:${C.primarySoft};border-radius:14px;border-left:6px solid ${C.primary};">
-      <div style="width:56px;height:56px;border-radius:14px;background:${C.text};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0;">${i + 1}</div>
-      <div style="font-size:22px;line-height:1.5;color:${C.text};">${esc(truncate(r, 280))}</div>
+      (r, i) => `<div style="display:flex;gap:28px;align-items:flex-start;padding:28px 32px;background:${C.violetSoft};border-radius:16px;border-left:6px solid ${C.violet};">
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+        <div style="font-size:11px;color:${C.violet};font-weight:800;letter-spacing:0.2em;margin-bottom:6px;">ACCIÓN</div>
+        <div style="width:64px;height:64px;border-radius:14px;background:${C.text};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+      </div>
+      <div style="font-size:22px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(r, 320))}</div>
     </div>`,
     )
     .join("");
   const body = `
-    <div style="padding:80px 96px 120px 96px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:18px;letter-spacing:0.2em;color:${C.primary};font-weight:700;text-transform:uppercase;margin-bottom:14px;">Recomendaciones</div>
-      <h2 style="font-size:44px;font-weight:800;margin:0 0 36px 0;color:${C.text};">Acciones priorizadas</h2>
-      <div style="display:flex;flex-direction:column;gap:18px;flex:1;">${items}</div>
+    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">09 · Recomendaciones</div>
+      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Acciones priorizadas</h2>
+      <div style="display:flex;flex-direction:column;gap:16px;flex:1;">${items}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "accent", pageNumber: page, total, projectName, body, sectionLabel: "Acciones" });
 }
 
 function slideClosing(report: SmartReportContent, projectName: string, page: number, total: number): string {
@@ -460,25 +561,32 @@ function slideClosing(report: SmartReportContent, projectName: string, page: num
     report.conclusions?.[0] ||
     `Reporte generado a partir de ${report.metrics.totalMentions} menciones del periodo. Para análisis detallado revisa el reporte completo en el dashboard.`;
   const body = `
-    <div style="position:absolute;top:80px;left:80px;display:flex;align-items:center;gap:18px;">
-      <img src="${LOGO_WHITE_B64}" alt="Wizr" style="height:48px;"/>
+    <!-- Decorative sparkles -->
+    <div style="position:absolute;top:80px;right:80px;transform:scale(1.8);">${sparkles(C.orange, 0.7)}</div>
+    <!-- Violet glow -->
+    <div style="position:absolute;bottom:-300px;right:-200px;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.3;"></div>
+
+    <div style="position:absolute;top:64px;left:80px;display:flex;align-items:center;gap:18px;z-index:5;">
+      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:48px;filter:brightness(0) invert(1);"/>
     </div>
-    <div style="position:absolute;top:50%;left:80px;right:80px;transform:translateY(-50%);">
-      <div style="font-size:24px;color:${C.darkAccent};letter-spacing:0.15em;text-transform:uppercase;font-weight:600;margin-bottom:32px;">Conclusión</div>
-      <p style="font-size:48px;font-weight:600;line-height:1.3;margin:0 0 56px 0;color:#fff;max-width:1500px;">${esc(truncate(conclusion, 360))}</p>
-      <div style="height:1px;background:rgba(255,255,255,0.2);margin:48px 0;"></div>
-      <div style="font-size:22px;color:${C.darkAccent};">Wizr Inteligencia de Medios · ${esc(projectName)}</div>
+
+    <div style="position:absolute;top:50%;left:80px;right:80px;transform:translateY(-50%);z-index:5;">
+      <div style="font-size:14px;color:${C.orange};letter-spacing:0.3em;text-transform:uppercase;font-weight:800;margin-bottom:36px;">— Conclusión</div>
+      <p style="font-size:54px;font-weight:600;line-height:1.25;margin:0 0 64px 0;color:#fff;max-width:1500px;letter-spacing:-0.02em;">${esc(truncate(conclusion, 360))}</p>
+      <div style="height:1px;background:rgba(255,255,255,0.15);margin:48px 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:18px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">Wizr · Análisis Estratégico de Medios</div>
+        <div style="font-size:18px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">${esc(projectName)}</div>
+      </div>
     </div>
   `;
-  return slideShell({ bg: "dark", pageNumber: page, total, projectName, body });
+  return slideShell({ bg: "dark", pageNumber: page, total, projectName, body, showHeader: false });
 }
 
 // ---------- Public API ----------
 
 export interface BuiltSlides {
-  /** Each slide as standalone HTML body for browser viewer */
   slides: string[];
-  /** Full HTML document for PDFShift */
   fullHtml: string;
   count: number;
 }
@@ -488,9 +596,8 @@ export function buildSlidesReport(
   projectName: string,
   dateRange: DateRange,
 ): BuiltSlides {
-  // Estimate total upfront (refined below)
   const slidesArr: string[] = [];
-  const totalEstimate = 11; // cover + summary + sentiment + timeline + narratives + influencers + media + sources + findings + recs + closing
+  const totalEstimate = 11;
 
   let p = 1;
   slidesArr.push(slideCover(report, projectName, dateRange, totalEstimate));
@@ -529,19 +636,18 @@ export function buildSlidesReport(
   }
   slidesArr.push(slideClosing(report, projectName, p, totalEstimate));
 
-  // Renumber footers with real total
   const realTotal = slidesArr.length;
   const renumbered = slidesArr.map((html, i) =>
-    html.replace(/(\d+)\s*\/\s*\d+(<\/span>\s*<\/footer>)/, `${i + 1} / ${realTotal}$2`),
+    html.replace(/(\d+)\s*\/\s*\d+(<\/span>\s*<\/footer>)/, `${String(i + 1).padStart(2, "0")} / ${String(realTotal).padStart(2, "0")}$2`),
   );
 
   const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-    <title>${esc(projectName)} — Reporte Visual</title>
+    <title>${esc(projectName)} — Reporte Visual Wizr</title>
     <style>
       @page { size: 1920px 1080px; margin: 0; }
       * { box-sizing: border-box; }
       html, body { margin:0; padding:0; background:#fff; }
-      body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+      body { font-family: 'Inter', 'Segoe UI', sans-serif; -webkit-font-smoothing:antialiased; }
       .slide { page-break-after: always; break-after: page; }
       .slide:last-child { page-break-after: auto; break-after: auto; }
     </style>
