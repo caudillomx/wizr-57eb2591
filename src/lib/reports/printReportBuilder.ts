@@ -509,7 +509,8 @@ strong{font-weight:700;color:${C.primary};}
 @media print{
   body{width:100%;margin:0;padding:0;}
   .print-report-table thead{display:table-header-group;}
-  .print-repeat-header-cell{padding:0 0 16px 0;}
+  .print-repeat-header-cell{padding:0;}
+  .print-repeat-header-row{height:90px;}
   .report-shell{padding:0;}
   .page-intro{page-break-inside:avoid;break-inside:avoid;}
   .page-intro-header{display:none;}
