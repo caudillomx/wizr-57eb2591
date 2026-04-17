@@ -60,6 +60,7 @@ function normalizeDomain(domain: string): string {
 export function ReportAnalyticsCharts({
   sourceBreakdown,
   influencers,
+  mediaOutlets = [],
   timeline,
   sentimentData,
   impactAssessment,
