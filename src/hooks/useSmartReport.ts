@@ -338,6 +338,7 @@ export function useSmartReport() {
         ...data,
         sourceBreakdown: analytics.sourceBreakdown,
         influencers: analytics.influencers,
+        mediaOutlets: analytics.mediaOutlets,
         timeline: analytics.timeline,
         narratives: data.narratives || [],
         totalUniqueAuthors: analytics.totalUniqueAuthors,
