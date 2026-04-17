@@ -294,12 +294,89 @@ export function SmartReportGenerator({
                   <BarChart3 className="h-4 w-4 text-primary" />
                   Análisis Narrativo
                 </h4>
+
+                {/* Volume chart by sentiment */}
+                {(() => {
+                  const totalNarrMentions = report.narratives.reduce((s, n) => s + (Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0), 0) || 1;
+                  const SENT = { positivo: "hsl(142, 76%, 36%)", negativo: "hsl(0, 84%, 60%)", mixto: "hsl(38, 92%, 50%)", neutral: "hsl(215, 16%, 57%)" } as const;
+                  const chartData = report.narratives.map((n, i) => {
+                    const v = Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0;
+                    return {
+                      name: `N${i + 1}`,
+                      fullName: n.narrative,
+                      value: v,
+                      pct: Math.round((v / totalNarrMentions) * 100),
+                      sentiment: n.sentiment,
+                      color: SENT[n.sentiment as keyof typeof SENT] || SENT.neutral,
+                    };
+                  });
+                  return (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Volumen por narrativa</CardTitle>
+                        <CardDescription className="text-xs">
+                          Barras coloreadas por sentimiento dominante (verde positivo, rojo negativo, ámbar mixto, gris neutral)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-[260px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 24, right: 16, left: 8, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
+                              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                              <Tooltip
+                                cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                                content={({ active, payload }) => {
+                                  if (!active || !payload || !payload.length) return null;
+                                  const p = payload[0].payload as typeof chartData[number];
+                                  return (
+                                    <div className="rounded-md border bg-background p-2 shadow-md text-xs max-w-[260px]">
+                                      <div className="font-semibold mb-1">{p.name} · {p.fullName}</div>
+                                      <div className="text-muted-foreground">{p.value} menciones · {p.pct}%</div>
+                                      <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: p.color }}>{p.sentiment}</div>
+                                    </div>
+                                  );
+                                }}
+                              />
+                              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                                {chartData.map((d, i) => (
+                                  <Cell key={i} fill={d.color} />
+                                ))}
+                                <LabelList
+                                  dataKey="value"
+                                  position="top"
+                                  formatter={(v: number) => {
+                                    const item = chartData.find(c => c.value === v);
+                                    return item ? `${v} · ${item.pct}%` : `${v}`;
+                                  }}
+                                  style={{ fontSize: 11, fontWeight: 700, fill: "hsl(var(--foreground))" }}
+                                />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                          {chartData.map((d) => (
+                            <div key={d.name} className="flex items-center gap-2 min-w-0">
+                              <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
+                              <span className="font-semibold flex-shrink-0">{d.name}</span>
+                              <span className="text-muted-foreground truncate">{d.fullName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
                 <div className="space-y-2">
                   {report.narratives.map((n, i) => (
                     <div key={i} className="p-3 rounded-lg border bg-muted/30">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-[10px] font-bold">N{i + 1}</Badge>
                             <span className="font-semibold text-sm">{n.narrative}</span>
                             <Badge variant="secondary" className="text-xs">{n.mentions} menciones</Badge>
                             <Badge
