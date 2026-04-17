@@ -39,6 +39,17 @@ export interface InfluencerInfo {
   reach: string;
 }
 
+export interface MediaOutletInfo {
+  name: string;
+  domain: string;
+  articles: number;
+  sentiment: "positivo" | "negativo" | "neutral" | "mixto";
+  positive: number;
+  negative: number;
+  neutral: number;
+  lastPublishedAt?: string | null;
+}
+
 export interface TimelinePoint {
   date: string;
   count: number;
