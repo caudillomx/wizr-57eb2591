@@ -266,7 +266,7 @@ function svgVerticalBarsNarratives(
   const padL = 70;
   const padR = 30;
   const padT = 60;
-  const padB = 70;
+  const padB = 50;
   const innerW = width - padL - padR;
   const innerH = height - padT - padB;
   const slot = innerW / data.length;
@@ -288,8 +288,7 @@ function svgVerticalBarsNarratives(
         <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${d.color}"/>
         <text x="${x + barW / 2}" y="${y - 14}" text-anchor="middle" font-size="22" font-weight="800" fill="${C.text}">${d.value}</text>
         <text x="${x + barW / 2}" y="${y - 38}" text-anchor="middle" font-size="14" font-weight="600" fill="${C.textMid}">${d.pct}%</text>
-        <text x="${x + barW / 2}" y="${padT + innerH + 28}" text-anchor="middle" font-size="20" font-weight="800" fill="${C.text}" letter-spacing="1">N${String(i + 1).padStart(2, "0")}</text>
-        <text x="${x + barW / 2}" y="${padT + innerH + 50}" text-anchor="middle" font-size="13" fill="${C.textMuted}" letter-spacing="0.1em">${esc((d.label || "").toUpperCase()).slice(0, 14)}</text>
+        <text x="${x + barW / 2}" y="${padT + innerH + 32}" text-anchor="middle" font-size="22" font-weight="800" fill="${C.text}" letter-spacing="1">N${String(i + 1).padStart(2, "0")}</text>
       `;
     })
     .join("");
@@ -703,12 +702,12 @@ function slideRecommendations(report: SmartReportContent, projectName: string, p
   const items = recs
     .map((r, i) => {
       const tag = tags[i] || tags[3];
-      return `<div style="display:flex;gap:24px;align-items:stretch;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(61,31,216,0.08);border:1px solid ${C.border};min-height:140px;">
-      <div style="background:${C.text};color:#fff;padding:20px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:150px;gap:10px;">
-        <div style="font-size:44px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
-        <div style="display:inline-flex;align-items:center;gap:6px;background:${tag.color}26;color:#fff;padding:4px 10px;border-radius:100px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;white-space:nowrap;">
+      return `<div style="display:flex;gap:24px;align-items:stretch;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(61,31,216,0.08);border:1px solid ${C.border};min-height:150px;">
+      <div style="background:${C.text};color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:160px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:${tag.color}26;color:#fff;padding:4px 10px;border-radius:100px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;white-space:nowrap;margin-bottom:10px;">
           <span style="width:6px;height:6px;border-radius:50%;background:${tag.color};"></span>${tag.label}
         </div>
+        <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
       <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(r, 600))}</div>
     </div>`;
