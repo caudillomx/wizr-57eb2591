@@ -380,9 +380,9 @@ export function buildReportHTML(
 
   // PDFShift v3 expects header/footer height in mm (as string).
   // A4 = 210 x 297 mm. We reserve the band physically with these values.
-  const HEADER_HEIGHT_MM = 24; // franja morada más compacta para no invadir el contenido
+  const HEADER_HEIGHT_MM = 34; // franja morada más alta para reducir el blanco bajo el header
   const FOOTER_HEIGHT_MM = 10; // ~38 px @ 96dpi
-  // Internal padding inside the band so logo/title don't touch the edges.
+  // Internal padding inside the band so logo/title se mantengan centrados verticalmente.
   const HEADER_PAD_TOP_MM = 4;
   const HEADER_PAD_BOTTOM_MM = 4;
 
