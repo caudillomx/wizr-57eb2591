@@ -243,11 +243,42 @@ serve(async (req) => {
     // Always generate full report
     const hasDistinctEntities = entityNames && entityNames.length >= 2 && areEntitiesDistinct(entityNames);
 
+    // ===== PRE-EXTRACCIÓN DE CASOS/HECHOS CONOCIDOS DEL ENFOQUE ESTRATÉGICO =====
+    const extractKnownCases = (text: string): string[] => {
+      if (!text) return [];
+      const cases: string[] = [];
+      const patterns = [
+        /litigio[s]?\s+(?:con|contra|de|entre)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /caso\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /disputa[s]?\s+(?:con|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /demanda[s]?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /controversia[s]?\s+(?:con|sobre|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /investigaci[oó]n(?:es)?\s+(?:sobre|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /acusaci[oó]n(?:es)?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /fraude[s]?\s+(?:al|contra|a|de|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+      ];
+      for (const re of patterns) {
+        let m;
+        while ((m = re.exec(text)) !== null) {
+          const clean = m[0].trim().replace(/\s+/g, ' ');
+          if (clean.length < 120) cases.push(clean);
+        }
+      }
+      const properNouns = text.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,3}\b/g) || [];
+      const filtered = [...new Set(properNouns)].filter(n => n.length > 4).slice(0, 15);
+      return [...new Set([...cases, ...filtered])];
+    };
+
+    const knownCases = extractKnownCases(`${strategicContext || ''} ${strategicFocus || ''}`);
+
     let strategicBlock = "";
     if (strategicContext || strategicFocus) {
-      strategicBlock = "\n=== CONTEXTO ESTRATÉGICO ===\n";
+      strategicBlock = "\n=== CONTEXTO ESTRATÉGICO (FUENTE CANÓNICA DE VERDAD) ===\n";
       if (strategicContext) strategicBlock += `CONTEXTO DEL PROYECTO: ${strategicContext}\n`;
       if (strategicFocus) strategicBlock += `ENFOQUE ESPECÍFICO: ${strategicFocus}\n`;
+      if (knownCases.length > 0) {
+        strategicBlock += `\nCASOS/HECHOS/ENTIDADES CONOCIDOS YA DESCRITOS EN EL ENFOQUE (NO recategorizar como "nuevos"):\n${knownCases.map(c => `  - ${c}`).join('\n')}\n`;
+      }
       strategicBlock += `\nIMPORTANTE: Usa este contexto para INTERPRETAR el sentimiento. Lo negativo hacia un actor externo puede ser positivo para el cliente. Evalúa cada hallazgo según cómo impacta a la marca/entidad principal en este contexto.\n`;
     }
 
@@ -273,12 +304,20 @@ PRINCIPIOS:
 3. CONTEXTO ESTRATÉGICO: Usa el enfoque estratégico para INTERPRETAR el sentimiento — lo negativo hacia un actor externo puede ser positivo para el cliente.
 4. ACCIONABILIDAD: Cada insight debe poder convertirse en una decisión concreta.
 
-=== REGLA CRÍTICA: LENGUAJE CAUTELOSO ===
+=== REGLA CRÍTICA #1: LENGUAJE CAUTELOSO ===
 NUNCA hagas afirmaciones absolutas sobre la ausencia o presencia de información. Los datos que recibes son UNA MUESTRA, no la totalidad del ecosistema mediático.
 - PROHIBIDO: "No se identificaron menciones que...", "No existe evidencia de...", "No hay menciones que vinculen..."
 - OBLIGATORIO: "En la muestra analizada...", "Con base en los datos disponibles...", "De las ${metrics.totalMentions} menciones recopiladas...", "En el periodo y fuentes monitoreadas..."
 - Si hay pocas menciones sobre un tema, di "se detectó baja presencia de este tema en la muestra" — NUNCA "no existe".
 - Cada hallazgo debe estar respaldado por datos concretos de las menciones proporcionadas. No inventes datos ni extrapoles más allá de lo observable.
+
+=== REGLA CRÍTICA #2: NO INVENTAR EVENTOS NUEVOS — ANCLAR AL ENFOQUE ESTRATÉGICO ===
+El CONTEXTO ESTRATÉGICO y los CASOS/HECHOS CONOCIDOS listados arriba son la VERDAD CANÓNICA. Si una mención coincide temáticamente con un caso ya descrito, DEBES tratarla como parte de ese caso, NO como un evento independiente.
+- PROHIBIDO usar adjetivos como "nuevo", "otro", "adicional", "segundo", "distinto", "emergente" o "separado" para describir hechos, fraudes, litigios, demandas, casos, controversias o investigaciones que ya estén mencionados o sean razonablemente subsumibles en el Enfoque Estratégico.
+- PROHIBIDO inferir la existencia de eventos no documentados en las menciones (ej: "un nuevo fraude", "otra acusación") a partir de cobertura mediática que pueda referirse al mismo hecho ya conocido.
+- OBLIGATORIO cuando una narrativa coincida con un caso conocido: referenciarla explícitamente con frases como "vinculada al [litigio/caso/disputa] descrito en el Enfoque Estratégico", "en el marco del caso ya documentado", "como parte de la cobertura del litigio referido en el contexto del proyecto".
+- Ante AMBIGÜEDAD entre "es el mismo caso" vs "es un caso nuevo": SIEMPRE asume que es el mismo caso ya descrito en el Enfoque Estratégico, salvo que las menciones aporten evidencia explícita e inequívoca de un evento distinto (fechas, contrapartes y hechos diferentes claramente nombrados).
+- Antes de calificar algo como "nuevo" o "adicional", verifica que NO esté listado en CASOS/HECHOS CONOCIDOS y que las menciones lo describan como un evento factualmente distinto.
 
 === ALCANCE ESTRICTO DE RECOMENDACIONES ===
 Las recomendaciones deben limitarse EXCLUSIVAMENTE al ámbito de monitoreo digital y escucha social:
