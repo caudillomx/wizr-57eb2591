@@ -380,11 +380,11 @@ export function buildReportHTML(
 
   // PDFShift v3 expects header/footer height in mm (as string).
   // A4 = 210 x 297 mm. We reserve the band physically with these values.
-  const HEADER_HEIGHT_MM = 28; // ~106 px @ 96dpi — franja morada
+  const HEADER_HEIGHT_MM = 24; // franja morada más compacta para no invadir el contenido
   const FOOTER_HEIGHT_MM = 10; // ~38 px @ 96dpi
   // Internal padding inside the band so logo/title don't touch the edges.
-  const HEADER_PAD_TOP_MM = 6;
-  const HEADER_PAD_BOTTOM_MM = 6;
+  const HEADER_PAD_TOP_MM = 4;
+  const HEADER_PAD_BOTTOM_MM = 4;
 
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
@@ -394,9 +394,9 @@ html,body{width:100%;height:${HEADER_HEIGHT_MM}mm;overflow:hidden;margin:0;paddi
 .cell{display:table-cell;vertical-align:middle;padding:${HEADER_PAD_TOP_MM}mm 12mm ${HEADER_PAD_BOTTOM_MM}mm 12mm;box-sizing:border-box;}
 .cell.left{width:55mm;}
 .cell.right{text-align:right;color:#fff;overflow:hidden;}
-.logo{height:14mm;width:auto;display:block;}
-.ctx{display:block;font-size:9pt;line-height:1.15;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{display:block;font-size:11pt;line-height:1.15;font-weight:700;color:#fff;margin-top:1.2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.logo{height:11mm;width:auto;display:block;}
+.ctx{display:block;font-size:8pt;line-height:1.1;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{display:block;font-size:9.5pt;line-height:1.1;font-weight:700;color:#fff;margin-top:0.8mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
 <div class="bar">
   <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
@@ -453,7 +453,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:0;
+  margin:${HEADER_HEIGHT_MM}mm 0 ${FOOTER_HEIGHT_MM}mm 0;
 }
 
 @media print{
