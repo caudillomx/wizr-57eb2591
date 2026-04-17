@@ -273,6 +273,7 @@ export function SmartReportGenerator({
             <ReportAnalyticsCharts
               sourceBreakdown={report.sourceBreakdown}
               influencers={report.influencers}
+              mediaOutlets={report.mediaOutlets}
               timeline={report.timeline}
               sentimentData={sentimentData}
               impactAssessment={report.impactAssessment}
