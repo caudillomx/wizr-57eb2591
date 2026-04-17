@@ -385,17 +385,18 @@ export function buildReportHTML(
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;padding:0;}
-body{background:transparent;}
-.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:18px 36px;gap:27px;border-bottom:1px solid rgba(255,255,255,0.12);}
-.logo{height:51px;width:auto;display:block;flex-shrink:0;}
-.copy{min-width:0;max-width:68%;text-align:right;color:#fff;display:flex;flex-direction:column;justify-content:center;}
-.ctx{font-size:13.5px;line-height:1.3;font-weight:600;color:${C.accentLight};letter-spacing:0.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{font-size:15px;line-height:1.3;font-weight:700;color:#fff;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;padding:0;background:${C.primary};}
+.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:table;table-layout:fixed;}
+.cell{display:table-cell;vertical-align:middle;padding:0 36px;}
+.cell.left{width:auto;}
+.cell.right{text-align:right;color:#fff;}
+.logo{height:60px;width:auto;display:block;}
+.ctx{font-size:14px;line-height:1.3;font-weight:600;color:${C.accentLight};letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{font-size:16px;line-height:1.3;font-weight:700;color:#fff;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
 <div class="bar">
-  <img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" />
-  <div class="copy">
+  <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
+  <div class="cell right">
     <div class="ctx">${escapeHtml(headerContext)}</div>
     <div class="title">${escapeHtml(headerSubtitle)}</div>
   </div>
