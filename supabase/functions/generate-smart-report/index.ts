@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callClaudeText } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -469,43 +470,38 @@ ${JSON.stringify(mentionsSummary, null, 2)}
 
 SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). NUNCA entregues menos de 4. Si el ecosistema parece girar en torno a pocas ideas, descompón ángulos secundarios (encuadre mediático, reacción de audiencias, dimensión regulatoria, dimensión reputacional, presencia en redes vs prensa, etc.) hasta llegar a 4-5. Ordénalas por frecuencia. El campo "mentions" SIEMPRE debe ser un entero ≥ 1.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: MAX_TOKENS + 1000,
-        temperature: 0.5,
-      }),
-    });
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
+    }
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    let content: string;
+    try {
+      content = await callClaudeText({
+        apiKey: ANTHROPIC_API_KEY,
+        systemPrompt,
+        userPrompt,
+        maxTokens: MAX_TOKENS + 1000,
+        temperature: 0.2,
+        timeoutMs: 110000,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "RATE_LIMIT") {
         return new Response(
           JSON.stringify({ error: "Rate limits exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (msg === "PAYMENT_REQUIRED") {
         return new Response(
           JSON.stringify({ error: "Payment required. Please add credits to your account." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      console.error("Claude error:", msg);
+      throw err;
     }
-
-    const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new Error("No content in AI response");
