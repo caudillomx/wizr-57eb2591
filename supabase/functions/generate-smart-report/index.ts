@@ -618,6 +618,50 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         };
       });
 
+    // ====== KEYWORDS CLOUD: sanitize + stopword filter + dedupe ======
+    const STOPWORDS = new Set<string>([
+      // ES
+      "el","la","los","las","un","una","unos","unas","de","del","al","a","y","o","u","e","que","qué","como","cómo","con","sin","por","para","en","sobre","entre","hasta","desde","contra","bajo","tras","durante","mediante","según","ante","es","son","fue","fueron","ser","está","están","estar","ha","han","he","hemos","han","habrá","será","fueron","muy","más","menos","ya","aún","aun","tan","tanto","mismo","misma","esto","esta","este","estos","estas","ese","esa","esos","esas","aquel","aquella","aquellos","aquellas","cuando","mientras","donde","quien","cual","cuales","si","sí","no","ni","pero","aunque","porque","sino","tras","luego","ayer","hoy","mañana","ahora","aquí","allí","ahí","allá","acá","quizá","tal","cada","todo","toda","todos","todas","otro","otra","otros","otras","mucho","mucha","muchos","muchas","poco","poca","pocos","pocas","alguno","alguna","algún","algunos","algunas","ninguno","ninguna","ningún","mi","mis","tu","tus","su","sus","nuestro","nuestra","nuestros","nuestras","yo","tú","él","ella","ellos","ellas","nosotros","ustedes","lo","les","le","se","me","te","nos","os","esto","eso","aquello","via","vía",
+      // EN
+      "the","a","an","and","or","of","in","on","for","to","with","without","by","from","at","as","is","are","was","were","be","been","being","this","that","these","those","it","its","they","their","them","there","here","but","if","then","than","so","such","also","more","less","most","least","very","much","many","few","one","two","other","another","some","any","no","not","only","own","same","just","into","over","under","between","about","after","before","during","while","because","through","again","further","up","down","out","off","once","new","old","via","i","you","we","he","she","my","your","our","your","his","her","mine","ours","theirs"
+    ]);
+    const cleanTerm = (t: string): string =>
+      t.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/^[^a-z0-9áéíóúñ]+|[^a-z0-9áéíóúñ]+$/giu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const isValidKeyword = (raw: string): boolean => {
+      if (!raw) return false;
+      const t = cleanTerm(raw);
+      if (t.length < 3) return false;
+      if (/^\d+$/.test(t)) return false;
+      // Reject if all words are stopwords
+      const words = t.split(/\s+/);
+      if (words.length > 3) return false;
+      const allStop = words.every(w => STOPWORDS.has(w));
+      if (allStop) return false;
+      return true;
+    };
+    const rawKeywords = Array.isArray((reportContent as { keywords?: unknown }).keywords) ? ((reportContent as { keywords: KeywordCloudItem[] }).keywords) : [];
+    const seenTerms = new Set<string>();
+    const safeKeywords: KeywordCloudItem[] = rawKeywords
+      .filter((k) => k && typeof k.term === "string" && isValidKeyword(k.term))
+      .map((k) => {
+        const c = Number(k.count);
+        const sentRaw = k.sentiment;
+        const sent: KeywordCloudItem["sentiment"] = sentRaw === "positivo" || sentRaw === "negativo" || sentRaw === "neutral" || sentRaw === "mixto" ? sentRaw : "mixto";
+        return { term: k.term.trim(), count: Number.isFinite(c) && c > 0 ? Math.round(c) : 1, sentiment: sent };
+      })
+      .filter((k) => {
+        const key = cleanTerm(k.term);
+        if (seenTerms.has(key)) return false;
+        seenTerms.add(key);
+        return true;
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 25);
+
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
@@ -627,6 +671,8 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
       narratives: safeNarratives,
+      keywords: safeKeywords.length > 0 ? safeKeywords : undefined,
+      keywordsInsight: (reportContent as { keywordsInsight?: string }).keywordsInsight || undefined,
       narrativesInsight: reportContent.narrativesInsight || undefined,
       timelineInsight: reportContent.timelineInsight || undefined,
       influencersInsight: reportContent.influencersInsight || undefined,
