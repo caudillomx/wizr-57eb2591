@@ -271,6 +271,43 @@ serve(async (req) => {
 
     const knownCases = extractKnownCases(`${strategicContext || ''} ${strategicFocus || ''}`);
 
+    // ===== PRE-CONTEO DETERMINÍSTICO DE TÉRMINOS CANÓNICOS =====
+    // Contamos sobre TODO el universo de menciones cuántas contienen cada término clave
+    // (casos conocidos + entidades). Este conteo es la VERDAD AUDITABLE; la IA no puede inventar números.
+    const extractCanonicalTerms = (cases: string[], entities: string[] | undefined): string[] => {
+      const terms = new Set<string>();
+      // De cada "caso conocido" extraer el sustantivo propio principal (parte después de la preposición)
+      for (const c of cases) {
+        // Tomar la última secuencia capitalizada significativa
+        const propers = c.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,2}\b/g) || [];
+        propers.forEach(p => { if (p.length >= 4) terms.add(p.trim()); });
+      }
+      (entities || []).forEach(e => { if (e && e.length >= 3) terms.add(e.trim()); });
+      return [...terms];
+    };
+
+    const normalizeForMatch = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const countMentionsForTerm = (term: string): number => {
+      const needle = normalizeForMatch(term);
+      // Escapar regex y construir matcher con límite de palabra cuando aplique
+      const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`\\b${escaped}\\b`, "i");
+      let count = 0;
+      for (const m of mentions) {
+        const haystack = normalizeForMatch(`${m.title || ""} ${m.description || ""} ${(m.matched_keywords || []).join(" ")}`);
+        if (re.test(haystack)) count++;
+      }
+      return count;
+    };
+
+    const canonicalTerms = extractCanonicalTerms(knownCases, entityNames);
+    const verifiedCounts: Array<{ term: string; count: number }> = canonicalTerms
+      .map(t => ({ term: t, count: countMentionsForTerm(t) }))
+      .filter(x => x.count > 0)
+      .sort((a, b) => b.count - a.count);
+
     let strategicBlock = "";
     if (strategicContext || strategicFocus) {
       strategicBlock = "\n=== CONTEXTO ESTRATÉGICO (FUENTE CANÓNICA DE VERDAD) ===\n";
@@ -278,6 +315,19 @@ serve(async (req) => {
       if (strategicFocus) strategicBlock += `ENFOQUE ESPECÍFICO: ${strategicFocus}\n`;
       if (knownCases.length > 0) {
         strategicBlock += `\nCASOS/HECHOS/ENTIDADES CONOCIDOS YA DESCRITOS EN EL ENFOQUE (NO recategorizar como "nuevos"):\n${knownCases.map(c => `  - ${c}`).join('\n')}\n`;
+      }
+      if (verifiedCounts.length > 0) {
+        strategicBlock += `\n=== CONTEOS VERIFICADOS (HECHOS AUDITABLES — USAR LITERALMENTE) ===\n`;
+        strategicBlock += `Estos conteos provienen de un escaneo determinístico sobre las ${mentions.length} menciones del universo (no muestra). Son la ÚNICA fuente válida de cifras de cobertura por término:\n`;
+        verifiedCounts.forEach(v => {
+          strategicBlock += `  - "${v.term}": ${v.count} mención(es) en el universo total\n`;
+        });
+        strategicBlock += `\nREGLAS DE USO DE CONTEOS:\n`;
+        strategicBlock += `  1. Si una narrativa se refiere a un término listado, DEBES usar EXACTAMENTE el conteo verificado correspondiente — no estimes ni redondees a partir de la muestra.\n`;
+        strategicBlock += `  2. Si un término NO aparece en esta lista, NO inventes un número específico: usa lenguaje cualitativo ("varias menciones", "presencia recurrente", "porción minoritaria de la conversación").\n`;
+        strategicBlock += `  3. PROHIBIDO afirmar "una sola mención", "solo X menciones" o cualquier cifra exacta para términos no listados aquí.\n`;
+      } else {
+        strategicBlock += `\n=== SIN CONTEOS VERIFICADOS DISPONIBLES ===\nNO uses cifras exactas para casos del Enfoque Estratégico. Usa lenguaje cualitativo: "varias menciones", "presencia recurrente", "porción minoritaria".\n`;
       }
       strategicBlock += `\nIMPORTANTE: Usa este contexto para INTERPRETAR el sentimiento. Lo negativo hacia un actor externo puede ser positivo para el cliente. Evalúa cada hallazgo según cómo impacta a la marca/entidad principal en este contexto.\n`;
     }
