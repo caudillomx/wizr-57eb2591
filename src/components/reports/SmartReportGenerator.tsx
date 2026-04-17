@@ -26,6 +26,7 @@ import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
 import { VisualSlidesViewer } from "./VisualSlidesViewer";
 import { Globe, Presentation } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
 interface Entity {
   id: string;
