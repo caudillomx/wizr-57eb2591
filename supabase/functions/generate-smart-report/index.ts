@@ -503,9 +503,9 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
   "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
   "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
-  "keyFindings": ["string - hallazgo específico citando fuentes y datos"],
+  "keyFindings": ["string - hallazgo de 3-5 oraciones con estructura QUÉ + DÓNDE/QUIÉN + IMPLICACIÓN ESTRATÉGICA, citando fuentes específicas y datos auditables. NUNCA un párrafo genérico ni una sola oración descriptiva."],
   "conclusions": ["string - conclusión ESTRATÉGICA integrando múltiples datos"],
-  "recommendations": ["string - recomendación de NIVEL DIRECTIVO: decisión de posicionamiento, gestión de riesgo reputacional u oportunidad de incidencia pública. NUNCA tarea operativa de monitoreo."],
+  "recommendations": ["string - recomendación de NIVEL DIRECTIVO de 3-4 oraciones que articule: decisión concreta + riesgo mitigado u oportunidad capturada + plazo (inmediato/2-4 semanas/mes) + área responsable genérica. NUNCA tarea operativa de monitoreo ni una sola línea suelta."],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
