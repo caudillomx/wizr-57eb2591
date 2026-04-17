@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callClaudeText } from "../_shared/anthropic.ts";
+import { callClaudeTool } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +78,54 @@ interface ReportContent {
     technical: string;
     public: string;
   };
+}
+
+function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
+  const buckets = new Map<string, { count: number; negatives: number; positives: number; samples: string[] }>();
+
+  for (const mention of mentions) {
+    const source = mention.source_domain || "fuentes digitales";
+    const key = source.toLowerCase();
+    if (!buckets.has(key)) {
+      buckets.set(key, { count: 0, negatives: 0, positives: 0, samples: [] });
+    }
+    const bucket = buckets.get(key)!;
+    bucket.count += 1;
+    if (mention.sentiment === "negativo") bucket.negatives += 1;
+    if (mention.sentiment === "positivo") bucket.positives += 1;
+    if (bucket.samples.length < 2) {
+      bucket.samples.push(mention.title || mention.description || mention.url);
+    }
+  }
+
+  return Array.from(buckets.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([source, data], index) => ({
+      narrative: `Narrativa ${index + 1}: conversación en ${source}`,
+      description: `La cobertura en ${source} concentra ${data.count} menciones en la muestra y gira alrededor de ${data.samples.join("; ").slice(0, 220)}.`,
+      mentions: data.count,
+      sentiment: data.negatives > data.positives ? "negativo" : data.positives > data.negatives ? "positivo" : "mixto",
+      trend: "estable",
+    }));
+}
+
+function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
+  const topSources = [...new Set(mentions.map((m) => m.source_domain).filter(Boolean))].slice(0, 3).join(", ");
+  return [
+    `De las ${metrics.totalMentions} menciones recopiladas, ${metrics.negativeCount} fueron negativas, ${metrics.positiveCount} positivas y ${metrics.neutralCount} neutrales.`,
+    topSources ? `La cobertura se concentró principalmente en ${topSources}, que marcaron el encuadre dominante del periodo.` : `La cobertura se distribuyó entre varias fuentes digitales y redes sociales durante el periodo analizado.`,
+    `El volumen observado sugiere una conversación activa que requiere lectura contextual de tono, fuentes y reiteración temática.`,
+  ];
+}
+
+function buildFallbackRecommendations(metrics: ReportContent["metrics"]): string[] {
+  const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : "tono relativamente equilibrado";
+  return [
+    `En el corto plazo, se sugiere evaluar una postura institucional considerando el ${dominantTone} detectado en la conversación monitoreada.`,
+    `Podría convenir priorizar mensajes para las fuentes y plataformas con mayor volumen, con el fin de reducir riesgo reputacional o capitalizar ventanas de visibilidad.`,
+    `Se recomienda dar seguimiento ejecutivo a la evolución del tema en las próximas semanas para identificar si la conversación pierde tracción o escala hacia nuevos espacios de cobertura.`,
+  ];
 }
 
 // Always generate full report; PDF trimming happens client-side
@@ -472,12 +520,76 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
-    let content: string;
+    const reportToolSchema = {
+      type: "object",
+      additionalProperties: false,
+      required: ["title", "summary", "keyFindings", "recommendations", "narratives", "templates"],
+      properties: {
+        title: { type: "string" },
+        summary: { type: "string" },
+        impactAssessment: { type: "string" },
+        sentimentAnalysis: { type: "string" },
+        timelineInsight: { type: "string" },
+        narrativesInsight: { type: "string" },
+        keywordsInsight: { type: "string" },
+        influencersInsight: { type: "string" },
+        mediaInsight: { type: "string" },
+        platformsInsight: { type: "string" },
+        entityComparison: { type: "string" },
+        keyFindings: { type: "array", minItems: 3, items: { type: "string" } },
+        conclusions: { type: "array", items: { type: "string" } },
+        recommendations: { type: "array", minItems: 3, items: { type: "string" } },
+        narratives: {
+          type: "array",
+          minItems: 4,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["narrative", "description", "mentions", "sentiment", "trend"],
+            properties: {
+              narrative: { type: "string" },
+              description: { type: "string" },
+              mentions: { type: "number" },
+              sentiment: { type: "string", enum: ["positivo", "negativo", "mixto"] },
+              trend: { type: "string", enum: ["creciente", "decreciente", "estable"] },
+            },
+          },
+        },
+        keywords: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["term", "count", "sentiment"],
+            properties: {
+              term: { type: "string" },
+              count: { type: "number" },
+              sentiment: { type: "string", enum: ["positivo", "negativo", "neutral", "mixto"] },
+            },
+          },
+        },
+        templates: {
+          type: "object",
+          additionalProperties: false,
+          required: ["executive", "technical", "public"],
+          properties: {
+            executive: { type: "string" },
+            technical: { type: "string" },
+            public: { type: "string" },
+          },
+        },
+      },
+    } as const;
+
+    let reportContent: Partial<ReportContent>;
     try {
-      content = await callClaudeText({
+      reportContent = await callClaudeTool<Partial<ReportContent>>({
         apiKey: ANTHROPIC_API_KEY,
         systemPrompt,
         userPrompt,
+        toolName: "generate_smart_report",
+        toolDescription: "Return the full smart report as structured JSON",
+        toolSchema: reportToolSchema,
         maxTokens: MAX_TOKENS,
         temperature: 0.2,
         timeoutMs: 120000,
@@ -500,97 +612,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       throw err;
     }
 
-    if (!content) {
-      throw new Error("No content in AI response");
-    }
-
-    let reportContent: Partial<ReportContent>;
-    try {
-      let cleanedContent = content;
-      cleanedContent = cleanedContent.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '');
-      
-      const extractBalancedJSON = (str: string): string | null => {
-        const startIndex = str.indexOf('{');
-        if (startIndex === -1) return null;
-        let braceCount = 0;
-        let inString = false;
-        let escapeNext = false;
-        for (let i = startIndex; i < str.length; i++) {
-          const char = str[i];
-          if (escapeNext) { escapeNext = false; continue; }
-          if (char === '\\' && inString) { escapeNext = true; continue; }
-          if (char === '"' && !escapeNext) { inString = !inString; continue; }
-          if (!inString) {
-            if (char === '{') braceCount++;
-            if (char === '}') braceCount--;
-            if (braceCount === 0) return str.substring(startIndex, i + 1);
-          }
-        }
-        return null;
-      };
-      
-      let jsonStr = extractBalancedJSON(cleanedContent);
-      
-      if (!jsonStr) {
-        console.log("Attempting to recover truncated JSON response");
-        const startIndex = cleanedContent.indexOf('{');
-        if (startIndex !== -1) {
-          const partialContent = cleanedContent.substring(startIndex);
-          const titleMatch = partialContent.match(/"title"\s*:\s*"([^"]+)"/);
-          const summaryMatch = partialContent.match(/"summary"\s*:\s*"([^"]+)"/);
-          
-          const keyFindingsMatch = partialContent.match(/"keyFindings"\s*:\s*\[([\s\S]*?)(?:\]|$)/);
-          let keyFindings: string[] = [];
-          if (keyFindingsMatch) {
-            const findingMatches = keyFindingsMatch[1].match(/"([^"]+)"/g);
-            if (findingMatches) {
-              keyFindings = findingMatches.map((f: string) => f.replace(/"/g, '')).filter((f: string) => f.length > 10);
-            }
-          }
-          
-          if (titleMatch || summaryMatch) {
-            reportContent = {
-              title: titleMatch?.[1] || "Reporte Inteligente",
-              summary: summaryMatch?.[1] || "Resumen generado parcialmente.",
-              keyFindings: keyFindings.length > 0 ? keyFindings : ["Reporte generado con información parcial"],
-              recommendations: ["Reintentar generación para obtener análisis completo"],
-              templates: {
-                executive: summaryMatch?.[1] || "",
-                technical: summaryMatch?.[1] || "",
-                public: `📊 ${titleMatch?.[1] || "Reporte"}`,
-              },
-            };
-          } else {
-            throw new Error("No valid JSON object found");
-          }
-        } else {
-          throw new Error("No valid JSON object found");
-        }
-      } else {
-        const sanitized = jsonStr.replace(/[\x00-\x1F\x7F]/g, (match) => {
-          if (match === '\n' || match === '\r' || match === '\t') return match;
-          return '';
-        });
-        reportContent = JSON.parse(sanitized);
-      }
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError, "Content:", content.substring(0, 800));
-      const cleanText = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      const titleMatch = cleanText.match(/"title"\s*:\s*"([^"]+)"/);
-      const summaryMatch = cleanText.match(/"summary"\s*:\s*"([^"]+)"/);
-      
-      reportContent = {
-        title: titleMatch?.[1] || "Reporte Inteligente",
-        summary: summaryMatch?.[1] || cleanText.substring(0, 500),
-        keyFindings: ["Reporte generado con información parcial — se recomienda reintentar"],
-        recommendations: ["Reintentar generación para obtener análisis completo"],
-        templates: {
-          executive: summaryMatch?.[1] || cleanText.substring(0, 400),
-          technical: cleanText.substring(0, 500),
-          public: `📊 ${titleMatch?.[1] || "Reporte"}`,
-        },
-      };
-    }
+    const fallbackNarratives = buildFallbackNarratives(mentions);
+    const fallbackFindings = buildFallbackFindings(metrics, mentions);
+    const fallbackRecommendations = buildFallbackRecommendations(metrics);
 
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
@@ -658,12 +682,12 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
-      keyFindings: reportContent.keyFindings || [],
-      recommendations: reportContent.recommendations || [],
+      keyFindings: Array.isArray(reportContent.keyFindings) && reportContent.keyFindings.length > 0 ? reportContent.keyFindings : fallbackFindings,
+      recommendations: Array.isArray(reportContent.recommendations) && reportContent.recommendations.length > 0 ? reportContent.recommendations : fallbackRecommendations,
       conclusions: reportContent.conclusions || [],
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
-      narratives: safeNarratives,
+      narratives: safeNarratives.length > 0 ? safeNarratives : fallbackNarratives,
       keywords: safeKeywords.length > 0 ? safeKeywords : undefined,
       keywordsInsight: (reportContent as { keywordsInsight?: string }).keywordsInsight || undefined,
       narrativesInsight: reportContent.narrativesInsight || undefined,
@@ -674,9 +698,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       entityComparison: reportContent.entityComparison || undefined,
       metrics,
       templates: {
-        executive: reportContent.templates?.executive || "",
-        technical: reportContent.templates?.technical || "",
-        public: reportContent.templates?.public || "",
+        executive: reportContent.templates?.executive || reportContent.summary || fallbackFindings.join(" "),
+        technical: reportContent.templates?.technical || reportContent.summary || fallbackFindings.join(" "),
+        public: reportContent.templates?.public || `📊 ${reportContent.title || "Reporte Inteligente"}`,
       },
     };
 
