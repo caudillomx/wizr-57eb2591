@@ -415,17 +415,28 @@ strong{font-weight:700;color:${C.primary};}
   vertical-align:top;
 }
 .print-report-table thead{display:none;}
+.print-repeat-header-row,
+.print-repeat-header-cell{
+  background:${C.primary};
+}
 .print-repeat-header{
   background:${C.primary};
   height:72px;
-  box-sizing:border-box;
+  position:relative;
+  transform:translateY(-1px);
+}
+.print-repeat-header::after{
+  content:"";
+  display:block;
+  height:18px;
+  background:${C.white};
 }
 .print-repeat-header-inner{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:18px;
-  height:100%;
+  height:72px;
   padding:0 26px;
 }
 .print-repeat-header-logo{
