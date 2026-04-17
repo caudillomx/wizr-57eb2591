@@ -400,6 +400,65 @@ export function ReportAnalyticsCharts({
           )}
         </CardContent>
       </Card>
+
+      {/* Medios Digitales — Full Width Table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Medios Digitales en la Conversación ({mediaOutlets.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mediaOutlets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs w-8">#</th>
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs">Medio</th>
+                    <th className="text-left py-2 font-medium text-muted-foreground text-xs">Dominio</th>
+                    <th className="text-center py-2 font-medium text-muted-foreground text-xs">Artículos</th>
+                    <th className="text-center py-2 font-medium text-muted-foreground text-xs">Sentimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mediaOutlets.map((m, i) => (
+                    <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="py-2 text-xs font-bold text-primary">{i + 1}</td>
+                      <td className="py-2 font-medium">{m.name}</td>
+                      <td className="py-2 text-xs text-muted-foreground">{m.domain}</td>
+                      <td className="text-center py-2">
+                        <Badge variant="outline" className="text-xs font-semibold">{m.articles}</Badge>
+                      </td>
+                      <td className="text-center py-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            m.sentiment === "negativo"
+                              ? "text-red-600 border-red-200 bg-red-50"
+                              : m.sentiment === "positivo"
+                              ? "text-green-600 border-green-200 bg-green-50"
+                              : m.sentiment === "neutral"
+                              ? "text-gray-600 border-gray-200 bg-gray-50"
+                              : "text-amber-600 border-amber-200 bg-amber-50"
+                          }`}
+                        >
+                          {m.sentiment === "negativo" ? "Negativo" : m.sentiment === "positivo" ? "Positivo" : m.sentiment === "neutral" ? "Neutral" : "Mixto"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Sin datos de medios digitales en las menciones
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
