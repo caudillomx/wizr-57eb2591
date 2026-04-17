@@ -345,23 +345,23 @@ function slideSummary(report: SmartReportContent, projectName: string, page: num
   const posPct = Math.round((m.positiveCount / tot) * 100);
   const summary = report.summary || "";
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:grid;grid-template-columns:1.6fr 1fr;gap:64px;">
-      <div style="display:flex;flex-direction:column;">
-        <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">01 · Brief Ejecutivo</div>
-        <h2 style="font-size:56px;font-weight:800;margin:0 0 36px 0;line-height:1.05;color:${C.text};letter-spacing:-0.025em;">${esc(report.title || "Resumen del período")}</h2>
-        <div style="width:80px;height:4px;background:${C.orange};margin-bottom:32px;"></div>
-        <p style="font-size:24px;line-height:1.55;color:${C.textMid};margin:0;font-weight:400;">${esc(truncate(summary, 620))}</p>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:grid;grid-template-columns:1.55fr 1fr;gap:64px;">
+      <div style="display:flex;flex-direction:column;min-width:0;">
+        <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">01 · Brief Ejecutivo</div>
+        <h2 style="font-size:48px;font-weight:800;margin:0 0 24px 0;line-height:1.08;color:${C.text};letter-spacing:-0.02em;">${esc(report.title || "Resumen del período")}</h2>
+        <div style="width:80px;height:4px;background:${C.orange};margin-bottom:28px;flex-shrink:0;"></div>
+        <p style="font-size:21px;line-height:1.55;color:${C.textMid};margin:0;font-weight:400;overflow:hidden;">${esc(truncate(summary, 1100))}</p>
       </div>
-      <div style="display:flex;flex-direction:column;gap:18px;justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:16px;justify-content:center;">
         ${[
           { label: "Menciones", val: fmtNum(m.totalMentions), color: C.violet, bg: C.violetSoft },
           { label: "Positivo", val: posPct + "%", color: C.positive, bg: "#DCFCE7" },
           { label: "Negativo", val: negPct + "%", color: C.negative, bg: "#FEE2E2" },
           { label: "Alcance", val: fmtNum(m.estimatedReach), color: C.text, bg: C.paperAlt },
         ].map((k) => `
-          <div style="background:${k.bg};border-radius:18px;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:18px;color:${C.textMid};text-transform:uppercase;letter-spacing:0.12em;font-weight:700;">${k.label}</div>
-            <div style="font-size:56px;font-weight:800;color:${k.color};line-height:1;letter-spacing:-0.02em;">${k.val}</div>
+          <div style="background:${k.bg};border-radius:18px;padding:26px 30px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:16px;color:${C.textMid};text-transform:uppercase;letter-spacing:0.12em;font-weight:700;">${k.label}</div>
+            <div style="font-size:50px;font-weight:800;color:${k.color};line-height:1;letter-spacing:-0.02em;">${k.val}</div>
           </div>
         `).join("")}
       </div>
