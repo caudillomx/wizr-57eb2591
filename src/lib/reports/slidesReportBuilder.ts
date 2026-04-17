@@ -436,33 +436,38 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
   const narr = report.narratives.slice(0, 5);
   const totalMentions = report.metrics.totalMentions || 1;
   const cols = narr.length <= 2 ? narr.length : narr.length <= 4 ? 2 : 3;
+  const insight = report.narrativesInsight || "Las narrativas anteriores configuran el encuadre dominante de la conversación pública del periodo.";
   const cards = narr
     .map((n: NarrativeInfo, i: number) => {
-      const pct = Math.round((n.mentions / totalMentions) * 100);
+      const safeMentions = Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0;
+      const pct = safeMentions > 0 ? Math.round((safeMentions / totalMentions) * 100) : 0;
       const sc = sentColor(n.sentiment);
-      return `<div style="background:${C.paper};border:1px solid ${C.border};border-radius:18px;padding:28px 30px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;">
+      return `<div style="background:${C.paper};border:1px solid ${C.border};border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;">
         <div style="position:absolute;top:0;left:0;width:6px;height:100%;background:${sc};"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-left:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-left:8px;">
           <div style="font-size:11px;font-weight:800;color:${C.violet};letter-spacing:0.2em;">N° ${String(i + 1).padStart(2, "0")}</div>
           <div style="display:flex;gap:8px;align-items:center;">
             <span style="background:${sc}15;color:${sc};padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(n.sentiment)}</span>
             <span style="font-size:14px;color:${sc};">${trendIcon(n.trend)}</span>
           </div>
         </div>
-        <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
-        <div style="font-size:15px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 180))}</div>
-        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:14px;padding-left:8px;">
+        <div style="font-size:20px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
+        <div style="font-size:14px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 200))}</div>
+        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:12px;padding-left:8px;">
           <span style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;">Volumen</span>
-          <span style="font-size:30px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${n.mentions} <span style="font-size:14px;color:${C.textMuted};font-weight:600;">· ${pct}%</span></span>
+          <span style="font-size:26px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}${pct > 0 ? ` <span style="font-size:13px;color:${C.textMuted};font-weight:600;">· ${pct}%</span>` : ""}</span>
         </div>
       </div>`;
     })
     .join("");
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">04 · Narrativas Dominantes</div>
-      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Las ${narr.length} ideas que circularon</h2>
-      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px;flex:1;">${cards}</div>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">04 · Narrativas Dominantes</div>
+      <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Las ${narr.length} ideas que circularon</h2>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:18px;flex:1;min-height:0;">${cards}</div>
+      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      </div>
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Narrativas" });
