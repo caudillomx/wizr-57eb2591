@@ -374,13 +374,13 @@ function slideSentiment(report: SmartReportContent, projectName: string, page: n
   const m = report.metrics;
   const interp = report.sentimentAnalysis || "El análisis muestra el balance del sentimiento del periodo.";
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">02 · Pulso de Sentimiento</div>
-      <h2 style="font-size:56px;font-weight:800;margin:0 0 48px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">¿Cómo se siente la conversación?</h2>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:80px;align-items:center;flex:1;">
-        <div style="flex-shrink:0;background:${C.paperAlt};border-radius:24px;padding:48px;">${svgDonut(m.positiveCount, m.neutralCount, m.negativeCount, 440)}</div>
-        <div style="display:flex;flex-direction:column;gap:24px;">
-          <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">02 · Pulso de Sentimiento</div>
+      <h2 style="font-size:48px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">¿Cómo se siente la conversación?</h2>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:64px;align-items:start;flex:1;">
+        <div style="flex-shrink:0;background:${C.paperAlt};border-radius:24px;padding:40px;">${svgDonut(m.positiveCount, m.neutralCount, m.negativeCount, 400)}</div>
+        <div style="display:flex;flex-direction:column;gap:20px;min-width:0;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
             ${[
               { color: C.positive, label: "Positivo", val: m.positiveCount },
               { color: C.neutral, label: "Neutral", val: m.neutralCount },
@@ -393,9 +393,9 @@ function slideSentiment(report: SmartReportContent, projectName: string, page: n
               </div>
             `).join("")}
           </div>
-          <div style="background:${C.violetSoft};border-radius:16px;padding:28px 32px;font-size:20px;line-height:1.55;color:${C.text};">
+          <div style="background:${C.violetSoft};border-radius:16px;padding:26px 30px;font-size:18px;line-height:1.55;color:${C.text};overflow:hidden;">
             <div style="font-size:11px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:10px;">Lectura estratégica</div>
-            ${esc(truncate(interp, 360))}
+            ${esc(truncate(interp, 720))}
           </div>
         </div>
       </div>
