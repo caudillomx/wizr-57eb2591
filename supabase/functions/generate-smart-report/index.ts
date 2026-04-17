@@ -42,6 +42,12 @@ interface NarrativeItem {
   trend: "creciente" | "decreciente" | "estable";
 }
 
+interface KeywordCloudItem {
+  term: string;
+  count: number;
+  sentiment: "positivo" | "negativo" | "neutral" | "mixto";
+}
+
 interface ReportContent {
   title: string;
   summary: string;
@@ -51,6 +57,8 @@ interface ReportContent {
   impactAssessment?: string;
   sentimentAnalysis?: string;
   narratives?: NarrativeItem[];
+  keywords?: KeywordCloudItem[];
+  keywordsInsight?: string;
   narrativesInsight?: string;
   timelineInsight?: string;
   influencersInsight?: string;
