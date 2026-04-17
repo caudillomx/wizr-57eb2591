@@ -326,37 +326,66 @@ export function useSmartReport() {
       return null;
     }
 
+    const waitForJob = async (jobId: string): Promise<SmartReportContent> => {
+      const maxAttempts = 90;
+      const intervalMs = 2000;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+
+        const { data: statusData, error: statusError } = await supabase.functions.invoke("generate-smart-report-async", {
+          body: { action: "status", jobId },
+        });
+
+        if (statusError) throw statusError;
+        if (statusData?.error) throw new Error(statusData.error);
+        if (statusData?.status === "failed") throw new Error(statusData.error || "Error al generar reporte");
+        if (statusData?.status === "completed" && statusData.result) return statusData.result as SmartReportContent;
+      }
+
+      throw new Error("La generación del reporte tardó demasiado. Intenta de nuevo.");
+    };
+
     setIsGenerating(true);
     setError(null);
 
     try {
       const analytics = computeAnalytics(mentions);
 
-      const { data, error: fnError } = await supabase.functions.invoke("generate-smart-report", {
+      const payload = {
+        mentions: mentions.map(m => ({
+          id: m.id, title: m.title, description: m.description, url: m.url,
+          source_domain: m.source_domain, sentiment: m.sentiment,
+          created_at: m.created_at, published_at: m.published_at,
+          matched_keywords: m.matched_keywords, raw_metadata: m.raw_metadata,
+        })),
+        ...config,
+      };
+
+      const { data, error: fnError } = await supabase.functions.invoke("generate-smart-report-async", {
         body: {
-          mentions: mentions.map(m => ({
-            id: m.id, title: m.title, description: m.description, url: m.url,
-            source_domain: m.source_domain, sentiment: m.sentiment,
-            created_at: m.created_at, published_at: m.published_at,
-            matched_keywords: m.matched_keywords, raw_metadata: m.raw_metadata,
-          })),
-          ...config,
+          action: "create",
+          payload,
         },
       });
 
       if (fnError) throw fnError;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
+
+      const reportData = data?.jobId
+        ? await waitForJob(data.jobId as string)
+        : (data as SmartReportContent);
 
       const enrichedReport: SmartReportContent = {
-        ...data,
+        ...reportData,
         sourceBreakdown: analytics.sourceBreakdown,
         influencers: analytics.influencers,
         mediaOutlets: analytics.mediaOutlets,
         timeline: analytics.timeline,
-        narratives: data.narratives || [],
+        narratives: reportData.narratives || [],
         totalUniqueAuthors: analytics.totalUniqueAuthors,
         metrics: {
-          ...data.metrics,
+          ...reportData.metrics,
           estimatedImpressions: analytics.estimatedImpressions,
           estimatedReach: analytics.estimatedReach,
         },
