@@ -408,18 +408,24 @@ function slideTimeline(report: SmartReportContent, projectName: string, page: nu
   const peak = report.timeline.length ? report.timeline.reduce((a, b) => (a.count > b.count ? a : b)) : null;
   const totalMentions = report.timeline.reduce((s, t) => s + t.count, 0);
   const avg = report.timeline.length ? Math.round(totalMentions / report.timeline.length) : 0;
+  const insight = report.timelineInsight || (peak
+    ? `El día con mayor actividad fue ${peak.date.slice(5)} con ${peak.count} menciones, frente a un promedio de ${avg}/día. Conviene revisar qué dispara el pico para anticipar futuras ventanas de exposición.`
+    : "Volumen distribuido sin picos extraordinarios en el periodo analizado.");
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">03 · Volumen en el Tiempo</div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;">
-        <h2 style="font-size:56px;font-weight:800;margin:0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Evolución diaria</h2>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">03 · Volumen en el Tiempo</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;">
+        <h2 style="font-size:48px;font-weight:800;margin:0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Evolución diaria</h2>
         <div style="display:flex;gap:32px;">
           <div><div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.18em;font-weight:700;">Promedio/día</div><div style="font-size:36px;font-weight:800;color:${C.text};line-height:1.1;">${avg}</div></div>
           ${peak ? `<div><div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.18em;font-weight:700;">Pico</div><div style="font-size:36px;font-weight:800;color:${C.orange};line-height:1.1;">${peak.count}</div></div>` : ""}
         </div>
       </div>
-      <div style="background:${C.paperAlt};border-radius:20px;padding:36px;flex:1;display:flex;align-items:center;justify-content:center;">
-        ${svgAreaTimeline(report.timeline, 1680, 500)}
+      <div style="background:${C.paperAlt};border-radius:20px;padding:28px 32px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
+        ${svgAreaTimeline(report.timeline, 1680, 440)}
+      </div>
+      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:17px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 420))}
       </div>
     </div>
   `;
