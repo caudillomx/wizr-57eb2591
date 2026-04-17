@@ -65,6 +65,12 @@ export interface NarrativeInfo {
   trend: "creciente" | "decreciente" | "estable";
 }
 
+export interface KeywordCloudItem {
+  term: string;
+  count: number;
+  sentiment: "positivo" | "negativo" | "neutral" | "mixto";
+}
+
 export interface SmartReportContent {
   title: string;
   summary: string;
@@ -79,6 +85,8 @@ export interface SmartReportContent {
   mediaOutlets?: MediaOutletInfo[];
   timeline: TimelinePoint[];
   narratives: NarrativeInfo[];
+  keywords?: KeywordCloudItem[];
+  keywordsInsight?: string;
   sentimentAnalysis?: string;
   totalUniqueAuthors: number;
   entityComparison?: string;
