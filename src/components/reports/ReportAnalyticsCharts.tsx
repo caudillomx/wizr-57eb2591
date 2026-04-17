@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Globe, Activity, Eye, Radio } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { SourceBreakdown, InfluencerInfo, TimelinePoint } from "@/hooks/useSmartReport";
+import type { SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
 
 interface ReportAnalyticsChartsProps {
   sourceBreakdown: SourceBreakdown[];
