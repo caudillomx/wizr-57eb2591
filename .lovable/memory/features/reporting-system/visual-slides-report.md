@@ -34,12 +34,15 @@ Si el campo viene vacío, el builder genera fallback contextual (ej. timeline ca
 - **Recomendaciones**: cada card con badge de plazo (Inmediato/Corto/Mediano/Seguimiento) en colores semánticos. Subtítulo: "Posicionamiento, riesgo reputacional y oportunidades de incidencia".
 - **Cierre**: pill "Conclusión del periodo", glows duales (violet bottom-right + violet top-left), logo Wizr 64px, footer estructurado Wizr|Proyecto.
 
-### Truncados ampliados (anti-corte de texto)
-- Brief summary: 620 → **1100 chars**
-- Sentiment interp: 360 → **720 chars**
-- Hallazgos: 320 → **380 chars**
-- Recomendaciones: 320 → **380 chars**
-- Conclusión cierre: 360 → **520 chars**
+### Truncados ampliados (anti-corte de texto v2)
+- Brief summary: **1600 chars** (font 20px)
+- Sentiment interp: **1100 chars** (font 17px)
+- Timeline insight: **800 chars**
+- Narratives description: **360 chars** (font 13.5px) · narrative title 110 chars
+- Lectura (narrativas/influencers/medios/plataformas): **700 chars** (font 15px)
+- Hallazgos: **600 chars** (font 19px)
+- Recomendaciones: **600 chars** (font 18px)
+- Conclusión cierre: **800 chars** (font 42px)
 
 ### Sanitización de narrativas
 El edge function `generate-smart-report` ahora:
