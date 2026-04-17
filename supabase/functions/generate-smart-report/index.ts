@@ -413,21 +413,26 @@ ${JSON.stringify(mentionsSummary, null, 2)}
 === RESPONDE EN JSON ===
 {
   "title": "string - título profesional",
-  "summary": "string - brief ejecutivo con hallazgos críticos, fuentes y números",
+  "summary": "string - brief ejecutivo con hallazgos críticos, fuentes y números (5-8 oraciones, hasta ~900 caracteres)",
   "impactAssessment": "string - cómo los eventos afectan a la marca/entidad en el contexto estratégico",
-  "sentimentAnalysis": "string - distribución de sentimiento y sus drivers, interpretado según el contexto estratégico",
+  "sentimentAnalysis": "string - distribución de sentimiento y sus drivers, interpretado según el contexto estratégico (3-5 oraciones, hasta ~600 caracteres)",
+  "timelineInsight": "string - 2-3 oraciones interpretando la evolución diaria: pico, caída, drivers del volumen. Máx 320 caracteres.",
   "narratives": [
     {
       "narrative": "string - nombre de la narrativa temática (ej: 'Cuestionamiento de transparencia')",
       "description": "string - qué dice, quién la promueve, en qué medios",
-      "mentions": number,
+      "mentions": "number - OBLIGATORIO entero, NUNCA null ni vacío. Si no puedes calcular exacto, estima conservadoramente con base en la muestra.",
       "sentiment": "positivo | negativo | mixto",
       "trend": "creciente | decreciente | estable"
     }
-  ],${entityComparisonInstruction}
+  ],
+  "narrativesInsight": "string - 2-3 oraciones explicando qué dice el conjunto de narrativas sobre la conversación pública. Máx 320 caracteres.",
+  "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
+  "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
+  "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
   "keyFindings": ["string - hallazgo específico citando fuentes y datos"],
   "conclusions": ["string - conclusión ESTRATÉGICA integrando múltiples datos"],
-  "recommendations": ["string - recomendación detallada: qué, dónde, cómo, cuándo"],
+  "recommendations": ["string - recomendación de NIVEL DIRECTIVO: decisión de posicionamiento, gestión de riesgo reputacional u oportunidad de incidencia pública. NUNCA tarea operativa de monitoreo."],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
@@ -435,7 +440,7 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   }
 }
 
-SOBRE "narratives": Identifica NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). Ordénalas por frecuencia.`;
+SOBRE "narratives": Identifica ENTRE 3 Y 5 NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). Ordénalas por frecuencia. El campo "mentions" SIEMPRE debe ser un entero ≥ 1.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
