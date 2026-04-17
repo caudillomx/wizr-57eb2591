@@ -703,24 +703,21 @@ function slideRecommendations(report: SmartReportContent, projectName: string, p
   const items = recs
     .map((r, i) => {
       const tag = tags[i] || tags[3];
-      return `<div style="display:flex;gap:24px;align-items:stretch;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(61,31,216,0.08);border:1px solid ${C.border};">
-      <div style="background:${C.text};color:#fff;padding:24px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;">
-        <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
-        <div style="font-size:10px;font-weight:800;letter-spacing:0.22em;opacity:0.6;margin-top:8px;text-transform:uppercase;">Acción</div>
-      </div>
-      <div style="flex:1;padding:24px 30px;display:flex;flex-direction:column;gap:10px;justify-content:center;">
-        <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;background:${tag.color}15;color:${tag.color};padding:5px 12px;border-radius:100px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.15em;">
+      return `<div style="display:flex;gap:24px;align-items:stretch;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(61,31,216,0.08);border:1px solid ${C.border};min-height:140px;">
+      <div style="background:${C.text};color:#fff;padding:20px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:150px;gap:10px;">
+        <div style="font-size:44px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:${tag.color}26;color:#fff;padding:4px 10px;border-radius:100px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;white-space:nowrap;">
           <span style="width:6px;height:6px;border-radius:50%;background:${tag.color};"></span>${tag.label}
         </div>
-        <div style="font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(r, 600))}</div>
       </div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(r, 600))}</div>
     </div>`;
     })
     .join("");
   const body = `
     <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
       <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">09 · Recomendaciones</div>
-      <h2 style="font-size:48px;font-weight:800;margin:0 0 8px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Decisiones para el directivo</h2>
+      <h2 style="font-size:48px;font-weight:800;margin:0 0 8px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Acciones estratégicas sugeridas</h2>
       <div style="font-size:18px;color:${C.textMid};margin-bottom:28px;">Posicionamiento, riesgo reputacional y oportunidades de incidencia.</div>
       <div style="display:flex;flex-direction:column;gap:14px;flex:1;min-height:0;">${items}</div>
     </div>
