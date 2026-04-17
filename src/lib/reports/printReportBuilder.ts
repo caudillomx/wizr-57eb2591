@@ -188,8 +188,8 @@ function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
 
 export interface BuiltReport {
   html: string;
-  header: { source: string; height: number; start_at?: number };
-  footer: { source: string; height: number; start_at?: number };
+  header: { source: string; height: string; start_at?: number };
+  footer: { source: string; height: string; start_at?: number };
 }
 
 export function buildReportHTML(
@@ -378,21 +378,25 @@ export function buildReportHTML(
   const headerContext = truncateText(`${projectName} · ${badge.label} · ${dateRange.label}`, 56);
   const headerSubtitle = truncateText(report.title, 68);
 
-  // PDFShift native header (repeated on every page, reserves space physically)
-  const HEADER_HEIGHT_PX = 112;
-  const FOOTER_HEIGHT_PX = 34;
+  // PDFShift v3 expects header/footer height in mm (as string).
+  // A4 = 210 x 297 mm. We reserve the band physically with these values.
+  const HEADER_HEIGHT_MM = 28; // ~106 px @ 96dpi — franja morada
+  const FOOTER_HEIGHT_MM = 10; // ~38 px @ 96dpi
+  // Internal padding inside the band so logo/title don't touch the edges.
+  const HEADER_PAD_TOP_MM = 6;
+  const HEADER_PAD_BOTTOM_MM = 6;
 
   const pdfHeaderSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;padding:0;background:${C.primary};}
-.bar{width:100%;height:${HEADER_HEIGHT_PX}px;background:${C.primary};display:table;table-layout:fixed;}
-.cell{display:table-cell;vertical-align:middle;padding:10px 36px;box-sizing:border-box;}
-.cell.left{width:240px;}
+html,body{width:100%;height:${HEADER_HEIGHT_MM}mm;overflow:hidden;margin:0;padding:0;background:${C.primary};}
+.bar{width:100%;height:${HEADER_HEIGHT_MM}mm;background:${C.primary};display:table;table-layout:fixed;}
+.cell{display:table-cell;vertical-align:middle;padding:${HEADER_PAD_TOP_MM}mm 12mm ${HEADER_PAD_BOTTOM_MM}mm 12mm;box-sizing:border-box;}
+.cell.left{width:55mm;}
 .cell.right{text-align:right;color:#fff;overflow:hidden;}
-.logo{height:50px;width:auto;display:block;}
-.ctx{display:block;font-size:12px;line-height:1.2;font-weight:600;color:${C.accentLight};letter-spacing:0.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title{display:block;font-size:14px;line-height:1.2;font-weight:700;color:#fff;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.logo{height:14mm;width:auto;display:block;}
+.ctx{display:block;font-size:9pt;line-height:1.15;font-weight:600;color:${C.accentLight};letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{display:block;font-size:11pt;line-height:1.15;font-weight:700;color:#fff;margin-top:1.2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style></head><body>
 <div class="bar">
   <div class="cell left"><img class="logo" src="${LOGO_WHITE_B64}" alt="Wizr" /></div>
@@ -406,11 +410,11 @@ html,body{width:100%;height:${HEADER_HEIGHT_PX}px;overflow:hidden;margin:0;paddi
   const pdfFooterSource = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue','Inter',Arial,sans-serif;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-html,body{width:100%;height:${FOOTER_HEIGHT_PX}px;overflow:hidden;}
+html,body{width:100%;height:${FOOTER_HEIGHT_MM}mm;overflow:hidden;}
 body{background:transparent;}
-.bar{width:100%;height:${FOOTER_HEIGHT_PX}px;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:#fff;border-top:1px solid rgba(255,255,255,0.12);}
-.left{font-size:8px;color:${C.accentLight};letter-spacing:0.3px;}
-.right{font-size:8.5px;font-weight:600;letter-spacing:0.3px;color:#fff;}
+.bar{width:100%;height:${FOOTER_HEIGHT_MM}mm;background:${C.primary};display:flex;align-items:center;justify-content:space-between;padding:0 10mm;color:#fff;border-top:1px solid rgba(255,255,255,0.12);}
+.left{font-size:7pt;color:${C.accentLight};letter-spacing:0.3px;}
+.right{font-size:7pt;font-weight:600;letter-spacing:0.3px;color:#fff;}
 </style></head><body>
 <div class="bar">
   <div class="left">Generado con Wizr · ${escapeHtml(generatedDate)}</div>
@@ -449,7 +453,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:${HEADER_HEIGHT_PX + 16}px 0 ${FOOTER_HEIGHT_PX + 10}px 0;
+  margin:0;
 }
 
 @media print{
@@ -492,7 +496,7 @@ strong{font-weight:700;color:${C.primary};}
 
   return {
     html,
-    header: { source: pdfHeaderSource, height: HEADER_HEIGHT_PX, start_at: 1 },
-    footer: { source: pdfFooterSource, height: FOOTER_HEIGHT_PX, start_at: 1 },
+    header: { source: pdfHeaderSource, height: `${HEADER_HEIGHT_MM}mm`, start_at: 1 },
+    footer: { source: pdfFooterSource, height: `${FOOTER_HEIGHT_MM}mm`, start_at: 1 },
   };
 }

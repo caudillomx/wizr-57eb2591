@@ -11,8 +11,8 @@ Deno.serve(async (req) => {
     const { html, filename, header, footer } = body as {
       html?: string;
       filename?: string;
-      header?: { source: string; height: number | string; start_at?: number };
-      footer?: { source: string; height: number | string; start_at?: number };
+      header?: { source: string; height: string; start_at?: number };
+      footer?: { source: string; height: string; start_at?: number };
     };
     console.log("[pdfshift] html length:", html?.length, "filename:", filename);
 
@@ -21,32 +21,31 @@ Deno.serve(async (req) => {
     const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
     if (!PDFSHIFT_API_KEY) throw new Error("PDFSHIFT_API_KEY not configured");
 
-    const headerHeightPx = header ? Number(header.height) || 0 : 0;
-    const footerHeightPx = footer ? Number(footer.height) || 0 : 0;
-
+    // header/footer.height MUST include unit ("28mm"). PDFShift treats unit-less
+    // numbers as mm — that's what was breaking the layout.
     const payload: Record<string, unknown> = {
       source: html,
       landscape: false,
       use_print: true,
       format: "A4",
       margin: {
-        top: "0px",
+        top: header?.height ?? "0mm",
         right: "0mm",
-        bottom: "0px",
+        bottom: footer?.height ?? "0mm",
         left: "0mm",
       },
     };
     if (header) {
       payload.header = {
-        ...header,
-        height: `${headerHeightPx}`,
+        source: header.source,
+        height: header.height,
         start_at: header.start_at ?? 1,
       };
     }
     if (footer) {
       payload.footer = {
-        ...footer,
-        height: `${footerHeightPx}`,
+        source: footer.source,
+        height: footer.height,
         start_at: footer.start_at ?? 1,
       };
     }
