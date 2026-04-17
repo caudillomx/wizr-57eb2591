@@ -587,6 +587,69 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
             <div data-pdf-section style={SECTION_STYLE}>
               <SectionHeader title="Principales Narrativas" isCrisis={isCrisis} />
               <SectionBody>
+                {/* Volume bar chart by sentiment (inline SVG) */}
+                {(() => {
+                  const totalNarr = report.narratives.reduce((s, n) => s + (Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0), 0) || 1;
+                  const maxV = Math.max(...report.narratives.map(n => Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0), 1);
+                  const W = 720;
+                  const H = 220;
+                  const padL = 36, padR = 16, padT = 30, padB = 48;
+                  const innerW = W - padL - padR;
+                  const innerH = H - padT - padB;
+                  const n = report.narratives.length;
+                  const slot = innerW / n;
+                  const barW = Math.min(64, slot * 0.62);
+                  const SENT: Record<string, string> = {
+                    positivo: "#22C55E", negativo: "#EF4444", mixto: "#F59E0B", neutral: "#9CA3AF",
+                  };
+                  return (
+                    <div style={{ marginBottom: "12px", border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "10px 12px", background: "#fafafc" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        Volumen por narrativa · {totalNarr} menciones temáticas
+                      </div>
+                      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                        {[0.25, 0.5, 0.75, 1].map(t => {
+                          const y = padT + innerH - innerH * t;
+                          return (
+                            <g key={t}>
+                              <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3 4" />
+                              <text x={padL - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#94a3b8">{Math.round(maxV * t)}</text>
+                            </g>
+                          );
+                        })}
+                        {report.narratives.map((nar, i) => {
+                          const v = Number.isFinite(nar.mentions) && nar.mentions > 0 ? nar.mentions : 0;
+                          const h = (v / maxV) * innerH;
+                          const x = padL + i * slot + (slot - barW) / 2;
+                          const y = padT + innerH - h;
+                          const c = SENT[nar.sentiment] || SENT.neutral;
+                          const pct = Math.round((v / totalNarr) * 100);
+                          return (
+                            <g key={i}>
+                              <rect x={x} y={y} width={barW} height={h} rx="3" fill={c} />
+                              <text x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize="10" fontWeight="700" fill="#0f172a">{v} · {pct}%</text>
+                              <text x={x + barW / 2} y={padT + innerH + 14} textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569">N{i + 1}</text>
+                              <text x={x + barW / 2} y={padT + innerH + 28} textAnchor="middle" fontSize="8" fill="#94a3b8">{(nar.sentiment || "").slice(0, 8)}</text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "4px", fontSize: "9px", color: "#475569" }}>
+                        {[
+                          { l: "Positivo", c: SENT.positivo },
+                          { l: "Negativo", c: SENT.negativo },
+                          { l: "Mixto", c: SENT.mixto },
+                          { l: "Neutral", c: SENT.neutral },
+                        ].map(s => (
+                          <span key={s.l} style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: s.c, display: "inline-block" }} />
+                            {s.l}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {report.narratives.map((n: NarrativeInfo, i: number) => {
                     const sentBadge = n.sentiment === "negativo"
@@ -598,6 +661,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                     return (
                       <div key={i} style={{ border: "0.5px solid #e2e8f0", borderRadius: "6px", padding: "10px 12px", pageBreakInside: "avoid", breakInside: "avoid" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, color: "#3D1FD8", padding: "1px 6px", border: "1px solid #3D1FD8", borderRadius: "3px" }}>N{i + 1}</span>
                           <span style={{ fontSize: "12.5px", fontWeight: 500 }}>{n.narrative}</span>
                           <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "3px", backgroundColor: sentBadge.bg, color: sentBadge.color, fontWeight: 600 }}>
                             {sentLabel(n.sentiment)}

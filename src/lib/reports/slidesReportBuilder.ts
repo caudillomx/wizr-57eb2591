@@ -256,6 +256,47 @@ function svgHorizontalBars(
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${rows}</svg>`;
 }
 
+function svgVerticalBarsNarratives(
+  data: { label: string; value: number; pct: number; color: string }[],
+  width = 1700,
+  height = 360,
+): string {
+  if (!data.length) return "";
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const padL = 70;
+  const padR = 30;
+  const padT = 60;
+  const padB = 70;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const slot = innerW / data.length;
+  const barW = Math.min(180, slot * 0.6);
+
+  const grid = [0.25, 0.5, 0.75, 1].map((t) => {
+    const y = padT + innerH - innerH * t;
+    const v = Math.round(max * t);
+    return `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="${C.border}" stroke-width="1" stroke-dasharray="4 6"/>
+      <text x="${padL - 14}" y="${y + 6}" text-anchor="end" font-size="16" fill="${C.textMuted}">${v}</text>`;
+  }).join("");
+
+  const bars = data
+    .map((d, i) => {
+      const h = (d.value / max) * innerH;
+      const x = padL + i * slot + (slot - barW) / 2;
+      const y = padT + innerH - h;
+      return `
+        <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${d.color}"/>
+        <text x="${x + barW / 2}" y="${y - 14}" text-anchor="middle" font-size="22" font-weight="800" fill="${C.text}">${d.value}</text>
+        <text x="${x + barW / 2}" y="${y - 38}" text-anchor="middle" font-size="14" font-weight="600" fill="${C.textMid}">${d.pct}%</text>
+        <text x="${x + barW / 2}" y="${padT + innerH + 28}" text-anchor="middle" font-size="20" font-weight="800" fill="${C.text}" letter-spacing="1">N${String(i + 1).padStart(2, "0")}</text>
+        <text x="${x + barW / 2}" y="${padT + innerH + 50}" text-anchor="middle" font-size="13" fill="${C.textMuted}" letter-spacing="0.1em">${esc((d.label || "").toUpperCase()).slice(0, 14)}</text>
+      `;
+    })
+    .join("");
+
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${grid}${bars}</svg>`;
+}
+
 // ---------- Slides ----------
 
 function slideCover(report: SmartReportContent, projectName: string, dateRange: DateRange, total: number): string {
@@ -434,39 +475,62 @@ function slideTimeline(report: SmartReportContent, projectName: string, page: nu
 
 function slideNarratives(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const narr = report.narratives.slice(0, 5);
-  const totalMentions = report.metrics.totalMentions || 1;
+  const totalNarrMentions = narr.reduce((s, n) => s + (Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0), 0) || 1;
   const cols = narr.length <= 2 ? narr.length : narr.length <= 4 ? 2 : 3;
   const insight = report.narrativesInsight || "Las narrativas anteriores configuran el encuadre dominante de la conversación pública del periodo.";
+
+  // Chart data: bars colored by sentiment of each narrative
+  const chartData = narr.map((n) => {
+    const v = Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0;
+    return {
+      label: (n.narrative || "").split(/\s+/).slice(0, 2).join(" "),
+      value: v,
+      pct: Math.round((v / totalNarrMentions) * 100),
+      color: sentColor(n.sentiment),
+    };
+  });
+
   const cards = narr
     .map((n: NarrativeInfo, i: number) => {
       const safeMentions = Number.isFinite(n.mentions) && n.mentions > 0 ? n.mentions : 0;
-      const pct = safeMentions > 0 ? Math.round((safeMentions / totalMentions) * 100) : 0;
+      const pct = safeMentions > 0 ? Math.round((safeMentions / totalNarrMentions) * 100) : 0;
       const sc = sentColor(n.sentiment);
-      return `<div style="background:${C.paper};border:1px solid ${C.border};border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:0;left:0;width:6px;height:100%;background:${sc};"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-left:8px;">
-          <div style="font-size:11px;font-weight:800;color:${C.violet};letter-spacing:0.2em;">N° ${String(i + 1).padStart(2, "0")}</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span style="background:${sc}15;color:${sc};padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(n.sentiment)}</span>
-            <span style="font-size:14px;color:${sc};">${trendIcon(n.trend)}</span>
+      return `<div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:5px;height:100%;background:${sc};"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-left:8px;">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="font-size:11px;font-weight:800;color:${C.violet};letter-spacing:0.18em;">N${String(i + 1).padStart(2, "0")}</div>
+            <span style="background:${sc}15;color:${sc};padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(n.sentiment)}</span>
+            <span style="font-size:13px;color:${sc};">${trendIcon(n.trend)}</span>
           </div>
+          <span style="font-size:20px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}<span style="font-size:11px;color:${C.textMuted};font-weight:600;"> · ${pct}%</span></span>
         </div>
-        <div style="font-size:19px;font-weight:700;color:${C.text};line-height:1.3;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 110))}</div>
-        <div style="font-size:13.5px;color:${C.textMid};line-height:1.5;padding-left:8px;flex:1;">${esc(truncate(n.description, 360))}</div>
-        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid ${C.border};padding-top:12px;padding-left:8px;">
-          <span style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;">Volumen</span>
-          <span style="font-size:26px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}${pct > 0 ? ` <span style="font-size:13px;color:${C.textMuted};font-weight:600;">· ${pct}%</span>` : ""}</span>
-        </div>
+        <div style="font-size:16px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
+        <div style="font-size:12.5px;color:${C.textMid};line-height:1.45;padding-left:8px;flex:1;">${esc(truncate(n.description, 240))}</div>
       </div>`;
     })
     .join("");
   const body = `
-    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">04 · Narrativas Dominantes</div>
-      <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Las ${narr.length} ideas que circularon</h2>
-      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:18px;flex:1;min-height:0;">${cards}</div>
-      <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
+    <div style="padding:150px 80px 90px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">04 · Narrativas Dominantes</div>
+      <h2 style="font-size:42px;font-weight:800;margin:0 0 18px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Las ${narr.length} ideas que circularon</h2>
+      <!-- Volume chart -->
+      <div style="background:${C.paperAlt};border-radius:18px;padding:18px 24px;margin-bottom:18px;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-size:12px;font-weight:800;color:${C.textMid};letter-spacing:0.18em;text-transform:uppercase;">Volumen por narrativa</div>
+          <div style="display:flex;gap:14px;font-size:11px;color:${C.textMid};">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${C.positive};"></span>Positivo</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${C.negative};"></span>Negativo</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${C.warning};"></span>Mixto</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${C.neutral};"></span>Neutral</span>
+          </div>
+        </div>
+        ${svgVerticalBarsNarratives(chartData, 1700, 320)}
+      </div>
+      <!-- Cards grid -->
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;flex:1;min-height:0;">${cards}</div>
+      <div style="margin-top:14px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:14px 22px;font-size:14px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 600))}
       </div>
     </div>
   `;
