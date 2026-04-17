@@ -350,7 +350,7 @@ function slideSummary(report: SmartReportContent, projectName: string, page: num
         <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">01 · Brief Ejecutivo</div>
         <h2 style="font-size:48px;font-weight:800;margin:0 0 24px 0;line-height:1.08;color:${C.text};letter-spacing:-0.02em;">${esc(report.title || "Resumen del período")}</h2>
         <div style="width:80px;height:4px;background:${C.orange};margin-bottom:28px;flex-shrink:0;"></div>
-        <p style="font-size:21px;line-height:1.55;color:${C.textMid};margin:0;font-weight:400;overflow:hidden;">${esc(truncate(summary, 1100))}</p>
+        <p style="font-size:20px;line-height:1.5;color:${C.textMid};margin:0;font-weight:400;">${esc(truncate(summary, 1600))}</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;justify-content:center;">
         ${[
