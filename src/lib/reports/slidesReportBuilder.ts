@@ -500,7 +500,7 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
           <span style="font-size:20px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}<span style="font-size:11px;color:${C.textMuted};font-weight:600;"> · ${pct}%</span></span>
         </div>
         <div style="font-size:16px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
-        <div style="font-size:12.5px;color:${C.textMid};line-height:1.45;padding-left:8px;flex:1;">${esc(truncate(n.description, 240))}</div>
+        <div style="font-size:11.5px;color:${C.textMid};line-height:1.4;padding-left:8px;flex:1;overflow:hidden;">${esc(truncate(n.description, 320))}</div>
       </div>`;
     })
     .join("");
@@ -519,7 +519,7 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
             <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${C.neutral};"></span>Neutral</span>
           </div>
         </div>
-        ${svgVerticalBarsNarratives(chartData, 1700, 320)}
+        ${svgVerticalBarsNarratives(chartData, 1700, 240)}
       </div>
       <!-- Cards grid -->
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;flex:1;min-height:0;">${cards}</div>
