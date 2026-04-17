@@ -655,10 +655,6 @@ function slideClosing(report: SmartReportContent, projectName: string, page: num
   `;
   return slideShell({ bg: "dark", pageNumber: page, total, projectName, body, showHeader: false });
 }
-    </div>
-  `;
-  return slideShell({ bg: "dark", pageNumber: page, total, projectName, body, showHeader: false });
-}
 
 // ---------- Public API ----------
 
