@@ -82,6 +82,11 @@ export interface SmartReportContent {
   sentimentAnalysis?: string;
   totalUniqueAuthors: number;
   entityComparison?: string;
+  narrativesInsight?: string;
+  timelineInsight?: string;
+  influencersInsight?: string;
+  mediaInsight?: string;
+  platformsInsight?: string;
 }
 
 export interface SmartReportConfig {

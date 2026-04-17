@@ -51,6 +51,11 @@ interface ReportContent {
   impactAssessment?: string;
   sentimentAnalysis?: string;
   narratives?: NarrativeItem[];
+  narrativesInsight?: string;
+  timelineInsight?: string;
+  influencersInsight?: string;
+  mediaInsight?: string;
+  platformsInsight?: string;
   entityComparison?: string;
   metrics: {
     totalMentions: number;
@@ -336,11 +341,20 @@ serve(async (req) => {
 - summary: 5-8 oraciones
 - keyFindings: 5-8
 - recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
-- narratives: 4-8
-- conclusions: 3-5`;
+- narratives: ENTRE 3 Y 5 (mínimo 3, máximo 5)
+- conclusions: 3-5
+- Cada insight interpretativo (timelineInsight, narrativesInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
 
     const entityComparisonInstruction = hasDistinctEntities
       ? `\n"entityComparison": "string - Párrafo comparando volumen, sentimiento y cobertura entre las entidades: ${entityNames!.join(', ')}. Incluye share of voice y diferenciadores."`
+      : "";
+
+    const entityMergeBlock = entityNames && entityNames.length >= 2 && !hasDistinctEntities
+      ? `\n=== ENTIDADES SINÓNIMAS / MISMO TEMA ===
+Las entidades [${entityNames.join(", ")}] son variantes del MISMO sujeto/tema. NO las enumeres por separado en hallazgos, narrativas o recomendaciones.
+- PROHIBIDO escribir frases tipo "La conversación sobre ${entityNames.slice(0,3).join(", ")}..." enumerándolas — se lee como redundancia.
+- En su lugar usa el nombre canónico (el más breve y reconocible) o un descriptor único ("el sujeto monitoreado", "la figura analizada").
+- Solo distingue entre ellas si hay una diferencia factual evidente en las menciones.\n`
       : "";
 
     const systemPrompt = `Eres un ANALISTA SENIOR de inteligencia estratégica y monitoreo de medios.
@@ -353,7 +367,7 @@ PRINCIPIOS:
 2. CUANTIFICACIÓN: Incluye números, porcentajes, comparaciones.
 3. CONTEXTO ESTRATÉGICO: Usa el enfoque estratégico para INTERPRETAR el sentimiento — lo negativo hacia un actor externo puede ser positivo para el cliente.
 4. ACCIONABILIDAD: Cada insight debe poder convertirse en una decisión concreta.
-
+${entityMergeBlock}
 === REGLA CRÍTICA #1: LENGUAJE CAUTELOSO Y CIFRAS AUDITABLES ===
 NUNCA hagas afirmaciones absolutas sobre la ausencia o presencia de información. Los datos que recibes son UNA MUESTRA textual, pero los CONTEOS VERIFICADOS abarcan el universo completo.
 - PROHIBIDO: "No se identificaron menciones que...", "No existe evidencia de...", "No hay menciones que vinculen..."
@@ -371,11 +385,12 @@ El CONTEXTO ESTRATÉGICO y los CASOS/HECHOS CONOCIDOS listados arriba son la VER
 - Ante AMBIGÜEDAD entre "es el mismo caso" vs "es un caso nuevo": SIEMPRE asume que es el mismo caso ya descrito en el Enfoque Estratégico, salvo que las menciones aporten evidencia explícita e inequívoca de un evento distinto (fechas, contrapartes y hechos diferentes claramente nombrados).
 - Antes de calificar algo como "nuevo" o "adicional", verifica que NO esté listado en CASOS/HECHOS CONOCIDOS y que las menciones lo describan como un evento factualmente distinto.
 
-=== ALCANCE ESTRICTO DE RECOMENDACIONES ===
-Las recomendaciones deben limitarse EXCLUSIVAMENTE al ámbito de monitoreo digital y escucha social:
-- SÍ: Ajustar keywords de monitoreo, agregar fuentes, configurar alertas, ampliar cobertura de plataformas, crear dashboards, segmentar análisis por entidad/plataforma, rastrear influenciadores específicos, ajustar frecuencia de monitoreo.
-- NO: Comunicados de prensa, estrategia de contenido, campañas de marketing, relaciones públicas, asesoría legal, decisiones operativas o de negocio, comunicación reactiva/proactiva con medios.
-- Si detectas una situación que requiera acción fuera del ámbito digital, limítate a SEÑALARLO como hallazgo ("Se detecta riesgo reputacional que podría requerir atención del área de comunicación") sin prescribir la acción.
+=== ALCANCE DE RECOMENDACIONES: ESTRATÉGICO + RIESGO REPUTACIONAL ===
+Las recomendaciones deben ser de NIVEL DIRECTIVO/EJECUTIVO, NO operativas técnicas de monitoreo. La audiencia es un tomador de decisiones, no el equipo interno de listening.
+- SÍ: Decisiones de posicionamiento ("Reforzar narrativa de transparencia con vocería principal en medios financieros"), gestión de riesgo reputacional ("Anticipar respuesta institucional ante escalamiento del litigio Actinver, que ya concentra 14 menciones negativas en medios tier-1"), oportunidades de incidencia pública ("Capitalizar la cobertura positiva en El Economista para fijar mensaje sobre integridad financiera"), alertas tempranas ("Monitorear escalamiento si la narrativa X cruza el umbral de presencia en redes").
+- NO: "Ajustar keywords", "agregar fuentes al monitoreo", "configurar alertas en el sistema", "crear dashboards", "segmentar análisis", "rastrear influenciadores en la plataforma", "ajustar frecuencia de monitoreo". Estas son tareas internas, no recomendaciones para un directivo.
+- Cada recomendación debe contestar: ¿Qué decisión debe tomar el directivo? ¿Qué riesgo se mitiga o qué oportunidad se captura? ¿En qué plazo (inmediato/semanas/mes)?
+- Mantén un tono prudente: "se sugiere evaluar", "considerar", "podría convenir" — no prescribas acciones operativas específicas (campañas, comunicados) salvo señalar la necesidad de involucrar al área correspondiente.
 
 FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos.`;
 
@@ -398,21 +413,26 @@ ${JSON.stringify(mentionsSummary, null, 2)}
 === RESPONDE EN JSON ===
 {
   "title": "string - título profesional",
-  "summary": "string - brief ejecutivo con hallazgos críticos, fuentes y números",
+  "summary": "string - brief ejecutivo con hallazgos críticos, fuentes y números (5-8 oraciones, hasta ~900 caracteres)",
   "impactAssessment": "string - cómo los eventos afectan a la marca/entidad en el contexto estratégico",
-  "sentimentAnalysis": "string - distribución de sentimiento y sus drivers, interpretado según el contexto estratégico",
+  "sentimentAnalysis": "string - distribución de sentimiento y sus drivers, interpretado según el contexto estratégico (3-5 oraciones, hasta ~600 caracteres)",
+  "timelineInsight": "string - 2-3 oraciones interpretando la evolución diaria: pico, caída, drivers del volumen. Máx 320 caracteres.",
   "narratives": [
     {
       "narrative": "string - nombre de la narrativa temática (ej: 'Cuestionamiento de transparencia')",
       "description": "string - qué dice, quién la promueve, en qué medios",
-      "mentions": number,
+      "mentions": "number - OBLIGATORIO entero, NUNCA null ni vacío. Si no puedes calcular exacto, estima conservadoramente con base en la muestra.",
       "sentiment": "positivo | negativo | mixto",
       "trend": "creciente | decreciente | estable"
     }
-  ],${entityComparisonInstruction}
+  ],
+  "narrativesInsight": "string - 2-3 oraciones explicando qué dice el conjunto de narrativas sobre la conversación pública. Máx 320 caracteres.",
+  "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
+  "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
+  "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
   "keyFindings": ["string - hallazgo específico citando fuentes y datos"],
   "conclusions": ["string - conclusión ESTRATÉGICA integrando múltiples datos"],
-  "recommendations": ["string - recomendación detallada: qué, dónde, cómo, cuándo"],
+  "recommendations": ["string - recomendación de NIVEL DIRECTIVO: decisión de posicionamiento, gestión de riesgo reputacional u oportunidad de incidencia pública. NUNCA tarea operativa de monitoreo."],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
@@ -420,7 +440,7 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   }
 }
 
-SOBRE "narratives": Identifica NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). Ordénalas por frecuencia.`;
+SOBRE "narratives": Identifica ENTRE 3 Y 5 NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). Ordénalas por frecuencia. El campo "mentions" SIEMPRE debe ser un entero ≥ 1.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -552,6 +572,25 @@ SOBRE "narratives": Identifica NARRATIVAS TEMÁTICAS (ideas/argumentos recurrent
       };
     }
 
+    const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
+    const totalForFallback = metrics.totalMentions || 1;
+    const narrativeFallbackBase = rawNarratives.length > 0 ? Math.max(1, Math.round(totalForFallback / rawNarratives.length / 2)) : 1;
+    const safeNarratives: NarrativeItem[] = rawNarratives
+      .slice(0, 5)
+      .map((n: Partial<NarrativeItem> & { mentions?: unknown }) => {
+        const mNum = Number(n?.mentions);
+        const safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        const sent = n?.sentiment;
+        const tr = n?.trend;
+        return {
+          narrative: String(n?.narrative || "Narrativa identificada"),
+          description: String(n?.description || ""),
+          mentions: safeMentions,
+          sentiment: (sent === "positivo" || sent === "negativo" || sent === "mixto") ? sent : "mixto",
+          trend: (tr === "creciente" || tr === "decreciente" || tr === "estable") ? tr : "estable",
+        };
+      });
+
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
@@ -560,7 +599,12 @@ SOBRE "narratives": Identifica NARRATIVAS TEMÁTICAS (ideas/argumentos recurrent
       conclusions: reportContent.conclusions || [],
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
-      narratives: reportContent.narratives || [],
+      narratives: safeNarratives,
+      narrativesInsight: reportContent.narrativesInsight || undefined,
+      timelineInsight: reportContent.timelineInsight || undefined,
+      influencersInsight: reportContent.influencersInsight || undefined,
+      mediaInsight: reportContent.mediaInsight || undefined,
+      platformsInsight: reportContent.platformsInsight || undefined,
       entityComparison: reportContent.entityComparison || undefined,
       metrics,
       templates: {
