@@ -8,7 +8,12 @@ Deno.serve(async (req) => {
   try {
     console.log("[pdfshift] request received, content-length:", req.headers.get("content-length"));
     const body = await req.json();
-    const { html, filename } = body;
+    const { html, filename, header, footer } = body as {
+      html?: string;
+      filename?: string;
+      header?: { source: string; height: number; start_at?: number };
+      footer?: { source: string; height: number; start_at?: number };
+    };
     console.log("[pdfshift] html length:", html?.length, "filename:", filename);
 
     if (!html) throw new Error("No HTML provided");
@@ -16,19 +21,23 @@ Deno.serve(async (req) => {
     const PDFSHIFT_API_KEY = Deno.env.get("PDFSHIFT_API_KEY");
     if (!PDFSHIFT_API_KEY) throw new Error("PDFSHIFT_API_KEY not configured");
 
+    const payload: Record<string, unknown> = {
+      source: html,
+      landscape: false,
+      use_print: true,
+      format: "A4",
+      margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
+    };
+    if (header) payload.header = header;
+    if (footer) payload.footer = footer;
+
     const response = await fetch("https://api.pdfshift.io/v3/convert/pdf", {
       method: "POST",
       headers: {
         Authorization: `Basic ${btoa(`api:${PDFSHIFT_API_KEY}`)}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        source: html,
-        landscape: false,
-        use_print: true,
-        format: "A4",
-        margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
