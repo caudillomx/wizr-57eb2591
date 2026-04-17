@@ -543,12 +543,16 @@ function slideMediaOutlets(report: SmartReportContent, projectName: string, page
 function slideSourceMix(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const sources = report.sourceBreakdown.slice(0, 8);
   const data = sources.map((s) => ({ label: s.source, value: s.count, color: C.violet }));
+  const insight = report.platformsInsight || "La distribución por plataforma indica dónde se concentra la conversación y orienta dónde priorizar el monitoreo y la respuesta.";
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">07 · Mix de Plataformas</div>
-      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">¿Dónde sucede la conversación?</h2>
-      <div style="background:${C.paperAlt};border-radius:20px;padding:48px 40px;flex:1;display:flex;align-items:center;justify-content:center;">
-        ${data.length ? svgHorizontalBars(data, 1700, 64) : `<div style="font-size:22px;color:${C.textMuted};">Sin datos de plataforma.</div>`}
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">07 · Mix de Plataformas</div>
+      <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">¿Dónde sucede la conversación?</h2>
+      <div style="background:${C.paperAlt};border-radius:20px;padding:36px 32px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
+        ${data.length ? svgHorizontalBars(data, 1700, 60) : `<div style="font-size:22px;color:${C.textMuted};">Sin datos de plataforma.</div>`}
+      </div>
+      <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
       </div>
     </div>
   `;
@@ -557,22 +561,23 @@ function slideSourceMix(report: SmartReportContent, projectName: string, page: n
 
 function slideKeyFindings(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const findings = report.keyFindings.slice(0, 4);
+  const labels = ["Riesgo", "Oportunidad", "Tendencia", "Señal"];
   const items = findings
     .map(
-      (f, i) => `<div style="display:flex;gap:28px;align-items:flex-start;padding:28px 32px;background:${C.paper};border:1px solid ${C.border};border-radius:16px;">
-      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
-        <div style="font-size:11px;color:${C.violet};font-weight:800;letter-spacing:0.2em;margin-bottom:6px;">HALLAZGO</div>
-        <div style="width:64px;height:64px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+      (f, i) => `<div style="display:flex;gap:24px;align-items:stretch;background:${C.paper};border:1px solid ${C.border};border-radius:18px;overflow:hidden;box-shadow:0 2px 12px rgba(11,10,31,0.04);">
+      <div style="background:linear-gradient(160deg,${C.violet} 0%,${C.violetGlow} 100%);color:#fff;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:140px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;">${labels[i] || "Hallazgo"}</div>
+        <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="font-size:22px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(f, 320))}</div>
+      <div style="flex:1;padding:26px 32px;display:flex;align-items:center;font-size:21px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(f, 380))}</div>
     </div>`,
     )
     .join("");
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">08 · Hallazgos Clave</div>
-      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Lo más importante del periodo</h2>
-      <div style="display:flex;flex-direction:column;gap:16px;flex:1;">${items}</div>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">08 · Hallazgos Clave</div>
+      <h2 style="font-size:48px;font-weight:800;margin:0 0 32px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Lo más importante del periodo</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;flex:1;min-height:0;">${items}</div>
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Hallazgos" });
@@ -580,22 +585,35 @@ function slideKeyFindings(report: SmartReportContent, projectName: string, page:
 
 function slideRecommendations(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const recs = report.recommendations.slice(0, 4);
+  const tags = [
+    { label: "Inmediato", color: C.negative },
+    { label: "Corto plazo", color: C.orange },
+    { label: "Mediano plazo", color: C.violet },
+    { label: "Seguimiento", color: C.neutral },
+  ];
   const items = recs
-    .map(
-      (r, i) => `<div style="display:flex;gap:28px;align-items:flex-start;padding:28px 32px;background:${C.violetSoft};border-radius:16px;border-left:6px solid ${C.violet};">
-      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
-        <div style="font-size:11px;color:${C.violet};font-weight:800;letter-spacing:0.2em;margin-bottom:6px;">ACCIÓN</div>
-        <div style="width:64px;height:64px;border-radius:14px;background:${C.text};color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+    .map((r, i) => {
+      const tag = tags[i] || tags[3];
+      return `<div style="display:flex;gap:24px;align-items:stretch;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(61,31,216,0.08);border:1px solid ${C.border};">
+      <div style="background:${C.text};color:#fff;padding:24px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px;">
+        <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.22em;opacity:0.6;margin-top:8px;text-transform:uppercase;">Acción</div>
       </div>
-      <div style="font-size:22px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(r, 320))}</div>
-    </div>`,
-    )
+      <div style="flex:1;padding:24px 30px;display:flex;flex-direction:column;gap:10px;justify-content:center;">
+        <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;background:${tag.color}15;color:${tag.color};padding:5px 12px;border-radius:100px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.15em;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${tag.color};"></span>${tag.label}
+        </div>
+        <div style="font-size:20px;line-height:1.55;color:${C.text};font-weight:500;">${esc(truncate(r, 380))}</div>
+      </div>
+    </div>`;
+    })
     .join("");
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">09 · Recomendaciones</div>
-      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Acciones priorizadas</h2>
-      <div style="display:flex;flex-direction:column;gap:16px;flex:1;">${items}</div>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">09 · Recomendaciones</div>
+      <h2 style="font-size:48px;font-weight:800;margin:0 0 8px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Decisiones para el directivo</h2>
+      <div style="font-size:18px;color:${C.textMid};margin-bottom:28px;">Posicionamiento, riesgo reputacional y oportunidades de incidencia.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;flex:1;min-height:0;">${items}</div>
     </div>
   `;
   return slideShell({ bg: "accent", pageNumber: page, total, projectName, body, sectionLabel: "Acciones" });
@@ -606,23 +624,37 @@ function slideClosing(report: SmartReportContent, projectName: string, page: num
     report.conclusions?.[0] ||
     `Reporte generado a partir de ${report.metrics.totalMentions} menciones del periodo. Para análisis detallado revisa el reporte completo en el dashboard.`;
   const body = `
-    <!-- Decorative sparkles -->
-    <div style="position:absolute;top:80px;right:80px;transform:scale(1.8);">${sparkles(C.orange, 0.7)}</div>
-    <!-- Violet glow -->
-    <div style="position:absolute;bottom:-300px;right:-200px;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.3;"></div>
+    <!-- Violet glow + sparkles -->
+    <div style="position:absolute;top:60px;right:60px;transform:scale(1.6);opacity:0.8;">${sparkles(C.orange, 0.85)}</div>
+    <div style="position:absolute;bottom:-340px;right:-220px;width:780px;height:780px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.35;"></div>
+    <div style="position:absolute;top:-180px;left:-180px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, ${C.violet} 0%, transparent 70%);opacity:0.25;"></div>
 
-    <div style="position:absolute;top:64px;left:80px;display:flex;align-items:center;gap:18px;z-index:5;">
-      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:48px;filter:brightness(0) invert(1);"/>
+    <!-- Header logo -->
+    <div style="position:absolute;top:60px;left:80px;display:flex;align-items:center;gap:18px;z-index:5;">
+      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:64px;filter:brightness(0) invert(1);"/>
     </div>
 
     <div style="position:absolute;top:50%;left:80px;right:80px;transform:translateY(-50%);z-index:5;">
-      <div style="font-size:14px;color:${C.orange};letter-spacing:0.3em;text-transform:uppercase;font-weight:800;margin-bottom:36px;">— Conclusión</div>
-      <p style="font-size:54px;font-weight:600;line-height:1.25;margin:0 0 64px 0;color:#fff;max-width:1500px;letter-spacing:-0.02em;">${esc(truncate(conclusion, 360))}</p>
-      <div style="height:1px;background:rgba(255,255,255,0.15);margin:48px 0;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:18px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">Wizr · Análisis Estratégico de Medios</div>
-        <div style="font-size:18px;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">${esc(projectName)}</div>
+      <div style="display:inline-flex;align-items:center;gap:14px;padding:10px 22px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:100px;margin-bottom:36px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
+        <span style="font-size:13px;letter-spacing:0.28em;color:#fff;font-weight:800;text-transform:uppercase;">Conclusión del periodo</span>
       </div>
+      <p style="font-size:48px;font-weight:600;line-height:1.28;margin:0 0 56px 0;color:#fff;max-width:1500px;letter-spacing:-0.018em;">${esc(truncate(conclusion, 520))}</p>
+      <div style="height:1px;background:rgba(255,255,255,0.15);margin:32px 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.22em;text-transform:uppercase;font-weight:700;">Wizr</div>
+          <div style="font-size:18px;color:rgba(255,255,255,0.85);letter-spacing:0.05em;">Media Intelligence · wizr.mx</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.22em;text-transform:uppercase;font-weight:700;">Proyecto</div>
+          <div style="font-size:18px;color:rgba(255,255,255,0.85);letter-spacing:0.02em;">${esc(projectName)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "dark", pageNumber: page, total, projectName, body, showHeader: false });
+}
     </div>
   `;
   return slideShell({ bg: "dark", pageNumber: page, total, projectName, body, showHeader: false });
