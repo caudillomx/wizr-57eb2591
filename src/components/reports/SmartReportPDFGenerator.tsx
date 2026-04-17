@@ -24,6 +24,7 @@ function trimReportForSummary(report: SmartReportContent): SmartReportContent {
     conclusions: report.conclusions?.slice(0, 2),
     narratives: report.narratives.slice(0, 3),
     influencers: report.influencers.slice(0, 5),
+    mediaOutlets: (report.mediaOutlets || []).slice(0, 5),
     sourceBreakdown: report.sourceBreakdown.slice(0, 5),
     entityComparison: undefined,
   };

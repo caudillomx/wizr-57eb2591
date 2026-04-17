@@ -1,4 +1,4 @@
-import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint } from "@/hooks/useSmartReport";
+import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { LOGO_WHITE_B64 } from "./logoBase64";
@@ -321,7 +321,32 @@ export function buildReportHTML(
       })
       .join("");
     const table = `<table style="width:100%;border-collapse:collapse;">${headerRow}${rows}</table>`;
-    blocks.push(section("Influenciadores", table));
+    blocks.push(section("Influenciadores en Redes Sociales", table));
+  }
+
+  // Tabla de Medios Digitales
+  const outlets = isSummary ? (report.mediaOutlets || []).slice(0, 5) : (report.mediaOutlets || []);
+  if (outlets.length > 0) {
+    const outletHeader = `<tr style="background:${C.primary};">
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">#</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Medio</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:left;color:#fff;font-weight:600;letter-spacing:0.5px;">Dominio</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Artículos</th>
+      <th style="padding:7px 10px;font-size:8px;text-align:center;color:#fff;font-weight:600;letter-spacing:0.5px;">Sentimiento</th>
+    </tr>`;
+    const outletRows = outlets.map((o: MediaOutletInfo, i: number) => {
+      const bg = i % 2 === 0 ? C.white : C.cardBg;
+      const sentBg = `${sentColor(o.sentiment)}15`;
+      return `<tr style="background:${bg};">
+        <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${i + 1}</td>
+        <td style="padding:5px 10px;font-size:9.5px;font-weight:600;color:${C.textDark};">${escapeHtml(o.name)}</td>
+        <td style="padding:5px 10px;font-size:9px;color:${C.textGray};">${escapeHtml(o.domain)}</td>
+        <td style="padding:5px 10px;font-size:9.5px;text-align:center;color:${C.textDark};font-weight:600;">${o.articles}</td>
+        <td style="padding:5px 10px;font-size:9px;text-align:center;"><span style="background:${sentBg};color:${sentColor(o.sentiment)};font-weight:700;padding:2px 8px;border-radius:10px;font-size:8px;">${sentLabel(o.sentiment)}</span></td>
+      </tr>`;
+    }).join("");
+    const outletTable = `<table style="width:100%;border-collapse:collapse;">${outletHeader}${outletRows}</table>`;
+    blocks.push(section("Medios Digitales de Amplio Alcance", outletTable));
   }
 
   if (isSummary) {
