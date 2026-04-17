@@ -117,9 +117,9 @@ function slideShell(opts: {
   }
 
   const header = opts.showHeader === false ? "" : `
-    <header style="position:absolute;top:48px;left:80px;right:80px;display:flex;justify-content:space-between;align-items:center;z-index:5;">
+    <header style="position:absolute;top:44px;left:80px;right:80px;display:flex;justify-content:space-between;align-items:center;z-index:5;">
       <div style="display:flex;align-items:center;gap:14px;">
-        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:34px;${isDark ? "filter:brightness(0) invert(1);" : ""}"/>
+        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:54px;${isDark ? "filter:brightness(0) invert(1);" : ""}"/>
       </div>
       ${opts.sectionLabel ? `<div style="font-size:13px;letter-spacing:0.25em;color:${isDark ? "rgba(255,255,255,0.6)" : C.textMuted};font-weight:700;text-transform:uppercase;">${esc(opts.sectionLabel)}</div>` : ""}
     </header>`;
