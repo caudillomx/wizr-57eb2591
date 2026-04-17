@@ -350,8 +350,9 @@ serve(async (req) => {
 - keyFindings: 5-8
 - recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
+- keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
 - conclusions: 3-5
-- Cada insight interpretativo (timelineInsight, narrativesInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
+- Cada insight interpretativo (timelineInsight, narrativesInsight, keywordsInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
 
     const entityComparisonInstruction = hasDistinctEntities
       ? `\n"entityComparison": "string - Párrafo comparando volumen, sentimiento y cobertura entre las entidades: ${entityNames!.join(', ')}. Incluye share of voice y diferenciadores."`
@@ -445,6 +446,14 @@ ${JSON.stringify(mentionsSummary, null, 2)}
     }
   ],
   "narrativesInsight": "string - 2-3 oraciones explicando qué dice el conjunto de narrativas sobre la conversación pública. Máx 320 caracteres.",
+  "keywords": [
+    {
+      "term": "string - palabra o término clave (1-3 palabras). NUNCA incluyas artículos, preposiciones, conjunciones, pronombres, verbos auxiliares ni stopwords. Ej válidos: 'litigio', 'transparencia financiera', 'bursátil'. Ej inválidos: 'el', 'de', 'que', 'para', 'con', 'una', 'son', 'fue', 'the', 'and', 'this'. Términos en español preferentemente, en minúscula salvo nombres propios.",
+      "count": "number - entero ≥ 1. Frecuencia aproximada de aparición en la muestra; usa la heurística de la muestra y los CONTEOS VERIFICADOS si aplica.",
+      "sentiment": "positivo | negativo | neutral | mixto - sentimiento dominante asociado al término en el corpus"
+    }
+  ],
+  "keywordsInsight": "string - 2-3 oraciones interpretando los términos dominantes y qué revelan sobre el encuadre de la conversación. Máx 280 caracteres.",
   "influencersInsight": "string - 2-3 oraciones interpretando el peso de las voces top: concentración, tono dominante, riesgo/oportunidad. Máx 320 caracteres.",
   "mediaInsight": "string - 2-3 oraciones interpretando la cobertura editorial: tipo de medios (tier-1, especializados, regionales), encuadre dominante. Máx 320 caracteres.",
   "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
