@@ -734,7 +734,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
 
     const fallbackNarratives = buildFallbackNarratives(mentions);
     const fallbackFindings = buildFallbackFindings(metrics, mentions);
-    const fallbackRecommendations = buildFallbackRecommendations(metrics);
+    const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions);
 
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
