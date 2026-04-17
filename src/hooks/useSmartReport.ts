@@ -76,7 +76,7 @@ export interface SmartReportContent {
   impactAssessment?: string;
   sourceBreakdown: SourceBreakdown[];
   influencers: InfluencerInfo[];
-  mediaOutlets: MediaOutletInfo[];
+  mediaOutlets?: MediaOutletInfo[];
   timeline: TimelinePoint[];
   narratives: NarrativeInfo[];
   sentimentAnalysis?: string;
