@@ -450,7 +450,7 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   }
 }
 
-SOBRE "narratives": Identifica ENTRE 3 Y 5 NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). Ordénalas por frecuencia. El campo "mentions" SIEMPRE debe ser un entero ≥ 1.`;
+SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICAS (ideas/argumentos recurrentes, NO keywords ni nombres propios). NUNCA entregues menos de 4. Si el ecosistema parece girar en torno a pocas ideas, descompón ángulos secundarios (encuadre mediático, reacción de audiencias, dimensión regulatoria, dimensión reputacional, presencia en redes vs prensa, etc.) hasta llegar a 4-5. Ordénalas por frecuencia. El campo "mentions" SIEMPRE debe ser un entero ≥ 1.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
