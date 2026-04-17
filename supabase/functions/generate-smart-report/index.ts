@@ -241,9 +241,9 @@ serve(async (req) => {
 
     const detailedAnalysis = buildDetailedMentionAnalysis(mentions);
 
-    const mentionsSummary = mentions.slice(0, 50).map(m => ({
+    const mentionsSummary = mentions.slice(0, 30).map(m => ({
       title: m.title,
-      description: m.description?.substring(0, 250),
+      description: m.description?.substring(0, 180),
       source: m.source_domain,
       sentiment: m.sentiment,
       keywords: m.matched_keywords?.join(", "),
