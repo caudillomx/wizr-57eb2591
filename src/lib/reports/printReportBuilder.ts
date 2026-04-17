@@ -1,4 +1,4 @@
-import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint } from "@/hooks/useSmartReport";
+import type { SmartReportContent, SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { LOGO_WHITE_B64 } from "./logoBase64";
