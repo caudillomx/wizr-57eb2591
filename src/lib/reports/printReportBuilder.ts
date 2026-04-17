@@ -416,6 +416,7 @@ strong{font-weight:700;color:${C.primary};}
 }
 .print-report-table thead{display:none;}
 .print-repeat-header{
+  display:none;
   background:${C.primary};
   height:72px;
   box-sizing:border-box;
@@ -467,7 +468,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:0 0 44px 0;
+  margin:88px 0 44px 0;
 
   @bottom-left{
     content:"Generado con Wizr · ${generatedDate.replace(/"/g, '\\"')}";
@@ -497,8 +498,14 @@ strong{font-weight:700;color:${C.primary};}
 
 @media print{
   body{width:100%;margin:0;padding:0;}
-  .print-report-table thead{display:table-header-group;}
-  .print-repeat-header-cell{padding:0 0 16px 0;}
+  .print-repeat-header{
+    display:block;
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    z-index:999;
+  }
   .report-shell{padding:0;}
   .page-intro{page-break-inside:avoid;break-inside:avoid;}
   .page-intro-header{display:none;}
@@ -525,13 +532,9 @@ strong{font-weight:700;color:${C.primary};}
 </style>
 </head>
 <body>
+  ${repeatedHeader}
   <div class="report-shell">
     <table class="print-report-table" role="presentation">
-      <thead>
-        <tr class="print-repeat-header-row">
-          <td class="print-repeat-header-cell">${repeatedHeader}</td>
-        </tr>
-      </thead>
       <tbody>
         <tr class="print-intro-row">
           <td>
