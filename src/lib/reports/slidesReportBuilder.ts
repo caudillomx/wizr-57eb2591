@@ -256,6 +256,47 @@ function svgHorizontalBars(
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${rows}</svg>`;
 }
 
+function svgVerticalBarsNarratives(
+  data: { label: string; value: number; pct: number; color: string }[],
+  width = 1700,
+  height = 360,
+): string {
+  if (!data.length) return "";
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const padL = 70;
+  const padR = 30;
+  const padT = 60;
+  const padB = 70;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const slot = innerW / data.length;
+  const barW = Math.min(180, slot * 0.6);
+
+  const grid = [0.25, 0.5, 0.75, 1].map((t) => {
+    const y = padT + innerH - innerH * t;
+    const v = Math.round(max * t);
+    return `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="${C.border}" stroke-width="1" stroke-dasharray="4 6"/>
+      <text x="${padL - 14}" y="${y + 6}" text-anchor="end" font-size="16" fill="${C.textMuted}">${v}</text>`;
+  }).join("");
+
+  const bars = data
+    .map((d, i) => {
+      const h = (d.value / max) * innerH;
+      const x = padL + i * slot + (slot - barW) / 2;
+      const y = padT + innerH - h;
+      return `
+        <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${d.color}"/>
+        <text x="${x + barW / 2}" y="${y - 14}" text-anchor="middle" font-size="22" font-weight="800" fill="${C.text}">${d.value}</text>
+        <text x="${x + barW / 2}" y="${y - 38}" text-anchor="middle" font-size="14" font-weight="600" fill="${C.textMid}">${d.pct}%</text>
+        <text x="${x + barW / 2}" y="${padT + innerH + 28}" text-anchor="middle" font-size="20" font-weight="800" fill="${C.text}" letter-spacing="1">N${String(i + 1).padStart(2, "0")}</text>
+        <text x="${x + barW / 2}" y="${padT + innerH + 50}" text-anchor="middle" font-size="13" fill="${C.textMuted}" letter-spacing="0.1em">${esc((d.label || "").toUpperCase()).slice(0, 14)}</text>
+      `;
+    })
+    .join("");
+
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${grid}${bars}</svg>`;
+}
+
 // ---------- Slides ----------
 
 function slideCover(report: SmartReportContent, projectName: string, dateRange: DateRange, total: number): string {
