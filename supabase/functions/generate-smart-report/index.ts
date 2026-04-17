@@ -371,7 +371,9 @@ ${entityMergeBlock}
 === REGLA CRÍTICA #1: LENGUAJE CAUTELOSO Y CIFRAS AUDITABLES ===
 NUNCA hagas afirmaciones absolutas sobre la ausencia o presencia de información. Los datos que recibes son UNA MUESTRA textual, pero los CONTEOS VERIFICADOS abarcan el universo completo.
 - PROHIBIDO: "No se identificaron menciones que...", "No existe evidencia de...", "No hay menciones que vinculen..."
-- PROHIBIDO inventar cifras exactas ("una sola mención", "solo 3 menciones", "apenas 2 referencias") para temas/términos que NO aparezcan en CONTEOS VERIFICADOS. Para esos casos usa lenguaje cualitativo: "varias menciones", "presencia recurrente", "porción minoritaria de la conversación", "cobertura puntual".
+- PROHIBIDO inventar cifras exactas ("una sola mención", "solo 3 menciones", "apenas 2 referencias", "fue mencionado en X ocasiones", "X menciones en el universo total de Y") para temas/términos que NO aparezcan en CONTEOS VERIFICADOS. Para esos casos usa lenguaje cualitativo: "varias menciones", "presencia recurrente", "porción minoritaria de la conversación", "cobertura puntual".
+- PROHIBIDO construir frases del tipo "el término X fue mencionado en N ocasiones en el universo total de M menciones" salvo que TANTO N (para X) COMO M (total global del reporte = ${metrics.totalMentions}) estén respaldados: N debe estar en CONTEOS VERIFICADOS y M debe ser exactamente ${metrics.totalMentions}.
+- PROHIBIDO derivar interpretaciones tipo "baja vinculación", "alta concentración" o porcentajes a partir de números que tú mismo inventes. Solo puedes hacerlo si los dos números (numerador y denominador) son auditables.
 - OBLIGATORIO cuando exista CONTEO VERIFICADO: usa el número EXACTO listado, ni más ni menos. Ej: si "Actinver: 14" → escribe "14 menciones vinculadas a Actinver", nunca "1 mención" ni "varias decenas".
 - OBLIGATORIO en general: "En la muestra analizada...", "Con base en los datos disponibles...", "De las ${metrics.totalMentions} menciones recopiladas...", "En el periodo y fuentes monitoreadas..."
 - Si hay pocas menciones sobre un tema sin conteo verificado, di "se detectó baja presencia de este tema en la muestra" — NUNCA "no existe" ni cifres exacto.
@@ -385,14 +387,22 @@ El CONTEXTO ESTRATÉGICO y los CASOS/HECHOS CONOCIDOS listados arriba son la VER
 - Ante AMBIGÜEDAD entre "es el mismo caso" vs "es un caso nuevo": SIEMPRE asume que es el mismo caso ya descrito en el Enfoque Estratégico, salvo que las menciones aporten evidencia explícita e inequívoca de un evento distinto (fechas, contrapartes y hechos diferentes claramente nombrados).
 - Antes de calificar algo como "nuevo" o "adicional", verifica que NO esté listado en CASOS/HECHOS CONOCIDOS y que las menciones lo describan como un evento factualmente distinto.
 
+=== REGLA CRÍTICA #3: NO INVENTAR ESTRUCTURA INTERNA NI ROLES DE LA ORGANIZACIÓN ===
+Desconoces la estructura organizacional, áreas, direcciones, voceros oficiales y procesos internos de la marca/entidad monitoreada salvo que estén EXPLÍCITAMENTE mencionados en el CONTEXTO ESTRATÉGICO o en las menciones.
+- PROHIBIDO nombrar áreas internas inventadas: "Dirección de Comunicación Corporativa", "Área de Asuntos Públicos", "Vocería oficial", "Equipo Legal", "Gerencia de Riesgos", "Departamento de Prensa", "Comité de Crisis", etc., a menos que aparezcan textualmente en el contexto o en las menciones.
+- PROHIBIDO atribuir acciones, responsabilidades o liderazgo a roles/áreas no documentadas ("liderado por X", "coordinado desde Y", "bajo la responsabilidad de Z").
+- PROHIBIDO inventar nombres propios de funcionarios, voceros o ejecutivos de la organización monitoreada.
+- En su lugar, usa formulaciones neutras orientadas a la decisión directiva: "se sugiere que el área responsable evalúe...", "convendría que la organización defina la vocería...", "el equipo a cargo de comunicación estratégica podría considerar...", "se recomienda que las áreas correspondientes...".
+- Lo mismo aplica a contrapartes (litigantes, autoridades, competidores): solo nómbralas si aparecen en menciones o contexto.
+
 === ALCANCE DE RECOMENDACIONES: ESTRATÉGICO + RIESGO REPUTACIONAL ===
 Las recomendaciones deben ser de NIVEL DIRECTIVO/EJECUTIVO, NO operativas técnicas de monitoreo. La audiencia es un tomador de decisiones, no el equipo interno de listening.
-- SÍ: Decisiones de posicionamiento ("Reforzar narrativa de transparencia con vocería principal en medios financieros"), gestión de riesgo reputacional ("Anticipar respuesta institucional ante escalamiento del litigio Actinver, que ya concentra 14 menciones negativas en medios tier-1"), oportunidades de incidencia pública ("Capitalizar la cobertura positiva en El Economista para fijar mensaje sobre integridad financiera"), alertas tempranas ("Monitorear escalamiento si la narrativa X cruza el umbral de presencia en redes").
+- SÍ: Decisiones de posicionamiento ("Reforzar narrativa de transparencia con vocería principal en medios financieros"), gestión de riesgo reputacional ("Anticipar respuesta institucional ante escalamiento del litigio, que ya concentra menciones negativas en medios tier-1"), oportunidades de incidencia pública ("Capitalizar la cobertura positiva en El Economista para fijar mensaje sobre integridad financiera"), alertas tempranas ("Monitorear escalamiento si la narrativa X cruza el umbral de presencia en redes").
 - NO: "Ajustar keywords", "agregar fuentes al monitoreo", "configurar alertas en el sistema", "crear dashboards", "segmentar análisis", "rastrear influenciadores en la plataforma", "ajustar frecuencia de monitoreo". Estas son tareas internas, no recomendaciones para un directivo.
 - Cada recomendación debe contestar: ¿Qué decisión debe tomar el directivo? ¿Qué riesgo se mitiga o qué oportunidad se captura? ¿En qué plazo (inmediato/semanas/mes)?
-- Mantén un tono prudente: "se sugiere evaluar", "considerar", "podría convenir" — no prescribas acciones operativas específicas (campañas, comunicados) salvo señalar la necesidad de involucrar al área correspondiente.
+- Mantén un tono prudente: "se sugiere evaluar", "considerar", "podría convenir" — no prescribas acciones operativas específicas (campañas, comunicados) salvo señalar la necesidad de involucrar al área correspondiente, sin nombrarla con un título inventado.
 
-FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos.`;
+FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos solo cuando aparezcan en las menciones.`;
 
     const userPrompt = `${formatInstructions}
 ${strategicBlock}
