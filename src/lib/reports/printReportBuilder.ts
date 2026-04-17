@@ -186,12 +186,18 @@ function chartTopInfluencersBars(influencers: InfluencerInfo[]): string {
   return `<div><div style="font-size:9px;font-weight:700;margin-bottom:6px;text-align:center;color:${C.textDark};text-transform:uppercase;letter-spacing:0.5px;">Top Influenciadores</div>${rows}</div>`;
 }
 
+export interface BuiltReport {
+  html: string;
+  header: { source: string; height: number };
+  footer: { source: string; height: number };
+}
+
 export function buildReportHTML(
   report: SmartReportContent,
   projectName: string,
   dateRange: DateRange,
   isSummary: boolean,
-): string {
+): BuiltReport {
   const badge = detectBadge(report, isSummary);
   const generatedDate = format(new Date(), "d MMM yyyy, HH:mm", { locale: es });
   const total = report.metrics.totalMentions || 1;
