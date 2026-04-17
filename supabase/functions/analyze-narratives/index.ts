@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callClaudeTool } from "../_shared/anthropic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,113 +129,80 @@ ${topPosts.map((p, i) => `${i+1}. (Eng: ${p.engagement}) ${p.message.substring(0
 TODOS LOS POSTS:
 ${postsContent}`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "narrative_analysis",
-            description: "Return detailed narrative analysis of social media content",
-            parameters: {
-              type: "object",
-              properties: {
-                dominantNarratives: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      theme: { type: "string", description: "Nombre específico del tema/narrativa (NO genérico)" },
-                      description: { type: "string", description: "Descripción detallada de la narrativa con contexto" },
-                      frequency: { type: "number", description: "Porcentaje de posts que usan esta narrativa (0-100)" },
-                      sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
-                      examplePosts: { 
-                        type: "array", 
-                        items: { type: "string" },
-                        description: "2-3 fragmentos textuales REALES de los posts como ejemplo"
-                      }
-                    },
-                    required: ["theme", "description", "frequency", "sentiment", "examplePosts"]
-                  }
-                },
-                toneAnalysis: {
-                  type: "object",
-                  properties: {
-                    overall: { type: "string", enum: ["formal", "informal", "mixed"] },
-                    emotionalTone: { type: "string", description: "Tono emocional específico: Inspirador, Informativo, Promocional, Educativo, Urgente, etc." },
-                    callToAction: { type: "boolean" }
-                  },
-                  required: ["overall", "emotionalTone", "callToAction"]
-                },
-                topHashtags: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      tag: { type: "string" },
-                      count: { type: "number" }
-                    },
-                    required: ["tag", "count"]
-                  }
-                },
-                contentStrategy: {
-                  type: "object",
-                  properties: {
-                    primaryFocus: { type: "string", description: "Enfoque principal ESPECÍFICO, no genérico" },
-                    strengths: { 
-                      type: "array", 
-                      items: { type: "string" },
-                      description: "3-4 fortalezas específicas con justificación"
-                    },
-                    opportunities: { 
-                      type: "array", 
-                      items: { type: "string" },
-                      description: "2-3 oportunidades de mejora concretas y accionables"
-                    }
-                  },
-                  required: ["primaryFocus", "strengths", "opportunities"]
-                },
-                summary: { type: "string", description: "Resumen ejecutivo de 3-4 oraciones con datos específicos y una observación diferenciadora" }
-              },
-              required: ["dominantNarratives", "toneAnalysis", "topHashtags", "contentStrategy", "summary"]
+  const toolSchema = {
+    type: "object",
+    properties: {
+      dominantNarratives: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            theme: { type: "string", description: "Nombre específico del tema/narrativa (NO genérico)" },
+            description: { type: "string", description: "Descripción detallada de la narrativa con contexto" },
+            frequency: { type: "number", description: "Porcentaje de posts que usan esta narrativa (0-100)" },
+            sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
+            examplePosts: {
+              type: "array",
+              items: { type: "string" },
+              description: "2-3 fragmentos textuales REALES de los posts como ejemplo"
             }
-          }
+          },
+          required: ["theme", "description", "frequency", "sentiment", "examplePosts"]
         }
-      ],
-      tool_choice: { type: "function", function: { name: "narrative_analysis" } },
-    }),
+      },
+      toneAnalysis: {
+        type: "object",
+        properties: {
+          overall: { type: "string", enum: ["formal", "informal", "mixed"] },
+          emotionalTone: { type: "string", description: "Tono emocional específico: Inspirador, Informativo, Promocional, Educativo, Urgente, etc." },
+          callToAction: { type: "boolean" }
+        },
+        required: ["overall", "emotionalTone", "callToAction"]
+      },
+      topHashtags: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            tag: { type: "string" },
+            count: { type: "number" }
+          },
+          required: ["tag", "count"]
+        }
+      },
+      contentStrategy: {
+        type: "object",
+        properties: {
+          primaryFocus: { type: "string", description: "Enfoque principal ESPECÍFICO, no genérico" },
+          strengths: {
+            type: "array",
+            items: { type: "string" },
+            description: "3-4 fortalezas específicas con justificación"
+          },
+          opportunities: {
+            type: "array",
+            items: { type: "string" },
+            description: "2-3 oportunidades de mejora concretas y accionables"
+          }
+        },
+        required: ["primaryFocus", "strengths", "opportunities"]
+      },
+      summary: { type: "string", description: "Resumen ejecutivo de 3-4 oraciones con datos específicos y una observación diferenciadora" }
+    },
+    required: ["dominantNarratives", "toneAnalysis", "topHashtags", "contentStrategy", "summary"]
+  };
+
+  return await callClaudeTool<NarrativeAnalysis>({
+    apiKey,
+    systemPrompt,
+    userPrompt,
+    toolName: "narrative_analysis",
+    toolDescription: "Return detailed narrative analysis of social media content",
+    toolSchema,
+    maxTokens: 4000,
+    temperature: 0.2,
+    timeoutMs: 90000,
   });
-
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error("RATE_LIMIT");
-    }
-    if (response.status === 402) {
-      throw new Error("PAYMENT_REQUIRED");
-    }
-    const errorText = await response.text();
-    console.error("AI gateway error:", response.status, errorText);
-    throw new Error(`AI gateway error: ${response.status}`);
-  }
-
-  const aiResponse = await response.json();
-  
-  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall || toolCall.function.name !== "narrative_analysis") {
-    throw new Error("Invalid AI response structure");
-  }
-
-  return JSON.parse(toolCall.function.arguments);
 }
 
 // Generate comparative insights
@@ -260,18 +228,7 @@ async function generateComparison(
 - Fortalezas: ${p.analysis.contentStrategy.strengths.join("; ")}`;
   }).join("\n\n---\n\n");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { 
-          role: "system", 
-          content: `Eres un ANALISTA SENIOR de comunicación digital. Tu tarea es comparar las estrategias de comunicación de ${profilesWithAnalysis.length} perfiles y generar INSIGHTS ACCIONABLES.
+  const systemPrompt = `Eres un ANALISTA SENIOR de comunicación digital. Tu tarea es comparar las estrategias de comunicación de ${profilesWithAnalysis.length} perfiles y generar INSIGHTS ACCIONABLES.
 
 PRINCIPIOS DE TU ANÁLISIS:
 1. ESPECIFICIDAD: Nombra perfiles específicos, no hables en genérico
@@ -279,11 +236,9 @@ PRINCIPIOS DE TU ANÁLISIS:
 3. COMPETITIVIDAD: ¿Quién lo hace mejor y por qué?
 4. ACCIONABILIDAD: Qué puede aprender cada uno de los otros
 
-NO uses frases genéricas como "todos tienen contenido interesante" o "cada uno tiene su estilo".` 
-        },
-        { 
-          role: "user", 
-          content: `Compara estos ${profilesWithAnalysis.length} perfiles y genera un análisis comparativo profundo:
+NO uses frases genéricas como "todos tienen contenido interesante" o "cada uno tiene su estilo".`;
+
+  const userPrompt = `Compara estos ${profilesWithAnalysis.length} perfiles y genera un análisis comparativo profundo:
 
 ${profileSummaries}
 
@@ -292,60 +247,50 @@ Identifica:
 2. Lo que hace ÚNICO a cada uno (su diferenciador)
 3. Quién tiene la mejor estrategia de engagement y por qué
 4. Quién tiene el tono más profesional/institucional
-5. Un INSIGHT GLOBAL de 2-3 oraciones que resuma la comparación con datos específicos` 
-        },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "comparative_analysis",
-            description: "Return detailed comparative analysis of multiple profiles",
-            parameters: {
-              type: "object",
-              properties: {
-                commonThemes: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "Temas específicos que comparten la mayoría, con evidencia"
-                },
-                differentiators: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      profileName: { type: "string" },
-                      uniqueAspect: { type: "string", description: "Lo que lo diferencia DE FORMA ESPECÍFICA" }
-                    },
-                    required: ["profileName", "uniqueAspect"]
-                  }
-                },
-                leaderInEngagement: { type: "string", description: "Nombre del perfil con mejor estrategia de engagement y por qué" },
-                mostFormalTone: { type: "string", description: "Nombre del perfil con tono más formal/institucional" },
-                overallInsight: { type: "string", description: "Insight clave de 2-3 oraciones CON DATOS ESPECÍFICOS que resuma la comparación" }
-              },
-              required: ["commonThemes", "differentiators", "overallInsight"]
-            }
-          }
+5. Un INSIGHT GLOBAL de 2-3 oraciones que resuma la comparación con datos específicos`;
+
+  const toolSchema = {
+    type: "object",
+    properties: {
+      commonThemes: {
+        type: "array",
+        items: { type: "string" },
+        description: "Temas específicos que comparten la mayoría, con evidencia"
+      },
+      differentiators: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            profileName: { type: "string" },
+            uniqueAspect: { type: "string", description: "Lo que lo diferencia DE FORMA ESPECÍFICA" }
+          },
+          required: ["profileName", "uniqueAspect"]
         }
-      ],
-      tool_choice: { type: "function", function: { name: "comparative_analysis" } },
-    }),
-  });
+      },
+      leaderInEngagement: { type: "string", description: "Nombre del perfil con mejor estrategia de engagement y por qué" },
+      mostFormalTone: { type: "string", description: "Nombre del perfil con tono más formal/institucional" },
+      overallInsight: { type: "string", description: "Insight clave de 2-3 oraciones CON DATOS ESPECÍFICOS que resuma la comparación" }
+    },
+    required: ["commonThemes", "differentiators", "overallInsight"]
+  };
 
-  if (!response.ok) {
-    console.error("Comparison error:", response.status);
+  try {
+    return await callClaudeTool<NonNullable<ComparativeAnalysis["comparison"]>>({
+      apiKey,
+      systemPrompt,
+      userPrompt,
+      toolName: "comparative_analysis",
+      toolDescription: "Return detailed comparative analysis of multiple profiles",
+      toolSchema,
+      maxTokens: 3000,
+      temperature: 0.2,
+      timeoutMs: 90000,
+    });
+  } catch (err) {
+    console.error("Comparison error:", err);
     return undefined;
   }
-
-  const aiResponse = await response.json();
-  const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-  
-  if (!toolCall || toolCall.function.name !== "comparative_analysis") {
-    return undefined;
-  }
-
-  return JSON.parse(toolCall.function.arguments);
 }
 
 serve(async (req) => {
@@ -375,9 +320,9 @@ serve(async (req) => {
     // Limit to 5 profiles max
     const limitedProfiles = profiles.slice(0, 5);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
     // Analyze each profile
@@ -387,7 +332,7 @@ serve(async (req) => {
       if (!profile.posts || profile.posts.length === 0) continue;
       
       try {
-        const analysis = await analyzeProfile(profile, dateRange, LOVABLE_API_KEY);
+        const analysis = await analyzeProfile(profile, dateRange, ANTHROPIC_API_KEY);
         profilesWithAnalysis.push({
           profileId: profile.profileName, // Using name as ID
           profileName: profile.profileName,
@@ -422,7 +367,7 @@ serve(async (req) => {
     // Generate comparison if multiple profiles
     let comparison: ComparativeAnalysis["comparison"] = undefined;
     if (profilesWithAnalysis.length > 1) {
-      comparison = await generateComparison(profilesWithAnalysis, LOVABLE_API_KEY);
+      comparison = await generateComparison(profilesWithAnalysis, ANTHROPIC_API_KEY);
     }
 
     // Return result - maintain backwards compatibility for single profile
