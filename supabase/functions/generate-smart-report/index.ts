@@ -341,7 +341,7 @@ serve(async (req) => {
 - summary: 5-8 oraciones
 - keyFindings: 5-8
 - recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
-- narratives: ENTRE 3 Y 5 (mínimo 3, máximo 5)
+- narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - conclusions: 3-5
 - Cada insight interpretativo (timelineInsight, narrativesInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
 
