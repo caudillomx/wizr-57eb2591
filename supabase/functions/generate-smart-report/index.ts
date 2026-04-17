@@ -393,8 +393,8 @@ serve(async (req) => {
 
     const formatInstructions = `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
 - summary: 5-8 oraciones
-- keyFindings: 5-8
-- recommendations: 4-6 (2-3 oraciones detalladas cada una, con plataforma, mensaje y plazo)
+- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN ESTRATÉGICA para la marca/entidad en el contexto del proyecto. Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales.
+- recommendations: OBLIGATORIO entre 5 y 7 recomendaciones. Cada una con 3-4 oraciones (aprox. 380-600 caracteres) y debe responder explícitamente: (a) DECISIÓN directiva concreta, (b) RIESGO mitigado u OPORTUNIDAD capturada, (c) PLAZO sugerido (inmediato / 2-4 semanas / mes), (d) ÁREA responsable en términos genéricos ("área de comunicación estratégica", "equipo a cargo de asuntos públicos") sin inventar nombres ni cargos. Evita recomendaciones repetidas o variantes de la misma idea.
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
 - conclusions: 3-5
