@@ -799,11 +799,21 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       .sort((a, b) => b.count - a.count)
       .slice(0, 25);
 
+    const mergedFindings = normalizeTextList([
+      ...(Array.isArray(reportContent.keyFindings) ? reportContent.keyFindings : []),
+      ...fallbackFindings,
+    ]).slice(0, 8);
+
+    const mergedRecommendations = normalizeTextList([
+      ...(Array.isArray(reportContent.recommendations) ? reportContent.recommendations : []),
+      ...fallbackRecommendations,
+    ]).slice(0, 7);
+
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: reportContent.summary || "",
-      keyFindings: Array.isArray(reportContent.keyFindings) && reportContent.keyFindings.length > 0 ? reportContent.keyFindings : fallbackFindings,
-      recommendations: Array.isArray(reportContent.recommendations) && reportContent.recommendations.length > 0 ? reportContent.recommendations : fallbackRecommendations,
+      keyFindings: mergedFindings.length >= 6 ? mergedFindings : fallbackFindings,
+      recommendations: mergedRecommendations.length >= 5 ? mergedRecommendations : fallbackRecommendations,
       conclusions: reportContent.conclusions || [],
       impactAssessment: reportContent.impactAssessment || undefined,
       sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
