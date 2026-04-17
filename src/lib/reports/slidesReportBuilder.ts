@@ -509,17 +509,18 @@ function slideInfluencers(report: SmartReportContent, projectName: string, page:
 
 function slideMediaOutlets(report: SmartReportContent, projectName: string, page: number, total: number): string {
   const media = (report.mediaOutlets || []).slice(0, 6);
+  const insight = report.mediaInsight || "El conjunto de medios anteriores define el encuadre editorial dominante del periodo y orienta la percepción pública sobre el tema.";
   const rows = media
     .map((m: MediaOutletInfo, i) => {
       const isTop = i === 0;
-      return `<div style="display:flex;align-items:center;gap:24px;padding:22px 28px;background:${isTop ? C.orangeSoft : C.paper};border-radius:14px;border:1px solid ${isTop ? C.orange : C.border};">
-        <div style="width:52px;height:52px;border-radius:14px;background:${isTop ? C.orange : C.paperAlt};color:${isTop ? "#fff" : C.text};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
+      return `<div style="display:flex;align-items:center;gap:24px;padding:18px 26px;background:${isTop ? C.orangeSoft : C.paper};border-radius:14px;border:1px solid ${isTop ? C.orange : C.border};">
+        <div style="width:48px;height:48px;border-radius:14px;background:${isTop ? C.orange : C.paperAlt};color:${isTop ? "#fff" : C.text};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;flex-shrink:0;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:22px;font-weight:700;color:${C.text};line-height:1.2;letter-spacing:-0.01em;">${esc(truncate(m.name, 40))}</div>
-          <div style="font-size:14px;color:${C.textMuted};margin-top:4px;font-family:'Menlo',monospace;">${esc(m.domain)}</div>
+          <div style="font-size:21px;font-weight:700;color:${C.text};line-height:1.2;letter-spacing:-0.01em;">${esc(truncate(m.name, 40))}</div>
+          <div style="font-size:13px;color:${C.textMuted};margin-top:4px;font-family:'Menlo',monospace;">${esc(m.domain)}</div>
         </div>
-        <div style="text-align:right;min-width:100px;">
-          <div style="font-size:30px;font-weight:800;color:${C.text};line-height:1;letter-spacing:-0.02em;">${m.articles}</div>
+        <div style="text-align:right;min-width:90px;">
+          <div style="font-size:28px;font-weight:800;color:${C.text};line-height:1;letter-spacing:-0.02em;">${m.articles}</div>
           <div style="font-size:11px;color:${C.textMuted};text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-top:4px;">artículos</div>
         </div>
         <span style="background:${sentColor(m.sentiment)}15;color:${sentColor(m.sentiment)};padding:6px 14px;border-radius:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${sentLabel(m.sentiment)}</span>
@@ -527,10 +528,13 @@ function slideMediaOutlets(report: SmartReportContent, projectName: string, page
     })
     .join("");
   const body = `
-    <div style="padding:140px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
-      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:20px;">06 · Medios Digitales</div>
-      <h2 style="font-size:52px;font-weight:800;margin:0 0 36px 0;color:${C.text};line-height:1.05;letter-spacing:-0.025em;">Cobertura editorial dominante</h2>
-      <div style="display:flex;flex-direction:column;gap:12px;flex:1;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados.</div>`}</div>
+    <div style="padding:160px 80px 100px 80px;height:100%;display:flex;flex-direction:column;">
+      <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">06 · Medios Digitales</div>
+      <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Cobertura editorial dominante</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados.</div>`}</div>
+      <div style="margin-top:18px;background:${C.orangeSoft};border-left:4px solid ${C.orange};border-radius:12px;padding:16px 22px;font-size:16px;line-height:1.5;color:${C.text};">
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 380))}
+      </div>
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, projectName, body, sectionLabel: "Medios" });
