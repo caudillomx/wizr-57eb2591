@@ -219,10 +219,7 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    // ANTHROPIC_API_KEY checked later before AI call
 
     const body: ReportRequest = await req.json();
     const { mentions, reportFormat = "full", projectName, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, dateRange } = body;
