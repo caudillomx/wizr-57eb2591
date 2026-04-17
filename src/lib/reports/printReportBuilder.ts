@@ -449,7 +449,7 @@ strong{font-weight:700;color:${C.primary};}
 
 @page{
   size:A4;
-  margin:32mm 0 14mm 0;
+  margin:0;
 }
 
 @media print{
