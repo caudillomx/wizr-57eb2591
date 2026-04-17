@@ -80,6 +80,24 @@ interface ReportContent {
   };
 }
 
+function normalizeTextList(items: unknown[]): string[] {
+  const seen = new Set<string>();
+
+  return items
+    .map((item) => (typeof item === "string" ? item.replace(/\s+/g, " ").trim() : ""))
+    .filter((item) => item.length > 0)
+    .filter((item) => {
+      const key = item.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function getPrimaryDate(mention: Mention): string {
+  return (mention.published_at || mention.created_at || "").split("T")[0];
+}
+
 function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
   const buckets = new Map<string, { count: number; negatives: number; positives: number; samples: string[] }>();
 
@@ -111,25 +129,127 @@ function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
 }
 
 function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
-  const topSources = [...new Set(mentions.map((m) => m.source_domain).filter(Boolean))].slice(0, 3).join(", ");
-  return [
-    `De las ${metrics.totalMentions} menciones recopiladas, ${metrics.negativeCount} fueron negativas, ${metrics.positiveCount} positivas y ${metrics.neutralCount} neutrales.`,
-    topSources ? `La cobertura se concentró principalmente en ${topSources}, que marcaron el encuadre dominante del periodo.` : `La cobertura se distribuyó entre varias fuentes digitales y redes sociales durante el periodo analizado.`,
-    `El volumen observado sugiere una conversación activa que requiere lectura contextual de tono, fuentes y reiteración temática.`,
-  ];
+  const sourceMap = new Map<string, { count: number; positive: number; negative: number; neutral: number }>();
+  const authorMap = new Map<string, { count: number; platform: string; engagement: number }>();
+  const dayMap = new Map<string, number>();
+  const keywordMap = new Map<string, number>();
+
+  for (const mention of mentions) {
+    const source = mention.source_domain || "fuentes digitales";
+    const sourceBucket = sourceMap.get(source) || { count: 0, positive: 0, negative: 0, neutral: 0 };
+    sourceBucket.count += 1;
+    if (mention.sentiment === "positivo") sourceBucket.positive += 1;
+    if (mention.sentiment === "negativo") sourceBucket.negative += 1;
+    if (mention.sentiment === "neutral") sourceBucket.neutral += 1;
+    sourceMap.set(source, sourceBucket);
+
+    const date = getPrimaryDate(mention);
+    if (date) dayMap.set(date, (dayMap.get(date) || 0) + 1);
+
+    for (const keyword of mention.matched_keywords || []) {
+      const cleanKeyword = keyword.trim();
+      if (cleanKeyword.length >= 3) {
+        keywordMap.set(cleanKeyword, (keywordMap.get(cleanKeyword) || 0) + 1);
+      }
+    }
+
+    const meta = mention.raw_metadata || {};
+    const authorName = (meta.author || meta.author_name || meta.authorName || meta.author_username || meta.authorUsername) as string | undefined;
+    if (authorName) {
+      const key = `${authorName}@@${source}`;
+      const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0) + Number(meta.views || 0);
+      const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0 };
+      authorBucket.count += 1;
+      authorBucket.engagement += engagement;
+      authorMap.set(key, authorBucket);
+    }
+  }
+
+  const sortedSources = Array.from(sourceMap.entries()).sort((a, b) => b[1].count - a[1].count);
+  const sortedAuthors = Array.from(authorMap.entries()).sort((a, b) => b[1].engagement - a[1].engagement || b[1].count - a[1].count);
+  const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1]);
+  const sortedKeywords = Array.from(keywordMap.entries()).sort((a, b) => b[1] - a[1]);
+
+  const negativeShare = metrics.totalMentions > 0 ? Math.round((metrics.negativeCount / metrics.totalMentions) * 100) : 0;
+  const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
+  const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
+
+  const findings: string[] = [];
+
+  findings.push(
+    `De las ${metrics.totalMentions} menciones recopiladas en el periodo, ${metrics.negativeCount} fueron negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). Este reparto confirma que el tono dominante del ecosistema no es marginal, sino una señal consistente en la muestra analizada. Estratégicamente, esta relación entre volumen y sentimiento sugiere priorizar decisiones de posicionamiento con base en riesgo reputacional y no solo en alcance bruto.`
+  );
+
+  if (sortedSources.length > 0) {
+    const topThree = sortedSources.slice(0, 3).map(([source, data]) => `${source} (${data.count})`).join(", ");
+    const mainSource = sortedSources[0];
+    findings.push(
+      `La cobertura se concentró sobre todo en ${topThree}, con ${mainSource[0]} al frente del volumen observado. Esta concentración indica que el encuadre público del periodo dependió de un número acotado de plataformas y medios, más que de una dispersión homogénea entre canales. Para la lectura estratégica, esto permite identificar con mayor precisión dónde se está formando la percepción dominante y qué espacios merecen respuesta prioritaria.`
+    );
+  }
+
+  if (sortedAuthors.length > 0) {
+    const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
+    findings.push(
+      `Entre las voces con mayor tracción destacaron ${topAuthors}. Esto sugiere que la conversación no solo estuvo impulsada por medios o plataformas, sino también por emisores concretos con capacidad de amplificación y arrastre de engagement. En términos estratégicos, identificar a estos nodos ayuda a distinguir entre ruido distribuido y focos reales de incidencia narrativa.`
+    );
+  }
+
+  if (sortedDays.length > 0) {
+    const [peakDay, peakCount] = sortedDays[0];
+    findings.push(
+      `El mayor pico de actividad se registró el ${peakDay}, con ${peakCount} menciones dentro del periodo monitoreado. La existencia de un día claramente dominante indica que hubo un momento de aceleración informativa o social que funcionó como ancla de la conversación. Para la toma de decisiones, este tipo de concentración temporal permite reconstruir detonadores y separar picos coyunturales de tendencias con mayor persistencia.`
+    );
+  }
+
+  if (sortedKeywords.length > 0) {
+    const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
+    findings.push(
+      `Los términos con mayor reiteración en las menciones fueron ${topTerms}. Este patrón revela cuáles son los conceptos, actores o marcos interpretativos que estructuran la conversación más allá de titulares aislados. Estratégicamente, la recurrencia de estos términos sirve para entender qué asociaciones mentales están ganando densidad y cuáles podrían consolidarse como narrativa estable si no se corrigen o redirigen.`
+    );
+  }
+
+  findings.push(
+    `La conversación observada combina volumen suficiente con reiteración temática, lo que sugiere un ecosistema más organizado de lo que aparenta una lectura superficial del feed de menciones. No se trata solo de impactos aislados, sino de señales que se repiten en distintos puntos del periodo y entre distintos tipos de fuente. Esa consistencia eleva la necesidad de interpretar el fenómeno como una trayectoria reputacional en desarrollo y no como ruido pasajero.`
+  );
+
+  if (sortedSources.length > 1) {
+    const socialCount = mentions.filter((m) => {
+      const source = (m.source_domain || "").toLowerCase();
+      return ["twitter", "x.com", "facebook", "instagram", "tiktok", "youtube", "linkedin", "reddit"].some((token) => source.includes(token));
+    }).length;
+    const mediaCount = Math.max(0, mentions.length - socialCount);
+    findings.push(
+      `La mezcla entre redes sociales (${socialCount} menciones) y medios digitales (${mediaCount} menciones) muestra que el tema circuló en espacios con lógicas de amplificación distintas. Mientras las redes tienden a acelerar tono, reacción y polarización, los medios aportan registro, legitimación y permanencia documental del asunto. Esa combinación aumenta la probabilidad de que una conversación intensa trascienda del corto plazo y se convierta en referencia reputacional más durable.`
+    );
+  }
+
+  return normalizeTextList(findings).slice(0, 8);
 }
 
-function buildFallbackRecommendations(metrics: ReportContent["metrics"]): string[] {
-  const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : "tono relativamente equilibrado";
-  return [
-    `En el corto plazo, se sugiere evaluar una postura institucional considerando el ${dominantTone} detectado en la conversación monitoreada.`,
-    `Podría convenir priorizar mensajes para las fuentes y plataformas con mayor volumen, con el fin de reducir riesgo reputacional o capitalizar ventanas de visibilidad.`,
-    `Se recomienda dar seguimiento ejecutivo a la evolución del tema en las próximas semanas para identificar si la conversación pierde tracción o escala hacia nuevos espacios de cobertura.`,
+function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
+  const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : metrics.positiveCount > metrics.negativeCount ? "ventana de tono favorable" : "equilibrio inestable de tono";
+  const topSources = [...new Set(mentions.map((m) => m.source_domain).filter(Boolean))].slice(0, 3).join(", ");
+  const socialCount = mentions.filter((m) => {
+    const source = (m.source_domain || "").toLowerCase();
+    return ["twitter", "x.com", "facebook", "instagram", "tiktok", "youtube", "linkedin", "reddit"].some((token) => source.includes(token));
+  }).length;
+  const mediaCount = Math.max(0, mentions.length - socialCount);
+
+  const recommendations = [
+    `En el plazo inmediato, se sugiere que el área de comunicación estratégica defina una postura rectora para ordenar la respuesta pública ante el ${dominantTone} observado. La decisión no pasa por reaccionar a cada mención, sino por fijar un marco interpretativo consistente para las piezas, vocerías y mensajes que eventualmente se activen. Esto ayuda a reducir el riesgo de contradicción narrativa y a evitar que terceros impongan el sentido dominante del tema sin contrapeso institucional.`,
+    `En las próximas 2 a 4 semanas, podría convenir priorizar seguimiento ejecutivo y capacidad de respuesta sobre ${topSources || "las fuentes con mayor concentración de volumen"}. La oportunidad está en actuar sobre los espacios que realmente están moldeando percepción, en lugar de dispersar esfuerzos en canales secundarios. El equipo a cargo de asuntos públicos y comunicación reputacional puede usar esta jerarquización para asignar atención según incidencia real y no solo visibilidad aparente.`,
+    `Dado que la conversación combina ${socialCount} menciones en redes sociales y ${mediaCount} en medios digitales, se recomienda diferenciar la lógica de gestión por tipo de canal durante el próximo mes. En redes, el foco debería estar en velocidad de lectura, escalamiento y contención de tono; en medios, en contextualización, precisión y permanencia del encuadre. Esta separación permite mitigar riesgo reputacional sin tratar ecosistemas distintos como si respondieran a la misma dinámica.`,
+    `Conviene que la dirección responsable evalúe umbrales claros de escalamiento para los próximos días, especialmente si el volumen negativo vuelve a concentrarse en pocos emisores o fechas críticas. La decisión estratégica aquí es anticipar cuándo un tema deja de ser monitoreable y exige coordinación institucional más amplia. Ese criterio reduce improvisación, mejora tiempos de reacción y protege a la organización frente a repuntes que suelen crecer más rápido que la capacidad interna de interpretación.`,
+    `En el horizonte de 2 a 4 semanas, se sugiere capitalizar cualquier ventana de tono neutral o positivo para reequilibrar el marco de conversación con mensajes verificables y consistentes. La oportunidad no radica en sobreexponer a la organización, sino en introducir contexto suficiente para que la percepción pública no quede definida únicamente por los vectores adversos. El equipo a cargo de posicionamiento institucional puede evaluar cuándo esa intervención suma credibilidad y cuándo sería preferible reservarla.`,
+    `También podría convenir revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esta decisión permite distinguir entre un riesgo que se está ampliando y otro que únicamente se mantiene visible por inercia mediática o social. Para la dirección, esa diferencia es clave porque define si se necesita una acción correctiva de fondo o solo una gestión prudente de continuidad.`,
   ];
+
+  return normalizeTextList(recommendations).slice(0, 7);
 }
 
 // Always generate full report; PDF trimming happens client-side
-const MAX_TOKENS = 3200;
+const MAX_TOKENS = 4200;
 
 // Detect if entity names are semantically the same (different capitalizations/variations of the same name)
 function areEntitiesDistinct(names: string[]): boolean {
