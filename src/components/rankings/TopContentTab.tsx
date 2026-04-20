@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ContentAnalysisDisplay, type ContentAnalysisData } from "./ContentAnalysisDisplay";
+import { NetworkBadge } from "./NetworkBadge";
 
 interface TopContentTabProps {
   profiles: FKProfile[];
