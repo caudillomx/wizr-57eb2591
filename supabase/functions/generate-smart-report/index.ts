@@ -219,7 +219,18 @@ function buildFallbackFindings(
     sourceMap.set(source, sourceBucket);
 
     const date = getPrimaryDate(mention);
-    if (date) dayMap.set(date, (dayMap.get(date) || 0) + 1);
+    if (date) {
+      const dayBucket = dayMap.get(date) || { count: 0, samples: [] };
+      dayBucket.count += 1;
+      if (dayBucket.samples.length < 3 && (mention.title || mention.description)) {
+        dayBucket.samples.push({
+          source: mention.source_domain || "fuente digital",
+          title: (mention.title || mention.description || "").trim().slice(0, 110),
+          sentiment: mention.sentiment,
+        });
+      }
+      dayMap.set(date, dayBucket);
+    }
 
     for (const keyword of mention.matched_keywords || []) {
       const cleanKeyword = keyword.trim();
@@ -233,9 +244,12 @@ function buildFallbackFindings(
     if (authorName) {
       const key = `${authorName}@@${source}`;
       const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0) + Number(meta.views || 0);
-      const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0 };
+      const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0, samples: [] };
       authorBucket.count += 1;
       authorBucket.engagement += engagement;
+      if (authorBucket.samples.length < 1 && (mention.title || mention.description)) {
+        authorBucket.samples.push((mention.title || mention.description || "").trim().slice(0, 90));
+      }
       authorMap.set(key, authorBucket);
     }
   }
