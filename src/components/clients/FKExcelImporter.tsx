@@ -1,15 +1,20 @@
 import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
+import { format as formatDate } from "date-fns";
+import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Upload, FileSpreadsheet, Loader2, X, Info, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Upload, FileSpreadsheet, Loader2, X, Info, CheckCircle2, AlertTriangle, CalendarIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
+import { FKNetwork } from "@/hooks/useFanpageKarma";
+import { cn } from "@/lib/utils";
 
 interface Props {
   clientId: string;
@@ -22,6 +27,12 @@ interface DetectedFile {
   kind: FileKind;
   rowCount: number;
   asCompetitor: boolean;
+  /** Auto-detected from Excel metadata, if found */
+  detectedPeriodStart?: Date;
+  detectedPeriodEnd?: Date;
+  /** User overrides (only relevant for KPIs) */
+  periodStart?: Date;
+  periodEnd?: Date;
 }
 
 const NETWORK_DETECT: Record<string, FKNetwork> = {
@@ -57,9 +68,7 @@ function parseNumeric(val: any): number | null {
   return isNaN(n) ? null : n;
 }
 
-// FK Excel exports have metadata in first ~4 rows; real headers can start lower.
-// Find the header row by scanning for known column tokens.
-function readSheetWithHeaderDetection(sheet: XLSX.WorkSheet): { rows: Record<string, any>[]; kind: FileKind } {
+function readSheetWithHeaderDetection(sheet: XLSX.WorkSheet): { rows: Record<string, any>[]; kind: FileKind; headerRows: any[][] } {
   const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
   let headerIdx = -1;
   let kind: FileKind = "unknown";
@@ -73,18 +82,53 @@ function readSheetWithHeaderDetection(sheet: XLSX.WorkSheet): { rows: Record<str
     if (looksPost) { headerIdx = i; kind = "posts"; break; }
   }
 
-  if (headerIdx === -1) return { rows: [], kind: "unknown" };
+  if (headerIdx === -1) return { rows: [], kind: "unknown", headerRows: matrix.slice(0, Math.min(matrix.length, 6)) };
 
   const headers = matrix[headerIdx].map((h) => String(h ?? "").trim());
   const dataRows = matrix.slice(headerIdx + 1).filter((r) => r.some((c) => c !== "" && c != null));
-
   const rows = dataRows.map((r) => {
     const obj: Record<string, any> = {};
     headers.forEach((h, i) => { if (h) obj[h] = r[i]; });
     return obj;
   });
+  return { rows, kind, headerRows: matrix.slice(0, headerIdx) };
+}
 
-  return { rows, kind };
+/**
+ * Try to detect the data period from the metadata rows above the table header.
+ * FK exports usually include something like:
+ *   "Period: 2026-03-01 - 2026-03-31"
+ *   "Periodo: 01.03.2026 - 31.03.2026"
+ *   "From 2026-03-01 to 2026-03-31"
+ */
+function detectPeriodFromMeta(headerRows: any[][]): { start?: Date; end?: Date } {
+  const flat = headerRows
+    .flat()
+    .map((c) => String(c ?? "").trim())
+    .filter(Boolean)
+    .join(" | ");
+  if (!flat) return {};
+
+  // Match two dates separated by a dash/hyphen/word "to"/"a"
+  const dateToken = /(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})/g;
+  const matches = flat.match(dateToken);
+  if (!matches || matches.length < 2) return {};
+
+  const parse = (s: string): Date | null => {
+    const norm = s.replace(/\./g, "-").replace(/\//g, "-");
+    const parts = norm.split("-").map((x) => parseInt(x, 10));
+    if (parts.length !== 3 || parts.some(isNaN)) return null;
+    let y: number, m: number, d: number;
+    if (parts[0] > 31) { [y, m, d] = parts; }
+    else { [d, m, y] = parts; if (y < 100) y += 2000; }
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return isNaN(dt.getTime()) ? null : dt;
+  };
+
+  const d1 = parse(matches[0]);
+  const d2 = parse(matches[1]);
+  if (!d1 || !d2) return {};
+  return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
 }
 
 function pickField(row: Record<string, any>, candidates: string[]): any {
@@ -150,7 +194,6 @@ function mapKpiRow(row: Record<string, any>): KpiRow | null {
 function parseDate(v: any): string | null {
   if (!v) return null;
   if (v instanceof Date) return v.toISOString();
-  // Excel serial number
   if (typeof v === "number") {
     const d = XLSX.SSF.parse_date_code(v);
     if (d) return new Date(Date.UTC(d.y, d.m - 1, d.d, d.H || 0, d.M || 0, d.S || 0)).toISOString();
@@ -192,14 +235,31 @@ async function detectFile(file: File): Promise<DetectedFile> {
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   let kind: FileKind = "unknown";
   let rowCount = 0;
+  let detectedStart: Date | undefined;
+  let detectedEnd: Date | undefined;
+
   for (const name of wb.SheetNames) {
-    const { rows, kind: k } = readSheetWithHeaderDetection(wb.Sheets[name]);
+    const { rows, kind: k, headerRows } = readSheetWithHeaderDetection(wb.Sheets[name]);
     if (k !== "unknown") {
       kind = k;
       rowCount += rows.length;
+      if (k === "kpis" && !detectedStart) {
+        const period = detectPeriodFromMeta(headerRows);
+        detectedStart = period.start;
+        detectedEnd = period.end;
+      }
     }
   }
-  return { file, kind, rowCount, asCompetitor: false };
+  return {
+    file,
+    kind,
+    rowCount,
+    asCompetitor: false,
+    detectedPeriodStart: detectedStart,
+    detectedPeriodEnd: detectedEnd,
+    periodStart: detectedStart,
+    periodEnd: detectedEnd,
+  };
 }
 
 export function FKExcelImporter({ clientId }: Props) {
@@ -231,8 +291,25 @@ export function FKExcelImporter({ clientId }: Props) {
   const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
   const setCompetitor = (i: number, v: boolean) =>
     setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, asCompetitor: v } : f)));
+  const setPeriodStart = (i: number, d?: Date) =>
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d } : f)));
+  const setPeriodEnd = (i: number, d?: Date) =>
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d } : f)));
+
+  // KPI files require both dates before importing
+  const missingPeriod = files.some(
+    (f) => f.kind === "kpis" && (!f.periodStart || !f.periodEnd)
+  );
 
   const handleImport = async () => {
+    if (missingPeriod) {
+      toast({
+        title: "Falta el período en uno o más archivos de KPIs",
+        description: "Selecciona la fecha de inicio y fin del período al que corresponden los datos.",
+        variant: "destructive",
+      });
+      return;
+    }
     setImporting(true);
     let totalProfiles = 0;
     let totalKpis = 0;
@@ -256,7 +333,6 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           if (kpiRows.length === 0) continue;
 
-          // Upsert profiles
           const profilePayload = kpiRows.map((k) => ({
             client_id: clientId,
             network: k.network,
@@ -266,13 +342,10 @@ export function FKExcelImporter({ clientId }: Props) {
             is_competitor: f.asCompetitor,
           }));
 
-          // Insert/upsert one by one to handle existing rows w/o unique constraint by client+network+profile
-          // We use a simple approach: select existing then insert missing
           const { data: existing } = await supabase
             .from("fk_profiles")
             .select("id, network, profile_id")
             .eq("client_id", clientId);
-
           const existingMap = new Map(
             (existing || []).map((e: any) => [`${e.network}::${e.profile_id}`, e.id])
           );
@@ -280,7 +353,6 @@ export function FKExcelImporter({ clientId }: Props) {
           const toInsert = profilePayload.filter(
             (p) => !existingMap.has(`${p.network}::${p.profile_id}`)
           );
-
           if (toInsert.length > 0) {
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
@@ -292,31 +364,27 @@ export function FKExcelImporter({ clientId }: Props) {
             );
           }
 
-          // Update is_competitor flag for existing rows in this batch
           if (f.asCompetitor) {
             const ids = kpiRows
               .map((k) => existingMap.get(`${k.network}::${k.profileId}`))
               .filter(Boolean) as string[];
             if (ids.length > 0) {
-              await supabase
-                .from("fk_profiles")
-                .update({ is_competitor: true })
-                .in("id", ids);
+              await supabase.from("fk_profiles").update({ is_competitor: true }).in("id", ids);
             }
           }
-
           totalProfiles += toInsert.length;
 
-          // Insert KPIs (one row per profile, today's snapshot)
-          const today = new Date().toISOString().slice(0, 10);
+          const periodStart = formatDate(f.periodStart!, "yyyy-MM-dd");
+          const periodEnd = formatDate(f.periodEnd!, "yyyy-MM-dd");
+
           const kpiPayload = kpiRows
             .map((k) => {
               const id = existingMap.get(`${k.network}::${k.profileId}`);
               if (!id) return null;
               return {
                 fk_profile_id: id,
-                period_start: today,
-                period_end: today,
+                period_start: periodStart,
+                period_end: periodEnd,
                 followers: k.followers != null ? Math.round(k.followers) : null,
                 engagement_rate: k.engagementRate,
                 posts_per_day: k.postsPerDay,
@@ -329,8 +397,11 @@ export function FKExcelImporter({ clientId }: Props) {
             .filter(Boolean) as any[];
 
           if (kpiPayload.length > 0) {
-            const { error } = await supabase.from("fk_profile_kpis").insert(kpiPayload);
-            if (error) console.error("KPI insert", error);
+            // Idempotent: re-importing same period updates the row
+            const { error } = await supabase
+              .from("fk_profile_kpis")
+              .upsert(kpiPayload, { onConflict: "fk_profile_id,period_start,period_end", ignoreDuplicates: false });
+            if (error) console.error("KPI upsert", error);
             else totalKpis += kpiPayload.length;
           }
         } else if (f.kind === "posts") {
@@ -345,7 +416,6 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           if (postRows.length === 0) continue;
 
-          // Resolve profile ids (create missing as competitors if asCompetitor=true, else as brand)
           const { data: existing } = await supabase
             .from("fk_profiles")
             .select("id, network, profile_id")
@@ -384,7 +454,6 @@ export function FKExcelImporter({ clientId }: Props) {
             totalProfiles += missing.length;
           }
 
-          // Build posts payload, chunked
           const postsPayload = postRows
             .map((p) => {
               const id = existingMap.get(`${p.network}::${p.profileId}`);
@@ -408,7 +477,6 @@ export function FKExcelImporter({ clientId }: Props) {
             })
             .filter(Boolean) as any[];
 
-          // Upsert in chunks of 500
           const CHUNK = 500;
           for (let i = 0; i < postsPayload.length; i += CHUNK) {
             const slice = postsPayload.slice(i, i + CHUNK);
@@ -416,7 +484,6 @@ export function FKExcelImporter({ clientId }: Props) {
               .from("fk_posts")
               .upsert(slice, { onConflict: "fk_profile_id,external_id", ignoreDuplicates: false });
             if (error) {
-              // fallback: plain insert ignoring duplicates manually
               console.error("upsert posts error", error);
               const { error: e2 } = await supabase.from("fk_posts").insert(slice);
               if (e2) throw e2;
@@ -424,8 +491,6 @@ export function FKExcelImporter({ clientId }: Props) {
             totalPosts += slice.length;
           }
 
-          // Refresh fk_daily_top_posts derived view: pick top engagement per (profile, day)
-          // Group in JS and upsert
           const topByDay = new Map<string, any>();
           for (const p of postsPayload) {
             const day = (p.published_at || "").slice(0, 10);
@@ -461,6 +526,7 @@ export function FKExcelImporter({ clientId }: Props) {
       setFiles([]);
       qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
       qc.invalidateQueries({ queryKey: ["fk-kpis"] });
+      qc.invalidateQueries({ queryKey: ["fk-all-kpis"] });
       qc.invalidateQueries({ queryKey: ["fk-daily-top-posts"] });
       qc.invalidateQueries({ queryKey: ["fk-posts"] });
     } catch (err: any) {
@@ -479,7 +545,7 @@ export function FKExcelImporter({ clientId }: Props) {
           Importar Excel de Performance
         </CardTitle>
         <CardDescription>
-          Sube los exports de KPIs y Posts (Fanpage Karma u otros). El importador detecta automáticamente el tipo de archivo.
+          Sube los exports de KPIs y Posts. El importador detecta tipo de archivo y, cuando es posible, también el período.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -507,31 +573,101 @@ export function FKExcelImporter({ clientId }: Props) {
 
         {files.length > 0 && (
           <div className="mt-4 space-y-2">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
-                <FileSpreadsheet className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{f.file.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {f.kind === "kpis" && <Badge variant="default">KPIs · {f.rowCount} perfiles</Badge>}
-                    {f.kind === "posts" && <Badge variant="secondary">Posts · {f.rowCount} filas</Badge>}
-                    {f.kind === "unknown" && <Badge variant="destructive">No reconocido</Badge>}
+            {files.map((f, i) => {
+              const periodAuto = f.kind === "kpis" && f.detectedPeriodStart && f.detectedPeriodEnd;
+              const periodMissing = f.kind === "kpis" && (!f.periodStart || !f.periodEnd);
+              return (
+                <div key={i} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <FileSpreadsheet className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{f.file.name}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {f.kind === "kpis" && <Badge variant="default">KPIs · {f.rowCount} perfiles</Badge>}
+                        {f.kind === "posts" && <Badge variant="secondary">Posts · {f.rowCount} filas</Badge>}
+                        {f.kind === "unknown" && <Badge variant="destructive">No reconocido</Badge>}
+                        {periodAuto && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                            Período detectado
+                          </Badge>
+                        )}
+                        {periodMissing && !periodAuto && (
+                          <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
+                            <AlertTriangle className="h-3 w-3" />
+                            Selecciona el período
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {f.kind !== "unknown" && (
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`comp-${i}`} className="text-xs">Competencia</Label>
+                        <Switch id={`comp-${i}`} checked={f.asCompetitor} onCheckedChange={(v) => setCompetitor(i, v)} />
+                      </div>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => removeFile(i)}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
+
+                  {f.kind === "kpis" && (
+                    <div className="flex items-center gap-2 pl-8">
+                      <Label className="text-xs text-muted-foreground shrink-0">Período de los datos:</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn("h-8 text-xs justify-start font-normal", !f.periodStart && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {f.periodStart ? formatDate(f.periodStart, "dd MMM yyyy", { locale: es }) : "Inicio"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={f.periodStart}
+                            onSelect={(d) => setPeriodStart(i, d)}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <span className="text-xs text-muted-foreground">→</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn("h-8 text-xs justify-start font-normal", !f.periodEnd && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            {f.periodEnd ? formatDate(f.periodEnd, "dd MMM yyyy", { locale: es }) : "Fin"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={f.periodEnd}
+                            onSelect={(d) => setPeriodEnd(i, d)}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
                 </div>
-                {f.kind !== "unknown" && (
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor={`comp-${i}`} className="text-xs">Competencia</Label>
-                    <Switch id={`comp-${i}`} checked={f.asCompetitor} onCheckedChange={(v) => setCompetitor(i, v)} />
-                  </div>
-                )}
-                <Button variant="ghost" size="icon" onClick={() => removeFile(i)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setFiles([])}>Limpiar</Button>
-              <Button onClick={handleImport} disabled={importing || files.every((f) => f.kind === "unknown")}>
+              <Button
+                onClick={handleImport}
+                disabled={importing || files.every((f) => f.kind === "unknown") || missingPeriod}
+              >
                 {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 Importar {files.filter((f) => f.kind !== "unknown").length} archivo(s)
               </Button>
@@ -542,8 +678,7 @@ export function FKExcelImporter({ clientId }: Props) {
         <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded p-3">
           <Info className="h-4 w-4 mt-0.5 shrink-0" />
           <span>
-            Los archivos de <strong>KPIs</strong> contienen métricas por perfil (followers, engagement, PPI). Los archivos de <strong>Posts</strong> contienen el universo de publicaciones con likes, comentarios, alcance, etc.
-            Marca "Competencia" en los archivos de benchmark para distinguir perfiles propios de competidores.
+            Los archivos de <strong>KPIs</strong> requieren un período (inicio y fin). Si el Excel lo trae en sus metadatos, se detecta automáticamente; si no, lo seleccionas manualmente. Re-importar el mismo período para un perfil <strong>actualiza</strong> sus métricas en lugar de duplicarlas. Los archivos de <strong>Posts</strong> usan la fecha real de cada publicación.
           </span>
         </div>
       </CardContent>
