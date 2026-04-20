@@ -285,18 +285,61 @@ export function SmartReportGenerator({
         )}
 
         {/* Generated Report */}
-        {report && (
+        {report && activeReport && (
           <div className="space-y-6">
-            {/* Report Header */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{report.title}</h3>
-                <Button variant="outline" size="sm" onClick={clearReport}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Nuevo reporte
-                </Button>
+            {/* Report Header + Edit toolbar */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <EditableText
+                    editing={isEditing}
+                    value={activeReport.title}
+                    onChange={(v) => updateReport({ title: v })}
+                    className="text-lg font-semibold block"
+                    placeholder="Título del reporte"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isEditing ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={resetEdits}>
+                        <Undo2 className="mr-2 h-4 w-4" />
+                        Descartar
+                      </Button>
+                      <Button variant="default" size="sm" onClick={() => { setIsEditing(false); toast({ title: "Cambios guardados", description: "El PDF y el link público usarán tus ediciones." }); }}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Listo
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar reporte
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={clearReport}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Nuevo
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              <p className="text-muted-foreground">{report.summary}</p>
+              {isEditing && (
+                <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <Pencil className="h-3.5 w-3.5 text-primary" />
+                  Modo edición. Click en cualquier texto para modificarlo. Las gráficas y métricas no son editables. Los cambios se aplican al PDF y al link público.
+                </div>
+              )}
+              <EditableText
+                editing={isEditing}
+                value={activeReport.summary}
+                onChange={(v) => updateReport({ summary: v })}
+                multiline
+                minRows={3}
+                className="text-muted-foreground block"
+                placeholder="Resumen ejecutivo"
+              />
             </div>
 
             {/* Visual Analytics */}
