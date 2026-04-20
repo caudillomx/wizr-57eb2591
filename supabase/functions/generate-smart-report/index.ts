@@ -123,6 +123,20 @@ function sanitizeFindingText(text: string): string {
   return sentences.join(" ").trim();
 }
 
+function clipAtWordBoundary(text: string, maxChars: number): string {
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxChars) return compact;
+  const slice = compact.slice(0, maxChars);
+  // Prefer ending at sentence boundary, then comma, then word boundary
+  const lastSentence = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("; "), slice.lastIndexOf(": "));
+  if (lastSentence >= maxChars * 0.5) return slice.slice(0, lastSentence).trim();
+  const lastComma = slice.lastIndexOf(", ");
+  if (lastComma >= maxChars * 0.5) return slice.slice(0, lastComma).trim();
+  const lastSpace = slice.lastIndexOf(" ");
+  if (lastSpace > 0) return `${slice.slice(0, lastSpace).trim()}…`;
+  return `${slice.trim()}…`;
+}
+
 function buildStrategicAnchor(options?: {
   knownCases?: string[];
   strategicFocus?: string;
@@ -131,8 +145,23 @@ function buildStrategicAnchor(options?: {
   const raw = options?.knownCases?.[0] || options?.strategicFocus || options?.strategicContext || "";
   const compact = raw.replace(/\s+/g, " ").trim();
   if (!compact) return "el asunto priorizado por el proyecto";
-  const clipped = compact.length > 110 ? `${compact.slice(0, 107).trim()}…` : compact;
-  return options?.knownCases?.[0] ? `el caso \"${clipped}\"` : `\"${clipped}\"`;
+  // Avoid truncating mid-word; if too long, fall back to a generic anchor
+  if (compact.length > 90) {
+    return "el asunto priorizado en el Enfoque Estratégico";
+  }
+  return options?.knownCases?.[0] ? `el caso ${compact}` : compact;
+}
+
+function buildShortAnchor(options?: {
+  knownCases?: string[];
+  strategicFocus?: string;
+  strategicContext?: string;
+}): string {
+  // Lighter reference for variety: avoid repeating the full case in every bullet
+  if (options?.knownCases?.[0] && options.knownCases[0].length <= 90) {
+    return "el caso descrito en el Enfoque Estratégico";
+  }
+  return "el Enfoque Estratégico del proyecto";
 }
 
 function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
