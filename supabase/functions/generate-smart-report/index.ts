@@ -205,8 +205,8 @@ function buildFallbackFindings(
   },
 ): string[] {
   const sourceMap = new Map<string, { count: number; positive: number; negative: number; neutral: number }>();
-  const authorMap = new Map<string, { count: number; platform: string; engagement: number }>();
-  const dayMap = new Map<string, number>();
+  const authorMap = new Map<string, { count: number; platform: string; engagement: number; samples: string[] }>();
+  const dayMap = new Map<string, { count: number; samples: Array<{ source: string; title: string; sentiment: string | null }> }>();
   const keywordMap = new Map<string, number>();
 
   for (const mention of mentions) {
