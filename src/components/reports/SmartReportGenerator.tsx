@@ -100,6 +100,27 @@ export function SmartReportGenerator({
   const [publishOpen, setPublishOpen] = useState(false);
   const [visualOpen, setVisualOpen] = useState(false);
 
+  // Manual editing layer: editedReport overrides report for downstream (PDF, publish, visual)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedReport, setEditedReport] = useState<SmartReportContent | null>(null);
+
+  // Sync editedReport whenever a fresh report is generated
+  useEffect(() => {
+    setEditedReport(report);
+    setIsEditing(false);
+  }, [report]);
+
+  const activeReport = editedReport ?? report;
+
+  const updateReport = (patch: Partial<SmartReportContent>) => {
+    setEditedReport((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const resetEdits = () => {
+    setEditedReport(report);
+    toast({ title: "Cambios descartados", description: "Se restauró la versión original generada por la IA." });
+  };
+
   const filteredMentions = useMemo(() => {
     return mentions.filter((m) => {
       if (sourceFilter !== "__all__") {
