@@ -128,12 +128,26 @@ function detectPeriodFromMeta(headerRows: any[][]): { start?: Date; end?: Date }
     .join(" | ");
   if (!flat) return {};
 
-  // Match two dates separated by a dash/hyphen/word "to"/"a"
-  const dateToken = /(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})/g;
-  const matches = flat.match(dateToken);
-  if (!matches || matches.length < 2) return {};
+  // Spanish + English month abbreviations
+  const MONTHS: Record<string, number> = {
+    ene: 1, enero: 1, jan: 1, january: 1,
+    feb: 2, febrero: 2, february: 2,
+    mar: 3, marzo: 3, march: 3,
+    abr: 4, abril: 4, apr: 4, april: 4,
+    may: 5, mayo: 5,
+    jun: 6, junio: 6, june: 6,
+    jul: 7, julio: 7, july: 7,
+    ago: 8, agosto: 8, aug: 8, august: 8,
+    sep: 9, sept: 9, septiembre: 9, september: 9,
+    oct: 10, octubre: 10, october: 10,
+    nov: 11, noviembre: 11, november: 11,
+    dic: 12, diciembre: 12, dec: 12, december: 12,
+  };
 
-  const parse = (s: string): Date | null => {
+  // Try numeric format first: 2026-03-01 - 2026-03-31 / 01.03.2026 - 31.03.2026
+  const numericRe = /(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})/g;
+  const numMatches = flat.match(numericRe);
+  const parseNum = (s: string): Date | null => {
     const norm = s.replace(/\./g, "-").replace(/\//g, "-");
     const parts = norm.split("-").map((x) => parseInt(x, 10));
     if (parts.length !== 3 || parts.some(isNaN)) return null;
@@ -143,11 +157,32 @@ function detectPeriodFromMeta(headerRows: any[][]): { start?: Date; end?: Date }
     const dt = new Date(Date.UTC(y, m - 1, d));
     return isNaN(dt.getTime()) ? null : dt;
   };
+  if (numMatches && numMatches.length >= 2) {
+    const d1 = parseNum(numMatches[0]);
+    const d2 = parseNum(numMatches[1]);
+    if (d1 && d2) return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
+  }
 
-  const d1 = parse(matches[0]);
-  const d2 = parse(matches[1]);
-  if (!d1 || !d2) return {};
-  return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
+  // Try worded format: "1 mar 2026 - 20 abr 2026" (ES) or "Mar 1, 2026" (EN)
+  const wordedRe = /(\d{1,2})\s*(?:de\s+)?([a-záéíóúñ\.]+)\s*(?:de\s+)?(\d{2,4})/gi;
+  const dates: Date[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = wordedRe.exec(flat)) !== null) {
+    const day = parseInt(m[1], 10);
+    const monKey = normalizeKey(m[2]).replace(/\./g, "");
+    const mon = MONTHS[monKey] ?? MONTHS[monKey.slice(0, 3)];
+    let yr = parseInt(m[3], 10);
+    if (!mon || isNaN(day) || isNaN(yr)) continue;
+    if (yr < 100) yr += 2000;
+    const dt = new Date(Date.UTC(yr, mon - 1, day));
+    if (!isNaN(dt.getTime())) dates.push(dt);
+    if (dates.length >= 2) break;
+  }
+  if (dates.length >= 2) {
+    const [a, b] = dates;
+    return a <= b ? { start: a, end: b } : { start: b, end: a };
+  }
+  return {};
 }
 
 function pickField(row: Record<string, any>, candidates: string[]): any {
