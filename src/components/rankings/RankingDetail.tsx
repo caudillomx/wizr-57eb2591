@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, BarChart3, Settings, Trophy, TrendingUp, FileText, Sparkles, MessageCircle, BookOpen, FileBarChart } from "lucide-react";
 import { Ranking } from "@/hooks/useRankings";
-import { useFKProfilesByRanking, useFKProfileKPIs, useFKAllKPIs, useFKDailyTopPosts, FKNetwork } from "@/hooks/useFanpageKarma";
+import { useFKProfilesByRanking, useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork } from "@/hooks/useFanpageKarma";
 import { RankingBatchForm } from "./RankingBatchForm";
 import { FKCSVImporter } from "./FKCSVImporter";
 import { ProfilesList } from "./ProfilesList";
@@ -47,7 +47,7 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
   const profileIds = profiles.map((p) => p.id);
   const { data: kpis = [], isLoading: loadingKPIs } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
-  const { data: dailyTopPosts = [], isLoading: loadingTopPosts } = useFKDailyTopPosts(profileIds, periodStart, periodEnd);
+  const { data: dailyTopPosts = [], isLoading: loadingTopPosts } = useFKTopPosts(profileIds, periodStart, periodEnd);
 
   const syncedCount = profiles.filter((p) => p.last_synced_at).length;
 
