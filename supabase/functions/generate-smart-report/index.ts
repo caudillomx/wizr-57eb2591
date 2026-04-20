@@ -294,9 +294,7 @@ function buildFallbackFindings(
   const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
   const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
   const audienceLabel = options?.projectAudience?.trim() || "";
-  const audienceClause = audienceLabel ? ` Esta lectura es la base para la conversación con ${audienceLabel}.` : "";
-  const fullAnchor = buildStrategicAnchor(options);
-  const shortAnchor = buildShortAnchor(options);
+  void buildStrategicAnchor; void buildShortAnchor; // anchors retained as helpers; not used in current bullets
 
   const findings: string[] = [];
 
