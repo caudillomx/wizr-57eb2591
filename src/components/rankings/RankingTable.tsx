@@ -214,10 +214,9 @@ export function RankingTable({
                     {index < 3 ? MEDAL_COLORS[index] : index + 1}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">@{profile.profile_id}</div>
-                    {profile.display_name && profile.display_name !== profile.profile_id && (
-                      <div className="text-sm text-muted-foreground">{profile.display_name}</div>
-                    )}
+                    <div className="font-medium" title={profile.profile_id}>
+                      {profile.display_name || profile.profile_id}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">

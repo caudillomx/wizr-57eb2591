@@ -391,6 +391,20 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           if (kpiRows.length === 0) continue;
 
+          // Resolve profiles by (client_id, network, normalized display_name)
+          // so that re-imports with different profile_id formats (handle vs numeric ID)
+          // map to the same canonical profile. Different brands within the same network
+          // (e.g. Banorte + Actinver in Facebook) remain distinct via display_name.
+          const { data: existing } = await supabase
+            .from("fk_profiles")
+            .select("id, network, profile_id, display_name")
+            .eq("client_id", clientId);
+          const existingByName = new Map<string, string>();
+          (existing || []).forEach((e: any) => {
+            const name = normalizeKey(e.display_name || e.profile_id);
+            existingByName.set(`${e.network}::${name}`, e.id);
+          });
+
           const profilePayload = kpiRows.map((k) => ({
             client_id: clientId,
             network: k.network,
@@ -398,33 +412,30 @@ export function FKExcelImporter({ clientId }: Props) {
             display_name: k.displayName,
             is_active: true,
             is_competitor: f.asCompetitor,
+            _key: `${k.network}::${normalizeKey(k.displayName || k.profileId)}`,
           }));
 
-          const { data: existing } = await supabase
-            .from("fk_profiles")
-            .select("id, network, profile_id")
-            .eq("client_id", clientId);
-          const existingMap = new Map(
-            (existing || []).map((e: any) => [`${e.network}::${e.profile_id}`, e.id])
-          );
+          const toInsert = profilePayload
+            .filter((p) => !existingByName.has(p._key))
+            // dedupe within batch
+            .filter((p, idx, arr) => arr.findIndex((x) => x._key === p._key) === idx)
+            .map(({ _key, ...rest }) => rest);
 
-          const toInsert = profilePayload.filter(
-            (p) => !existingMap.has(`${p.network}::${p.profile_id}`)
-          );
           if (toInsert.length > 0) {
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
               .insert(toInsert)
-              .select("id, network, profile_id");
+              .select("id, network, profile_id, display_name");
             if (error) throw error;
-            (inserted || []).forEach((row: any) =>
-              existingMap.set(`${row.network}::${row.profile_id}`, row.id)
-            );
+            (inserted || []).forEach((row: any) => {
+              const name = normalizeKey(row.display_name || row.profile_id);
+              existingByName.set(`${row.network}::${name}`, row.id);
+            });
           }
 
           if (f.asCompetitor) {
             const ids = kpiRows
-              .map((k) => existingMap.get(`${k.network}::${k.profileId}`))
+              .map((k) => existingByName.get(`${k.network}::${normalizeKey(k.displayName || k.profileId)}`))
               .filter(Boolean) as string[];
             if (ids.length > 0) {
               await supabase.from("fk_profiles").update({ is_competitor: true }).in("id", ids);
@@ -437,7 +448,7 @@ export function FKExcelImporter({ clientId }: Props) {
 
           const kpiPayload = kpiRows
             .map((k) => {
-              const id = existingMap.get(`${k.network}::${k.profileId}`);
+              const id = existingByName.get(`${k.network}::${normalizeKey(k.displayName || k.profileId)}`);
               if (!id) return null;
               return {
                 fk_profile_id: id,
