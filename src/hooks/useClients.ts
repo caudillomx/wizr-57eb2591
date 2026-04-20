@@ -76,7 +76,7 @@ export function useUpdateClient() {
     mutationFn: async ({ id, ...updates }: Partial<Client> & { id: string }) => {
       const { data, error } = await supabase
         .from("clients")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id)
         .select()
         .single();

@@ -42,7 +42,7 @@ const homeItem: NavItemDef = {
 };
 
 const performanceItems: NavItemDef[] = [
-  { title: "Rankings", url: "/dashboard/rankings", icon: Trophy },
+  { title: "Clientes", url: "/dashboard/performance", icon: Trophy },
 ];
 
 const listeningItems: NavItemDef[] = [
