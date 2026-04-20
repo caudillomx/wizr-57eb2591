@@ -201,6 +201,42 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kimediamx_profile_id: string | null
+          logo_url: string | null
+          name: string
+          services_enabled: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kimediamx_profile_id?: string | null
+          logo_url?: string | null
+          name: string
+          services_enabled?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kimediamx_profile_id?: string | null
+          logo_url?: string | null
+          name?: string
+          services_enabled?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       entities: {
         Row: {
           activo: boolean
@@ -313,6 +349,83 @@ export type Database = {
           },
         ]
       }
+      fk_posts: {
+        Row: {
+          comments: number | null
+          created_at: string
+          engagement: number | null
+          external_id: string | null
+          fk_profile_id: string
+          id: string
+          imported_at: string
+          interaction_per_impression: number | null
+          interaction_rate: number | null
+          likes: number | null
+          link: string | null
+          message: string | null
+          network: string
+          post_image_url: string | null
+          post_type: string | null
+          published_at: string
+          raw_data: Json | null
+          reach: number | null
+          shares: number | null
+          updated_at: string
+        }
+        Insert: {
+          comments?: number | null
+          created_at?: string
+          engagement?: number | null
+          external_id?: string | null
+          fk_profile_id: string
+          id?: string
+          imported_at?: string
+          interaction_per_impression?: number | null
+          interaction_rate?: number | null
+          likes?: number | null
+          link?: string | null
+          message?: string | null
+          network: string
+          post_image_url?: string | null
+          post_type?: string | null
+          published_at: string
+          raw_data?: Json | null
+          reach?: number | null
+          shares?: number | null
+          updated_at?: string
+        }
+        Update: {
+          comments?: number | null
+          created_at?: string
+          engagement?: number | null
+          external_id?: string | null
+          fk_profile_id?: string
+          id?: string
+          imported_at?: string
+          interaction_per_impression?: number | null
+          interaction_rate?: number | null
+          likes?: number | null
+          link?: string | null
+          message?: string | null
+          network?: string
+          post_image_url?: string | null
+          post_type?: string | null
+          published_at?: string
+          raw_data?: Json | null
+          reach?: number | null
+          shares?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_posts_fk_profile_id_fkey"
+            columns: ["fk_profile_id"]
+            isOneToOne: false
+            referencedRelation: "fk_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fk_profile_kpis: {
         Row: {
           engagement_rate: number | null
@@ -378,10 +491,12 @@ export type Database = {
       fk_profiles: {
         Row: {
           avatar_url: string | null
+          client_id: string | null
           created_at: string
           display_name: string | null
           id: string
           is_active: boolean
+          is_competitor: boolean
           is_own_profile: boolean
           last_synced_at: string | null
           network: string
@@ -392,10 +507,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          client_id?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_active?: boolean
+          is_competitor?: boolean
           is_own_profile?: boolean
           last_synced_at?: string | null
           network: string
@@ -406,10 +523,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          client_id?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           is_active?: boolean
+          is_competitor?: boolean
           is_own_profile?: boolean
           last_synced_at?: string | null
           network?: string
@@ -419,6 +538,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_profiles_project_id_fkey"
             columns: ["project_id"]
