@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ArrowLeft, BarChart3, Settings, Building2, TrendingUp, FileText,
-  Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target,
+  Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target, History,
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
@@ -26,6 +26,7 @@ import { RankingDateFilter, DateRangePreset, getDateRangeFromPreset } from "@/co
 import { RankingReportGenerator } from "@/components/rankings/RankingReportGenerator";
 import { DailyTopPostsPanel } from "@/components/rankings/DailyTopPostsPanel";
 import { DateRange } from "react-day-picker";
+import { ClientEvolutionTab } from "./ClientEvolutionTab";
 
 interface Props {
   client: Client;
@@ -38,7 +39,7 @@ export function ClientDetail({ client, onBack }: Props) {
   const qc = useQueryClient();
   const [view, setView] = useState<ViewMode>("brand");
   const [activeTab, setActiveTab] = useState<
-    "ranking" | "insights" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
+    "ranking" | "insights" | "evolution" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
   >("ranking");
   const [datePreset, setDatePreset] = useState<DateRangePreset>("1d");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
@@ -127,7 +128,7 @@ export function ClientDetail({ client, onBack }: Props) {
         </ToggleGroup>
       </div>
 
-      {activeTab !== "config" && profiles.length > 0 && (
+      {activeTab !== "config" && activeTab !== "evolution" && profiles.length > 0 && (
         <RankingDateFilter
           preset={datePreset}
           customRange={customDateRange}
@@ -141,6 +142,7 @@ export function ClientDetail({ client, onBack }: Props) {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="ranking"><BarChart3 className="h-4 w-4 mr-2" />Ranking</TabsTrigger>
           <TabsTrigger value="insights" disabled={profiles.length === 0}><Sparkles className="h-4 w-4 mr-2" />Insights</TabsTrigger>
+          <TabsTrigger value="evolution" disabled={profiles.length === 0}><History className="h-4 w-4 mr-2" />Evolución</TabsTrigger>
           <TabsTrigger value="trends" disabled={profiles.length === 0}><TrendingUp className="h-4 w-4 mr-2" />Tendencias</TabsTrigger>
           <TabsTrigger value="content" disabled={profiles.length === 0}><FileText className="h-4 w-4 mr-2" />Contenido</TabsTrigger>
           <TabsTrigger value="narratives" disabled={profiles.length === 0}><BookOpen className="h-4 w-4 mr-2" />Narrativas</TabsTrigger>
@@ -190,6 +192,16 @@ export function ClientDetail({ client, onBack }: Props) {
               <RankingAIChat profiles={profiles} kpis={kpis} rankingName={`${client.name} (${view === "brand" ? "Marca" : "Benchmark"})`} />
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="evolution" className="mt-6">
+          <ClientEvolutionTab
+            profiles={profiles}
+            allKpis={allKpis}
+            isLoading={loadingProfiles || loadingAllKpis}
+            brandCount={brandCount}
+            compCount={compCount}
+          />
         </TabsContent>
 
         <TabsContent value="trends" className="mt-6">
