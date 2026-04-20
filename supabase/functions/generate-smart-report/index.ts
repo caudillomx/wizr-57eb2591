@@ -109,7 +109,7 @@ function splitSentences(text: string): string[] {
 
 function sanitizeFindingText(text: string): string {
   const genericTailPatterns = [
-    /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad)/i,
+    /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad|esta proporción es el insumo|este reparto (es el insumo|sirve como insumo|funciona como insumo)|sirve como insumo base|cuando aparecen términos no previstos|hay que revisar si el enfoque)/i,
   ];
 
   const sentences = splitSentences(text);
