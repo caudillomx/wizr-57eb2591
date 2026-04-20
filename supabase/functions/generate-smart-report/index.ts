@@ -546,21 +546,27 @@ serve(async (req) => {
     const extractKnownCases = (text: string): string[] => {
       if (!text) return [];
       const cases: string[] = [];
+      // Capture full clauses up to sentence/clause boundary, NOT mid-word
       const patterns = [
-        /litigio[s]?\s+(?:con|contra|de|entre)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /caso\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /disputa[s]?\s+(?:con|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /demanda[s]?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /controversia[s]?\s+(?:con|sobre|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /investigaci[oó]n(?:es)?\s+(?:sobre|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /acusaci[oó]n(?:es)?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /fraude[s]?\s+(?:al|contra|a|de|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /\blitigio[s]?\s+(?:con|contra|de|entre)\s+[^.;,\n]{3,140}/gi,
+        /\bcaso\s+[A-ZÁÉÍÓÚÑ][^.;,\n]{3,120}/gi,
+        /\bdisputa[s]?\s+(?:con|contra|de)\s+[^.;,\n]{3,120}/gi,
+        /\bdemanda[s]?\s+(?:de|contra|por)\s+[^.;,\n]{3,120}/gi,
+        /\bcontroversia[s]?\s+(?:con|sobre|de)\s+[^.;,\n]{3,120}/gi,
+        /\binvestigaci[oó]n(?:es)?\s+(?:sobre|contra|de)\s+[^.;,\n]{3,120}/gi,
+        /\bacusaci[oó]n(?:es)?\s+(?:de|contra|por)\s+[^.;,\n]{3,120}/gi,
+        /\bfraude[s]?\s+(?:al|contra|a|de|por)\s+[^.;,\n]{3,120}/gi,
       ];
+      const stopTail = /\b(de|la|el|los|las|un|una|unos|unas|del|al|en|con|por|para|y|o|que)$/i;
       for (const re of patterns) {
         let m;
         while ((m = re.exec(text)) !== null) {
-          const clean = m[0].trim().replace(/\s+/g, ' ');
-          if (clean.length < 120) cases.push(clean);
+          let clean = m[0].trim().replace(/\s+/g, " ");
+          // Trim trailing stopwords/orphan articles to avoid "...mal manejo de un"
+          while (stopTail.test(clean)) {
+            clean = clean.replace(/\s+\S+$/, "").trim();
+          }
+          if (clean.length >= 12 && clean.length <= 140) cases.push(clean);
         }
       }
       const properNouns = text.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,3}\b/g) || [];
