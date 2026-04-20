@@ -779,7 +779,7 @@ export function useFKTopPosts(profileIds: string[], startDate?: string, endDate?
         likes: number | null;
         comments: number | null;
         shares: number | null;
-        raw_data: Record<string, unknown> | null;
+        raw_data: unknown;
       }> = [];
 
       let from = 0;
