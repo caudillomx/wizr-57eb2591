@@ -169,6 +169,7 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
           </div>
         </div>
       </CardHeader>
+      <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -190,7 +191,6 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
           </TableHeader>
           <TableBody>
             {profiles.map((profile) => {
-              const isSyncing = syncingId === profile.id;
               const network = profile.network as FKNetwork;
               const isSelected = selectedIds.has(profile.id);
               
