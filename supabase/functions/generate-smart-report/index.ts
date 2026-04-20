@@ -108,11 +108,19 @@ function splitSentences(text: string): string[] {
 }
 
 function sanitizeFindingText(text: string): string {
+  // 1) Strip in-sentence "para [Audiencia/cargo]" tails that delatan plantilla.
+  let cleaned = text
+    .replace(/\s+(?:que\s+)?conviene\s+leer\s+con\s+prioridad\s+para\s+[^.;]+(?=[.;]|$)/gi, " que define el encuadre dominante de la ventana monitoreada")
+    .replace(/\s+(?:y\s+)?(?:que\s+)?(?:resulta|es)\s+(?:de\s+especial\s+)?relevante\s+para\s+[^.;]+(?=[.;]|$)/gi, "")
+    .replace(/\s+(?:lo\s+que\s+)?(?:le\s+)?importa\s+a\s+[^.;]+(?=[.;]|$)/gi, "")
+    .replace(/\s+para\s+(?:el|la)\s+(?:Director(?:a)?(?:\s+\w+){0,3}|Gerente(?:\s+\w+){0,3}|CEO|CMO|CCO|COO|equipo\s+\w+|área\s+\w+)(?=[.;]|$)/gi, "");
+
+  // 2) Strip generic meta-closing sentences entirely.
   const genericTailPatterns = [
     /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad|esta proporción es el insumo|este reparto (es el insumo|sirve como insumo|funciona como insumo)|sirve como insumo base|cuando aparecen términos no previstos|hay que revisar si el enfoque)/i,
   ];
 
-  const sentences = splitSentences(text);
+  const sentences = splitSentences(cleaned);
   while (
     sentences.length > 2 &&
     genericTailPatterns.some((pattern) => pattern.test(sentences[sentences.length - 1]))
@@ -120,7 +128,7 @@ function sanitizeFindingText(text: string): string {
     sentences.pop();
   }
 
-  return sentences.join(" ").trim();
+  return sentences.join(" ").replace(/\s+/g, " ").trim();
 }
 
 function clipAtWordBoundary(text: string, maxChars: number): string {
