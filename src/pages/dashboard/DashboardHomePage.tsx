@@ -67,7 +67,16 @@ const DashboardHomePage = () => {
       accent: "data-card",
       iconBg: "bg-muted text-muted-foreground",
     },
-  ] as const;
+  ] as Array<{
+    title: string;
+    description: string;
+    icon: typeof Plus;
+    action: () => void;
+    cta: string;
+    accent: string;
+    iconBg: string;
+    primary?: boolean;
+  }>;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
