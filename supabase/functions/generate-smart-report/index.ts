@@ -243,18 +243,51 @@ function buildFallbackFindings(
   const sortedSources = Array.from(sourceMap.entries()).sort((a, b) => b[1].count - a[1].count);
   const sortedAuthors = Array.from(authorMap.entries()).sort((a, b) => b[1].engagement - a[1].engagement || b[1].count - a[1].count);
   const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1]);
-  const sortedKeywords = Array.from(keywordMap.entries()).sort((a, b) => b[1] - a[1]);
+
+  // Dedup keywords by normalized form (Zaga Tawil / zaga tawil / Rafael Zaga Tawil → keep canonical with highest count + longest variant)
+  const normalizeKey = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  const keywordGroups = new Map<string, { display: string; count: number }>();
+  for (const [term, count] of keywordMap.entries()) {
+    const norm = normalizeKey(term);
+    // Group also by containment: if "Rafael Zaga Tawil" contains "Zaga Tawil", they share the longer key's normalized form
+    let groupKey = norm;
+    for (const existingKey of keywordGroups.keys()) {
+      if (existingKey.includes(norm) || norm.includes(existingKey)) {
+        groupKey = existingKey.length >= norm.length ? existingKey : norm;
+        break;
+      }
+    }
+    const existing = keywordGroups.get(groupKey);
+    if (!existing) {
+      keywordGroups.set(groupKey, { display: term, count });
+    } else {
+      // Prefer the longer / properly capitalized form as display
+      const better = term.length > existing.display.length || (/^[A-ZÁÉÍÓÚÑ]/.test(term) && !/^[A-ZÁÉÍÓÚÑ]/.test(existing.display));
+      if (better) existing.display = term;
+      existing.count += count;
+      // If we promoted a longer key, update map entry
+      if (groupKey !== norm && norm.length > groupKey.length) {
+        keywordGroups.delete(groupKey);
+        keywordGroups.set(norm, existing);
+      }
+    }
+  }
+  const sortedKeywords = Array.from(keywordGroups.values())
+    .sort((a, b) => b.count - a.count)
+    .map((entry) => [entry.display, entry.count] as [string, number]);
 
   const negativeShare = metrics.totalMentions > 0 ? Math.round((metrics.negativeCount / metrics.totalMentions) * 100) : 0;
   const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
   const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
-  const audienceLabel = options?.projectAudience || "la audiencia destinataria";
-  const strategicAnchor = buildStrategicAnchor(options);
+  const audienceLabel = options?.projectAudience?.trim() || "";
+  const audienceClause = audienceLabel ? ` Esta lectura es la base para la conversación con ${audienceLabel}.` : "";
+  const fullAnchor = buildStrategicAnchor(options);
+  const shortAnchor = buildShortAnchor(options);
 
   const findings: string[] = [];
 
   findings.push(
-    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${strategicAnchor} llegó al periodo con una carga reputacional mayoritariamente adversa frente a ${audienceLabel}.`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${fullAnchor} llegó al periodo con una carga reputacional ${negativeShare >= 50 ? "mayoritariamente adversa" : negativeShare >= 30 ? "mixta con sesgo adverso" : "mayoritariamente neutral"}.${audienceClause}`
   );
 
   if (sortedSources.length > 0) {
@@ -262,14 +295,14 @@ function buildFallbackFindings(
     const mainSource = sortedSources[0];
     const mainShare = metrics.totalMentions > 0 ? Math.round((mainSource[1].count / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales. Eso vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública de ${strategicAnchor} para ${audienceLabel}.`
+      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales, lo que vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública relevante para ${shortAnchor}.`
     );
   }
 
   if (sortedAuthors.length > 0) {
     const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
     findings.push(
-      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre está concentrada en pocos nombres, de modo que un encuadre adverso sobre ${strategicAnchor} puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
+      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre se concentra en pocos nombres, de modo que un encuadre adverso puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
     );
   }
 
@@ -277,14 +310,14 @@ function buildFallbackFindings(
     const [peakDay, peakCount] = sortedDays[0];
     const peakShare = metrics.totalMentions > 0 ? Math.round((peakCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido. Esa jornada funciona como punto de máxima exposición acumulada de ${strategicAnchor} dentro del periodo observado.`
+      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido; esa jornada funciona como punto de máxima exposición acumulada dentro del periodo observado.`
     );
   }
 
   if (sortedKeywords.length > 0) {
     const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
     findings.push(
-      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública entre la conversación y ${strategicAnchor}.`
+      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública con ${shortAnchor}.`
     );
   }
 
@@ -296,7 +329,7 @@ function buildFallbackFindings(
     const mediaCount = Math.max(0, mentions.length - socialCount);
     const socialShare = metrics.totalMentions > 0 ? Math.round((socialCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que ${strategicAnchor} estuvo expuesto sobre todo a amplificación reactiva, no a cobertura editorial más lenta` : mediaCount >= socialCount ? `El peso de medios digitales vuelve más durable la exposición de ${strategicAnchor} porque deja huella verificable` : `La combinación de ambos canales expuso a ${strategicAnchor} tanto a aceleración social como a registro público persistente`}, algo especialmente sensible para ${audienceLabel}.`
+      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que la exposición fue principalmente reactiva, no editorial estructurada` : mediaCount >= socialCount ? `El peso de medios digitales vuelve la exposición más durable porque deja huella verificable` : `La combinación de ambos canales produjo tanto aceleración social como registro público persistente`}.`
     );
   }
 
