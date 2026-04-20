@@ -5,16 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, Check, Loader2, ExternalLink, Globe } from "lucide-react";
-import { useCreateSharedReport, type SharedReport } from "@/hooks/useSharedReports";
+import { useCreateSharedReport, type SharedReport, type SharedReportKind } from "@/hooks/useSharedReports";
 import { useToast } from "@/hooks/use-toast";
-import type { SmartReportContent } from "@/hooks/useSmartReport";
 
 interface PublishReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projectId: string;
-  projectName: string;
-  report: SmartReportContent;
+  // New API: owner can be a project (Listening) or a client (Performance)
+  ownerKind?: "project" | "client";
+  ownerId?: string;
+  ownerName?: string;
+  reportKind?: SharedReportKind;
+  // Legacy props (Listening) — still supported
+  projectId?: string;
+  projectName?: string;
+  report: any;
   dateRange: { start: string; end: string; label: string };
 }
 
@@ -28,12 +33,21 @@ const EXPIRY_OPTIONS = [
 export function PublishReportDialog({
   open,
   onOpenChange,
+  ownerKind,
+  ownerId,
+  ownerName,
+  reportKind,
   projectId,
   projectName,
   report,
   dateRange,
 }: PublishReportDialogProps) {
-  const [title, setTitle] = useState(report.title || `Reporte ${projectName}`);
+  const resolvedOwnerKind: "project" | "client" = ownerKind ?? "project";
+  const resolvedOwnerId = ownerId ?? projectId ?? "";
+  const resolvedOwnerName = ownerName ?? projectName ?? "";
+  const resolvedKind: SharedReportKind = reportKind ?? "listening";
+
+  const [title, setTitle] = useState(report.title || `Reporte ${resolvedOwnerName}`);
   const [expiry, setExpiry] = useState("30");
   const [created, setCreated] = useState<SharedReport | null>(null);
   const [copied, setCopied] = useState(false);
@@ -47,9 +61,11 @@ export function PublishReportDialog({
   const handlePublish = async () => {
     const days = EXPIRY_OPTIONS.find((o) => o.value === expiry)?.days ?? null;
     const result = await create.mutateAsync({
-      project_id: projectId,
+      owner_kind: resolvedOwnerKind,
+      owner_id: resolvedOwnerId,
+      owner_name: resolvedOwnerName,
+      report_kind: resolvedKind,
       title,
-      project_name: projectName,
       content: report,
       date_range: dateRange,
       expires_in_days: days,
@@ -67,7 +83,7 @@ export function PublishReportDialog({
   const handleClose = () => {
     setCreated(null);
     setCopied(false);
-    setTitle(report.title || `Reporte ${projectName}`);
+    setTitle(report.title || `Reporte ${resolvedOwnerName}`);
     setExpiry("30");
     onOpenChange(false);
   };
