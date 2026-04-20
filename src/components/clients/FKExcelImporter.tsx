@@ -45,8 +45,20 @@ const NETWORK_DETECT: Record<string, FKNetwork> = {
   threads: "threads",
 };
 
-const KPI_KEYS = ["fans", "seguidores", "followers", "ppi", "rendimiento", "performance index", "growth", "crecimiento"];
-const POST_KEYS = ["message", "mensaje", "post", "interactions", "interacciones", "alcance por publicación", "post interaction"];
+// Header keywords (Spanish + English) for FK exports
+const KPI_KEYS = [
+  "fans", "seguidor", "seguidores", "followers", "subscribers",
+  "ppi", "rendimiento", "performance index", "indice de rendimiento",
+  "growth", "crecimiento",
+  "posts per day", "publicaciones por dia",
+];
+const POST_KEYS = [
+  "message", "mensaje", "post",
+  "interactions", "interacciones",
+  "alcance por publicacion", "post interaction",
+  "reacciones, comentarios y compartidos",
+  "numero de me gusta", "numero de comentarios",
+];
 
 function normalizeKey(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -73,13 +85,20 @@ function readSheetWithHeaderDetection(sheet: XLSX.WorkSheet): { rows: Record<str
   let headerIdx = -1;
   let kind: FileKind = "unknown";
 
+  // Scan first 15 rows looking for the header row
   for (let i = 0; i < Math.min(matrix.length, 15); i++) {
     const row = matrix[i].map((c) => normalizeKey(String(c || "")));
-    const joined = row.join("|");
-    const looksKpi = KPI_KEYS.some((k) => joined.includes(k)) && row.some((c) => c === "profile" || c === "perfil" || c === "page" || c === "name" || c === "nombre");
-    const looksPost = POST_KEYS.some((k) => joined.includes(k)) && (joined.includes("date") || joined.includes("fecha"));
-    if (looksKpi) { headerIdx = i; kind = "kpis"; break; }
+    const hasProfileCol = row.some((c) => c === "profile" || c === "perfil" || c === "page" || c === "name" || c === "nombre");
+    if (!hasProfileCol) continue;
+
+    // Posts have a "date/fecha" column; KPIs do not (they aggregate the whole period)
+    const hasDateCol = row.some((c) => c === "date" || c === "fecha" || c.includes("published") || c.includes("publicado"));
+    const hasMessageCol = row.some((c) => c === "message" || c === "mensaje" || c.includes("contenido"));
+    const looksPost = hasDateCol || hasMessageCol || POST_KEYS.some((k) => row.some((c) => c.includes(k)));
+    const looksKpi = !looksPost && KPI_KEYS.some((k) => row.some((c) => c.includes(k)));
+
     if (looksPost) { headerIdx = i; kind = "posts"; break; }
+    if (looksKpi) { headerIdx = i; kind = "kpis"; break; }
   }
 
   if (headerIdx === -1) return { rows: [], kind: "unknown", headerRows: matrix.slice(0, Math.min(matrix.length, 6)) };
@@ -109,12 +128,26 @@ function detectPeriodFromMeta(headerRows: any[][]): { start?: Date; end?: Date }
     .join(" | ");
   if (!flat) return {};
 
-  // Match two dates separated by a dash/hyphen/word "to"/"a"
-  const dateToken = /(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})/g;
-  const matches = flat.match(dateToken);
-  if (!matches || matches.length < 2) return {};
+  // Spanish + English month abbreviations
+  const MONTHS: Record<string, number> = {
+    ene: 1, enero: 1, jan: 1, january: 1,
+    feb: 2, febrero: 2, february: 2,
+    mar: 3, marzo: 3, march: 3,
+    abr: 4, abril: 4, apr: 4, april: 4,
+    may: 5, mayo: 5,
+    jun: 6, junio: 6, june: 6,
+    jul: 7, julio: 7, july: 7,
+    ago: 8, agosto: 8, aug: 8, august: 8,
+    sep: 9, sept: 9, septiembre: 9, september: 9,
+    oct: 10, octubre: 10, october: 10,
+    nov: 11, noviembre: 11, november: 11,
+    dic: 12, diciembre: 12, dec: 12, december: 12,
+  };
 
-  const parse = (s: string): Date | null => {
+  // Try numeric format first: 2026-03-01 - 2026-03-31 / 01.03.2026 - 31.03.2026
+  const numericRe = /(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}[./-]\d{1,2}[./-]\d{1,2})/g;
+  const numMatches = flat.match(numericRe);
+  const parseNum = (s: string): Date | null => {
     const norm = s.replace(/\./g, "-").replace(/\//g, "-");
     const parts = norm.split("-").map((x) => parseInt(x, 10));
     if (parts.length !== 3 || parts.some(isNaN)) return null;
@@ -124,11 +157,32 @@ function detectPeriodFromMeta(headerRows: any[][]): { start?: Date; end?: Date }
     const dt = new Date(Date.UTC(y, m - 1, d));
     return isNaN(dt.getTime()) ? null : dt;
   };
+  if (numMatches && numMatches.length >= 2) {
+    const d1 = parseNum(numMatches[0]);
+    const d2 = parseNum(numMatches[1]);
+    if (d1 && d2) return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
+  }
 
-  const d1 = parse(matches[0]);
-  const d2 = parse(matches[1]);
-  if (!d1 || !d2) return {};
-  return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
+  // Try worded format: "1 mar 2026 - 20 abr 2026" (ES) or "Mar 1, 2026" (EN)
+  const wordedRe = /(\d{1,2})\s*(?:de\s+)?([a-záéíóúñ\.]+)\s*(?:de\s+)?(\d{2,4})/gi;
+  const dates: Date[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = wordedRe.exec(flat)) !== null) {
+    const day = parseInt(m[1], 10);
+    const monKey = normalizeKey(m[2]).replace(/\./g, "");
+    const mon = MONTHS[monKey] ?? MONTHS[monKey.slice(0, 3)];
+    let yr = parseInt(m[3], 10);
+    if (!mon || isNaN(day) || isNaN(yr)) continue;
+    if (yr < 100) yr += 2000;
+    const dt = new Date(Date.UTC(yr, mon - 1, day));
+    if (!isNaN(dt.getTime())) dates.push(dt);
+    if (dates.length >= 2) break;
+  }
+  if (dates.length >= 2) {
+    const [a, b] = dates;
+    return a <= b ? { start: a, end: b } : { start: b, end: a };
+  }
+  return {};
 }
 
 function pickField(row: Record<string, any>, candidates: string[]): any {
@@ -173,21 +227,23 @@ interface PostRow {
 }
 
 function mapKpiRow(row: Record<string, any>): KpiRow | null {
-  const profileId = String(pickField(row, ["profile", "perfil", "page id", "page"]) || "").trim();
-  const displayName = String(pickField(row, ["page name", "name", "nombre", "page"]) || profileId).trim();
-  if (!profileId && !displayName) return null;
+  // FK exports: column "Profile" usually has the display name, "Profile-ID" has the real platform ID
+  const profileIdRaw = String(pickField(row, ["profile-id", "profile id", "page id", "page-id"]) || "").trim();
+  const displayName = String(pickField(row, ["profile", "perfil", "page name", "name", "nombre", "page"]) || "").trim();
+  if (!profileIdRaw && !displayName) return null;
   const networkRaw = pickField(row, ["network", "platform", "red", "plattform"]);
+  const profileId = (profileIdRaw || displayName).replace(/^@/, "");
   return {
-    profileId: (profileId || displayName).replace(/^@/, ""),
+    profileId,
     displayName: displayName || profileId,
     network: detectNetwork(networkRaw),
-    followers: parseNumeric(pickField(row, ["fans", "followers", "seguidores", "subscribers"])),
-    engagementRate: parseNumeric(pickField(row, ["engagement rate", "engagement", "interaccion"])),
-    postsPerDay: parseNumeric(pickField(row, ["posts per day", "posts/day", "publicaciones por dia"])),
-    pagePerformanceIndex: parseNumeric(pickField(row, ["ppi", "page performance index", "rendimiento"])),
-    followerGrowthPercent: parseNumeric(pickField(row, ["growth_percentage", "growth", "crecimiento", "fan growth"])),
+    followers: parseNumeric(pickField(row, ["seguidor", "fans", "followers", "subscribers"])),
+    engagementRate: parseNumeric(pickField(row, ["tasa de interaccion", "engagement rate", "engagement"])),
+    postsPerDay: parseNumeric(pickField(row, ["publicaciones por dia", "posts per day", "posts/day"])),
+    pagePerformanceIndex: parseNumeric(pickField(row, ["indice de rendimiento", "ppi", "page performance index", "rendimiento"])),
+    followerGrowthPercent: parseNumeric(pickField(row, ["crecimiento de seguidores", "growth_percentage", "growth", "crecimiento", "fan growth"])),
     reachPerDay: parseNumeric(pickField(row, ["alcance por dia", "reach per day"])),
-    impressionsPerInteraction: parseNumeric(pickField(row, ["post_interaction", "post interaction", "impresiones por interaccion"])),
+    impressionsPerInteraction: parseNumeric(pickField(row, ["interaccion por impresion", "post_interaction", "post interaction", "impresiones por interaccion"])),
   };
 }
 
@@ -207,24 +263,25 @@ function mapPostRow(row: Record<string, any>): PostRow | null {
   const dateVal = pickField(row, ["date", "fecha", "published"]);
   const publishedAt = parseDate(dateVal);
   if (!publishedAt) return null;
-  const profileId = String(pickField(row, ["profile", "perfil", "page"]) || "").trim();
-  const displayName = String(pickField(row, ["page name", "name", "nombre"]) || profileId).trim();
-  if (!profileId && !displayName) return null;
+  // For posts, FK puts the display name in "Profile" column
+  const displayName = String(pickField(row, ["profile", "perfil", "page name", "name", "nombre"]) || "").trim();
+  if (!displayName) return null;
   const networkRaw = pickField(row, ["network", "platform", "red"]);
+  const externalIdRaw = String(pickField(row, ["message-id", "message id", "post id", "post-id", "external id", "external-id", "id"]) || "").trim();
   return {
-    profileId: (profileId || displayName).replace(/^@/, ""),
-    displayName: displayName || profileId,
+    profileId: displayName.replace(/^@/, ""),
+    displayName,
     network: detectNetwork(networkRaw),
-    externalId: String(pickField(row, ["message id", "post id", "external id", "id"]) || "") || null,
+    externalId: externalIdRaw || null,
     publishedAt,
     message: String(pickField(row, ["message", "mensaje", "content", "contenido", "text"]) || "") || null,
     link: String(pickField(row, ["link", "url", "permalink"]) || "") || null,
-    likes: parseNumeric(pickField(row, ["likes", "me gusta", "reactions"])),
-    comments: parseNumeric(pickField(row, ["comments", "comentarios"])),
-    shares: parseNumeric(pickField(row, ["shares", "compartidos", "retweets"])),
-    engagement: parseNumeric(pickField(row, ["interactions", "interacciones", "engagement"])),
+    likes: parseNumeric(pickField(row, ["numero de me gusta", "likes", "me gusta", "reactions"])),
+    comments: parseNumeric(pickField(row, ["numero de comentarios", "comments", "comentarios"])),
+    shares: parseNumeric(pickField(row, ["compartidos", "shares", "retweets"])),
+    engagement: parseNumeric(pickField(row, ["reacciones, comentarios y compartidos", "interactions", "interacciones", "engagement"])),
     reach: parseNumeric(pickField(row, ["alcance por publicacion", "reach", "alcance"])),
-    interactionRate: parseNumeric(pickField(row, ["interaction rate", "tasa de interaccion"])),
+    interactionRate: parseNumeric(pickField(row, ["tasa de interaccion", "interaction rate"])),
     postType: String(pickField(row, ["type", "tipo", "post type"]) || "") || null,
     raw: row,
   };
@@ -243,7 +300,8 @@ async function detectFile(file: File): Promise<DetectedFile> {
     if (k !== "unknown") {
       kind = k;
       rowCount += rows.length;
-      if (k === "kpis" && !detectedStart) {
+      // Detect period from metadata for both KPIs and Posts
+      if (!detectedStart) {
         const period = detectPeriodFromMeta(headerRows);
         detectedStart = period.start;
         detectedEnd = period.end;
@@ -416,66 +474,81 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           if (postRows.length === 0) continue;
 
+          // Load existing profiles by both profile_id AND display_name (posts don't carry Profile-ID)
           const { data: existing } = await supabase
             .from("fk_profiles")
-            .select("id, network, profile_id")
+            .select("id, network, profile_id, display_name")
             .eq("client_id", clientId);
-          const existingMap = new Map(
-            (existing || []).map((e: any) => [`${e.network}::${e.profile_id}`, e.id])
-          );
+          const byId = new Map<string, string>();
+          const byName = new Map<string, string>();
+          (existing || []).forEach((e: any) => {
+            byId.set(`${e.network}::${e.profile_id}`, e.id);
+            if (e.display_name) byName.set(`${e.network}::${normalizeKey(e.display_name)}`, e.id);
+          });
 
-          const uniqueProfiles = new Map<string, { network: FKNetwork; profileId: string; displayName: string }>();
+          const resolveProfileId = (network: FKNetwork, displayName: string): string | undefined => {
+            return byName.get(`${network}::${normalizeKey(displayName)}`)
+              ?? byId.get(`${network}::${displayName.replace(/^@/, "")}`);
+          };
+
+          // Create profiles for posts whose profile doesn't exist yet (rare: posts before KPIs)
+          const uniqueNew = new Map<string, { network: FKNetwork; displayName: string }>();
           for (const p of postRows) {
-            const k = `${p.network}::${p.profileId}`;
-            if (!uniqueProfiles.has(k)) {
-              uniqueProfiles.set(k, { network: p.network, profileId: p.profileId, displayName: p.displayName });
-            }
+            if (resolveProfileId(p.network, p.displayName)) continue;
+            const k = `${p.network}::${normalizeKey(p.displayName)}`;
+            if (!uniqueNew.has(k)) uniqueNew.set(k, { network: p.network, displayName: p.displayName });
           }
-
-          const missing = Array.from(uniqueProfiles.values()).filter(
-            (p) => !existingMap.has(`${p.network}::${p.profileId}`)
-          );
-          if (missing.length > 0) {
+          if (uniqueNew.size > 0) {
+            const toInsert = Array.from(uniqueNew.values()).map((p) => ({
+              client_id: clientId,
+              network: p.network,
+              profile_id: p.displayName.replace(/^@/, ""),
+              display_name: p.displayName,
+              is_active: true,
+              is_competitor: f.asCompetitor,
+            }));
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
-              .insert(missing.map((p) => ({
-                client_id: clientId,
-                network: p.network,
-                profile_id: p.profileId,
-                display_name: p.displayName,
-                is_active: true,
-                is_competitor: f.asCompetitor,
-              })))
-              .select("id, network, profile_id");
+              .insert(toInsert)
+              .select("id, network, profile_id, display_name");
             if (error) throw error;
-            (inserted || []).forEach((row: any) =>
-              existingMap.set(`${row.network}::${row.profile_id}`, row.id)
-            );
-            totalProfiles += missing.length;
+            (inserted || []).forEach((row: any) => {
+              byId.set(`${row.network}::${row.profile_id}`, row.id);
+              if (row.display_name) byName.set(`${row.network}::${normalizeKey(row.display_name)}`, row.id);
+            });
+            totalProfiles += toInsert.length;
           }
 
-          const postsPayload = postRows
-            .map((p) => {
-              const id = existingMap.get(`${p.network}::${p.profileId}`);
-              if (!id) return null;
-              return {
-                fk_profile_id: id,
-                network: p.network,
-                external_id: p.externalId,
-                published_at: p.publishedAt,
-                message: p.message,
-                link: p.link,
-                likes: p.likes != null ? Math.round(p.likes) : 0,
-                comments: p.comments != null ? Math.round(p.comments) : 0,
-                shares: p.shares != null ? Math.round(p.shares) : 0,
-                engagement: p.engagement != null ? Math.round(p.engagement) : 0,
-                reach: p.reach != null ? Math.round(p.reach) : 0,
-                interaction_rate: p.interactionRate,
-                post_type: p.postType,
-                raw_data: p.raw,
-              };
-            })
-            .filter(Boolean) as any[];
+          // Build payload + dedupe within batch by (fk_profile_id, external_id)
+          const seen = new Set<string>();
+          const postsPayload: any[] = [];
+          for (const p of postRows) {
+            const id = resolveProfileId(p.network, p.displayName);
+            if (!id) continue;
+            // Synthesize a stable external_id when missing to avoid null collisions
+            const extId = p.externalId
+              || p.link
+              || `${p.publishedAt}::${(p.message || "").slice(0, 80)}`;
+            const dedupKey = `${id}::${extId}`;
+            if (seen.has(dedupKey)) continue;
+            seen.add(dedupKey);
+            postsPayload.push({
+              fk_profile_id: id,
+              network: p.network,
+              external_id: extId,
+              published_at: p.publishedAt,
+              message: p.message,
+              link: p.link,
+              likes: p.likes != null ? Math.round(p.likes) : 0,
+              comments: p.comments != null ? Math.round(p.comments) : 0,
+              shares: p.shares != null ? Math.round(p.shares) : 0,
+              engagement: p.engagement != null ? Math.round(p.engagement) : 0,
+              reach: p.reach != null ? Math.round(p.reach) : 0,
+              interaction_rate: p.interactionRate,
+              post_type: p.postType,
+              raw_data: p.raw,
+            });
+          }
 
           const CHUNK = 500;
           for (let i = 0; i < postsPayload.length; i += CHUNK) {
@@ -485,12 +558,12 @@ export function FKExcelImporter({ clientId }: Props) {
               .upsert(slice, { onConflict: "fk_profile_id,external_id", ignoreDuplicates: false });
             if (error) {
               console.error("upsert posts error", error);
-              const { error: e2 } = await supabase.from("fk_posts").insert(slice);
-              if (e2) throw e2;
+              throw error;
             }
             totalPosts += slice.length;
           }
 
+          // Derive top post per profile per day for the legacy fk_daily_top_posts panel
           const topByDay = new Map<string, any>();
           for (const p of postsPayload) {
             const day = (p.published_at || "").slice(0, 10);
