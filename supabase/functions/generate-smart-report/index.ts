@@ -300,8 +300,13 @@ function buildFallbackFindings(
 
   const findings: string[] = [];
 
+  const sentimentReadingClause = negativeShare >= 50
+    ? `el periodo cierra con carga reputacional mayoritariamente adversa, lo que vuelve la conversación pública un terreno hostil que conviene leer con prioridad para ${audienceLabel || "la dirección"}`
+    : negativeShare >= 30
+      ? `el periodo presenta tono mixto con sesgo adverso, mezcla que suele preceder consolidaciones negativas si no se interviene en el encuadre`
+      : `el tono adverso es minoritario y la conversación pública mantiene espacio editorial neutral o favorable que puede ser capitalizado`;
   findings.push(
-    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${fullAnchor} llegó al periodo con una carga reputacional ${negativeShare >= 50 ? "mayoritariamente adversa" : negativeShare >= 30 ? "mixta con sesgo adverso" : "mayoritariamente neutral"}.${audienceClause}`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). En lectura ejecutiva, ${sentimentReadingClause}.`
   );
 
   if (sortedSources.length > 0) {
