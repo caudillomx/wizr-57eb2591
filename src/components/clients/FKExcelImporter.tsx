@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FKNetwork } from "@/hooks/useFanpageKarma";
 import { cn } from "@/lib/utils";
+import { canonicalizeFKProfileIdentity, normalizeFKText, prettifyFKIdentifier } from "@/lib/fkProfileUtils";
 
 interface Props {
   clientId: string;
@@ -61,7 +62,21 @@ const POST_KEYS = [
 ];
 
 function normalizeKey(s: string): string {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  return normalizeFKText(s);
+}
+
+function buildCandidateKeys(network: FKNetwork, displayName: string, profileId?: string | null): string[] {
+  const candidates = [displayName, profileId || "", prettifyFKIdentifier(displayName), prettifyFKIdentifier(profileId || "")]
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const keys = new Set<string>();
+  candidates.forEach((value) => {
+    keys.add(`${network}::name::${normalizeKey(value)}`);
+    keys.add(`${network}::canonical::${canonicalizeFKProfileIdentity(value)}`);
+  });
+
+  return Array.from(keys);
 }
 
 function detectNetwork(value: any): FKNetwork {
@@ -401,8 +416,9 @@ export function FKExcelImporter({ clientId }: Props) {
             .eq("client_id", clientId);
           const existingByName = new Map<string, string>();
           (existing || []).forEach((e: any) => {
-            const name = normalizeKey(e.display_name || e.profile_id);
-            existingByName.set(`${e.network}::${name}`, e.id);
+            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+              existingByName.set(key, e.id);
+            });
           });
 
           const profilePayload = kpiRows.map((k) => ({
@@ -412,7 +428,7 @@ export function FKExcelImporter({ clientId }: Props) {
             display_name: k.displayName,
             is_active: true,
             is_competitor: f.asCompetitor,
-            _key: `${k.network}::${normalizeKey(k.displayName || k.profileId)}`,
+            _key: `${k.network}::canonical::${canonicalizeFKProfileIdentity(k.displayName || k.profileId)}`,
           }));
 
           const toInsert = profilePayload
@@ -428,14 +444,16 @@ export function FKExcelImporter({ clientId }: Props) {
               .select("id, network, profile_id, display_name");
             if (error) throw error;
             (inserted || []).forEach((row: any) => {
-              const name = normalizeKey(row.display_name || row.profile_id);
-              existingByName.set(`${row.network}::${name}`, row.id);
+              buildCandidateKeys(row.network, row.display_name || row.profile_id, row.profile_id).forEach((key) => {
+                existingByName.set(key, row.id);
+              });
             });
           }
 
           if (f.asCompetitor) {
             const ids = kpiRows
               .map((k) => existingByName.get(`${k.network}::${normalizeKey(k.displayName || k.profileId)}`))
+              .map((id, idx) => id || buildCandidateKeys(kpiRows[idx].network, kpiRows[idx].displayName || kpiRows[idx].profileId, kpiRows[idx].profileId).map((key) => existingByName.get(key)).find(Boolean))
               .filter(Boolean) as string[];
             if (ids.length > 0) {
               await supabase.from("fk_profiles").update({ is_competitor: true }).in("id", ids);
@@ -448,7 +466,9 @@ export function FKExcelImporter({ clientId }: Props) {
 
           const kpiPayload = kpiRows
             .map((k) => {
-              const id = existingByName.get(`${k.network}::${normalizeKey(k.displayName || k.profileId)}`);
+              const id = buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
+                .map((key) => existingByName.get(key))
+                .find(Boolean);
               if (!id) return null;
               return {
                 fk_profile_id: id,
@@ -492,13 +512,23 @@ export function FKExcelImporter({ clientId }: Props) {
             .eq("client_id", clientId);
           const byId = new Map<string, string>();
           const byName = new Map<string, string>();
+          const byCanonical = new Map<string, string>();
           (existing || []).forEach((e: any) => {
             byId.set(`${e.network}::${e.profile_id}`, e.id);
-            if (e.display_name) byName.set(`${e.network}::${normalizeKey(e.display_name)}`, e.id);
+            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+              if (key.includes("::name::")) byName.set(key, e.id);
+              if (key.includes("::canonical::")) byCanonical.set(key, e.id);
+            });
           });
 
           const resolveProfileId = (network: FKNetwork, displayName: string): string | undefined => {
-            return byName.get(`${network}::${normalizeKey(displayName)}`)
+            return buildCandidateKeys(network, displayName, displayName)
+              .map((key) => {
+                if (key.includes("::name::")) return byName.get(key);
+                if (key.includes("::canonical::")) return byCanonical.get(key);
+                return undefined;
+              })
+              .find(Boolean)
               ?? byId.get(`${network}::${displayName.replace(/^@/, "")}`);
           };
 
@@ -506,7 +536,7 @@ export function FKExcelImporter({ clientId }: Props) {
           const uniqueNew = new Map<string, { network: FKNetwork; displayName: string }>();
           for (const p of postRows) {
             if (resolveProfileId(p.network, p.displayName)) continue;
-            const k = `${p.network}::${normalizeKey(p.displayName)}`;
+            const k = `${p.network}::canonical::${canonicalizeFKProfileIdentity(p.displayName)}`;
             if (!uniqueNew.has(k)) uniqueNew.set(k, { network: p.network, displayName: p.displayName });
           }
           if (uniqueNew.size > 0) {
@@ -525,7 +555,10 @@ export function FKExcelImporter({ clientId }: Props) {
             if (error) throw error;
             (inserted || []).forEach((row: any) => {
               byId.set(`${row.network}::${row.profile_id}`, row.id);
-              if (row.display_name) byName.set(`${row.network}::${normalizeKey(row.display_name)}`, row.id);
+              buildCandidateKeys(row.network, row.display_name || row.profile_id, row.profile_id).forEach((key) => {
+                if (key.includes("::name::")) byName.set(key, row.id);
+                if (key.includes("::canonical::")) byCanonical.set(key, row.id);
+              });
             });
             totalProfiles += toInsert.length;
           }
