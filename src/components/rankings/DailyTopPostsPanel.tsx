@@ -74,7 +74,7 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
     return Array.from(networks);
   }, [profiles]);
 
-  // Get the top post per network (yesterday or most recent)
+  // Get the top post per network within the already-filtered period
   const topPostsByNetwork = useMemo(() => {
     const result = new Map<FKNetwork, FKDailyTopPost | null>();
     
@@ -82,11 +82,6 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
     networksInRanking.forEach(network => {
       result.set(network, null);
     });
-
-    // Filter to yesterday's posts first
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = format(yesterday, "yyyy-MM-dd");
 
     // Group posts by network
     const postsByNetwork = new Map<string, FKDailyTopPost[]>();
@@ -96,23 +91,14 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
       postsByNetwork.set(post.network, existing);
     });
 
-    // For each network, find the top post (highest engagement from yesterday, or most recent)
+    // For each network, find the highest-engagement post within the selected period
     postsByNetwork.forEach((posts, network) => {
-      // Prefer yesterday's posts
-      const yesterdayPosts = posts.filter(p => p.post_date === yesterdayStr);
-      
-      if (yesterdayPosts.length > 0) {
-        // Get the one with highest engagement
-        const topPost = yesterdayPosts.reduce((best, current) => 
-          (current.engagement || 0) > (best.engagement || 0) ? current : best
-        );
-        result.set(network as FKNetwork, topPost);
-      } else if (posts.length > 0) {
-        // No yesterday posts, get most recent with highest engagement
+      if (posts.length > 0) {
         const sorted = [...posts].sort((a, b) => {
-          const dateDiff = new Date(b.post_date).getTime() - new Date(a.post_date).getTime();
-          if (dateDiff !== 0) return dateDiff;
-          return (b.engagement || 0) - (a.engagement || 0);
+          const engagementDiff = (b.engagement || 0) - (a.engagement || 0);
+          if (engagementDiff !== 0) return engagementDiff;
+
+          return new Date(b.post_date).getTime() - new Date(a.post_date).getTime();
         });
         result.set(network as FKNetwork, sorted[0]);
       }
@@ -120,13 +106,6 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
 
     return result;
   }, [topPosts, networksInRanking]);
-
-  // Calculate yesterday's date string for comparison
-  const yesterdayStr = useMemo(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return format(yesterday, "yyyy-MM-dd");
-  }, []);
 
   if (isLoading) {
     return (
@@ -178,7 +157,7 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
             Top Post por Red Social
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Mejor publicación por red dentro del período seleccionado (prioriza ayer cuando hay datos disponibles).
+            Mejor publicación por red dentro del período seleccionado.
           </p>
         </div>
       </CardHeader>
@@ -214,11 +193,6 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
                               <Clock className="h-3 w-3 ml-2" />
                               {format(new Date(post.raw_data.published_at as string), "HH:mm", { locale: es })}
                             </>
-                          )}
-                          {post.post_date !== yesterdayStr && (
-                            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 font-normal">
-                              más reciente disponible
-                            </Badge>
                           )}
                         </span>
                       )}
