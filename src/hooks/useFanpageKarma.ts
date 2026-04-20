@@ -760,6 +760,84 @@ export interface FKDailyTopPost {
   fetched_at: string;
 }
 
+export function useFKTopPosts(profileIds: string[], startDate?: string, endDate?: string) {
+  return useQuery({
+    queryKey: ["fk-top-posts", profileIds, startDate, endDate],
+    queryFn: async () => {
+      if (profileIds.length === 0) return [];
+
+      const PAGE = 1000;
+      const allPosts: Array<{
+        id: string;
+        fk_profile_id: string;
+        network: string;
+        published_at: string;
+        message: string | null;
+        link: string | null;
+        post_image_url: string | null;
+        engagement: number | null;
+        likes: number | null;
+        comments: number | null;
+        shares: number | null;
+        raw_data: unknown;
+      }> = [];
+
+      let from = 0;
+      while (from < 50000) {
+        let query = supabase
+          .from("fk_posts")
+          .select("id, fk_profile_id, network, published_at, message, link, post_image_url, engagement, likes, comments, shares, raw_data")
+          .in("fk_profile_id", profileIds)
+          .order("published_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+
+        if (startDate) {
+          query = query.gte("published_at", `${startDate}T00:00:00`);
+        }
+        if (endDate) {
+          query = query.lte("published_at", `${endDate}T23:59:59`);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allPosts.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+
+      return allPosts.map((post) => {
+        const rawData = (post.raw_data && typeof post.raw_data === "object" ? post.raw_data : {}) as Record<string, unknown>;
+        const rawViews = rawData.views ?? rawData.view_count ?? rawData.video_views;
+        const views = typeof rawViews === "number" ? rawViews : Number(rawViews || 0);
+
+        return {
+          id: post.id,
+          fk_profile_id: post.fk_profile_id,
+          network: post.network,
+          post_date: post.published_at?.slice(0, 10) || "",
+          post_url: post.link,
+          post_content: post.message,
+          post_image_url: post.post_image_url,
+          engagement: post.engagement || ((post.likes || 0) + (post.comments || 0) + (post.shares || 0)),
+          likes: post.likes || 0,
+          comments: post.comments || 0,
+          shares: post.shares || 0,
+          views,
+          raw_data: {
+            ...rawData,
+            published_at: post.published_at,
+          },
+          fetched_at: post.published_at,
+        } satisfies FKDailyTopPost;
+      });
+    },
+    enabled: profileIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useFKDailyTopPosts(profileIds: string[], startDate?: string, endDate?: string) {
   return useQuery({
     queryKey: ["fk-daily-top-posts", profileIds, startDate, endDate],

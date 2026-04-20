@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
-import { useFKProfileKPIs, useFKAllKPIs, useFKDailyTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
+import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
 import { FKExcelImporter } from "./FKExcelImporter";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
 import { RankingTable } from "@/components/rankings/RankingTable";
@@ -72,7 +72,7 @@ export function ClientDetail({ client, onBack }: Props) {
   const profileIds = profiles.map((p) => p.id);
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
-  const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKDailyTopPosts(profileIds, periodStartTop, periodEndTop);
+  const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKTopPosts(profileIds, periodStartTop, periodEndTop);
 
   const brandCount = rawProfiles.filter((p) => !p.is_competitor).length;
   const compCount = rawProfiles.filter((p) => p.is_competitor).length;
