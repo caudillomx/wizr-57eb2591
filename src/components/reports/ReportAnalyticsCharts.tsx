@@ -9,6 +9,7 @@ import {
 import { TrendingUp, Users, Globe, Activity, Eye, Radio } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
+import { EditableText } from "./EditableText";
 
 interface ReportAnalyticsChartsProps {
   sourceBreakdown: SourceBreakdown[];
@@ -27,6 +28,9 @@ interface ReportAnalyticsChartsProps {
   estimatedImpressions?: number;
   estimatedReach?: number;
   totalUniqueAuthors?: number;
+  editing?: boolean;
+  onImpactAssessmentChange?: (v: string) => void;
+  onSentimentAnalysisChange?: (v: string) => void;
 }
 
 function formatBigNumber(n: number): string {
@@ -69,6 +73,9 @@ export function ReportAnalyticsCharts({
   estimatedImpressions = 0,
   estimatedReach = 0,
   totalUniqueAuthors,
+  editing = false,
+  onImpactAssessmentChange,
+  onSentimentAnalysisChange,
 }: ReportAnalyticsChartsProps) {
   const sentimentChartData = useMemo(() => {
     const items = [
@@ -150,7 +157,7 @@ export function ReportAnalyticsCharts({
         </div>
       )}
       {/* Impact Assessment */}
-      {impactAssessment && (
+      {(impactAssessment || editing) && (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -159,19 +166,43 @@ export function ReportAnalyticsCharts({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm leading-relaxed">{impactAssessment}</p>
+            {editing && onImpactAssessmentChange ? (
+              <EditableText
+                editing
+                multiline
+                minRows={4}
+                value={impactAssessment || ""}
+                onChange={onImpactAssessmentChange}
+                className="text-sm leading-relaxed block"
+                placeholder="Evaluación de impacto"
+              />
+            ) : (
+              <p className="text-sm leading-relaxed">{impactAssessment}</p>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Sentiment Analysis narrative */}
-      {sentimentAnalysis && (
+      {(sentimentAnalysis || editing) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Análisis de Sentimiento</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm leading-relaxed text-muted-foreground">{sentimentAnalysis}</p>
+            {editing && onSentimentAnalysisChange ? (
+              <EditableText
+                editing
+                multiline
+                minRows={4}
+                value={sentimentAnalysis || ""}
+                onChange={onSentimentAnalysisChange}
+                className="text-sm leading-relaxed text-muted-foreground block"
+                placeholder="Análisis de sentimiento"
+              />
+            ) : (
+              <p className="text-sm leading-relaxed text-muted-foreground">{sentimentAnalysis}</p>
+            )}
           </CardContent>
         </Card>
       )}

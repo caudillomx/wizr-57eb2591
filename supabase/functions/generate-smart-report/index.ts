@@ -108,11 +108,19 @@ function splitSentences(text: string): string[] {
 }
 
 function sanitizeFindingText(text: string): string {
+  // 1) Strip in-sentence "para [Audiencia/cargo]" tails that delatan plantilla.
+  let cleaned = text
+    .replace(/\s+(?:que\s+)?conviene\s+leer\s+con\s+prioridad\s+para\s+[^.;]+(?=[.;]|$)/gi, " que define el encuadre dominante de la ventana monitoreada")
+    .replace(/\s+(?:y\s+)?(?:que\s+)?(?:resulta|es)\s+(?:de\s+especial\s+)?relevante\s+para\s+[^.;]+(?=[.;]|$)/gi, "")
+    .replace(/\s+(?:lo\s+que\s+)?(?:le\s+)?importa\s+a\s+[^.;]+(?=[.;]|$)/gi, "")
+    .replace(/\s+para\s+(?:el|la)\s+(?:Director(?:a)?(?:\s+\w+){0,3}|Gerente(?:\s+\w+){0,3}|CEO|CMO|CCO|COO|equipo\s+\w+|área\s+\w+)(?=[.;]|$)/gi, "");
+
+  // 2) Strip generic meta-closing sentences entirely.
   const genericTailPatterns = [
     /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad|esta proporción es el insumo|este reparto (es el insumo|sirve como insumo|funciona como insumo)|sirve como insumo base|cuando aparecen términos no previstos|hay que revisar si el enfoque)/i,
   ];
 
-  const sentences = splitSentences(text);
+  const sentences = splitSentences(cleaned);
   while (
     sentences.length > 2 &&
     genericTailPatterns.some((pattern) => pattern.test(sentences[sentences.length - 1]))
@@ -120,7 +128,7 @@ function sanitizeFindingText(text: string): string {
     sentences.pop();
   }
 
-  return sentences.join(" ").trim();
+  return sentences.join(" ").replace(/\s+/g, " ").trim();
 }
 
 function clipAtWordBoundary(text: string, maxChars: number): string {
@@ -298,8 +306,9 @@ function buildFallbackFindings(
 
   const findings: string[] = [];
 
+  void audienceLabel;
   const sentimentReadingClause = negativeShare >= 50
-    ? `el periodo cierra con carga reputacional mayoritariamente adversa, lo que vuelve la conversación pública un terreno hostil que conviene leer con prioridad para ${audienceLabel || "la dirección"}`
+    ? `el periodo cierra con carga reputacional mayoritariamente adversa: la conversación pública se vuelve un terreno hostil que define el encuadre dominante de la ventana monitoreada`
     : negativeShare >= 30
       ? `el periodo presenta tono mixto con sesgo adverso, mezcla que suele preceder consolidaciones negativas si no se interviene en el encuadre`
       : `el tono adverso es minoritario y la conversación pública mantiene espacio editorial neutral o favorable que puede ser capitalizado`;
@@ -703,12 +712,12 @@ serve(async (req) => {
         strategicBlock += `\n=== SIN CONTEOS VERIFICADOS DISPONIBLES ===\nNO uses cifras exactas para casos del Enfoque Estratégico. Usa lenguaje cualitativo: "varias menciones", "presencia recurrente", "porción minoritaria".\n`;
       }
       strategicBlock += `\nIMPORTANTE: Usa este contexto para INTERPRETAR el sentimiento. Lo negativo hacia un actor externo puede ser positivo para el cliente. Evalúa cada hallazgo según cómo impacta a la marca/entidad principal en este contexto.\n`;
-      strategicBlock += `\n=== LENTE DEL DESTINATARIO (USO OBLIGATORIO) ===\nEl reporte se entrega a: ${projectAudience}.\nObjetivo del monitoreo: ${projectObjective}.\nCada hallazgo, narrativa, conclusión y recomendación DEBE leerse a través de esta lente. Pregúntate antes de escribir cada bullet: "¿por qué esto le importa a ${projectAudience} dado el Enfoque Estratégico y el objetivo ${projectObjective}?". Si la respuesta no es evidente, reformula el bullet hasta que conecte explícitamente con el Enfoque.\n- OBLIGATORIO: al menos 5 de los 6-8 hallazgos deben referenciar de forma explícita un elemento del CONTEXTO ESTRATÉGICO o del ENFOQUE ESPECÍFICO (caso, actor, tema, riesgo, oportunidad nombrada arriba) — no basta con citar la marca/entidad genéricamente.\n- OBLIGATORIO: al menos 4 de las 5-7 recomendaciones deben articularse en función del Enfoque Estratégico (mitigar un riesgo descrito, capitalizar una oportunidad descrita, anticipar un escalamiento del caso conocido, proteger la posición frente al actor/tema descrito). Una recomendación que no se conecte al Enfoque debe omitirse.\n- OBLIGATORIO en el campo 'summary' e 'impactAssessment': abrir explicando qué significa el periodo monitoreado para el Enfoque Estratégico, no solo describir métricas.\n- PROHIBIDO entregar hallazgos/recomendaciones genéricos de "mejores prácticas de comunicación" desconectados del Enfoque. Si el dato no se puede leer en clave del Enfoque, no es material para este reporte.\n`;
+      strategicBlock += `\n=== LENTE DEL DESTINATARIO (USO INTERNO, NO LITERAL) ===\nEl reporte se entrega a un perfil tipo: ${projectAudience}.\nObjetivo del monitoreo: ${projectObjective}.\nEsta lente se usa para PRIORIZAR qué dato merece ser hallazgo y cómo interpretarlo. NO debe aparecer literalmente en los textos.\n- PROHIBIDO TERMINANTE escribir frases tipo "para ${projectAudience}", "relevante para ${projectAudience}", "que conviene leer con prioridad para [cargo/audiencia]", "esto le importa a [cargo]". Son fórmulas que delatan plantilla y deben suprimirse: el texto debe demostrar la relevancia con el contenido, no nombrarla.\n- En lugar de nombrar la audiencia, ESCRIBE COMO si te dirigieras a ella directamente: tono ejecutivo, tercera persona, sin meta-comentarios sobre quién leerá esto.\n- ANCLAJE REAL AL ENFOQUE: cuando un hallazgo se conecte al Enfoque Estratégico, debe nombrar literalmente el caso, actor, riesgo u oportunidad descrito en el Enfoque (palabras concretas del bloque ENFOQUE ESPECÍFICO). NO basta con escribir la frase "Enfoque Estratégico" como etiqueta; eso se considera anclaje vacío.\n- OBLIGATORIO: al menos 5 de los 6-8 hallazgos deben citar nominalmente un elemento textual del CONTEXTO o del ENFOQUE (caso, actor, tema, riesgo u oportunidad listada arriba). No basta con citar la marca/entidad genéricamente ni con repetir el rótulo "Enfoque Estratégico".\n- OBLIGATORIO: al menos 4 de las 5-7 recomendaciones deben articularse en función de un elemento textual del Enfoque (mitigar el riesgo X nombrado, capitalizar la oportunidad Y nombrada, anticipar escalamiento del caso Z conocido). Una recomendación que no se conecte al Enfoque debe omitirse.\n- OBLIGATORIO en 'summary' e 'impactAssessment': abrir explicando qué significa el periodo monitoreado para el caso/actor del Enfoque (no nombrar audiencia ni cargo), no solo describir métricas.\n- PROHIBIDO entregar hallazgos/recomendaciones genéricos de "mejores prácticas de comunicación" desconectados del Enfoque. Si el dato no se puede leer en clave del Enfoque, no es material para este reporte.\n`;
     }
 
     const formatInstructions = `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
 - summary: 5-8 oraciones
-- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN ESTRATÉGICA leída a través del Enfoque Estratégico y del objetivo del monitoreo — explicitar por qué le importa a ${projectAudience}. Al menos 5 de los hallazgos deben mencionar nominalmente un elemento del Enfoque (caso, actor, riesgo u oportunidad listada). Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales. PROHIBIDO cerrar con frases meta o de trámite como "esto ayuda a...", "conviene cruzarlo...", "la pregunta operativa es...", "el paso siguiente es..." o equivalentes: el cierre debe declarar una consecuencia concreta del dato sobre el caso, actor, riesgo u oportunidad del Enfoque.
+- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN concreta sobre el caso/actor/riesgo del Enfoque (nombrándolo literalmente, no como etiqueta "Enfoque Estratégico"). Al menos 5 de los hallazgos deben mencionar nominalmente un elemento textual del Enfoque (caso, actor, riesgo u oportunidad listada). PROHIBIDO TERMINANTE escribir "para ${projectAudience}", "relevante para [cargo]" o cualquier referencia a la audiencia o cargo destinatario: el cierre debe declarar la consecuencia con verbos y sujetos del propio caso (qué medio fija el encuadre, qué actor escala el riesgo, qué término ancla la asociación pública). Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales. PROHIBIDO cerrar con frases meta o de trámite como "esto ayuda a...", "conviene cruzarlo...", "la pregunta operativa es...", "el paso siguiente es..." o equivalentes.
 - recommendations: OBLIGATORIO entre 5 y 7 recomendaciones. Cada una con 3-4 oraciones (aprox. 380-600 caracteres) y debe responder explícitamente: (a) DECISIÓN directiva concreta anclada al Enfoque Estratégico (mitigar riesgo X descrito, capitalizar oportunidad Y descrita, anticipar escalamiento del caso Z conocido), (b) RIESGO mitigado u OPORTUNIDAD capturada nombrando el elemento del Enfoque que la motiva, (c) PLAZO sugerido (inmediato / 2-4 semanas / mes), (d) ÁREA responsable en términos genéricos ("área de comunicación estratégica", "equipo a cargo de asuntos públicos") sin inventar nombres ni cargos. Al menos 4 de las recomendaciones deben referenciar explícitamente un elemento del Enfoque. Evita recomendaciones repetidas, genéricas o desconectadas del Enfoque.
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.

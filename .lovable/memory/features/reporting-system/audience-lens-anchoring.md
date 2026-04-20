@@ -1,15 +1,15 @@
 ---
-name: Audience Lens Anchoring
-description: Hallazgos y recomendaciones del reporte deben leerse explícitamente a través del Enfoque Estratégico y la audiencia destinataria
+name: Audience Lens Anchoring (no literal mention)
+description: La audiencia/cargo se usa para priorizar e interpretar el reporte, NUNCA se nombra literalmente. Hallazgos anclan al Enfoque por contenido textual del caso/actor, no por la etiqueta "Enfoque Estratégico".
 type: feature
 ---
-## Lente del destinatario (anclaje al Enfoque Estratégico)
+## Lente de audiencia: uso interno, no literal
 
-`generate-smart-report` añade al `strategicBlock` una sección "LENTE DEL DESTINATARIO" que obliga a leer cada hallazgo, narrativa, conclusión y recomendación a través de `projectAudience` + `projectObjective` + Enfoque Estratégico:
+Aplicado en `generate-smart-report` (prompt + sanitizer + fallbacks):
 
-- ≥5 de 6-8 **hallazgos** deben referenciar nominalmente un elemento del Enfoque (caso, actor, riesgo u oportunidad listada).
-- ≥4 de 5-7 **recomendaciones** deben articularse en función del Enfoque (mitigar riesgo descrito, capitalizar oportunidad descrita, anticipar escalamiento del caso conocido).
-- `summary` e `impactAssessment` deben abrir explicando qué significa el periodo monitoreado para el Enfoque Estratégico, no solo describir métricas.
-- Prohibido entregar bullets genéricos de "mejores prácticas de comunicación" desconectados del Enfoque.
-
-Las instrucciones de `keyFindings` y `recommendations` en `formatInstructions` repiten el requisito en su estructura interna (la "implicación estratégica" debe leerse en clave del Enfoque y nombrar el elemento que la motiva).
+1. **Audiencia es lente, no texto**: PROHIBIDO escribir "para [Audiencia]", "relevante para Director Ejecutivo", "que conviene leer con prioridad para [cargo]", "lo que le importa a [cargo]". El reporte se redacta DIRECTAMENTE para esa audiencia (tono ejecutivo en tercera persona), no la nombra.
+2. **Anclaje real al Enfoque**: cuando un hallazgo conecta con el Enfoque, debe nombrar literalmente el caso/actor/riesgo del bloque ENFOQUE ESPECÍFICO. Escribir solo el rótulo "Enfoque Estratégico" se considera anclaje vacío.
+3. **Mínimos de anclaje**: ≥5 de 6-8 hallazgos y ≥4 de 5-7 recomendaciones deben citar nominalmente un elemento textual del Enfoque (caso/actor/riesgo/oportunidad listada). `summary` e `impactAssessment` abren con qué significa el periodo para el caso del Enfoque, sin nombrar audiencia.
+4. **Sanitizer ampliado** (`sanitizeFindingText`): elimina colas in-sentence "...que conviene leer con prioridad para X", "...relevante para X", "...le importa a X", "...para el Director/Gerente/CEO/equipo X/área X" antes de cortar oraciones meta.
+5. **Fallback alineado**: el bullet de distribución de sentimiento ya no menciona "Director Ejecutivo" ni audiencia; cierra con consecuencia ejecutiva ("define el encuadre dominante de la ventana monitoreada").
+6. **Editor manual extendido**: `Evaluación de Impacto` y `Análisis de Sentimiento` son editables inline en `ReportAnalyticsCharts` cuando `editing` está activo en `SmartReportGenerator`. Los cambios se propagan a PDF, link público y vista visual via `activeReport`.
