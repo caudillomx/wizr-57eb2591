@@ -479,6 +479,23 @@ strong{font-weight:700;color:${C.primary};}
 .report-content > .pdf-section-block{margin-bottom:14px;}
 .report-content > .pdf-section-block:last-child{margin-bottom:0;}
 
+/* Pagination rules — apply ALWAYS (not only @media print) so PDFShift respects them */
+.report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
+.pdf-section-block{page-break-inside:auto;break-inside:auto;}
+.section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
+.section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
+.section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
+.section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
+.section-body > *:last-child{margin-bottom:14px;}
+.avoid-break{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-column-break-inside:avoid !important;display:block !important;}
+.avoid-break-inner{display:flex;gap:10px;align-items:flex-start;}
+table{page-break-inside:auto;}
+thead{display:table-header-group;}
+tr{page-break-inside:avoid;break-inside:avoid;page-break-after:auto;}
+p{orphans:3;widows:3;}
+li{page-break-inside:avoid;break-inside:avoid;orphans:3;widows:3;}
+h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
+
 @page{
   size:A4;
   margin:${HEADER_HEIGHT_MM}mm 0 ${FOOTER_HEIGHT_MM}mm 0;
@@ -489,19 +506,6 @@ strong{font-weight:700;color:${C.primary};}
   .report-shell{padding:0;}
   .report-content{padding:14px 20px 12px;}
   .report-content > .pdf-section-block{margin-bottom:14px;padding-bottom:8px;}
-  .report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
-  .pdf-section-block{page-break-inside:auto;break-inside:auto;}
-  .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
-  .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
-  .section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
-  .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
-  .section-body > *:last-child{margin-bottom:14px;}
-  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
-  table{page-break-inside:auto;}
-  thead{display:table-header-group;}
-  tr{page-break-inside:auto;page-break-after:auto;break-inside:auto;}
-  p{orphans:2;widows:2;}
-  h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;background:${C.borderLight};}
