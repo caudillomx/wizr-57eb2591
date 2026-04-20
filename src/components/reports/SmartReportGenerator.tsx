@@ -549,12 +549,45 @@ export function SmartReportGenerator({
                 <h4 className="font-medium flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   Hallazgos Clave
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ keyFindings: [...activeReport.keyFindings, "Nuevo hallazgo"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
                 </h4>
-                <ul className="space-y-1 text-sm">
-                  {report.keyFindings.map((finding, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-muted-foreground">•</span>
-                      {finding}
+                <ul className="space-y-1.5 text-sm">
+                  {activeReport.keyFindings.map((finding, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">•</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={finding}
+                          multiline
+                          minRows={3}
+                          onChange={(v) => {
+                            const next = [...activeReport.keyFindings];
+                            next[i] = v;
+                            updateReport({ keyFindings: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ keyFindings: activeReport.keyFindings.filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -563,17 +596,101 @@ export function SmartReportGenerator({
                 <h4 className="font-medium flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   Recomendaciones
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ recommendations: [...activeReport.recommendations, "Nueva recomendación"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
                 </h4>
-                <ul className="space-y-1 text-sm">
-                  {report.recommendations.map((rec, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-muted-foreground">{i + 1}.</span>
-                      {rec}
+                <ul className="space-y-1.5 text-sm">
+                  {activeReport.recommendations.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">{i + 1}.</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={rec}
+                          multiline
+                          minRows={3}
+                          onChange={(v) => {
+                            const next = [...activeReport.recommendations];
+                            next[i] = v;
+                            updateReport({ recommendations: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ recommendations: activeReport.recommendations.filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+
+            {/* Conclusions (editable) */}
+            {(activeReport.conclusions && activeReport.conclusions.length > 0) || isEditing ? (
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  Conclusiones
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ conclusions: [...(activeReport.conclusions || []), "Nueva conclusión"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
+                </h4>
+                <ul className="space-y-1.5 text-sm">
+                  {(activeReport.conclusions || []).map((c, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">•</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={c}
+                          multiline
+                          minRows={2}
+                          onChange={(v) => {
+                            const next = [...(activeReport.conclusions || [])];
+                            next[i] = v;
+                            updateReport({ conclusions: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ conclusions: (activeReport.conclusions || []).filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             <Separator />
 
