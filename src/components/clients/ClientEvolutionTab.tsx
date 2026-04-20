@@ -15,6 +15,8 @@ interface Props {
   profiles: FKProfile[];
   allKpis: FKProfileKPI[];
   isLoading: boolean;
+  brandCount: number;
+  compCount: number;
 }
 
 type Metric = "followers" | "engagement_rate" | "page_performance_index" | "follower_growth_percent" | "posts_per_day";
@@ -38,7 +40,7 @@ const COLORS = [
   "#eab308",
 ];
 
-export function ClientEvolutionTab({ profiles, allKpis, isLoading }: Props) {
+export function ClientEvolutionTab({ profiles, allKpis, isLoading, brandCount, compCount }: Props) {
   const [metric, setMetric] = useState<Metric>("followers");
 
   const periodCount = useMemo(() => {
@@ -84,9 +86,6 @@ export function ClientEvolutionTab({ profiles, allKpis, isLoading }: Props) {
   }, [chartData]);
 
   const currentMetric = METRIC_OPTIONS.find((m) => m.value === metric)!;
-
-  const brandCount = profiles.filter((p) => !p.is_competitor).length;
-  const compCount = profiles.filter((p) => p.is_competitor).length;
 
   if (isLoading) {
     return (
