@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,11 @@ import {
   BookOpen,
   BarChart3,
   Download,
+  Pencil,
+  Check,
+  Plus,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
@@ -25,6 +30,7 @@ import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
 import { VisualSlidesViewer } from "./VisualSlidesViewer";
+import { EditableText } from "./EditableText";
 import { Globe, Presentation } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
