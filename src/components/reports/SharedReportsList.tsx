@@ -3,17 +3,25 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, ExternalLink, Trash2, Ban, Eye, Check, Loader2 } from "lucide-react";
-import { useSharedReportsByProject, useRevokeSharedReport, useDeleteSharedReport } from "@/hooks/useSharedReports";
+import {
+  useSharedReportsByProject,
+  useSharedReportsByClient,
+  useRevokeSharedReport,
+  useDeleteSharedReport,
+} from "@/hooks/useSharedReports";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface SharedReportsListProps {
-  projectId: string;
+  projectId?: string;
+  clientId?: string;
 }
 
-export function SharedReportsList({ projectId }: SharedReportsListProps) {
-  const { data: reports, isLoading } = useSharedReportsByProject(projectId);
+export function SharedReportsList({ projectId, clientId }: SharedReportsListProps) {
+  const projectQuery = useSharedReportsByProject(projectId);
+  const clientQuery = useSharedReportsByClient(clientId);
+  const { data: reports, isLoading } = clientId ? clientQuery : projectQuery;
   const revoke = useRevokeSharedReport();
   const remove = useDeleteSharedReport();
   const { toast } = useToast();
@@ -30,7 +38,7 @@ export function SharedReportsList({ projectId }: SharedReportsListProps) {
   if (!reports || reports.length === 0) {
     return (
       <Card className="p-6 text-center text-sm text-muted-foreground">
-        Aún no has publicado reportes para este proyecto. Genera un reporte y haz clic en "Publicar como link" para compartirlo.
+        Aún no has publicado reportes. Genera un reporte y haz clic en "Publicar como link" para compartirlo.
       </Card>
     );
   }
