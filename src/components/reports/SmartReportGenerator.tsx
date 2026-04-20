@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,11 @@ import {
   BookOpen,
   BarChart3,
   Download,
+  Pencil,
+  Check,
+  Plus,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSmartReport, SmartReportContent, SmartReportConfig } from "@/hooks/useSmartReport";
@@ -25,6 +30,7 @@ import { SmartReportPDFGenerator } from "./SmartReportPDFGenerator";
 import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
 import { VisualSlidesViewer } from "./VisualSlidesViewer";
+import { EditableText } from "./EditableText";
 import { Globe, Presentation } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
@@ -93,6 +99,27 @@ export function SmartReportGenerator({
   const [entityFilter, setEntityFilter] = useState<string>("__all__");
   const [publishOpen, setPublishOpen] = useState(false);
   const [visualOpen, setVisualOpen] = useState(false);
+
+  // Manual editing layer: editedReport overrides report for downstream (PDF, publish, visual)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedReport, setEditedReport] = useState<SmartReportContent | null>(null);
+
+  // Sync editedReport whenever a fresh report is generated
+  useEffect(() => {
+    setEditedReport(report);
+    setIsEditing(false);
+  }, [report]);
+
+  const activeReport = editedReport ?? report;
+
+  const updateReport = (patch: Partial<SmartReportContent>) => {
+    setEditedReport((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const resetEdits = () => {
+    setEditedReport(report);
+    toast({ title: "Cambios descartados", description: "Se restauró la versión original generada por la IA." });
+  };
 
   const filteredMentions = useMemo(() => {
     return mentions.filter((m) => {
@@ -258,18 +285,61 @@ export function SmartReportGenerator({
         )}
 
         {/* Generated Report */}
-        {report && (
+        {report && activeReport && (
           <div className="space-y-6">
-            {/* Report Header */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{report.title}</h3>
-                <Button variant="outline" size="sm" onClick={clearReport}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Nuevo reporte
-                </Button>
+            {/* Report Header + Edit toolbar */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <EditableText
+                    editing={isEditing}
+                    value={activeReport.title}
+                    onChange={(v) => updateReport({ title: v })}
+                    className="text-lg font-semibold block"
+                    placeholder="Título del reporte"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isEditing ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={resetEdits}>
+                        <Undo2 className="mr-2 h-4 w-4" />
+                        Descartar
+                      </Button>
+                      <Button variant="default" size="sm" onClick={() => { setIsEditing(false); toast({ title: "Cambios guardados", description: "El PDF y el link público usarán tus ediciones." }); }}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Listo
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar reporte
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={clearReport}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Nuevo
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              <p className="text-muted-foreground">{report.summary}</p>
+              {isEditing && (
+                <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <Pencil className="h-3.5 w-3.5 text-primary" />
+                  Modo edición. Click en cualquier texto para modificarlo. Las gráficas y métricas no son editables. Los cambios se aplican al PDF y al link público.
+                </div>
+              )}
+              <EditableText
+                editing={isEditing}
+                value={activeReport.summary}
+                onChange={(v) => updateReport({ summary: v })}
+                multiline
+                minRows={3}
+                className="text-muted-foreground block"
+                placeholder="Resumen ejecutivo"
+              />
             </div>
 
             {/* Visual Analytics */}
@@ -479,12 +549,45 @@ export function SmartReportGenerator({
                 <h4 className="font-medium flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   Hallazgos Clave
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ keyFindings: [...activeReport.keyFindings, "Nuevo hallazgo"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
                 </h4>
-                <ul className="space-y-1 text-sm">
-                  {report.keyFindings.map((finding, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-muted-foreground">•</span>
-                      {finding}
+                <ul className="space-y-1.5 text-sm">
+                  {activeReport.keyFindings.map((finding, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">•</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={finding}
+                          multiline
+                          minRows={3}
+                          onChange={(v) => {
+                            const next = [...activeReport.keyFindings];
+                            next[i] = v;
+                            updateReport({ keyFindings: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ keyFindings: activeReport.keyFindings.filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -493,17 +596,101 @@ export function SmartReportGenerator({
                 <h4 className="font-medium flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   Recomendaciones
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ recommendations: [...activeReport.recommendations, "Nueva recomendación"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
                 </h4>
-                <ul className="space-y-1 text-sm">
-                  {report.recommendations.map((rec, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-muted-foreground">{i + 1}.</span>
-                      {rec}
+                <ul className="space-y-1.5 text-sm">
+                  {activeReport.recommendations.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">{i + 1}.</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={rec}
+                          multiline
+                          minRows={3}
+                          onChange={(v) => {
+                            const next = [...activeReport.recommendations];
+                            next[i] = v;
+                            updateReport({ recommendations: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ recommendations: activeReport.recommendations.filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+
+            {/* Conclusions (editable) */}
+            {(activeReport.conclusions && activeReport.conclusions.length > 0) || isEditing ? (
+              <div className="space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  Conclusiones
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-7 px-2"
+                      onClick={() => updateReport({ conclusions: [...(activeReport.conclusions || []), "Nueva conclusión"] })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Agregar
+                    </Button>
+                  )}
+                </h4>
+                <ul className="space-y-1.5 text-sm">
+                  {(activeReport.conclusions || []).map((c, i) => (
+                    <li key={i} className="flex items-start gap-2 group">
+                      <span className="text-muted-foreground mt-0.5">•</span>
+                      <div className="flex-1">
+                        <EditableText
+                          editing={isEditing}
+                          value={c}
+                          multiline
+                          minRows={2}
+                          onChange={(v) => {
+                            const next = [...(activeReport.conclusions || [])];
+                            next[i] = v;
+                            updateReport({ conclusions: next });
+                          }}
+                        />
+                      </div>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-50 hover:opacity-100"
+                          onClick={() => updateReport({ conclusions: (activeReport.conclusions || []).filter((_, idx) => idx !== i) })}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             <Separator />
 
@@ -522,7 +709,7 @@ export function SmartReportGenerator({
                   </div>
                   <p className="text-xs text-muted-foreground">1-2 páginas. Brief ejecutivo, KPIs, top hallazgos y recomendaciones clave.</p>
                   <SmartReportPDFGenerator
-                    report={report}
+                    report={activeReport}
                     projectName={projectName}
                     dateRange={dateRange}
                     pdfFormat="summary"
@@ -535,7 +722,7 @@ export function SmartReportGenerator({
                   </div>
                   <p className="text-xs text-muted-foreground">4-6 páginas. Análisis integral con narrativas, influenciadores y visualizaciones.</p>
                   <SmartReportPDFGenerator
-                    report={report}
+                    report={activeReport}
                     projectName={projectName}
                     dateRange={dateRange}
                     pdfFormat="full"
@@ -563,7 +750,7 @@ export function SmartReportGenerator({
               <VisualSlidesViewer
                 open={visualOpen}
                 onOpenChange={setVisualOpen}
-                report={report}
+                report={activeReport}
                 projectName={projectName}
                 dateRange={dateRange}
               />
@@ -594,7 +781,7 @@ export function SmartReportGenerator({
                 onOpenChange={setPublishOpen}
                 projectId={projectId}
                 projectName={projectName}
-                report={report}
+                report={activeReport}
                 dateRange={dateRange}
               />
             )}
