@@ -252,7 +252,8 @@ export function NarrativesAnalysisPanel({ profiles, isLoading: profilesLoading, 
           dateRange: dateRange ? {
             from: dateRange.from.toISOString(),
             to: dateRange.to.toISOString()
-          } : null
+          } : null,
+          analysisContext: "benchmark",
         }
       });
 

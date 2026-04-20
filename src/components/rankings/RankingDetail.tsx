@@ -238,6 +238,7 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
             profiles={profiles} 
             isLoading={loadingProfiles}
             dateRange={dateRange}
+            analysisContext="benchmark"
           />
         </TabsContent>
 

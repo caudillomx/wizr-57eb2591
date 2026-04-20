@@ -48,6 +48,14 @@ interface TopContentTabProps {
   profiles: FKProfile[];
   isLoading: boolean;
   dateRange?: { from: Date; to: Date };
+  /**
+   * Contexto del análisis. 'brand' = análisis de UNA marca propia (Performance/Listening),
+   * 'benchmark' = análisis de un ECOSISTEMA COMPETITIVO (Benchmarking).
+   * Determina cómo el AI redacta narrativas, fortalezas y oportunidades.
+   */
+  analysisContext?: "brand" | "benchmark";
+  /** Nombre de la marca foco cuando analysisContext === 'brand' (ej. "Actinver") */
+  brandName?: string;
 }
 
 type SortBy = "engagement" | "likes" | "comments" | "shares" | "date";
@@ -229,7 +237,7 @@ function useAllPostsFromDB(profileIds: string[], startDate?: string, endDate?: s
   });
 }
 
-export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange }: TopContentTabProps) {
+export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange, analysisContext = "benchmark", brandName }: TopContentTabProps) {
   const { toast } = useToast();
   const [selectedProfileId, setSelectedProfileId] = useState<string>("__all__");
   const [filterNetwork, setFilterNetwork] = useState<FKNetwork | "all">("all");
@@ -399,6 +407,8 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
             from: format(dateRange.from, "yyyy-MM-dd"),
             to: format(dateRange.to, "yyyy-MM-dd"),
           } : null,
+          analysisContext,
+          brandName,
         },
       });
 
