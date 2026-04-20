@@ -109,7 +109,7 @@ function splitSentences(text: string): string[] {
 
 function sanitizeFindingText(text: string): string {
   const genericTailPatterns = [
-    /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad)/i,
+    /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad|esta proporción es el insumo|este reparto (es el insumo|sirve como insumo|funciona como insumo)|sirve como insumo base|cuando aparecen términos no previstos|hay que revisar si el enfoque)/i,
   ];
 
   const sentences = splitSentences(text);
@@ -205,8 +205,8 @@ function buildFallbackFindings(
   },
 ): string[] {
   const sourceMap = new Map<string, { count: number; positive: number; negative: number; neutral: number }>();
-  const authorMap = new Map<string, { count: number; platform: string; engagement: number }>();
-  const dayMap = new Map<string, number>();
+  const authorMap = new Map<string, { count: number; platform: string; engagement: number; samples: string[] }>();
+  const dayMap = new Map<string, { count: number; samples: Array<{ source: string; title: string; sentiment: string | null }> }>();
   const keywordMap = new Map<string, number>();
 
   for (const mention of mentions) {
@@ -219,7 +219,18 @@ function buildFallbackFindings(
     sourceMap.set(source, sourceBucket);
 
     const date = getPrimaryDate(mention);
-    if (date) dayMap.set(date, (dayMap.get(date) || 0) + 1);
+    if (date) {
+      const dayBucket = dayMap.get(date) || { count: 0, samples: [] };
+      dayBucket.count += 1;
+      if (dayBucket.samples.length < 3 && (mention.title || mention.description)) {
+        dayBucket.samples.push({
+          source: mention.source_domain || "fuente digital",
+          title: (mention.title || mention.description || "").trim().slice(0, 110),
+          sentiment: mention.sentiment,
+        });
+      }
+      dayMap.set(date, dayBucket);
+    }
 
     for (const keyword of mention.matched_keywords || []) {
       const cleanKeyword = keyword.trim();
@@ -233,16 +244,19 @@ function buildFallbackFindings(
     if (authorName) {
       const key = `${authorName}@@${source}`;
       const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0) + Number(meta.views || 0);
-      const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0 };
+      const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0, samples: [] };
       authorBucket.count += 1;
       authorBucket.engagement += engagement;
+      if (authorBucket.samples.length < 1 && (mention.title || mention.description)) {
+        authorBucket.samples.push((mention.title || mention.description || "").trim().slice(0, 90));
+      }
       authorMap.set(key, authorBucket);
     }
   }
 
   const sortedSources = Array.from(sourceMap.entries()).sort((a, b) => b[1].count - a[1].count);
   const sortedAuthors = Array.from(authorMap.entries()).sort((a, b) => b[1].engagement - a[1].engagement || b[1].count - a[1].count);
-  const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1]);
+  const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1].count - a[1].count);
 
   // Dedup keywords by normalized form (Zaga Tawil / zaga tawil / Rafael Zaga Tawil → keep canonical with highest count + longest variant)
   const normalizeKey = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
@@ -280,44 +294,72 @@ function buildFallbackFindings(
   const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
   const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
   const audienceLabel = options?.projectAudience?.trim() || "";
-  const audienceClause = audienceLabel ? ` Esta lectura es la base para la conversación con ${audienceLabel}.` : "";
-  const fullAnchor = buildStrategicAnchor(options);
-  const shortAnchor = buildShortAnchor(options);
+  void buildStrategicAnchor; void buildShortAnchor; // anchors retained as helpers; not used in current bullets
 
   const findings: string[] = [];
 
+  const sentimentReadingClause = negativeShare >= 50
+    ? `el periodo cierra con carga reputacional mayoritariamente adversa, lo que vuelve la conversación pública un terreno hostil que conviene leer con prioridad para ${audienceLabel || "la dirección"}`
+    : negativeShare >= 30
+      ? `el periodo presenta tono mixto con sesgo adverso, mezcla que suele preceder consolidaciones negativas si no se interviene en el encuadre`
+      : `el tono adverso es minoritario y la conversación pública mantiene espacio editorial neutral o favorable que puede ser capitalizado`;
   findings.push(
-    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${fullAnchor} llegó al periodo con una carga reputacional ${negativeShare >= 50 ? "mayoritariamente adversa" : negativeShare >= 30 ? "mixta con sesgo adverso" : "mayoritariamente neutral"}.${audienceClause}`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). En lectura ejecutiva, ${sentimentReadingClause}.`
   );
 
   if (sortedSources.length > 0) {
     const topThree = sortedSources.slice(0, 3).map(([source, data]) => `${source} (${data.count})`).join(", ");
     const mainSource = sortedSources[0];
     const mainShare = metrics.totalMentions > 0 ? Math.round((mainSource[1].count / metrics.totalMentions) * 100) : 0;
+    const mainNeg = mainSource[1].negative;
+    const mainNegShare = mainSource[1].count > 0 ? Math.round((mainNeg / mainSource[1].count) * 100) : 0;
+    const toneClause = mainNegShare >= 50
+      ? `con tono mayoritariamente adverso dentro de ese canal (${mainNeg} de ${mainSource[1].count} negativas)`
+      : mainNegShare >= 30
+        ? `con presencia relevante de tono adverso en ese canal (${mainNeg} negativas de ${mainSource[1].count})`
+        : `con tono mixto dentro de ese canal`;
     findings.push(
-      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales, lo que vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública relevante para ${shortAnchor}.`
+      `Concentración de cobertura: ${topThree}. ${mainSource[0]} concentra ${mainShare}% del volumen total ${toneClause}. Esto vuelve a ${mainSource[0]} el canal donde se está fijando primero la lectura pública del periodo, por encima de cualquier otra plataforma de la muestra.`
     );
   }
 
-  if (sortedAuthors.length > 0) {
-    const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
+  // Voces con mayor tracción: solo si hay autores con tracción real (≥3 menciones o engagement ≥ 500)
+  const TRACTION_MIN_MENTIONS = 3;
+  const TRACTION_MIN_ENGAGEMENT = 500;
+  const tractionAuthors = sortedAuthors.filter(([, data]) => data.count >= TRACTION_MIN_MENTIONS || data.engagement >= TRACTION_MIN_ENGAGEMENT).slice(0, 3);
+  if (tractionAuthors.length > 0) {
+    const topAuthors = tractionAuthors.map(([key, data]) => {
+      const name = key.split("@@")[0];
+      const engPart = data.engagement >= 100 ? `; ${data.engagement.toLocaleString()} interacciones acumuladas` : "";
+      return `${name} en ${data.platform} (${data.count} ${data.count === 1 ? "publicación" : "publicaciones"}${engPart})`;
+    }).join("; ");
+    const totalEng = tractionAuthors.reduce((acc, [, d]) => acc + d.engagement, 0);
+    const engClause = totalEng >= 1000
+      ? `Estas cuentas concentran ${totalEng.toLocaleString()} interacciones en la muestra, por lo que un encuadre adverso en cualquiera de ellas escala más por capacidad de arrastre del emisor que por volumen disperso.`
+      : `Su peso viene del volumen propio de publicaciones más que del engagement, lo que las vuelve emisores recurrentes a vigilar en futuras ventanas.`;
     findings.push(
-      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre se concentra en pocos nombres, de modo que un encuadre adverso puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
+      `Voces con tracción medible: ${topAuthors}. ${engClause}`
     );
   }
 
   if (sortedDays.length > 0) {
-    const [peakDay, peakCount] = sortedDays[0];
-    const peakShare = metrics.totalMentions > 0 ? Math.round((peakCount / metrics.totalMentions) * 100) : 0;
+    const [peakDay, peakData] = sortedDays[0];
+    const peakShare = metrics.totalMentions > 0 ? Math.round((peakData.count / metrics.totalMentions) * 100) : 0;
+    const sampleClause = peakData.samples.length > 0
+      ? ` Entre lo publicado ese día destacan piezas como "${peakData.samples[0].title}" en ${peakData.samples[0].source}${peakData.samples[1] ? ` y "${peakData.samples[1].title}" en ${peakData.samples[1].source}` : ""}.`
+      : "";
+    const driverClause = peakShare >= 30
+      ? `La concentración indica un detonador puntual y no un crecimiento sostenido: esa jornada funciona como punto de máxima exposición acumulada del periodo.`
+      : `El día concentra el volumen más alto del periodo aunque sin formar una crisis sostenida, lo que sugiere un evento detonador acotado.`;
     findings.push(
-      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido; esa jornada funciona como punto de máxima exposición acumulada dentro del periodo observado.`
+      `Pico de actividad: ${peakDay} con ${peakData.count} menciones (${peakShare}% del total).${sampleClause} ${driverClause}`
     );
   }
 
   if (sortedKeywords.length > 0) {
     const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
     findings.push(
-      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública con ${shortAnchor}.`
+      `Términos más reiterados: ${topTerms}. Estos son los marcos concretos que están estructurando el encuadre de la conversación más allá de titulares aislados; la reiteración indica que el periodo quedó anclado a estos nombres y conceptos, no a hechos puntuales dispersos.`
     );
   }
 
@@ -328,8 +370,13 @@ function buildFallbackFindings(
     }).length;
     const mediaCount = Math.max(0, mentions.length - socialCount);
     const socialShare = metrics.totalMentions > 0 ? Math.round((socialCount / metrics.totalMentions) * 100) : 0;
+    const balanceClause = socialShare >= 70
+      ? `El predominio de redes (${socialShare}%) indica que la exposición fue principalmente reactiva: conversación impulsada por usuarios, no por cobertura editorial estructurada. Esto eleva la velocidad pero baja la durabilidad del registro.`
+      : mediaCount >= socialCount
+        ? `El peso de medios digitales (${mediaCount} publicaciones) vuelve la exposición más durable porque deja huella verificable en archivos de prensa, frente a la volatilidad de redes.`
+        : `La combinación equilibrada de ambos canales produjo tanto aceleración social como registro público persistente, doble carril que conviene leer por separado.`;
     findings.push(
-      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que la exposición fue principalmente reactiva, no editorial estructurada` : mediaCount >= socialCount ? `El peso de medios digitales vuelve la exposición más durable porque deja huella verificable` : `La combinación de ambos canales produjo tanto aceleración social como registro público persistente`}.`
+      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). ${balanceClause}`
     );
   }
 
@@ -724,6 +771,15 @@ Las recomendaciones deben ser de NIVEL DIRECTIVO/EJECUTIVO, NO operativas técni
 - NO: "Ajustar keywords", "agregar fuentes al monitoreo", "configurar alertas en el sistema", "crear dashboards", "segmentar análisis", "rastrear influenciadores en la plataforma", "ajustar frecuencia de monitoreo". Estas son tareas internas, no recomendaciones para un directivo.
 - Cada recomendación debe contestar: ¿Qué decisión debe tomar el directivo? ¿Qué riesgo se mitiga o qué oportunidad se captura? ¿En qué plazo (inmediato/semanas/mes)?
 - Mantén un tono prudente: "se sugiere evaluar", "considerar", "podría convenir" — no prescribas acciones operativas específicas (campañas, comunicados) salvo señalar la necesidad de involucrar al área correspondiente, sin nombrarla con un título inventado.
+
+=== REGLA CRÍTICA #4: CALIDAD EDITORIAL DE HALLAZGOS (ANTI-CLICHÉ) ===
+Cada hallazgo será leído por un directivo que descartará el reporte si suena a plantilla. Aplica estas reglas SIN EXCEPCIÓN:
+- PROHIBIDO llamar "tracción", "voces clave" o "amplificación" a cuentas con menos de 3 menciones o sin engagement medible (≥500 interacciones acumuladas en la muestra). Si los autores top tienen 1-2 menciones y bajo engagement, NO incluyas un bullet de "voces con tracción"; en su lugar, omite ese hallazgo o reformúlalo como "emisores recurrentes a vigilar" sin atribuirles peso real.
+- PROHIBIDO escribir un bullet de "pico de actividad" SIN nombrar al menos un titular, autor o medio concreto que publicó ese día. El pico debe explicar QUÉ pasó, no solo cuándo.
+- PROHIBIDO repetir la frase "Enfoque Estratégico" más de 2 veces en el conjunto de hallazgos. Varía: "el caso/asunto descrito en el contexto del proyecto", "lo que el proyecto definió como prioridad", "el ángulo estratégico del monitoreo", o nombra directamente el caso/actor cuando esté disponible. La repetición textual es una bandera roja editorial.
+- PROHIBIDO cerrar bullets con frases descriptivas vacías tipo "la conversación no se reparte de forma homogénea", "esto debe leerse contra los riesgos del Enfoque", "lo cual es relevante para la lectura estratégica", "esta combinación aumenta la probabilidad de...", "este reparto sirve como insumo base para...". Cada cierre debe nombrar una CONSECUENCIA OBSERVABLE concreta (qué medio fija el encuadre, qué actor escala el riesgo, qué término ancla la asociación pública, qué jornada concentra exposición).
+- PROHIBIDO repetir "tono adverso", "carga reputacional", "lectura pública" o "encuadre del periodo" en más del 50% de los hallazgos. Sustituye por verbos y sustantivos concretos: "el medio X fija la cobertura crítica", "el autor Y impulsa el ángulo de escrutinio", "el término Z reaparece en cada pieza".
+- OBLIGATORIO: si un hallazgo describe un dato (volumen, %, autor, día, plataforma) DEBE seguir con qué decisión o vigilancia concreta se desprende, no con una repetición meta del marco estratégico.
 
 FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos solo cuando aparezcan en las menciones.`;
 
