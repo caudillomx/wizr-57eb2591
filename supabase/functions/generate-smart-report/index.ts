@@ -298,8 +298,9 @@ function buildFallbackFindings(
 
   const findings: string[] = [];
 
+  void audienceLabel;
   const sentimentReadingClause = negativeShare >= 50
-    ? `el periodo cierra con carga reputacional mayoritariamente adversa, lo que vuelve la conversación pública un terreno hostil que conviene leer con prioridad para ${audienceLabel || "la dirección"}`
+    ? `el periodo cierra con carga reputacional mayoritariamente adversa: la conversación pública se vuelve un terreno hostil que define el encuadre dominante de la ventana monitoreada`
     : negativeShare >= 30
       ? `el periodo presenta tono mixto con sesgo adverso, mezcla que suele preceder consolidaciones negativas si no se interviene en el encuadre`
       : `el tono adverso es minoritario y la conversación pública mantiene espacio editorial neutral o favorable que puede ser capitalizado`;
