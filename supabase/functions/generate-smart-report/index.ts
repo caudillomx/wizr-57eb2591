@@ -98,6 +98,43 @@ function getPrimaryDate(mention: Mention): string {
   return (mention.published_at || mention.created_at || "").split("T")[0];
 }
 
+function splitSentences(text: string): string[] {
+  return text
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
+function sanitizeFindingText(text: string): string {
+  const genericTailPatterns = [
+    /^(para que este dato sea accionable|conviene cruzar|conviene contrastar|la pregunta operativa es|el paso siguiente es|esto ayuda a|esto permite|sirve para|lo cual debe leerse|para la lectura estratégica|en términos estratégicos|estratégicamente,? la recurrencia|esta combinación aumenta la probabilidad)/i,
+  ];
+
+  const sentences = splitSentences(text);
+  while (
+    sentences.length > 2 &&
+    genericTailPatterns.some((pattern) => pattern.test(sentences[sentences.length - 1]))
+  ) {
+    sentences.pop();
+  }
+
+  return sentences.join(" ").trim();
+}
+
+function buildStrategicAnchor(options?: {
+  knownCases?: string[];
+  strategicFocus?: string;
+  strategicContext?: string;
+}): string {
+  const raw = options?.knownCases?.[0] || options?.strategicFocus || options?.strategicContext || "";
+  const compact = raw.replace(/\s+/g, " ").trim();
+  if (!compact) return "el asunto priorizado por el proyecto";
+  const clipped = compact.length > 110 ? `${compact.slice(0, 107).trim()}…` : compact;
+  return options?.knownCases?.[0] ? `el caso \"${clipped}\"` : `\"${clipped}\"`;
+}
+
 function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
   const buckets = new Map<string, { count: number; negatives: number; positives: number; samples: string[] }>();
 
@@ -128,7 +165,16 @@ function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
     }));
 }
 
-function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
+function buildFallbackFindings(
+  metrics: ReportContent["metrics"],
+  mentions: Mention[],
+  options?: {
+    projectAudience?: string;
+    strategicContext?: string;
+    strategicFocus?: string;
+    knownCases?: string[];
+  },
+): string[] {
   const sourceMap = new Map<string, { count: number; positive: number; negative: number; neutral: number }>();
   const authorMap = new Map<string, { count: number; platform: string; engagement: number }>();
   const dayMap = new Map<string, number>();
@@ -173,11 +219,13 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
   const negativeShare = metrics.totalMentions > 0 ? Math.round((metrics.negativeCount / metrics.totalMentions) * 100) : 0;
   const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
   const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
+  const audienceLabel = options?.projectAudience || "la audiencia destinataria";
+  const strategicAnchor = buildStrategicAnchor(options);
 
   const findings: string[] = [];
 
   findings.push(
-    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. Esta proporción es el insumo base para evaluar, contra el Enfoque Estratégico definido para el proyecto, qué casos o actores listados están concentrando la carga reputacional negativa observada.`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${strategicAnchor} llegó al periodo con una carga reputacional mayoritariamente adversa frente a ${audienceLabel}.`
   );
 
   if (sortedSources.length > 0) {
@@ -185,14 +233,14 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
     const mainSource = sortedSources[0];
     const mainShare = metrics.totalMentions > 0 ? Math.round((mainSource[1].count / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales. Conviene cruzar este reparto con los actores y casos del Enfoque Estratégico para definir en cuáles de esas plataformas la presión reputacional está realmente afectando los elementos que importan a la audiencia destinataria.`
+      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales. Eso vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública de ${strategicAnchor} para ${audienceLabel}.`
     );
   }
 
   if (sortedAuthors.length > 0) {
     const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
     findings.push(
-      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. Para que este dato sea accionable hay que contrastar a cada uno contra el Enfoque Estratégico: ¿están abordando los casos, riesgos u oportunidades específicos que el proyecto definió como críticos, o se trata de cobertura tangencial que no toca esos elementos?`
+      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre está concentrada en pocos nombres, de modo que un encuadre adverso sobre ${strategicAnchor} puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
     );
   }
 
@@ -200,14 +248,14 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
     const [peakDay, peakCount] = sortedDays[0];
     const peakShare = metrics.totalMentions > 0 ? Math.round((peakCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido. El paso siguiente es identificar qué hecho específico —vinculado a los casos o actores listados en el Enfoque Estratégico— operó como ancla de esa jornada, para distinguir entre coyuntura aislada y un episodio que tensiona directamente las prioridades del proyecto.`
+      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido. Esa jornada funciona como punto de máxima exposición acumulada de ${strategicAnchor} dentro del periodo observado.`
     );
   }
 
   if (sortedKeywords.length > 0) {
     const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
     findings.push(
-      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La pregunta operativa es si esos términos son los mismos que el Enfoque Estratégico identifica como núcleo del riesgo o de la oportunidad: cuando coinciden, el ecosistema está validando el mapa estratégico del proyecto; cuando aparecen términos no previstos con peso alto, hay que revisar si el Enfoque debe ampliarse.`
+      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública entre la conversación y ${strategicAnchor}.`
     );
   }
 
@@ -219,11 +267,11 @@ function buildFallbackFindings(metrics: ReportContent["metrics"], mentions: Ment
     const mediaCount = Math.max(0, mentions.length - socialCount);
     const socialShare = metrics.totalMentions > 0 ? Math.round((socialCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? "El predominio de redes sugiere una conversación impulsada por reacción social más que por cobertura editorial estructurada" : mediaCount >= socialCount ? "El peso de medios digitales eleva la durabilidad reputacional del tema porque deja huella verificable" : "El equilibrio entre ambos canales obliga a gestionar simultáneamente velocidad de respuesta y consistencia documental"}, lo cual debe leerse contra los riesgos y oportunidades que el Enfoque Estratégico señala como prioritarios.`
+      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que ${strategicAnchor} estuvo expuesto sobre todo a amplificación reactiva, no a cobertura editorial más lenta` : mediaCount >= socialCount ? `El peso de medios digitales vuelve más durable la exposición de ${strategicAnchor} porque deja huella verificable` : `La combinación de ambos canales expuso a ${strategicAnchor} tanto a aceleración social como a registro público persistente`}, algo especialmente sensible para ${audienceLabel}.`
     );
   }
 
-  return normalizeTextList(findings).slice(0, 8);
+   return normalizeTextList(findings.map(sanitizeFindingText)).slice(0, 8);
 }
 
 function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
@@ -513,7 +561,7 @@ serve(async (req) => {
 
     const formatInstructions = `FORMATO: Reporte COMPLETO (4-6 páginas A4). Sé exhaustivo y detallado.
 - summary: 5-8 oraciones
-- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN ESTRATÉGICA leída a través del Enfoque Estratégico y del objetivo del monitoreo — explicitar por qué le importa a ${projectAudience}. Al menos 5 de los hallazgos deben mencionar nominalmente un elemento del Enfoque (caso, actor, riesgo u oportunidad listada). Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales.
+- keyFindings: OBLIGATORIO entre 6 y 8 hallazgos. Cada hallazgo debe tener entre 3 y 5 oraciones (aprox. 350-550 caracteres) y seguir esta estructura interna: (1) QUÉ se observó con cifra/auditoría, (2) DÓNDE/QUIÉN lo dice (medio, autor, plataforma específica), (3) IMPLICACIÓN ESTRATÉGICA leída a través del Enfoque Estratégico y del objetivo del monitoreo — explicitar por qué le importa a ${projectAudience}. Al menos 5 de los hallazgos deben mencionar nominalmente un elemento del Enfoque (caso, actor, riesgo u oportunidad listada). Evita hallazgos genéricos, descriptivos o que solo repitan métricas globales. PROHIBIDO cerrar con frases meta o de trámite como "esto ayuda a...", "conviene cruzarlo...", "la pregunta operativa es...", "el paso siguiente es..." o equivalentes: el cierre debe declarar una consecuencia concreta del dato sobre el caso, actor, riesgo u oportunidad del Enfoque.
 - recommendations: OBLIGATORIO entre 5 y 7 recomendaciones. Cada una con 3-4 oraciones (aprox. 380-600 caracteres) y debe responder explícitamente: (a) DECISIÓN directiva concreta anclada al Enfoque Estratégico (mitigar riesgo X descrito, capitalizar oportunidad Y descrita, anticipar escalamiento del caso Z conocido), (b) RIESGO mitigado u OPORTUNIDAD capturada nombrando el elemento del Enfoque que la motiva, (c) PLAZO sugerido (inmediato / 2-4 semanas / mes), (d) ÁREA responsable en términos genéricos ("área de comunicación estratégica", "equipo a cargo de asuntos públicos") sin inventar nombres ni cargos. Al menos 4 de las recomendaciones deben referenciar explícitamente un elemento del Enfoque. Evita recomendaciones repetidas, genéricas o desconectadas del Enfoque.
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
@@ -733,7 +781,12 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     }
 
     const fallbackNarratives = buildFallbackNarratives(mentions);
-    const fallbackFindings = buildFallbackFindings(metrics, mentions);
+    const fallbackFindings = buildFallbackFindings(metrics, mentions, {
+      projectAudience,
+      strategicContext,
+      strategicFocus,
+      knownCases,
+    });
     const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions);
 
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
@@ -800,7 +853,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       .slice(0, 25);
 
     const mergedFindings = normalizeTextList([
-      ...(Array.isArray(reportContent.keyFindings) ? reportContent.keyFindings : []),
+      ...(Array.isArray(reportContent.keyFindings) ? reportContent.keyFindings.map((item) => sanitizeFindingText(String(item))) : []),
       ...fallbackFindings,
     ]).slice(0, 8);
 
