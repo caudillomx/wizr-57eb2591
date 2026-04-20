@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,14 +15,10 @@ import {
   ExternalLink,
   Sparkles,
   Calendar,
-  RefreshCw,
-  Loader2,
   Clock,
   AlertCircle
 } from "lucide-react";
 import { FKProfile, FKDailyTopPost, getNetworkLabel, FKNetwork } from "@/hooks/useFanpageKarma";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { 
   SiFacebook, 
   SiInstagram, 
@@ -65,68 +60,6 @@ const networkColors: Record<string, string> = {
 const ALL_NETWORKS: FKNetwork[] = ["facebook", "instagram", "twitter", "tiktok", "youtube", "linkedin", "threads"];
 
 export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }: DailyTopPostsPanelProps) {
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // Sync top posts manually
-  const handleSyncTopPosts = async () => {
-    if (profiles.length === 0) {
-      toast.error("No hay perfiles para sincronizar");
-      return;
-    }
-
-    setIsSyncing(true);
-    toast.info("Sincronizando posts... Esto puede tardar 2-3 minutos con muchos perfiles.");
-    
-    try {
-      // Create AbortController with longer timeout for large syncs
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000); // 5 minutes
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scheduled-ranking-sync`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({}),
-          signal: controller.signal,
-        }
-      );
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-      
-      const data = await response.json();
-
-      if (data?.success && data?.started) {
-        toast.success("Sincronización iniciada. En unos minutos verás los posts top.");
-        // Try refreshing a couple of times automatically
-        setTimeout(() => onRefresh?.(), 30_000);
-        setTimeout(() => onRefresh?.(), 90_000);
-      } else if (data?.success) {
-        toast.success("Sincronización completada.");
-        onRefresh?.();
-      } else {
-        throw new Error(data?.error || "Error en la sincronización");
-      }
-    } catch (err) {
-      console.error("Error syncing top posts:", err);
-      if (err instanceof Error && err.name === 'AbortError') {
-        toast.error("La sincronización tardó demasiado. Intenta de nuevo o espera al corte automático.");
-      } else {
-        toast.error(`Error al sincronizar: ${err instanceof Error ? err.message : "Error desconocido"}`);
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   // Create a map of profile ID to profile for quick lookup
   const profileMap = useMemo(() => {
     const map = new Map<string, FKProfile>();
@@ -249,24 +182,6 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
             {yesterdayDate}
           </p>
         </div>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={handleSyncTopPosts}
-          disabled={isSyncing}
-        >
-          {isSyncing ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Sincronizando...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Sincronizar
-            </>
-          )}
-        </Button>
       </CardHeader>
       <CardContent>
         <ScrollArea className="max-h-[600px] pr-2">
