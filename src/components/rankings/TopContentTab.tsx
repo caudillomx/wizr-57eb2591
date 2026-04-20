@@ -185,34 +185,47 @@ function PostCard({ post, profileName, rank }: { post: DisplayPost; profileName:
 const POSTS_PER_PAGE = 20;
 
 /**
- * Hook that reads posts from fk_daily_top_posts table (DB) instead of calling the API.
- * This eliminates API costs for viewing content.
+ * Hook that reads ALL posts from fk_posts table (DB) instead of calling the API.
+ * Reads from the full historical posts table — not the per-day top, so the user
+ * sees every imported post (not just the daily best).
+ * Paginates with .range() to get past the default 1000-row Supabase limit.
  */
-function useTopPostsFromDB(profileIds: string[], startDate?: string, endDate?: string) {
+function useAllPostsFromDB(profileIds: string[], startDate?: string, endDate?: string) {
   return useQuery({
-    queryKey: ["fk-top-content-db", profileIds, startDate, endDate],
+    queryKey: ["fk-posts-db", profileIds, startDate, endDate],
     queryFn: async () => {
       if (profileIds.length === 0) return [];
 
-      let query = supabase
-        .from("fk_daily_top_posts")
-        .select("*")
-        .in("fk_profile_id", profileIds)
-        .order("post_date", { ascending: false });
+      const PAGE = 1000;
+      const all: any[] = [];
+      let from = 0;
+      // Hard upper bound to avoid runaway loops
+      while (from < 20000) {
+        let query = supabase
+          .from("fk_posts")
+          .select("id, fk_profile_id, network, external_id, published_at, message, link, post_image_url, post_type, likes, comments, shares, engagement, reach")
+          .in("fk_profile_id", profileIds)
+          .order("published_at", { ascending: false })
+          .range(from, from + PAGE - 1);
 
-      if (startDate) {
-        query = query.gte("post_date", startDate);
-      }
-      if (endDate) {
-        query = query.lte("post_date", endDate);
-      }
+        if (startDate) {
+          query = query.gte("published_at", `${startDate}T00:00:00`);
+        }
+        if (endDate) {
+          query = query.lte("published_at", `${endDate}T23:59:59`);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as FKDailyTopPost[];
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
     },
     enabled: profileIds.length > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes - data is synced daily
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -253,7 +266,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
   const dbEndDate = dateRange ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
   // Fetch from DB instead of API!
-  const { data: dbTopPosts = [], isLoading: postsLoading, isFetching, refetch } = useTopPostsFromDB(
+  const { data: dbPosts = [], isLoading: postsLoading, isFetching, refetch } = useAllPostsFromDB(
     queryProfileIds,
     dbStartDate,
     dbEndDate
@@ -268,23 +281,24 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange 
 
   // Convert DB posts to display format
   const posts: DisplayPost[] = useMemo(() => {
-    return dbTopPosts.map(post => {
+    return dbPosts.map((post: any) => {
       const profile = profileMap.get(post.fk_profile_id);
       return {
         id: post.id,
-        url: post.post_url || undefined,
-        message: post.post_content || undefined,
+        url: post.link || undefined,
+        message: post.message || undefined,
+        content_type: post.post_type || undefined,
         image_url: post.post_image_url || undefined,
-        published_at: post.post_date,
+        published_at: post.published_at,
         likes: post.likes || 0,
         comments: post.comments || 0,
         shares: post.shares || 0,
-        engagement: post.engagement || 0,
+        engagement: post.engagement || ((post.likes || 0) + (post.comments || 0) + (post.shares || 0)),
         profile_id: profile?.profile_id,
         display_name: profile?.display_name || profile?.profile_id,
       };
     });
-  }, [dbTopPosts, profileMap]);
+  }, [dbPosts, profileMap]);
 
   // Reset selection when filter changes
   useEffect(() => {
