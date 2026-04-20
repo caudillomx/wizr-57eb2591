@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Sparkles, Loader2, RefreshCw, Pencil, Check, Undo2, Globe, Target, Users2,
+  Sparkles, Loader2, RefreshCw, Pencil, Check, Undo2, Globe, Target, Users2, Presentation,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -14,6 +14,8 @@ import {
 import type { FKProfile, FKProfileKPI, FKDailyTopPost } from "@/hooks/useFanpageKarma";
 import { PerformanceReportView } from "@/components/reports/PerformanceReportView";
 import { PublishReportDialog } from "@/components/reports/PublishReportDialog";
+import { PerformanceReportPDFGenerator } from "@/components/reports/PerformanceReportPDFGenerator";
+import { PerformanceSlidesViewer } from "@/components/reports/PerformanceSlidesViewer";
 import { format } from "date-fns";
 
 interface PerformanceReportGeneratorProps {
@@ -35,6 +37,7 @@ export function PerformanceReportGenerator({
 
   const [strategicFocus, setStrategicFocus] = useState("");
   const [publishOpen, setPublishOpen] = useState(false);
+  const [slidesOpen, setSlidesOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedReport, setEditedReport] = useState<PerformanceReportContent | null>(null);
 
@@ -162,6 +165,14 @@ export function PerformanceReportGenerator({
                     <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                       <Pencil className="mr-2 h-4 w-4" /> Editar
                     </Button>
+                    <PerformanceReportPDFGenerator
+                      report={activeReport}
+                      clientName={brandName || clientName}
+                      dateRange={dateRangeIso}
+                    />
+                    <Button variant="outline" size="sm" onClick={() => setSlidesOpen(true)} className="gap-2">
+                      <Presentation className="h-4 w-4" /> Presentación
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setPublishOpen(true)}>
                       <Globe className="mr-2 h-4 w-4" /> Publicar como link
                     </Button>
@@ -184,16 +195,25 @@ export function PerformanceReportGenerator({
       </CardContent>
 
       {activeReport && (
-        <PublishReportDialog
-          open={publishOpen}
-          onOpenChange={setPublishOpen}
-          ownerKind="client"
-          ownerId={clientId}
-          ownerName={clientName}
-          reportKind={isBrand ? "performance_brand" : "performance_benchmark"}
-          report={activeReport}
-          dateRange={dateRangeIso}
-        />
+        <>
+          <PublishReportDialog
+            open={publishOpen}
+            onOpenChange={setPublishOpen}
+            ownerKind="client"
+            ownerId={clientId}
+            ownerName={clientName}
+            reportKind={isBrand ? "performance_brand" : "performance_benchmark"}
+            report={activeReport}
+            dateRange={dateRangeIso}
+          />
+          <PerformanceSlidesViewer
+            open={slidesOpen}
+            onOpenChange={setSlidesOpen}
+            report={activeReport}
+            clientName={brandName || clientName}
+            dateRange={dateRangeIso}
+          />
+        </>
       )}
     </Card>
   );
