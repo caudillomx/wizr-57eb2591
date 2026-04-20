@@ -474,66 +474,81 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           if (postRows.length === 0) continue;
 
+          // Load existing profiles by both profile_id AND display_name (posts don't carry Profile-ID)
           const { data: existing } = await supabase
             .from("fk_profiles")
-            .select("id, network, profile_id")
+            .select("id, network, profile_id, display_name")
             .eq("client_id", clientId);
-          const existingMap = new Map(
-            (existing || []).map((e: any) => [`${e.network}::${e.profile_id}`, e.id])
-          );
+          const byId = new Map<string, string>();
+          const byName = new Map<string, string>();
+          (existing || []).forEach((e: any) => {
+            byId.set(`${e.network}::${e.profile_id}`, e.id);
+            if (e.display_name) byName.set(`${e.network}::${normalizeKey(e.display_name)}`, e.id);
+          });
 
-          const uniqueProfiles = new Map<string, { network: FKNetwork; profileId: string; displayName: string }>();
+          const resolveProfileId = (network: FKNetwork, displayName: string): string | undefined => {
+            return byName.get(`${network}::${normalizeKey(displayName)}`)
+              ?? byId.get(`${network}::${displayName.replace(/^@/, "")}`);
+          };
+
+          // Create profiles for posts whose profile doesn't exist yet (rare: posts before KPIs)
+          const uniqueNew = new Map<string, { network: FKNetwork; displayName: string }>();
           for (const p of postRows) {
-            const k = `${p.network}::${p.profileId}`;
-            if (!uniqueProfiles.has(k)) {
-              uniqueProfiles.set(k, { network: p.network, profileId: p.profileId, displayName: p.displayName });
-            }
+            if (resolveProfileId(p.network, p.displayName)) continue;
+            const k = `${p.network}::${normalizeKey(p.displayName)}`;
+            if (!uniqueNew.has(k)) uniqueNew.set(k, { network: p.network, displayName: p.displayName });
           }
-
-          const missing = Array.from(uniqueProfiles.values()).filter(
-            (p) => !existingMap.has(`${p.network}::${p.profileId}`)
-          );
-          if (missing.length > 0) {
+          if (uniqueNew.size > 0) {
+            const toInsert = Array.from(uniqueNew.values()).map((p) => ({
+              client_id: clientId,
+              network: p.network,
+              profile_id: p.displayName.replace(/^@/, ""),
+              display_name: p.displayName,
+              is_active: true,
+              is_competitor: f.asCompetitor,
+            }));
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
-              .insert(missing.map((p) => ({
-                client_id: clientId,
-                network: p.network,
-                profile_id: p.profileId,
-                display_name: p.displayName,
-                is_active: true,
-                is_competitor: f.asCompetitor,
-              })))
-              .select("id, network, profile_id");
+              .insert(toInsert)
+              .select("id, network, profile_id, display_name");
             if (error) throw error;
-            (inserted || []).forEach((row: any) =>
-              existingMap.set(`${row.network}::${row.profile_id}`, row.id)
-            );
-            totalProfiles += missing.length;
+            (inserted || []).forEach((row: any) => {
+              byId.set(`${row.network}::${row.profile_id}`, row.id);
+              if (row.display_name) byName.set(`${row.network}::${normalizeKey(row.display_name)}`, row.id);
+            });
+            totalProfiles += toInsert.length;
           }
 
-          const postsPayload = postRows
-            .map((p) => {
-              const id = existingMap.get(`${p.network}::${p.profileId}`);
-              if (!id) return null;
-              return {
-                fk_profile_id: id,
-                network: p.network,
-                external_id: p.externalId,
-                published_at: p.publishedAt,
-                message: p.message,
-                link: p.link,
-                likes: p.likes != null ? Math.round(p.likes) : 0,
-                comments: p.comments != null ? Math.round(p.comments) : 0,
-                shares: p.shares != null ? Math.round(p.shares) : 0,
-                engagement: p.engagement != null ? Math.round(p.engagement) : 0,
-                reach: p.reach != null ? Math.round(p.reach) : 0,
-                interaction_rate: p.interactionRate,
-                post_type: p.postType,
-                raw_data: p.raw,
-              };
-            })
-            .filter(Boolean) as any[];
+          // Build payload + dedupe within batch by (fk_profile_id, external_id)
+          const seen = new Set<string>();
+          const postsPayload: any[] = [];
+          for (const p of postRows) {
+            const id = resolveProfileId(p.network, p.displayName);
+            if (!id) continue;
+            // Synthesize a stable external_id when missing to avoid null collisions
+            const extId = p.externalId
+              || p.link
+              || `${p.publishedAt}::${(p.message || "").slice(0, 80)}`;
+            const dedupKey = `${id}::${extId}`;
+            if (seen.has(dedupKey)) continue;
+            seen.add(dedupKey);
+            postsPayload.push({
+              fk_profile_id: id,
+              network: p.network,
+              external_id: extId,
+              published_at: p.publishedAt,
+              message: p.message,
+              link: p.link,
+              likes: p.likes != null ? Math.round(p.likes) : 0,
+              comments: p.comments != null ? Math.round(p.comments) : 0,
+              shares: p.shares != null ? Math.round(p.shares) : 0,
+              engagement: p.engagement != null ? Math.round(p.engagement) : 0,
+              reach: p.reach != null ? Math.round(p.reach) : 0,
+              interaction_rate: p.interactionRate,
+              post_type: p.postType,
+              raw_data: p.raw,
+            });
+          }
 
           const CHUNK = 500;
           for (let i = 0; i < postsPayload.length; i += CHUNK) {
@@ -543,12 +558,12 @@ export function FKExcelImporter({ clientId }: Props) {
               .upsert(slice, { onConflict: "fk_profile_id,external_id", ignoreDuplicates: false });
             if (error) {
               console.error("upsert posts error", error);
-              const { error: e2 } = await supabase.from("fk_posts").insert(slice);
-              if (e2) throw e2;
+              throw error;
             }
             totalPosts += slice.length;
           }
 
+          // Derive top post per profile per day for the legacy fk_daily_top_posts panel
           const topByDay = new Map<string, any>();
           for (const p of postsPayload) {
             const day = (p.published_at || "").slice(0, 10);
