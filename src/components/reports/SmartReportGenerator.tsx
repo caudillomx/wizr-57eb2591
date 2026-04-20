@@ -349,12 +349,15 @@ export function SmartReportGenerator({
               mediaOutlets={report.mediaOutlets}
               timeline={report.timeline}
               sentimentData={sentimentData}
-              impactAssessment={report.impactAssessment}
-              sentimentAnalysis={report.sentimentAnalysis}
+              impactAssessment={activeReport.impactAssessment}
+              sentimentAnalysis={activeReport.sentimentAnalysis}
               dateLabel={dateRange.label}
               estimatedImpressions={report.metrics.estimatedImpressions}
               estimatedReach={report.metrics.estimatedReach}
               totalUniqueAuthors={report.totalUniqueAuthors}
+              editing={isEditing}
+              onImpactAssessmentChange={(v) => updateReport({ impactAssessment: v })}
+              onSentimentAnalysisChange={(v) => updateReport({ sentimentAnalysis: v })}
             />
 
             {/* Narratives Analysis */}
