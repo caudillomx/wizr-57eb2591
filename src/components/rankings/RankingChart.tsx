@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { FKProfile, FKProfileKPI, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
+import { getFKProfileDisplayName } from "@/lib/fkProfileUtils";
 
 interface RankingChartProps {
   profiles: FKProfile[];
@@ -63,7 +64,7 @@ export function RankingChart({
         }
         
         return {
-          name: `@${profile.profile_id}`,
+          name: getFKProfileDisplayName(profile),
           value,
           network: profile.network as FKNetwork,
           displayValue: metric === "followers" 

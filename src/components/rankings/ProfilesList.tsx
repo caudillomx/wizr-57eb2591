@@ -27,6 +27,7 @@ import { Trash2, Users, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { FKProfile, getNetworkLabel, useDeleteFKProfile, useBulkDeleteFKProfiles, FKNetwork } from "@/hooks/useFanpageKarma";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { getFKProfileDisplayName, getFKProfileTechnicalLabel } from "@/lib/fkProfileUtils";
 
 const NETWORK_COLORS: Record<FKNetwork, string> = {
   facebook: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -209,12 +210,9 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
-                    @{profile.profile_id}
-                    {profile.display_name && profile.display_name !== profile.profile_id && (
-                      <span className="ml-2 text-muted-foreground text-sm">
-                        ({profile.display_name})
-                      </span>
-                    )}
+                    <div title={profile.profile_id}>
+                      {getFKProfileDisplayName(profile)}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {profile.last_synced_at ? (
@@ -251,7 +249,7 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
                           <AlertDialogHeader>
                             <AlertDialogTitle>¿Eliminar perfil?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Se eliminará @{profile.profile_id} y todos sus datos de KPIs almacenados.
+                              Se eliminará {getFKProfileDisplayName(profile)} y todos sus datos de KPIs almacenados.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
