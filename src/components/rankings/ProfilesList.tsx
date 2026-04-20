@@ -212,11 +212,6 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
                   <TableCell className="font-medium">
                     <div title={profile.profile_id}>
                       {getFKProfileDisplayName(profile)}
-                      {profile.display_name && profile.profile_id && getFKProfileDisplayName(profile) !== profile.profile_id && (
-                        <span className="ml-2 text-muted-foreground text-sm">
-                          {getFKProfileTechnicalLabel(profile.profile_id)}
-                        </span>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
