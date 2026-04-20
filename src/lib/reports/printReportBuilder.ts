@@ -284,9 +284,11 @@ export function buildReportHTML(
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
     findingsHtml += `<div class="avoid-break">${insightCard(highlightText(findings[0]), "🔍", firstSentiment)}</div>`;
     findings.slice(1).forEach((f, i) => {
-      findingsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
-        <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+      findingsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
+        <div class="avoid-break-inner">
+          <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
+          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+        </div>
       </div>`;
     });
   }
@@ -375,9 +377,11 @@ export function buildReportHTML(
   if (recs.length > 0) {
     recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
-      recsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
-        <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
+      recsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
+        <div class="avoid-break-inner">
+          <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
+          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
+        </div>
       </div>`;
     });
   }
@@ -391,9 +395,11 @@ export function buildReportHTML(
     const concs = isSummary ? report.conclusions.slice(0, 2) : report.conclusions;
     const bodyWithBullets = concs
       .map(
-        (c) => `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
-        <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
-        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+        (c) => `<div class="avoid-break" style="margin-bottom:10px;">
+        <div class="avoid-break-inner">
+          <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
+          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+        </div>
       </div>`,
       )
       .join("");
@@ -479,6 +485,23 @@ strong{font-weight:700;color:${C.primary};}
 .report-content > .pdf-section-block{margin-bottom:14px;}
 .report-content > .pdf-section-block:last-child{margin-bottom:0;}
 
+/* Pagination rules — apply ALWAYS (not only @media print) so PDFShift respects them */
+.report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
+.pdf-section-block{page-break-inside:auto;break-inside:auto;}
+.section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
+.section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
+.section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
+.section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
+.section-body > *:last-child{margin-bottom:14px;}
+.avoid-break{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-column-break-inside:avoid !important;display:block !important;}
+.avoid-break-inner{display:flex;gap:10px;align-items:flex-start;}
+table{page-break-inside:auto;}
+thead{display:table-header-group;}
+tr{page-break-inside:avoid;break-inside:avoid;page-break-after:auto;}
+p{orphans:3;widows:3;}
+li{page-break-inside:avoid;break-inside:avoid;orphans:3;widows:3;}
+h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
+
 @page{
   size:A4;
   margin:${HEADER_HEIGHT_MM}mm 0 ${FOOTER_HEIGHT_MM}mm 0;
@@ -489,19 +512,6 @@ strong{font-weight:700;color:${C.primary};}
   .report-shell{padding:0;}
   .report-content{padding:14px 20px 12px;}
   .report-content > .pdf-section-block{margin-bottom:14px;padding-bottom:8px;}
-  .report-section{page-break-inside:auto;break-inside:auto;margin-bottom:6px;}
-  .pdf-section-block{page-break-inside:auto;break-inside:auto;}
-  .section-header-wrap{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}
-  .section-header{page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;}
-  .section-body{page-break-inside:auto;break-inside:auto;padding-bottom:6px;}
-  .section-body > *:first-child{page-break-before:avoid;break-before:avoid;}
-  .section-body > *:last-child{margin-bottom:14px;}
-  .avoid-break{page-break-inside:avoid;break-inside:avoid;}
-  table{page-break-inside:auto;}
-  thead{display:table-header-group;}
-  tr{page-break-inside:auto;page-break-after:auto;break-inside:auto;}
-  p{orphans:2;widows:2;}
-  h1,h2,h3,h4{page-break-after:avoid;break-after:avoid;}
 }
 @media screen{
   body{padding-bottom:30px;background:${C.borderLight};}
