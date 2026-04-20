@@ -8,15 +8,17 @@ import ProjectSelector from "@/components/layout/ProjectSelector";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { TourGuide } from "@/components/onboarding/TourGuide";
 import { WorkflowProgressBar } from "@/components/workflow/WorkflowProgressBar";
-import { LogOut, User, Plus, Trophy } from "lucide-react";
+import { LogOut, User, Plus, Trophy, Building2 } from "lucide-react";
 
 const DashboardContent = () => {
   const { user, roles, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on the rankings page (independent of projects)
+  // Routes that are independent of projects (use clients or are global)
   const isRankingsPage = location.pathname.startsWith("/dashboard/rankings");
+  const isPerformancePage = location.pathname.startsWith("/dashboard/performance");
+  const isProjectIndependent = isRankingsPage || isPerformancePage;
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,13 +48,20 @@ const DashboardContent = () => {
               <SidebarTrigger className="text-foreground" />
               <div className="h-6 w-px bg-border" />
               
-              {/* Show project selector OR rankings indicator depending on route */}
+              {/* Show context indicator OR project selector depending on route */}
               {isRankingsPage ? (
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <div className="h-7 w-7 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                     <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <span className="text-foreground">Benchmarking Competitivo</span>
+                </div>
+              ) : isPerformancePage ? (
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-foreground">Performance por Cliente</span>
                 </div>
               ) : (
                 <>
@@ -70,7 +79,7 @@ const DashboardContent = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {!isRankingsPage && (
+              {!isProjectIndependent && (
                 <Button size="sm" onClick={() => navigate("/nuevo-proyecto")}>
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Nuevo Proyecto</span>

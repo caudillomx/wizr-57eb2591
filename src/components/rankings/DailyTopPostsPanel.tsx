@@ -121,11 +121,11 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
     return result;
   }, [topPosts, networksInRanking]);
 
-  // Calculate yesterday's date for display
-  const yesterdayDate = useMemo(() => {
+  // Calculate yesterday's date string for comparison
+  const yesterdayStr = useMemo(() => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    return format(yesterday, "EEEE d 'de' MMMM, yyyy", { locale: es });
+    return format(yesterday, "yyyy-MM-dd");
   }, []);
 
   if (isLoading) {
@@ -175,11 +175,10 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
         <div>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            Top Posts por Red Social
+            Top Post por Red Social
           </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {yesterdayDate}
+          <p className="text-xs text-muted-foreground mt-1">
+            Mejor publicación por red en los últimos 7 días (prioriza ayer cuando hay datos disponibles).
           </p>
         </div>
       </CardHeader>
@@ -215,6 +214,11 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
                               <Clock className="h-3 w-3 ml-2" />
                               {format(new Date(post.raw_data.published_at as string), "HH:mm", { locale: es })}
                             </>
+                          )}
+                          {post.post_date !== yesterdayStr && (
+                            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 h-4 font-normal">
+                              más reciente disponible
+                            </Badge>
                           )}
                         </span>
                       )}
