@@ -23,10 +23,11 @@ import { RankingQuestionsPanel } from "@/components/rankings/RankingQuestionsPan
 import { RankingAIChat } from "@/components/rankings/RankingAIChat";
 import { NarrativesAnalysisPanel } from "@/components/rankings/NarrativesAnalysisPanel";
 import { RankingDateFilter, DateRangePreset, getDateRangeFromPreset } from "@/components/rankings/RankingDateFilter";
-import { RankingReportGenerator } from "@/components/rankings/RankingReportGenerator";
 import { DailyTopPostsPanel } from "@/components/rankings/DailyTopPostsPanel";
 import { DateRange } from "react-day-picker";
 import { ClientEvolutionTab } from "./ClientEvolutionTab";
+import { PerformanceReportGenerator } from "./PerformanceReportGenerator";
+import { SharedReportsList } from "@/components/reports/SharedReportsList";
 
 interface Props {
   client: Client;
@@ -215,12 +216,22 @@ export function ClientDetail({ client, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-6">
-          <RankingReportGenerator
-            rankingName={`${client.name} — ${view === "brand" ? "Marca" : "Benchmark"}`}
-            profiles={profiles}
-            kpis={kpis}
-            dateRange={dateRange}
-          />
+          <div className="space-y-6">
+            <PerformanceReportGenerator
+              reportMode={view}
+              clientId={client.id}
+              clientName={client.name}
+              brandName={client.name}
+              profiles={profiles}
+              kpis={kpis}
+              topPosts={dailyTopPosts}
+              dateRange={dateRange}
+            />
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Reportes publicados</h3>
+              <SharedReportsList clientId={client.id} />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="ai" className="mt-6">
