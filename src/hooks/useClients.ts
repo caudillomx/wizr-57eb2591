@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { canonicalizeFKProfileIdentity } from "@/lib/fkProfileUtils";
 
 export interface Client {
   id: string;
@@ -139,7 +140,35 @@ export function useFKProfilesByClient(clientId: string | undefined, mode: "all" 
         .order("network", { ascending: true })
         .order("display_name", { ascending: true });
       if (error) throw error;
-      return (data || []) as ClientFKProfile[];
+
+      const deduped = new Map<string, ClientFKProfile>();
+
+      for (const profile of (data || []) as ClientFKProfile[]) {
+        const dedupKey = [
+          profile.network,
+          profile.is_competitor ? "competitor" : "brand",
+          canonicalizeFKProfileIdentity(profile.display_name || profile.profile_id),
+        ].join("::");
+
+        const existing = deduped.get(dedupKey);
+        if (!existing) {
+          deduped.set(dedupKey, profile);
+          continue;
+        }
+
+        const existingTimestamp = existing.last_synced_at ? new Date(existing.last_synced_at).getTime() : 0;
+        const candidateTimestamp = profile.last_synced_at ? new Date(profile.last_synced_at).getTime() : 0;
+        const keepCandidate =
+          candidateTimestamp > existingTimestamp ||
+          (!!profile.display_name && !existing.display_name) ||
+          (candidateTimestamp === existingTimestamp && new Date(profile.created_at).getTime() < new Date(existing.created_at).getTime());
+
+        if (keepCandidate) {
+          deduped.set(dedupKey, profile);
+        }
+      }
+
+      return Array.from(deduped.values());
     },
     enabled: !!clientId,
   });
