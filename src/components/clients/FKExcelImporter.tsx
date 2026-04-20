@@ -300,7 +300,8 @@ async function detectFile(file: File): Promise<DetectedFile> {
     if (k !== "unknown") {
       kind = k;
       rowCount += rows.length;
-      if (k === "kpis" && !detectedStart) {
+      // Detect period from metadata for both KPIs and Posts
+      if (!detectedStart) {
         const period = detectPeriodFromMeta(headerRows);
         detectedStart = period.start;
         detectedEnd = period.end;
