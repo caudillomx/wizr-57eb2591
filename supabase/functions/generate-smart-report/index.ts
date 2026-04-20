@@ -256,7 +256,7 @@ function buildFallbackFindings(
 
   const sortedSources = Array.from(sourceMap.entries()).sort((a, b) => b[1].count - a[1].count);
   const sortedAuthors = Array.from(authorMap.entries()).sort((a, b) => b[1].engagement - a[1].engagement || b[1].count - a[1].count);
-  const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1]);
+  const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1].count - a[1].count);
 
   // Dedup keywords by normalized form (Zaga Tawil / zaga tawil / Rafael Zaga Tawil → keep canonical with highest count + longest variant)
   const normalizeKey = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
