@@ -608,10 +608,31 @@ serve(async (req) => {
     };
 
     const canonicalTerms = extractCanonicalTerms(knownCases, entityNames);
-    const verifiedCounts: Array<{ term: string; count: number }> = canonicalTerms
+    const rawVerified: Array<{ term: string; count: number }> = canonicalTerms
       .map(t => ({ term: t, count: countMentionsForTerm(t) }))
       .filter(x => x.count > 0)
       .sort((a, b) => b.count - a.count);
+
+    // Dedup: collapse case/accent variants AND substring containment (e.g. "Zaga Tawil" ⊂ "Rafael Zaga Tawil").
+    const verifiedCounts: Array<{ term: string; count: number }> = [];
+    for (const candidate of rawVerified) {
+      const candNorm = normalizeForMatch(candidate.term);
+      const existingIdx = verifiedCounts.findIndex(v => {
+        const vn = normalizeForMatch(v.term);
+        return vn === candNorm || vn.includes(candNorm) || candNorm.includes(vn);
+      });
+      if (existingIdx === -1) {
+        verifiedCounts.push(candidate);
+      } else {
+        const existing = verifiedCounts[existingIdx];
+        const preferCandidate = candidate.term.length > existing.term.length;
+        verifiedCounts[existingIdx] = {
+          term: preferCandidate ? candidate.term : existing.term,
+          count: Math.max(existing.count, candidate.count),
+        };
+      }
+    }
+    verifiedCounts.sort((a, b) => b.count - a.count);
 
     let strategicBlock = "";
     if (strategicContext || strategicFocus) {
