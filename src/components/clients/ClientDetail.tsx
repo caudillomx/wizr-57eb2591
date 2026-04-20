@@ -207,7 +207,7 @@ export function ClientDetail({ client, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="content" className="mt-6">
-          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext="brand" brandName={client?.name} />
+          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext={view} brandName={client.name} />
         </TabsContent>
 
         <TabsContent value="narratives" className="mt-6">
