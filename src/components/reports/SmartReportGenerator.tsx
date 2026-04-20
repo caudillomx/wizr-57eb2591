@@ -709,7 +709,7 @@ export function SmartReportGenerator({
                   </div>
                   <p className="text-xs text-muted-foreground">1-2 páginas. Brief ejecutivo, KPIs, top hallazgos y recomendaciones clave.</p>
                   <SmartReportPDFGenerator
-                    report={report}
+                    report={activeReport}
                     projectName={projectName}
                     dateRange={dateRange}
                     pdfFormat="summary"
@@ -722,7 +722,7 @@ export function SmartReportGenerator({
                   </div>
                   <p className="text-xs text-muted-foreground">4-6 páginas. Análisis integral con narrativas, influenciadores y visualizaciones.</p>
                   <SmartReportPDFGenerator
-                    report={report}
+                    report={activeReport}
                     projectName={projectName}
                     dateRange={dateRange}
                     pdfFormat="full"
@@ -750,7 +750,7 @@ export function SmartReportGenerator({
               <VisualSlidesViewer
                 open={visualOpen}
                 onOpenChange={setVisualOpen}
-                report={report}
+                report={activeReport}
                 projectName={projectName}
                 dateRange={dateRange}
               />
@@ -781,7 +781,7 @@ export function SmartReportGenerator({
                 onOpenChange={setPublishOpen}
                 projectId={projectId}
                 projectName={projectName}
-                report={report}
+                report={activeReport}
                 dateRange={dateRange}
               />
             )}
