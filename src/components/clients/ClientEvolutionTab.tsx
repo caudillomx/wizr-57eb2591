@@ -10,6 +10,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { FKProfile, FKProfileKPI } from "@/hooks/useFanpageKarma";
+import { getFKProfileSeriesLabel } from "@/lib/fkProfileUtils";
 
 interface Props {
   profiles: FKProfile[];
@@ -68,7 +69,7 @@ export function ClientEvolutionTab({ profiles, allKpis, isLoading, brandCount, c
         });
       }
       const row = byPeriod.get(key)!;
-      const profileKey = `${profile.display_name || profile.profile_id}`;
+      const profileKey = getFKProfileSeriesLabel(profile);
       row[profileKey] = value;
     }
 
