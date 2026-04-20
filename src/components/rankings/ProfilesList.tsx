@@ -169,7 +169,6 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
           </div>
         </div>
       </CardHeader>
-      <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -242,18 +241,6 @@ export function ProfilesList({ profiles, isLoading, rankingId, projectId }: Prof
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSync(profile)}
-                        disabled={isSyncing}
-                      >
-                        {isSyncing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-4 w-4" />
-                        )}
-                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
