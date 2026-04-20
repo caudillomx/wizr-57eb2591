@@ -76,9 +76,17 @@ export function RankingDateFilter({
   }, [preset, customRange, appliedPreset, appliedCustomRange]);
 
   const handlePresetChange = (value: string) => {
-    onPresetChange(value as DateRangePreset);
-    if (value !== "custom") {
+    const next = value as DateRangePreset;
+    onPresetChange(next);
+    if (next !== "custom") {
       onCustomRangeChange(undefined);
+      // Auto-apply for non-custom presets so users don't need to click "Aplicar"
+      setAppliedPreset(next);
+      setAppliedCustomRange(undefined);
+      setHasChanges(false);
+      // Defer to next tick so parent state updates flush before onApply reads them
+      setTimeout(() => onApply?.(), 0);
+      return;
     }
     setHasChanges(true);
   };
