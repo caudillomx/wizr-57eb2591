@@ -588,12 +588,12 @@ export function FKExcelImporter({ clientId }: Props) {
                         {f.kind === "unknown" && <Badge variant="destructive">No reconocido</Badge>}
                         {periodAuto && (
                           <Badge variant="outline" className="text-xs gap-1">
-                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
                             Período detectado
                           </Badge>
                         )}
                         {periodMissing && !periodAuto && (
-                          <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
+                          <Badge variant="outline" className="text-xs gap-1 text-destructive border-destructive/40">
                             <AlertTriangle className="h-3 w-3" />
                             Selecciona el período
                           </Badge>
