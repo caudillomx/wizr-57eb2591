@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { FKProfile, FKProfileKPI, FKDailyTopPost } from "./useFanpageKarma";
+
+type FKProfileExt = FKProfile & { is_competitor?: boolean };
 import { getFKProfileDisplayName } from "@/lib/fkProfileUtils";
 
 export type PerformanceReportMode = "brand" | "benchmark";
@@ -79,7 +81,7 @@ function pct(value: number): number {
 }
 
 function computeAnalytics(
-  profiles: FKProfile[],
+  profiles: FKProfileExt[],
   kpis: FKProfileKPI[],
 ): PerformanceReportAnalytics {
   const networks = Array.from(new Set(profiles.map((p) => p.network)));
@@ -171,7 +173,7 @@ function computeAnalytics(
 }
 
 function buildSnapshots(
-  profiles: FKProfile[],
+  profiles: FKProfileExt[],
   kpis: FKProfileKPI[],
   topPosts: FKDailyTopPost[],
 ): { profiles: PerformanceProfileSnapshot[]; topPosts: PerformanceTopPostSnapshot[] } {
@@ -181,7 +183,7 @@ function buildSnapshots(
       id: p.id,
       name: getFKProfileDisplayName(p),
       network: p.network,
-      isCompetitor: !!(p as { is_competitor?: boolean }).is_competitor,
+      isCompetitor: !!p.is_competitor,
       followers: k?.followers ?? null,
       growthPercent: k?.follower_growth_percent ?? null,
       engagementRate: k?.engagement_rate ?? null,
@@ -220,11 +222,12 @@ export function usePerformanceReport() {
   const { toast } = useToast();
 
   const generateReport = async (
-    profiles: FKProfile[],
+    profilesIn: FKProfile[],
     kpis: FKProfileKPI[],
     topPosts: FKDailyTopPost[],
     config: PerformanceReportConfig,
   ): Promise<PerformanceReportContent | null> => {
+    const profiles = profilesIn as FKProfileExt[];
     if (profiles.length === 0) {
       toast({
         title: "Sin perfiles",
@@ -255,7 +258,7 @@ export function usePerformanceReport() {
               network: p.network,
               display_name: p.display_name,
               profile_id: p.profile_id,
-              is_competitor: !!(p as { is_competitor?: boolean }).is_competitor,
+              is_competitor: !!p.is_competitor,
               is_own_profile: p.is_own_profile,
             })),
             kpis: kpis.map((k) => ({

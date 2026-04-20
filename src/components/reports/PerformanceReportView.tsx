@@ -384,7 +384,7 @@ export function PerformanceReportView({
           <ol className="space-y-3">
             {report.recommendations.map((r, i) => (
               <li key={i} className="flex gap-3 text-sm">
-                <span className="flex-shrink-0 h-6 w-6 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 font-semibold text-xs flex items-center justify-center mt-0.5">
+                <span className="flex-shrink-0 h-6 w-6 rounded-full bg-secondary text-secondary-foreground font-semibold text-xs flex items-center justify-center mt-0.5">
                   {i + 1}
                 </span>
                 <EditableText
