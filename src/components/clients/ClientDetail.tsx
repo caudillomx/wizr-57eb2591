@@ -52,10 +52,8 @@ export function ClientDetail({ client, onBack }: Props) {
   const periodStart = formatDate(dateRange.from, "yyyy-MM-dd");
   const periodEnd = formatDate(dateRange.to, "yyyy-MM-dd");
 
-  const topPostsEnd = new Date(); topPostsEnd.setDate(topPostsEnd.getDate() - 1);
-  const topPostsStart = new Date(); topPostsStart.setDate(topPostsStart.getDate() - 7);
-  const topStartStr = formatDate(topPostsStart, "yyyy-MM-dd");
-  const topEndStr = formatDate(topPostsEnd, "yyyy-MM-dd");
+  const periodStartTop = formatDate(dateRange.from, "yyyy-MM-dd");
+  const periodEndTop = formatDate(dateRange.to, "yyyy-MM-dd");
 
   const { data: rawProfiles = [], isLoading: loadingProfiles } = useFKProfilesByClient(client.id, "all");
 
@@ -74,7 +72,7 @@ export function ClientDetail({ client, onBack }: Props) {
   const profileIds = profiles.map((p) => p.id);
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
-  const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKDailyTopPosts(profileIds, topStartStr, topEndStr);
+  const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKDailyTopPosts(profileIds, periodStartTop, periodEndTop);
 
   const brandCount = rawProfiles.filter((p) => !p.is_competitor).length;
   const compCount = rawProfiles.filter((p) => p.is_competitor).length;

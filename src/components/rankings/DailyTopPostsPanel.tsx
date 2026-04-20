@@ -178,7 +178,7 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
             Top Post por Red Social
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Mejor publicación por red en los últimos 7 días (prioriza ayer cuando hay datos disponibles).
+            Mejor publicación por red dentro del período seleccionado (prioriza ayer cuando hay datos disponibles).
           </p>
         </div>
       </CardHeader>
