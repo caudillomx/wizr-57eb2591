@@ -75,6 +75,7 @@ interface DisplayPost {
   engagement: number;
   profile_id?: string;
   display_name?: string;
+  network?: string;
 }
 
 const formatNumber = (num: number | null | undefined): string => {
@@ -136,6 +137,9 @@ function PostCard({ post, profileName, rank }: { post: DisplayPost; profileName:
               <Badge variant="secondary" className="text-xs">
                 @{profileName}
               </Badge>
+              {post.network && (
+                <NetworkBadge network={post.network} size="xs" />
+              )}
               {post.content_type && (
                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                   {getContentTypeIcon(post.content_type)}
@@ -304,6 +308,7 @@ export function TopContentTab({ profiles, isLoading: profilesLoading, dateRange,
         engagement: post.engagement || ((post.likes || 0) + (post.comments || 0) + (post.shares || 0)),
         profile_id: profile?.profile_id,
         display_name: profile?.display_name || profile?.profile_id,
+        network: post.network || profile?.network,
       };
     });
   }, [dbPosts, profileMap]);
