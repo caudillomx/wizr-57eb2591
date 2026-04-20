@@ -338,7 +338,18 @@ function buildFallbackFindings(
 
 function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
   const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : metrics.positiveCount > metrics.negativeCount ? "ventana de tono favorable" : "equilibrio inestable de tono";
-  const topSources = [...new Set(mentions.map((m) => m.source_domain).filter(Boolean))].slice(0, 3).join(", ");
+
+  // Rank sources by volume (NOT order of appearance) and keep only those with material weight
+  const sourceCounts = new Map<string, number>();
+  for (const m of mentions) {
+    const s = m.source_domain;
+    if (!s) continue;
+    sourceCounts.set(s, (sourceCounts.get(s) || 0) + 1);
+  }
+  const sortedByVolume = Array.from(sourceCounts.entries()).sort((a, b) => b[1] - a[1]);
+  const minMaterial = Math.max(2, Math.round(mentions.length * 0.03));
+  const topSources = sortedByVolume.filter(([, c]) => c >= minMaterial).slice(0, 3).map(([s]) => s).join(", ");
+
   const socialCount = mentions.filter((m) => {
     const source = (m.source_domain || "").toLowerCase();
     return ["twitter", "x.com", "facebook", "instagram", "tiktok", "youtube", "linkedin", "reddit"].some((token) => source.includes(token));
