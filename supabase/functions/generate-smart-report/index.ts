@@ -772,6 +772,15 @@ Las recomendaciones deben ser de NIVEL DIRECTIVO/EJECUTIVO, NO operativas técni
 - Cada recomendación debe contestar: ¿Qué decisión debe tomar el directivo? ¿Qué riesgo se mitiga o qué oportunidad se captura? ¿En qué plazo (inmediato/semanas/mes)?
 - Mantén un tono prudente: "se sugiere evaluar", "considerar", "podría convenir" — no prescribas acciones operativas específicas (campañas, comunicados) salvo señalar la necesidad de involucrar al área correspondiente, sin nombrarla con un título inventado.
 
+=== REGLA CRÍTICA #4: CALIDAD EDITORIAL DE HALLAZGOS (ANTI-CLICHÉ) ===
+Cada hallazgo será leído por un directivo que descartará el reporte si suena a plantilla. Aplica estas reglas SIN EXCEPCIÓN:
+- PROHIBIDO llamar "tracción", "voces clave" o "amplificación" a cuentas con menos de 3 menciones o sin engagement medible (≥500 interacciones acumuladas en la muestra). Si los autores top tienen 1-2 menciones y bajo engagement, NO incluyas un bullet de "voces con tracción"; en su lugar, omite ese hallazgo o reformúlalo como "emisores recurrentes a vigilar" sin atribuirles peso real.
+- PROHIBIDO escribir un bullet de "pico de actividad" SIN nombrar al menos un titular, autor o medio concreto que publicó ese día. El pico debe explicar QUÉ pasó, no solo cuándo.
+- PROHIBIDO repetir la frase "Enfoque Estratégico" más de 2 veces en el conjunto de hallazgos. Varía: "el caso/asunto descrito en el contexto del proyecto", "lo que el proyecto definió como prioridad", "el ángulo estratégico del monitoreo", o nombra directamente el caso/actor cuando esté disponible. La repetición textual es una bandera roja editorial.
+- PROHIBIDO cerrar bullets con frases descriptivas vacías tipo "la conversación no se reparte de forma homogénea", "esto debe leerse contra los riesgos del Enfoque", "lo cual es relevante para la lectura estratégica", "esta combinación aumenta la probabilidad de...", "este reparto sirve como insumo base para...". Cada cierre debe nombrar una CONSECUENCIA OBSERVABLE concreta (qué medio fija el encuadre, qué actor escala el riesgo, qué término ancla la asociación pública, qué jornada concentra exposición).
+- PROHIBIDO repetir "tono adverso", "carga reputacional", "lectura pública" o "encuadre del periodo" en más del 50% de los hallazgos. Sustituye por verbos y sustantivos concretos: "el medio X fija la cobertura crítica", "el autor Y impulsa el ángulo de escrutinio", "el término Z reaparece en cada pieza".
+- OBLIGATORIO: si un hallazgo describe un dato (volumen, %, autor, día, plataforma) DEBE seguir con qué decisión o vigilancia concreta se desprende, no con una repetición meta del marco estratégico.
+
 FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos solo cuando aparezcan en las menciones.`;
 
     const userPrompt = `${formatInstructions}
