@@ -45,8 +45,20 @@ const NETWORK_DETECT: Record<string, FKNetwork> = {
   threads: "threads",
 };
 
-const KPI_KEYS = ["fans", "seguidores", "followers", "ppi", "rendimiento", "performance index", "growth", "crecimiento"];
-const POST_KEYS = ["message", "mensaje", "post", "interactions", "interacciones", "alcance por publicación", "post interaction"];
+// Header keywords (Spanish + English) for FK exports
+const KPI_KEYS = [
+  "fans", "seguidor", "seguidores", "followers", "subscribers",
+  "ppi", "rendimiento", "performance index", "indice de rendimiento",
+  "growth", "crecimiento",
+  "posts per day", "publicaciones por dia",
+];
+const POST_KEYS = [
+  "message", "mensaje", "post",
+  "interactions", "interacciones",
+  "alcance por publicacion", "post interaction",
+  "reacciones, comentarios y compartidos",
+  "numero de me gusta", "numero de comentarios",
+];
 
 function normalizeKey(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -73,13 +85,20 @@ function readSheetWithHeaderDetection(sheet: XLSX.WorkSheet): { rows: Record<str
   let headerIdx = -1;
   let kind: FileKind = "unknown";
 
+  // Scan first 15 rows looking for the header row
   for (let i = 0; i < Math.min(matrix.length, 15); i++) {
     const row = matrix[i].map((c) => normalizeKey(String(c || "")));
-    const joined = row.join("|");
-    const looksKpi = KPI_KEYS.some((k) => joined.includes(k)) && row.some((c) => c === "profile" || c === "perfil" || c === "page" || c === "name" || c === "nombre");
-    const looksPost = POST_KEYS.some((k) => joined.includes(k)) && (joined.includes("date") || joined.includes("fecha"));
-    if (looksKpi) { headerIdx = i; kind = "kpis"; break; }
+    const hasProfileCol = row.some((c) => c === "profile" || c === "perfil" || c === "page" || c === "name" || c === "nombre");
+    if (!hasProfileCol) continue;
+
+    // Posts have a "date/fecha" column; KPIs do not (they aggregate the whole period)
+    const hasDateCol = row.some((c) => c === "date" || c === "fecha" || c.includes("published") || c.includes("publicado"));
+    const hasMessageCol = row.some((c) => c === "message" || c === "mensaje" || c.includes("contenido"));
+    const looksPost = hasDateCol || hasMessageCol || POST_KEYS.some((k) => row.some((c) => c.includes(k)));
+    const looksKpi = !looksPost && KPI_KEYS.some((k) => row.some((c) => c.includes(k)));
+
     if (looksPost) { headerIdx = i; kind = "posts"; break; }
+    if (looksKpi) { headerIdx = i; kind = "kpis"; break; }
   }
 
   if (headerIdx === -1) return { rows: [], kind: "unknown", headerRows: matrix.slice(0, Math.min(matrix.length, 6)) };
