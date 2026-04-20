@@ -494,6 +494,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           display_name: string | null
+          display_name_normalized: string | null
           id: string
           is_active: boolean
           is_competitor: boolean
@@ -510,6 +511,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           display_name?: string | null
+          display_name_normalized?: string | null
           id?: string
           is_active?: boolean
           is_competitor?: boolean
@@ -526,6 +528,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           display_name?: string | null
+          display_name_normalized?: string | null
           id?: string
           is_active?: boolean
           is_competitor?: boolean
