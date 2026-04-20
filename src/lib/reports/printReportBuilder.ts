@@ -284,9 +284,11 @@ export function buildReportHTML(
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
     findingsHtml += `<div class="avoid-break">${insightCard(highlightText(findings[0]), "🔍", firstSentiment)}</div>`;
     findings.slice(1).forEach((f, i) => {
-      findingsHtml += `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
-        <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+      findingsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
+        <div class="avoid-break-inner">
+          <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
+          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+        </div>
       </div>`;
     });
   }
