@@ -395,9 +395,11 @@ export function buildReportHTML(
     const concs = isSummary ? report.conclusions.slice(0, 2) : report.conclusions;
     const bodyWithBullets = concs
       .map(
-        (c) => `<div class="avoid-break" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
-        <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
-        <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+        (c) => `<div class="avoid-break" style="margin-bottom:10px;">
+        <div class="avoid-break-inner">
+          <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
+          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+        </div>
       </div>`,
       )
       .join("");
