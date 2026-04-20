@@ -68,7 +68,10 @@ interface ComparativeAnalysis {
 async function analyzeProfile(
   profile: ProfileInput,
   dateRange: { from: string; to: string } | null,
-  apiKey: string
+  apiKey: string,
+  analysisContext: "brand" | "benchmark" = "benchmark",
+  brandName?: string,
+  totalProfilesInScope?: number
 ): Promise<NarrativeAnalysis> {
   // Calculate engagement stats
   const engagements = profile.posts.map(p => p.engagement).filter(e => e > 0);
@@ -87,10 +90,35 @@ async function analyzeProfile(
     `[Post ${i + 1}] (Engagement: ${p.engagement}, Tipo: ${p.contentType}${p.date ? `, Fecha: ${p.date}` : ''})\n${p.message.substring(0, 600)}`
   ).join("\n\n---\n\n");
 
+  // === CONTEXT-AWARE FRAMING ===
+  // El AI debe saber si está analizando UNA marca propia o un ECOSISTEMA competitivo
+  const isBrand = analysisContext === "brand";
+  const focusLabel = isBrand
+    ? (brandName ? `la marca "${brandName}"` : `la marca propia`)
+    : `un ecosistema competitivo de ${totalProfilesInScope ?? "múltiples"} perfiles`;
+
+  const contextBlock = isBrand
+    ? `MODO DE ANÁLISIS: ANÁLISIS DE MARCA PROPIA (Performance/Listening)
+Estás analizando el contenido de UNA SOLA MARCA propia${brandName ? ` ("${brandName}")` : ""} con el objetivo de evaluar SU desempeño narrativo individual. NO es un análisis competitivo. NO compares con "el sector" ni hables de "los demás bancos/competidores". Concéntrate en:
+- Qué historia cuenta ESTA marca
+- Coherencia interna de su narrativa
+- Qué está funcionando para ELLA específicamente
+- Oportunidades de mejora dentro de SU propia estrategia
+PROHIBIDO frases como "se diferencia de competidores", "vs. el resto del sector", "ecosistema multi-marca", "estrategia multi-marca", "38 perfiles bancarios", etc.`
+    : `MODO DE ANÁLISIS: BENCHMARKING COMPETITIVO
+Estás analizando un ECOSISTEMA de ${totalProfilesInScope ?? "varios"} perfiles competidores en conjunto. El objetivo es entender el panorama competitivo, identificar quién lidera en qué territorios narrativos y dónde existen huecos o convergencias. Concéntrate en:
+- Patrones colectivos del sector
+- Quién domina cada territorio temático
+- Diferenciadores entre actores
+- Huecos competitivos`;
+
   const systemPrompt = `Eres un ANALISTA SENIOR de comunicación digital especializado en análisis de contenido y narrativas institucionales.
 
-CONTEXTO:
+${contextBlock}
+
+CONTEXTO DEL DATASET:
 - Perfil: @${profile.profileName} en ${profile.network}
+- Alcance del análisis: ${focusLabel}
 - Total de posts analizados: ${profile.posts.length}
 - Engagement promedio: ${avgEngagement.toFixed(0)}
 - Engagement máximo: ${maxEngagement}
@@ -110,14 +138,14 @@ TU TAREA ES REALIZAR UN ANÁLISIS PROFUNDO Y ESPECÍFICO:
    - ¿Usan call-to-actions? ¿De qué tipo?
 
 3. ESTRATEGIA DE CONTENIDO
-   - ¿Cuál es su ENFOQUE PRINCIPAL? Sé específico (ej: "educación financiera para jóvenes" no "contenido variado")
-   - FORTALEZAS: ¿Qué hacen bien? ¿Qué posts generan más engagement y por qué?
-   - OPORTUNIDADES: ¿Qué podrían mejorar? ¿Qué temas no cubren pero deberían?
+   - ${isBrand ? `¿Cuál es el ENFOQUE PRINCIPAL de ${brandName ?? "la marca"}? Sé específico.` : `¿Cuál es su ENFOQUE PRINCIPAL? Sé específico (ej: "educación financiera para jóvenes" no "contenido variado")`}
+   - FORTALEZAS: ${isBrand ? `¿Qué hace bien ESTA marca? ¿Qué posts generan más engagement y por qué?` : `¿Qué hacen bien? ¿Qué posts generan más engagement y por qué?`}
+   - OPORTUNIDADES: ${isBrand ? `¿Qué podría mejorar ESTA marca dentro de su propia estrategia?` : `¿Qué podrían mejorar? ¿Qué temas no cubren pero deberían?`}
 
 4. RESUMEN EJECUTIVO
    - 3-4 oraciones que capturen LA ESENCIA de su comunicación
    - Incluye al menos un número o dato específico
-   - Incluye una observación sobre qué los diferencia (o no) de otros perfiles similares
+   - ${isBrand ? `Enfocado SOLO en ${brandName ?? "esta marca"}. NO menciones otras marcas, sectores ni ecosistemas.` : `Incluye una observación sobre qué los diferencia (o no) de otros perfiles similares.`}
 
 Responde ÚNICAMENTE con JSON válido siguiendo el schema de la función.`;
 
@@ -310,6 +338,10 @@ serve(async (req) => {
     
     const dateRange = body.dateRange as { from: string; to: string } | null;
 
+    // Analysis context: distinguishes brand-focused (Performance) from competitive (Benchmark)
+    const analysisContext: "brand" | "benchmark" = body.analysisContext === "brand" ? "brand" : "benchmark";
+    const brandName: string | undefined = typeof body.brandName === "string" ? body.brandName : undefined;
+
     if (!profiles || profiles.length === 0 || !profiles[0].posts || profiles[0].posts.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: "No profiles or posts provided" }),
@@ -332,7 +364,14 @@ serve(async (req) => {
       if (!profile.posts || profile.posts.length === 0) continue;
       
       try {
-        const analysis = await analyzeProfile(profile, dateRange, ANTHROPIC_API_KEY);
+        const analysis = await analyzeProfile(
+          profile,
+          dateRange,
+          ANTHROPIC_API_KEY,
+          analysisContext,
+          brandName,
+          limitedProfiles.length
+        );
         profilesWithAnalysis.push({
           profileId: profile.profileName, // Using name as ID
           profileName: profile.profileName,
