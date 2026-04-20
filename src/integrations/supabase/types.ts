@@ -875,6 +875,7 @@ export type Database = {
       }
       shared_reports: {
         Row: {
+          client_id: string | null
           content: Json
           created_at: string
           created_by: string
@@ -883,14 +884,16 @@ export type Database = {
           id: string
           is_revoked: boolean
           last_viewed_at: string | null
-          project_id: string
+          project_id: string | null
           project_name: string
           public_token: string
+          report_kind: string
           title: string
           updated_at: string
           view_count: number
         }
         Insert: {
+          client_id?: string | null
           content: Json
           created_at?: string
           created_by: string
@@ -899,14 +902,16 @@ export type Database = {
           id?: string
           is_revoked?: boolean
           last_viewed_at?: string | null
-          project_id: string
+          project_id?: string | null
           project_name: string
           public_token?: string
+          report_kind?: string
           title: string
           updated_at?: string
           view_count?: number
         }
         Update: {
+          client_id?: string | null
           content?: Json
           created_at?: string
           created_by?: string
@@ -915,14 +920,23 @@ export type Database = {
           id?: string
           is_revoked?: boolean
           last_viewed_at?: string | null
-          project_id?: string
+          project_id?: string | null
           project_name?: string
           public_token?: string
+          report_kind?: string
           title?: string
           updated_at?: string
           view_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shared_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       smart_report_jobs: {
         Row: {
