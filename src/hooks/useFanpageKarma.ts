@@ -808,7 +808,7 @@ export function useFKTopPosts(profileIds: string[], startDate?: string, endDate?
       }
 
       return allPosts.map((post) => {
-        const rawData = post.raw_data && typeof post.raw_data === "object" ? post.raw_data : {};
+        const rawData = (post.raw_data && typeof post.raw_data === "object" ? post.raw_data : {}) as Record<string, unknown>;
         const rawViews = rawData.views ?? rawData.view_count ?? rawData.video_views;
         const views = typeof rawViews === "number" ? rawViews : Number(rawViews || 0);
 
