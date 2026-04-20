@@ -227,21 +227,23 @@ interface PostRow {
 }
 
 function mapKpiRow(row: Record<string, any>): KpiRow | null {
-  const profileId = String(pickField(row, ["profile", "perfil", "page id", "page"]) || "").trim();
-  const displayName = String(pickField(row, ["page name", "name", "nombre", "page"]) || profileId).trim();
-  if (!profileId && !displayName) return null;
+  // FK exports: column "Profile" usually has the display name, "Profile-ID" has the real platform ID
+  const profileIdRaw = String(pickField(row, ["profile-id", "profile id", "page id", "page-id"]) || "").trim();
+  const displayName = String(pickField(row, ["profile", "perfil", "page name", "name", "nombre", "page"]) || "").trim();
+  if (!profileIdRaw && !displayName) return null;
   const networkRaw = pickField(row, ["network", "platform", "red", "plattform"]);
+  const profileId = (profileIdRaw || displayName).replace(/^@/, "");
   return {
-    profileId: (profileId || displayName).replace(/^@/, ""),
+    profileId,
     displayName: displayName || profileId,
     network: detectNetwork(networkRaw),
-    followers: parseNumeric(pickField(row, ["fans", "followers", "seguidores", "subscribers"])),
-    engagementRate: parseNumeric(pickField(row, ["engagement rate", "engagement", "interaccion"])),
-    postsPerDay: parseNumeric(pickField(row, ["posts per day", "posts/day", "publicaciones por dia"])),
-    pagePerformanceIndex: parseNumeric(pickField(row, ["ppi", "page performance index", "rendimiento"])),
-    followerGrowthPercent: parseNumeric(pickField(row, ["growth_percentage", "growth", "crecimiento", "fan growth"])),
+    followers: parseNumeric(pickField(row, ["seguidor", "fans", "followers", "subscribers"])),
+    engagementRate: parseNumeric(pickField(row, ["tasa de interaccion", "engagement rate", "engagement"])),
+    postsPerDay: parseNumeric(pickField(row, ["publicaciones por dia", "posts per day", "posts/day"])),
+    pagePerformanceIndex: parseNumeric(pickField(row, ["indice de rendimiento", "ppi", "page performance index", "rendimiento"])),
+    followerGrowthPercent: parseNumeric(pickField(row, ["crecimiento de seguidores", "growth_percentage", "growth", "crecimiento", "fan growth"])),
     reachPerDay: parseNumeric(pickField(row, ["alcance por dia", "reach per day"])),
-    impressionsPerInteraction: parseNumeric(pickField(row, ["post_interaction", "post interaction", "impresiones por interaccion"])),
+    impressionsPerInteraction: parseNumeric(pickField(row, ["interaccion por impresion", "post_interaction", "post interaction", "impresiones por interaccion"])),
   };
 }
 
@@ -261,24 +263,25 @@ function mapPostRow(row: Record<string, any>): PostRow | null {
   const dateVal = pickField(row, ["date", "fecha", "published"]);
   const publishedAt = parseDate(dateVal);
   if (!publishedAt) return null;
-  const profileId = String(pickField(row, ["profile", "perfil", "page"]) || "").trim();
-  const displayName = String(pickField(row, ["page name", "name", "nombre"]) || profileId).trim();
-  if (!profileId && !displayName) return null;
+  // For posts, FK puts the display name in "Profile" column
+  const displayName = String(pickField(row, ["profile", "perfil", "page name", "name", "nombre"]) || "").trim();
+  if (!displayName) return null;
   const networkRaw = pickField(row, ["network", "platform", "red"]);
+  const externalIdRaw = String(pickField(row, ["message-id", "message id", "post id", "post-id", "external id", "external-id", "id"]) || "").trim();
   return {
-    profileId: (profileId || displayName).replace(/^@/, ""),
-    displayName: displayName || profileId,
+    profileId: displayName.replace(/^@/, ""),
+    displayName,
     network: detectNetwork(networkRaw),
-    externalId: String(pickField(row, ["message id", "post id", "external id", "id"]) || "") || null,
+    externalId: externalIdRaw || null,
     publishedAt,
     message: String(pickField(row, ["message", "mensaje", "content", "contenido", "text"]) || "") || null,
     link: String(pickField(row, ["link", "url", "permalink"]) || "") || null,
-    likes: parseNumeric(pickField(row, ["likes", "me gusta", "reactions"])),
-    comments: parseNumeric(pickField(row, ["comments", "comentarios"])),
-    shares: parseNumeric(pickField(row, ["shares", "compartidos", "retweets"])),
-    engagement: parseNumeric(pickField(row, ["interactions", "interacciones", "engagement"])),
+    likes: parseNumeric(pickField(row, ["numero de me gusta", "likes", "me gusta", "reactions"])),
+    comments: parseNumeric(pickField(row, ["numero de comentarios", "comments", "comentarios"])),
+    shares: parseNumeric(pickField(row, ["compartidos", "shares", "retweets"])),
+    engagement: parseNumeric(pickField(row, ["reacciones, comentarios y compartidos", "interactions", "interacciones", "engagement"])),
     reach: parseNumeric(pickField(row, ["alcance por publicacion", "reach", "alcance"])),
-    interactionRate: parseNumeric(pickField(row, ["interaction rate", "tasa de interaccion"])),
+    interactionRate: parseNumeric(pickField(row, ["tasa de interaccion", "interaction rate"])),
     postType: String(pickField(row, ["type", "tipo", "post type"]) || "") || null,
     raw: row,
   };
