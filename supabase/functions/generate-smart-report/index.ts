@@ -123,6 +123,20 @@ function sanitizeFindingText(text: string): string {
   return sentences.join(" ").trim();
 }
 
+function clipAtWordBoundary(text: string, maxChars: number): string {
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxChars) return compact;
+  const slice = compact.slice(0, maxChars);
+  // Prefer ending at sentence boundary, then comma, then word boundary
+  const lastSentence = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("; "), slice.lastIndexOf(": "));
+  if (lastSentence >= maxChars * 0.5) return slice.slice(0, lastSentence).trim();
+  const lastComma = slice.lastIndexOf(", ");
+  if (lastComma >= maxChars * 0.5) return slice.slice(0, lastComma).trim();
+  const lastSpace = slice.lastIndexOf(" ");
+  if (lastSpace > 0) return `${slice.slice(0, lastSpace).trim()}…`;
+  return `${slice.trim()}…`;
+}
+
 function buildStrategicAnchor(options?: {
   knownCases?: string[];
   strategicFocus?: string;
@@ -131,8 +145,23 @@ function buildStrategicAnchor(options?: {
   const raw = options?.knownCases?.[0] || options?.strategicFocus || options?.strategicContext || "";
   const compact = raw.replace(/\s+/g, " ").trim();
   if (!compact) return "el asunto priorizado por el proyecto";
-  const clipped = compact.length > 110 ? `${compact.slice(0, 107).trim()}…` : compact;
-  return options?.knownCases?.[0] ? `el caso \"${clipped}\"` : `\"${clipped}\"`;
+  // Avoid truncating mid-word; if too long, fall back to a generic anchor
+  if (compact.length > 90) {
+    return "el asunto priorizado en el Enfoque Estratégico";
+  }
+  return options?.knownCases?.[0] ? `el caso ${compact}` : compact;
+}
+
+function buildShortAnchor(options?: {
+  knownCases?: string[];
+  strategicFocus?: string;
+  strategicContext?: string;
+}): string {
+  // Lighter reference for variety: avoid repeating the full case in every bullet
+  if (options?.knownCases?.[0] && options.knownCases[0].length <= 90) {
+    return "el caso descrito en el Enfoque Estratégico";
+  }
+  return "el Enfoque Estratégico del proyecto";
 }
 
 function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
@@ -214,18 +243,51 @@ function buildFallbackFindings(
   const sortedSources = Array.from(sourceMap.entries()).sort((a, b) => b[1].count - a[1].count);
   const sortedAuthors = Array.from(authorMap.entries()).sort((a, b) => b[1].engagement - a[1].engagement || b[1].count - a[1].count);
   const sortedDays = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1]);
-  const sortedKeywords = Array.from(keywordMap.entries()).sort((a, b) => b[1] - a[1]);
+
+  // Dedup keywords by normalized form (Zaga Tawil / zaga tawil / Rafael Zaga Tawil → keep canonical with highest count + longest variant)
+  const normalizeKey = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  const keywordGroups = new Map<string, { display: string; count: number }>();
+  for (const [term, count] of keywordMap.entries()) {
+    const norm = normalizeKey(term);
+    // Group also by containment: if "Rafael Zaga Tawil" contains "Zaga Tawil", they share the longer key's normalized form
+    let groupKey = norm;
+    for (const existingKey of keywordGroups.keys()) {
+      if (existingKey.includes(norm) || norm.includes(existingKey)) {
+        groupKey = existingKey.length >= norm.length ? existingKey : norm;
+        break;
+      }
+    }
+    const existing = keywordGroups.get(groupKey);
+    if (!existing) {
+      keywordGroups.set(groupKey, { display: term, count });
+    } else {
+      // Prefer the longer / properly capitalized form as display
+      const better = term.length > existing.display.length || (/^[A-ZÁÉÍÓÚÑ]/.test(term) && !/^[A-ZÁÉÍÓÚÑ]/.test(existing.display));
+      if (better) existing.display = term;
+      existing.count += count;
+      // If we promoted a longer key, update map entry
+      if (groupKey !== norm && norm.length > groupKey.length) {
+        keywordGroups.delete(groupKey);
+        keywordGroups.set(norm, existing);
+      }
+    }
+  }
+  const sortedKeywords = Array.from(keywordGroups.values())
+    .sort((a, b) => b.count - a.count)
+    .map((entry) => [entry.display, entry.count] as [string, number]);
 
   const negativeShare = metrics.totalMentions > 0 ? Math.round((metrics.negativeCount / metrics.totalMentions) * 100) : 0;
   const positiveShare = metrics.totalMentions > 0 ? Math.round((metrics.positiveCount / metrics.totalMentions) * 100) : 0;
   const neutralShare = metrics.totalMentions > 0 ? Math.round((metrics.neutralCount / metrics.totalMentions) * 100) : 0;
-  const audienceLabel = options?.projectAudience || "la audiencia destinataria";
-  const strategicAnchor = buildStrategicAnchor(options);
+  const audienceLabel = options?.projectAudience?.trim() || "";
+  const audienceClause = audienceLabel ? ` Esta lectura es la base para la conversación con ${audienceLabel}.` : "";
+  const fullAnchor = buildStrategicAnchor(options);
+  const shortAnchor = buildShortAnchor(options);
 
   const findings: string[] = [];
 
   findings.push(
-    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${strategicAnchor} llegó al periodo con una carga reputacional mayoritariamente adversa frente a ${audienceLabel}.`
+    `Distribución de sentimiento: ${metrics.totalMentions} menciones en el periodo, ${metrics.negativeCount} negativas (${negativeShare}%), ${metrics.positiveCount} positivas (${positiveShare}%) y ${metrics.neutralCount} neutrales (${neutralShare}%). El tono adverso ${negativeShare >= 50 ? "supera la mitad de la muestra y constituye la señal dominante del periodo" : negativeShare >= 30 ? "tiene presencia relevante aunque no mayoritaria" : "es minoritario frente al tono no adverso"}. En clave del Enfoque Estratégico, este reparto indica que ${fullAnchor} llegó al periodo con una carga reputacional ${negativeShare >= 50 ? "mayoritariamente adversa" : negativeShare >= 30 ? "mixta con sesgo adverso" : "mayoritariamente neutral"}.${audienceClause}`
   );
 
   if (sortedSources.length > 0) {
@@ -233,14 +295,14 @@ function buildFallbackFindings(
     const mainSource = sortedSources[0];
     const mainShare = metrics.totalMentions > 0 ? Math.round((mainSource[1].count / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales. Eso vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública de ${strategicAnchor} para ${audienceLabel}.`
+      `Concentración de cobertura: ${topThree}. La plataforma ${mainSource[0]} concentra ${mainShare}% del volumen total. La conversación no se reparte de forma homogénea: el encuadre del periodo se está formando en un número acotado de canales, lo que vuelve a ${mainSource[0]} el espacio donde más se está fijando la lectura pública relevante para ${shortAnchor}.`
     );
   }
 
   if (sortedAuthors.length > 0) {
     const topAuthors = sortedAuthors.slice(0, 3).map(([key, data]) => `${key.split("@@")[0]} en ${data.platform} (${data.count} menciones${data.engagement > 0 ? `; ${data.engagement.toLocaleString()} interacciones` : ""})`).join(", ");
     findings.push(
-      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre está concentrada en pocos nombres, de modo que un encuadre adverso sobre ${strategicAnchor} puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
+      `Voces con mayor tracción: ${topAuthors}. Son emisores concretos —no plataformas anónimas— los que están amplificando la conversación con engagement medible. La capacidad de arrastre se concentra en pocos nombres, de modo que un encuadre adverso puede escalar más por autoridad del emisor que por volumen disperso de la muestra.`
     );
   }
 
@@ -248,14 +310,14 @@ function buildFallbackFindings(
     const [peakDay, peakCount] = sortedDays[0];
     const peakShare = metrics.totalMentions > 0 ? Math.round((peakCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido. Esa jornada funciona como punto de máxima exposición acumulada de ${strategicAnchor} dentro del periodo observado.`
+      `Pico de actividad: ${peakDay} con ${peakCount} menciones (${peakShare}% del total del periodo). La concentración en una sola fecha indica un detonador puntual y no un crecimiento sostenido; esa jornada funciona como punto de máxima exposición acumulada dentro del periodo observado.`
     );
   }
 
   if (sortedKeywords.length > 0) {
     const topTerms = sortedKeywords.slice(0, 5).map(([term, count]) => `${term} (${count})`).join(", ");
     findings.push(
-      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública entre la conversación y ${strategicAnchor}.`
+      `Términos más reiterados: ${topTerms}. Estas son las etiquetas que están estructurando la conversación más allá de titulares aislados. La reiteración muestra que el periodo quedó anclado en nombres y marcos concretos, reforzando la asociación pública con ${shortAnchor}.`
     );
   }
 
@@ -267,7 +329,7 @@ function buildFallbackFindings(
     const mediaCount = Math.max(0, mentions.length - socialCount);
     const socialShare = metrics.totalMentions > 0 ? Math.round((socialCount / metrics.totalMentions) * 100) : 0;
     findings.push(
-      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que ${strategicAnchor} estuvo expuesto sobre todo a amplificación reactiva, no a cobertura editorial más lenta` : mediaCount >= socialCount ? `El peso de medios digitales vuelve más durable la exposición de ${strategicAnchor} porque deja huella verificable` : `La combinación de ambos canales expuso a ${strategicAnchor} tanto a aceleración social como a registro público persistente`}, algo especialmente sensible para ${audienceLabel}.`
+      `Reparto entre redes sociales (${socialCount} menciones, ${socialShare}%) y medios digitales (${mediaCount}). Las redes aceleran tono y reacción; los medios aportan registro y permanencia documental. ${socialShare >= 70 ? `El predominio de redes sugiere que la exposición fue principalmente reactiva, no editorial estructurada` : mediaCount >= socialCount ? `El peso de medios digitales vuelve la exposición más durable porque deja huella verificable` : `La combinación de ambos canales produjo tanto aceleración social como registro público persistente`}.`
     );
   }
 
@@ -276,7 +338,18 @@ function buildFallbackFindings(
 
 function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
   const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : metrics.positiveCount > metrics.negativeCount ? "ventana de tono favorable" : "equilibrio inestable de tono";
-  const topSources = [...new Set(mentions.map((m) => m.source_domain).filter(Boolean))].slice(0, 3).join(", ");
+
+  // Rank sources by volume (NOT order of appearance) and keep only those with material weight
+  const sourceCounts = new Map<string, number>();
+  for (const m of mentions) {
+    const s = m.source_domain;
+    if (!s) continue;
+    sourceCounts.set(s, (sourceCounts.get(s) || 0) + 1);
+  }
+  const sortedByVolume = Array.from(sourceCounts.entries()).sort((a, b) => b[1] - a[1]);
+  const minMaterial = Math.max(2, Math.round(mentions.length * 0.03));
+  const topSources = sortedByVolume.filter(([, c]) => c >= minMaterial).slice(0, 3).map(([s]) => s).join(", ");
+
   const socialCount = mentions.filter((m) => {
     const source = (m.source_domain || "").toLowerCase();
     return ["twitter", "x.com", "facebook", "instagram", "tiktok", "youtube", "linkedin", "reddit"].some((token) => source.includes(token));
@@ -473,21 +546,27 @@ serve(async (req) => {
     const extractKnownCases = (text: string): string[] => {
       if (!text) return [];
       const cases: string[] = [];
+      // Capture full clauses up to sentence/clause boundary, NOT mid-word
       const patterns = [
-        /litigio[s]?\s+(?:con|contra|de|entre)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /caso\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /disputa[s]?\s+(?:con|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /demanda[s]?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /controversia[s]?\s+(?:con|sobre|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /investigaci[oó]n(?:es)?\s+(?:sobre|contra|de)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /acusaci[oó]n(?:es)?\s+(?:de|contra|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
-        /fraude[s]?\s+(?:al|contra|a|de|por)\s+([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\s\.&-]{2,40})/gi,
+        /\blitigio[s]?\s+(?:con|contra|de|entre)\s+[^.;,\n]{3,140}/gi,
+        /\bcaso\s+[A-ZÁÉÍÓÚÑ][^.;,\n]{3,120}/gi,
+        /\bdisputa[s]?\s+(?:con|contra|de)\s+[^.;,\n]{3,120}/gi,
+        /\bdemanda[s]?\s+(?:de|contra|por)\s+[^.;,\n]{3,120}/gi,
+        /\bcontroversia[s]?\s+(?:con|sobre|de)\s+[^.;,\n]{3,120}/gi,
+        /\binvestigaci[oó]n(?:es)?\s+(?:sobre|contra|de)\s+[^.;,\n]{3,120}/gi,
+        /\bacusaci[oó]n(?:es)?\s+(?:de|contra|por)\s+[^.;,\n]{3,120}/gi,
+        /\bfraude[s]?\s+(?:al|contra|a|de|por)\s+[^.;,\n]{3,120}/gi,
       ];
+      const stopTail = /\b(de|la|el|los|las|un|una|unos|unas|del|al|en|con|por|para|y|o|que)$/i;
       for (const re of patterns) {
         let m;
         while ((m = re.exec(text)) !== null) {
-          const clean = m[0].trim().replace(/\s+/g, ' ');
-          if (clean.length < 120) cases.push(clean);
+          let clean = m[0].trim().replace(/\s+/g, " ");
+          // Trim trailing stopwords/orphan articles to avoid "...mal manejo de un"
+          while (stopTail.test(clean)) {
+            clean = clean.replace(/\s+\S+$/, "").trim();
+          }
+          if (clean.length >= 12 && clean.length <= 140) cases.push(clean);
         }
       }
       const properNouns = text.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,3}\b/g) || [];
@@ -529,10 +608,31 @@ serve(async (req) => {
     };
 
     const canonicalTerms = extractCanonicalTerms(knownCases, entityNames);
-    const verifiedCounts: Array<{ term: string; count: number }> = canonicalTerms
+    const rawVerified: Array<{ term: string; count: number }> = canonicalTerms
       .map(t => ({ term: t, count: countMentionsForTerm(t) }))
       .filter(x => x.count > 0)
       .sort((a, b) => b.count - a.count);
+
+    // Dedup: collapse case/accent variants AND substring containment (e.g. "Zaga Tawil" ⊂ "Rafael Zaga Tawil").
+    const verifiedCounts: Array<{ term: string; count: number }> = [];
+    for (const candidate of rawVerified) {
+      const candNorm = normalizeForMatch(candidate.term);
+      const existingIdx = verifiedCounts.findIndex(v => {
+        const vn = normalizeForMatch(v.term);
+        return vn === candNorm || vn.includes(candNorm) || candNorm.includes(vn);
+      });
+      if (existingIdx === -1) {
+        verifiedCounts.push(candidate);
+      } else {
+        const existing = verifiedCounts[existingIdx];
+        const preferCandidate = candidate.term.length > existing.term.length;
+        verifiedCounts[existingIdx] = {
+          term: preferCandidate ? candidate.term : existing.term,
+          count: Math.max(existing.count, candidate.count),
+        };
+      }
+    }
+    verifiedCounts.sort((a, b) => b.count - a.count);
 
     let strategicBlock = "";
     if (strategicContext || strategicFocus) {
