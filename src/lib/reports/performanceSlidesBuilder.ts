@@ -15,14 +15,13 @@ const C = {
   paper: "#FAFAFC",
   paperAlt: "#F2F1F8",
   border: "#E5E3EE",
-  // Editorial indigo palette (paridad con PerformanceReportView)
   indigoDeep: "#1e1b4b",
   indigoMid: "#312e81",
   indigoBright: "#4338ca",
   indigoGlow: "#6366f1",
   indigoSoft: "#EEF2FF",
   indigoText: "#c7d2fe",
-  violet: "#4338ca", // alias para charts
+  violet: "#4338ca",
   violetSoft: "#EEF2FF",
   violetGlow: "#6366f1",
   orange: "#FF6B2C",
@@ -35,8 +34,18 @@ const C = {
   neutral: "#9CA3AF",
 };
 
-const INDIGO_GRADIENT = "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)";
 const INDIGO_GRADIENT_RADIAL = "radial-gradient(ellipse at top right, #312e81 0%, #1e1b4b 60%)";
+
+// Network brand colors for accents
+const NETWORK_COLORS: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "#E4405F",
+  twitter: "#0F172A",
+  x: "#0F172A",
+  youtube: "#FF0000",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+};
 
 function esc(t: string | null | undefined): string {
   if (!t) return "";
@@ -67,6 +76,10 @@ function networkLabel(n: string): string {
   return m[n.toLowerCase()] || n;
 }
 
+function networkColor(n: string): string {
+  return NETWORK_COLORS[n.toLowerCase()] || C.violet;
+}
+
 function truncate(s: string, n: number): string {
   const t = (s || "").replace(/\s+/g, " ").trim();
   return t.length <= n ? t : t.slice(0, n - 1) + "…";
@@ -88,6 +101,7 @@ function slideShell(opts: {
   modeLabel: string;
   body: string;
   showHeader?: boolean;
+  showFooter?: boolean;
   sectionLabel?: string;
 }): string {
   const isDark = opts.bg === "dark";
@@ -115,13 +129,16 @@ function slideShell(opts: {
       ${opts.sectionLabel ? `<div style="font-size:13px;letter-spacing:0.25em;color:${isDark ? "rgba(255,255,255,0.6)" : C.textMuted};font-weight:700;text-transform:uppercase;">${esc(opts.sectionLabel)}</div>` : ""}
     </header>`;
 
-  return `<section class="slide" style="position:relative;width:1920px;height:1080px;${bg}color:${fg};font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;page-break-after:always;break-after:page;">
-    ${header}
-    ${opts.body}
+  const footer = opts.showFooter === false ? "" : `
     <footer style="position:absolute;left:80px;right:80px;bottom:36px;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:${subtle};letter-spacing:0.08em;z-index:5;">
       <span style="font-weight:600;text-transform:uppercase;">${esc(opts.clientName)} · ${esc(opts.modeLabel)}</span>
       <span style="font-variant-numeric:tabular-nums;">${String(opts.pageNumber).padStart(2, "0")} / ${String(opts.total).padStart(2, "0")}</span>
-    </footer>
+    </footer>`;
+
+  return `<section class="slide" style="position:relative;width:1920px;height:1080px;${bg}color:${fg};font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;">
+    ${header}
+    ${opts.body}
+    ${footer}
   </section>`;
 }
 
@@ -182,6 +199,33 @@ function svgSovDonut(
     ${own ? `<text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="68" font-weight="800" fill="${C.text}">${own.value.toFixed(1)}%</text>
     <text x="${cx}" y="${cy + 30}" text-anchor="middle" font-size="18" fill="${C.textMuted}" letter-spacing="2">SoV PROPIO</text>` : ""}
   </svg>`;
+}
+
+function svgNetworkBars(
+  data: { label: string; value: number; color: string }[],
+  width = 1620,
+  rowH = 80,
+  unit = "",
+): string {
+  if (!data.length) return "";
+  const max = Math.max(...data.map((d) => d.value), 0.01);
+  const labelW = 280;
+  const valueW = 200;
+  const barW = width - labelW - valueW - 60;
+  const height = data.length * rowH + 20;
+  const rows = data
+    .map((d, i) => {
+      const y = i * rowH + 10;
+      const w = (d.value / max) * barW;
+      return `
+        <text x="${labelW - 24}" y="${y + rowH / 2 + 8}" text-anchor="end" font-size="26" font-weight="700" fill="${C.text}">${esc(d.label)}</text>
+        <rect x="${labelW}" y="${y + 18}" width="${barW}" height="${rowH - 36}" rx="8" fill="${C.paperAlt}"/>
+        <rect x="${labelW}" y="${y + 18}" width="${w}" height="${rowH - 36}" rx="8" fill="${d.color}"/>
+        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 8}" font-size="26" font-weight="800" fill="${C.text}">${d.value.toFixed(unit === "%" ? 2 : 0)}${unit}</text>
+      `;
+    })
+    .join("");
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${rows}</svg>`;
 }
 
 // ---------- Slides ----------
@@ -250,7 +294,64 @@ function slideCover(report: PerformanceReportContent, clientName: string, dateRa
       </div>
     </div>
   `;
-  return slideShell({ bg: "dark", pageNumber: 1, total, clientName, modeLabel, body, showHeader: false });
+  return slideShell({ bg: "dark", pageNumber: 1, total, clientName, modeLabel, body, showHeader: false, showFooter: false });
+}
+
+function slideAgenda(items: { label: string; desc: string }[], clientName: string, modeLabel: string, page: number, total: number): string {
+  const body = `
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:grid;grid-template-columns:1fr 1.4fr;gap:80px;">
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:24px;">
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;">Contenido</div>
+        <h2 style="font-size:96px;font-weight:800;line-height:0.95;margin:0;letter-spacing:-0.04em;color:${C.text};">Agenda</h2>
+        <p style="font-size:20px;line-height:1.55;color:${C.textMid};margin:0;max-width:480px;">Recorrido del análisis: del resumen ejecutivo a las recomendaciones accionables.</p>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+          <span style="width:40px;height:2px;background:${C.orange};"></span>
+          <span style="font-size:13px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;">${items.length} secciones</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;justify-content:center;">
+        ${items.map((it, i) => `
+          <div style="display:flex;align-items:center;gap:24px;padding:18px 24px;border-radius:14px;background:${i === 0 ? C.violetSoft : "transparent"};border:1px solid ${i === 0 ? C.indigoBright : C.border};">
+            <span style="flex-shrink:0;width:52px;height:52px;border-radius:50%;background:${i === 0 ? C.violet : C.paperAlt};color:${i === 0 ? "#fff" : C.text};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;">${String(i + 1).padStart(2, "0")}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:24px;font-weight:700;color:${C.text};letter-spacing:-0.01em;">${esc(it.label)}</div>
+              <div style="font-size:15px;color:${C.textMuted};margin-top:2px;">${esc(it.desc)}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Agenda" });
+}
+
+function slideSectionDivider(opts: {
+  number: number;
+  label: string;
+  title: string;
+  subtitle: string;
+  accent: string;
+  clientName: string;
+  modeLabel: string;
+  page: number;
+  total: number;
+}): string {
+  const body = `
+    <div style="position:absolute;inset:0;padding:120px;display:flex;flex-direction:column;justify-content:center;gap:40px;">
+      <div style="position:absolute;top:-180px;right:-180px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, ${opts.accent} 0%, transparent 70%);opacity:0.18;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:-180px;left:-180px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, ${C.indigoGlow} 0%, transparent 70%);opacity:0.15;pointer-events:none;"></div>
+
+      <div style="position:relative;z-index:5;display:flex;align-items:baseline;gap:28px;">
+        <span style="font-size:280px;font-weight:800;line-height:0.85;color:${opts.accent};opacity:0.18;letter-spacing:-0.06em;font-variant-numeric:tabular-nums;">${String(opts.number).padStart(2, "0")}</span>
+        <div style="display:flex;flex-direction:column;gap:24px;max-width:1200px;">
+          <div style="font-size:16px;letter-spacing:0.32em;color:${opts.accent};font-weight:800;text-transform:uppercase;">Sección ${opts.number} · ${esc(opts.label)}</div>
+          <h2 style="font-size:120px;font-weight:800;line-height:0.95;margin:0;letter-spacing:-0.04em;color:${C.text};">${esc(opts.title)}</h2>
+          <p style="font-size:24px;line-height:1.5;color:${C.textMid};margin:0;max-width:1000px;">${esc(opts.subtitle)}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "accent", pageNumber: opts.page, total: opts.total, clientName: opts.clientName, modeLabel: opts.modeLabel, body, sectionLabel: opts.label });
 }
 
 function slideExecutiveSummary(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
@@ -356,6 +457,50 @@ function slideShareOfVoice(report: PerformanceReportContent, clientName: string,
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Voice" });
 }
 
+function slideNetworkBreakdown(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  const eng = report.analytics.networkEngagement
+    .filter((n) => n.totalInteractions > 0)
+    .map((n) => ({
+      label: networkLabel(n.network),
+      value: n.avgInteractionsPerPost,
+      color: networkColor(n.network),
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+
+  const growth = report.analytics.networkGrowth
+    .filter((n) => Number.isFinite(n.avgGrowth))
+    .map((n) => ({
+      label: networkLabel(n.network),
+      value: n.avgGrowth,
+      color: networkColor(n.network),
+    }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 6);
+
+  const body = `
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+      <div>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Por Red Social</div>
+        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Desempeño por plataforma</h2>
+        <p style="font-size:18px;color:${C.textMid};margin:14px 0 0 0;">Interacciones promedio por post y crecimiento de seguidores por red.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;flex:1;">
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Interacciones por post</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(eng, 780, 70, "")}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Crecimiento de seguidores</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(growth, 780, 70, "%")}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Por Red Social" });
+}
+
 function slideTopContent(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const posts = report.topPosts.slice(0, 4);
   const body = `
@@ -373,6 +518,7 @@ function slideTopContent(report: PerformanceReportContent, clientName: string, m
                 <div style="font-size:18px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
                 <div style="font-size:14px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
               </div>
+              <span style="display:inline-block;padding:4px 12px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${esc(networkLabel(p.network))}</span>
             </div>
             ${p.postContent ? `<p style="font-size:15px;line-height:1.5;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 220))}</p>` : ""}
             <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:12px;">
@@ -452,6 +598,39 @@ function slideClosing(report: PerformanceReportContent, clientName: string, mode
   return slideShell({ bg: "dark", pageNumber: page, total, clientName, modeLabel, body, showHeader: false });
 }
 
+function slideThankYou(clientName: string, modeLabel: string, page: number, total: number): string {
+  const body = `
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1100px;height:1100px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 60%);opacity:0.35;pointer-events:none;"></div>
+      <div style="position:absolute;top:120px;right:160px;transform:scale(1.8);opacity:0.6;pointer-events:none;">${sparkles(C.orange, 0.8)}</div>
+      <div style="position:absolute;bottom:120px;left:160px;transform:scale(1.4) rotate(180deg);opacity:0.5;pointer-events:none;">${sparkles("#FFFFFF", 0.7)}</div>
+
+      <div style="position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:48px;text-align:center;padding:80px;">
+        <div style="display:inline-flex;align-items:center;gap:14px;padding:12px 28px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:100px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};box-shadow:0 0 0 6px rgba(255,107,44,0.18);"></span>
+          <span style="font-size:14px;letter-spacing:0.3em;color:#fff;font-weight:700;text-transform:uppercase;">Fin del reporte</span>
+        </div>
+
+        <h2 style="font-size:200px;font-weight:800;line-height:0.9;margin:0;letter-spacing:-0.05em;color:#fff;">Gracias</h2>
+
+        <div style="display:flex;align-items:center;gap:20px;">
+          <span style="width:60px;height:2px;background:${C.orange};"></span>
+          <span style="font-size:18px;letter-spacing:0.32em;color:rgba(255,255,255,0.7);font-weight:600;text-transform:uppercase;">${esc(clientName)} · ${esc(modeLabel)}</span>
+          <span style="width:60px;height:2px;background:${C.orange};"></span>
+        </div>
+
+        <p style="font-size:22px;line-height:1.5;color:rgba(255,255,255,0.65);margin:0;max-width:900px;">Para profundizar en cualquier hallazgo o explorar nuevos ángulos analíticos, el equipo Wizr está disponible.</p>
+
+        <div style="display:flex;align-items:center;gap:32px;margin-top:24px;">
+          <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:48px;filter:brightness(0) invert(1);"/>
+          <span style="font-size:14px;letter-spacing:0.3em;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase;">wizr.mx</span>
+        </div>
+      </div>
+    </div>
+  `;
+  return slideShell({ bg: "dark", pageNumber: page, total, clientName, modeLabel, body, showHeader: false, showFooter: false });
+}
+
 export function buildPerformanceSlidesReport(
   report: PerformanceReportContent,
   clientName: string,
@@ -460,45 +639,116 @@ export function buildPerformanceSlidesReport(
   const isBrand = report.reportMode === "brand";
   const modeLabel = isBrand ? "Marca" : "Benchmark";
 
-  // Determine total slides up front
   const hasSov = !isBrand && report.analytics.shareOfVoice.length > 0;
   const hasTopPosts = report.topPosts.length > 0;
   const hasRecs = report.recommendations.length > 0;
+  const hasNetworkBreakdown = report.analytics.networkEngagement.some((n) => n.totalInteractions > 0)
+    || report.analytics.networkGrowth.some((n) => Number.isFinite(n.avgGrowth));
 
-  const slides: string[] = [];
-  const total =
-    1 + // cover
+  // Build agenda items list
+  const agendaItems: { label: string; desc: string }[] = [
+    { label: "Resumen Ejecutivo", desc: "Síntesis y highlights del período" },
+    { label: "KPIs del período", desc: "Métricas clave consolidadas" },
+    { label: "Ranking por Engagement", desc: "Desempeño por perfil" },
+  ];
+  if (hasSov) agendaItems.push({ label: "Share of Voice", desc: "Distribución del engagement total" });
+  if (hasNetworkBreakdown) agendaItems.push({ label: "Por Red Social", desc: "Desempeño por plataforma" });
+  if (hasTopPosts) agendaItems.push({ label: "Top Contenidos", desc: "Mejores publicaciones del período" });
+  agendaItems.push({ label: "Hallazgos Clave", desc: "Lo más relevante para destacar" });
+  if (hasRecs) agendaItems.push({ label: "Recomendaciones", desc: "Próximos pasos accionables" });
+  agendaItems.push({ label: "Conclusión", desc: "Cierre estratégico del período" });
+
+  // Compute total slide count: cover + agenda + 2 dividers (data, insights) + content slides + closing + thanks
+  const dataSlides =
     1 + // exec summary
     1 + // kpis
     1 + // ranking
     (hasSov ? 1 : 0) +
-    (hasTopPosts ? 1 : 0) +
-    1 + // findings
-    (hasRecs ? 1 : 0) +
-    1; // closing
+    (hasNetworkBreakdown ? 1 : 0) +
+    (hasTopPosts ? 1 : 0);
+  const insightSlides = 1 + (hasRecs ? 1 : 0); // findings + recs
 
+  const total =
+    1 + // cover
+    1 + // agenda
+    1 + // divider 1: Datos
+    dataSlides +
+    1 + // divider 2: Insights
+    insightSlides +
+    1 + // closing
+    1; // thanks
+
+  const slides: string[] = [];
   let p = 1;
+
+  // 1. Cover
   slides.push(slideCover(report, clientName, dateRange, total));
   p++;
+
+  // 2. Agenda
+  slides.push(slideAgenda(agendaItems, clientName, modeLabel, p++, total));
+
+  // 3. Section divider — Datos
+  slides.push(
+    slideSectionDivider({
+      number: 1,
+      label: "Datos",
+      title: "El período en cifras",
+      subtitle: "Métricas, ranking y distribución del engagement por perfil, marca y red social.",
+      accent: C.violet,
+      clientName,
+      modeLabel,
+      page: p++,
+      total,
+    }),
+  );
+
+  // Data slides
   slides.push(slideExecutiveSummary(report, clientName, modeLabel, p++, total));
   slides.push(slideKpis(report, clientName, modeLabel, p++, total));
   slides.push(slideRanking(report, clientName, modeLabel, p++, total));
   if (hasSov) slides.push(slideShareOfVoice(report, clientName, modeLabel, p++, total));
+  if (hasNetworkBreakdown) slides.push(slideNetworkBreakdown(report, clientName, modeLabel, p++, total));
   if (hasTopPosts) slides.push(slideTopContent(report, clientName, modeLabel, p++, total));
+
+  // Section divider — Insights
+  slides.push(
+    slideSectionDivider({
+      number: 2,
+      label: "Insights",
+      title: "Lecturas y próximos pasos",
+      subtitle: "Hallazgos clave del período y recomendaciones accionables para la siguiente ventana.",
+      accent: C.orange,
+      clientName,
+      modeLabel,
+      page: p++,
+      total,
+    }),
+  );
+
+  // Insight slides
   slides.push(slideFindings(report, clientName, modeLabel, p++, total));
   if (hasRecs) slides.push(slideRecommendations(report, clientName, modeLabel, p++, total));
+
+  // Closing + Thanks
   slides.push(slideClosing(report, clientName, modeLabel, p++, total));
+  slides.push(slideThankYou(clientName, modeLabel, p++, total));
 
   const fullHtml = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <title>${esc(report.title || clientName)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; padding: 0; background: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { margin: 0; padding: 0; background: #000; font-family: 'Inter','Segoe UI',sans-serif; }
   @page { size: 1920px 1080px; margin: 0; }
-  .slide { display: block; }
+  .slide { display: block; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  img { display: block; max-width: 100%; }
 </style>
 </head>
 <body>
