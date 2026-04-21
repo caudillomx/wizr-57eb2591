@@ -654,29 +654,39 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Cuota de interacciones (donut por marca) — usa interacciones absolutas ── */}
+      {/* ── Cuota de interacciones (donut por marca) — incluye todas las propias + completa hasta 10 ── */}
       {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
         const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
-        const donutData = report.analytics.brandEngagement
-          .filter((b) => b.totalInteractions > 0)
-          .slice(0, 10)
-          .map((b) => ({
-            name: b.brand,
+        const withInter = report.analytics.brandEngagement.filter((b) => b.totalInteractions > 0);
+        const ownBrands = withInter.filter((b) => b.isOwn);
+        const compBrands = withInter.filter((b) => !b.isOwn).sort((a, b) => b.totalInteractions - a.totalInteractions);
+        const DONUT_TARGET = 10;
+        const selected = [...ownBrands, ...compBrands.slice(0, Math.max(DONUT_TARGET - ownBrands.length, 4))]
+          .sort((a, b) => b.totalInteractions - a.totalInteractions);
+        const donutData = selected.map((b) => {
+          const netLabel = b.networks && b.networks.length > 0
+            ? (b.networks.length === 1 ? networkLabel(b.networks[0]) : `${b.networks.length} redes`)
+            : "";
+          return {
+            name: netLabel ? `${b.brand} (${netLabel})` : b.brand,
+            brand: b.brand,
+            networks: b.networks,
             value: Math.round((b.totalInteractions / total) * 1000) / 10,
             absolute: b.totalInteractions,
             isOwn: b.isOwn,
             fill: colorForBrand(b.brand, b.isOwn, brandsList),
-          }));
+          };
+        });
         if (donutData.length === 0) return null;
         return (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Users2 className="h-4 w-4 text-primary" />
-                Cuota de interacciones por marca
+                Cuota de interacciones por marca (Top {donutData.length})
               </CardTitle>
               <CardDescription className="text-xs">
-                ¿Qué marca concentra la mayor parte de las interacciones del período?
+                ¿Qué marca concentra la mayor parte de las interacciones del período? · red social entre paréntesis
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -701,9 +711,13 @@ export function PerformanceReportView({
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const p = payload[0].payload;
+                        const netStr = (p.networks && p.networks.length > 0)
+                          ? p.networks.map((n: string) => networkLabel(n)).join(", ")
+                          : "—";
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
-                            <div className="font-semibold">{p.name}</div>
+                            <div className="font-semibold">{p.brand}</div>
+                            <div className="text-muted-foreground">{netStr}</div>
                             <div className="text-muted-foreground">{formatNumber(p.absolute)} interacciones · {p.value}% del total</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
@@ -715,7 +729,7 @@ export function PerformanceReportView({
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación. Para {report.clientName}, este es el termómetro real de presencia frente a competencia.
+                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Las marcas propias de {report.clientName} siempre aparecen para permitir comparación directa. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación.
               </p>
             </CardContent>
           </Card>
