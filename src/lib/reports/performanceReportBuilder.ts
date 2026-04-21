@@ -68,6 +68,7 @@ function networkLabel(n: string): string {
 function chartHorizontalBars(
   data: { label: string; value: number; isOwn?: boolean; sub?: string }[],
   unit = "%",
+  formatValue?: (v: number) => string,
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
@@ -75,13 +76,76 @@ function chartHorizontalBars(
     .map((d) => {
       const w = (Math.abs(d.value) / max) * 100;
       const color = d.isOwn ? C.violet : C.textMuted;
+      const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
       return `<div style="display:flex;align-items:center;gap:8px;font-size:9px;">
       <span style="min-width:130px;color:${C.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(d.label)}${d.sub ? ` <span style="color:${C.textMuted};">· ${esc(d.sub)}</span>` : ""}</span>
       <div style="flex:1;background:${C.borderLight};border-radius:3px;height:12px;overflow:hidden;">
         <div style="width:${w}%;background:${color};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
-      <span style="min-width:46px;text-align:right;font-weight:700;color:${C.text};">${d.value.toFixed(1)}${unit}</span>
+      <span style="min-width:56px;text-align:right;font-weight:700;color:${C.text};">${valStr}</span>
     </div>`;
+    })
+    .join("")}</div>`;
+}
+
+function donutChartSVG(
+  data: { label: string; value: number; isOwn?: boolean }[],
+): string {
+  if (!data.length) return "";
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const palette = [C.violet, C.orange, "#22c55e", "#06b6d4", "#8b5cf6", "#ec4899", "#eab308", "#ef4444", "#0ea5e9", "#14b8a6"];
+  const cx = 90, cy = 90, rOuter = 80, rInner = 48;
+  let acc = 0;
+  const slices = data.map((d, i) => {
+    const startAngle = (acc / total) * 2 * Math.PI - Math.PI / 2;
+    acc += d.value;
+    const endAngle = (acc / total) * 2 * Math.PI - Math.PI / 2;
+    const x1 = cx + rOuter * Math.cos(startAngle);
+    const y1 = cy + rOuter * Math.sin(startAngle);
+    const x2 = cx + rOuter * Math.cos(endAngle);
+    const y2 = cy + rOuter * Math.sin(endAngle);
+    const x3 = cx + rInner * Math.cos(endAngle);
+    const y3 = cy + rInner * Math.sin(endAngle);
+    const x4 = cx + rInner * Math.cos(startAngle);
+    const y4 = cy + rInner * Math.sin(startAngle);
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+    const path = `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+    const fill = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+    return `<path d="${path}" fill="${fill}" stroke="#fff" stroke-width="1.5"/>`;
+  }).join("");
+  const legend = data.map((d, i) => {
+    const fill = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+    const pctVal = ((d.value / total) * 100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:9px;color:${C.textMid};margin-bottom:3px;">
+      <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${fill};flex-shrink:0;"></span>
+      <span style="flex:1;">${esc(d.label)}${d.isOwn ? " <strong style=\"color:" + C.violet + ";\">(propia)</strong>" : ""}</span>
+      <strong style="color:${C.text};">${pctVal}%</strong>
+    </div>`;
+  }).join("");
+  return `<div style="display:flex;align-items:center;gap:18px;">
+    <svg viewBox="0 0 180 180" style="width:180px;height:180px;flex-shrink:0;">${slices}</svg>
+    <div style="flex:1;">${legend}</div>
+  </div>`;
+}
+
+function chartVerticalBars(
+  data: { label: string; value: number; isOwn?: boolean }[],
+  unit = "%",
+  formatValue?: (v: number) => string,
+): string {
+  if (!data.length) return "";
+  const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
+  const barW = Math.max(28, Math.min(56, Math.floor(560 / data.length) - 8));
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
+    .map((d) => {
+      const h = (Math.abs(d.value) / max) * 130;
+      const color = d.isOwn ? C.violet : C.textMuted;
+      const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:${barW}px;">
+        <span style="font-size:8px;font-weight:700;color:${C.text};">${valStr}</span>
+        <div style="width:100%;background:${color};height:${h}px;border-radius:3px 3px 0 0;min-height:2px;"></div>
+        <span style="font-size:8px;color:${C.textMid};text-align:center;line-height:1.2;word-break:break-word;">${esc(d.label)}</span>
+      </div>`;
     })
     .join("")}</div>`;
 }
@@ -348,6 +412,52 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
+  // ---------- Followers por perfil (Top 15) ----------
+  const followersBlock = report.analytics.followersByProfile?.length
+    ? section(
+        "Perfiles con más seguidores (Top 15)",
+        chartVerticalBars(
+          report.analytics.followersByProfile.slice(0, 15).map((f) => ({
+            label: `${f.name.length > 10 ? f.name.substring(0, 9) + "…" : f.name}`,
+            value: f.followers,
+            isOwn: f.isOwn,
+          })),
+          "",
+          (v) => fmtNum(v),
+        ),
+        { eyebrow: "Sección · Audiencia" },
+      )
+    : "";
+
+  // ---------- Engagement por red social ----------
+  const networkEngBlock = report.analytics.networkEngagement?.length
+    ? section(
+        "Engagement promedio por red social",
+        chartVerticalBars(
+          report.analytics.networkEngagement.map((n) => ({
+            label: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+            value: n.avgEngagement,
+          })),
+        ),
+        { eyebrow: "Sección · Engagement por red" },
+      )
+    : "";
+
+  // ---------- Cuota de interacciones (donut) ----------
+  const sovDonutBlock = !isBrand && report.analytics.brandEngagement?.length
+    ? (() => {
+        const data = report.analytics.brandEngagement
+          .filter((b) => b.avgEngagement > 0)
+          .map((b) => ({ label: b.brand, value: b.avgEngagement, isOwn: b.isOwn }));
+        if (data.length === 0) return "";
+        return section(
+          "Cuota de interacciones por marca",
+          donutChartSVG(data),
+          { eyebrow: "Sección · Cuota de mercado" },
+        );
+      })()
+    : "";
+
   // ---------- Findings ----------
   const findingsBlock = section(
     "Hallazgos clave",
@@ -385,8 +495,11 @@ export function buildPerformanceReportHTML(
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
+    ${followersBlock}
     ${brandEngBlock}
+    ${networkEngBlock}
     ${rankingChart}
+    ${sovDonutBlock}
     ${sovBlock}
     ${profilesBlock}
     ${topContentBlock}

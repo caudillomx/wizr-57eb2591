@@ -408,6 +408,168 @@ export function PerformanceReportView({
         </Card>
       )}
 
+      {/* ── Seguidores por perfil (Top 15) ── */}
+      {report.analytics.followersByProfile?.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users2 className="h-4 w-4 text-primary" />
+              Perfiles con más seguidores (Top 15)
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Tamaño de audiencia por perfil · {report.clientName} resaltado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={report.analytics.followersByProfile.slice(0, 15).map((f) => ({
+                    name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name} · ${networkShort(f.network)}`,
+                    fullName: f.name,
+                    network: f.network,
+                    value: f.followers,
+                    isOwn: f.isOwn,
+                  }))}
+                  margin={{ top: 16, right: 16, left: 0, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={70} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.fullName}</div>
+                          <div className="text-muted-foreground">{p.network} · {formatNumber(p.value)} seguidores</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {report.analytics.followersByProfile.slice(0, 15).map((f, i) => (
+                      <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : "#94a3b8"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Engagement promedio por red social ── */}
+      {report.analytics.networkEngagement?.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-primary" />
+              Engagement promedio por red social
+            </CardTitle>
+            <CardDescription className="text-xs">
+              ¿Qué plataforma genera más interacción en el sector?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={report.analytics.networkEngagement.map((n) => ({
+                  name: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+                  value: n.avgEngagement,
+                  profiles: n.profiles,
+                }))} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.name}</div>
+                          <div className="text-muted-foreground">{p.value.toFixed(2)}% engagement · {p.profiles} perfil(es)</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))">
+                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Cuota de interacciones (donut por marca) ── */}
+      {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
+        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const donutData = report.analytics.brandEngagement
+          .filter((b) => b.avgEngagement > 0)
+          .map((b, i) => ({
+            name: b.brand,
+            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            isOwn: b.isOwn,
+            fill: b.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
+          }));
+        if (donutData.length === 0) return null;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users2 className="h-4 w-4 text-primary" />
+                Cuota de interacciones por marca
+              </CardTitle>
+              <CardDescription className="text-xs">
+                ¿Qué marca obtuvo mayor participación del engagement total?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      label={({ name, value }) => `${name} · ${value}%`}
+                      labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                    >
+                      {donutData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                            <div className="font-semibold">{p.name}</div>
+                            <div className="text-muted-foreground">{p.value}% del engagement total</div>
+                            {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* ── Tabla compacta: Top 10 perfiles ── */}
       <Card>
         <CardHeader>

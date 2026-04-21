@@ -27,6 +27,10 @@ export interface PerformanceReportAnalytics {
   brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; profiles: number; followers: number }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
+  /** Engagement promedio agregado por red social */
+  networkEngagement: Array<{ network: string; avgEngagement: number; profiles: number }>;
+  /** Followers ordenados por perfil (top N) */
+  followersByProfile: Array<{ name: string; network: string; followers: number; isOwn: boolean }>;
   /** Brecha vs líder para la marca propia (en engagement) */
   ownBrandGap: { ownAvg: number; leaderName: string; leaderAvg: number; multiple: number } | null;
 }
@@ -202,22 +206,51 @@ function computeAnalytics(
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement);
 
-  // ── Network-level growth aggregation ──
-  const netMap = new Map<string, number[]>();
+  // ── Network-level growth + engagement aggregation ──
+  const netGrowthMap = new Map<string, number[]>();
+  const netEngMap = new Map<string, number[]>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
     const gr = Number(k?.follower_growth_percent);
-    if (!Number.isFinite(gr)) continue;
-    if (!netMap.has(p.network)) netMap.set(p.network, []);
-    netMap.get(p.network)!.push(gr);
+    const eng = Number(k?.engagement_rate);
+    if (Number.isFinite(gr)) {
+      if (!netGrowthMap.has(p.network)) netGrowthMap.set(p.network, []);
+      netGrowthMap.get(p.network)!.push(gr);
+    }
+    if (Number.isFinite(eng) && eng > 0) {
+      if (!netEngMap.has(p.network)) netEngMap.set(p.network, []);
+      netEngMap.get(p.network)!.push(eng);
+    }
   }
-  const networkGrowth = Array.from(netMap.entries())
+  const networkGrowth = Array.from(netGrowthMap.entries())
     .map(([network, arr]) => ({
       network,
       avgGrowth: pct(arr.reduce((s, v) => s + v, 0) / arr.length),
       profiles: arr.length,
     }))
     .sort((a, b) => b.avgGrowth - a.avgGrowth);
+  const networkEngagement = Array.from(netEngMap.entries())
+    .map(([network, arr]) => ({
+      network,
+      avgEngagement: pct(arr.reduce((s, v) => s + v, 0) / arr.length),
+      profiles: arr.length,
+    }))
+    .sort((a, b) => b.avgEngagement - a.avgEngagement);
+
+  // ── Followers por perfil (top followers) ──
+  const followersByProfile = profiles
+    .map((p) => {
+      const k = kpis.find((kp) => kp.fk_profile_id === p.id);
+      const fol = Number(k?.followers);
+      return {
+        name: getFKProfileDisplayName(p),
+        network: p.network,
+        followers: Number.isFinite(fol) && fol > 0 ? fol : 0,
+        isOwn: !p.is_competitor,
+      };
+    })
+    .filter((x) => x.followers > 0)
+    .sort((a, b) => b.followers - a.followers);
 
   // ── Own brand gap vs leader ──
   let ownBrandGap: PerformanceReportAnalytics["ownBrandGap"] = null;
@@ -243,6 +276,8 @@ function computeAnalytics(
     rankingByEngagement,
     brandEngagement,
     networkGrowth,
+    networkEngagement,
+    followersByProfile,
     ownBrandGap,
   };
 }
