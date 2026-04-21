@@ -152,10 +152,25 @@ export function PerformanceReportPDFGenerator({
       const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
       const SECTION_GAP_MM = 4;
 
-      // Pre-load the Wizr logo as a data URL for fast addImage on each page
-      const logoDataUrl = await fetch(wizrLogo)
+      // Pre-load the Wizr logo as a data URL AND measure its natural aspect
+      // ratio so we can place it without distortion.
+      const { dataUrl: logoDataUrl, aspect: logoAspect } = await fetch(wizrLogo)
         .then((r) => r.blob())
         .then(
+          (b) =>
+            new Promise<{ dataUrl: string; aspect: number }>((res) => {
+              const fr = new FileReader();
+              fr.onload = () => {
+                const dataUrl = fr.result as string;
+                const probe = new Image();
+                probe.onload = () => res({ dataUrl, aspect: probe.naturalWidth / probe.naturalHeight });
+                probe.onerror = () => res({ dataUrl, aspect: 3 });
+                probe.src = dataUrl;
+              };
+              fr.readAsDataURL(b);
+            })
+        )
+        .catch(() => ({ dataUrl: "", aspect: 3 }));
           (b) =>
             new Promise<string>((res) => {
               const fr = new FileReader();
