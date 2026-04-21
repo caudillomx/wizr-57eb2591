@@ -104,13 +104,14 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Top 5 posts overall by engagement (already filtered by date by the hook)
-    const top5Posts = [...topPosts]
+    // Top 10 posts overall by engagement (already filtered by date by the hook)
+    const topPostsForAI = [...topPosts]
       .sort((a, b) => b.engagement - a.engagement)
-      .slice(0, 5)
-      .map((p) => {
+      .slice(0, 10)
+      .map((p, idx) => {
         const profile = profiles.find((pr) => pr.id === p.fk_profile_id);
         return {
+          rank: idx + 1,
           author: profile?.display_name || profile?.profile_id || "—",
           network: p.network,
           date: p.post_date,
