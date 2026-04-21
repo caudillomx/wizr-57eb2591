@@ -537,16 +537,17 @@ export function PerformanceReportView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[240px]">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={report.analytics.networkEngagement.map((n) => ({
-                  name: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+                  name: networkLabel(n.network),
+                  network: n.network,
                   value: n.avgEngagement,
                   profiles: n.profiles,
-                }))} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                }))} margin={{ top: 24, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} domain={[0, "auto"]} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
@@ -555,21 +556,24 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.name}</div>
-                          <div className="text-muted-foreground">{p.value.toFixed(2)}% engagement · {p.profiles} perfil(es)</div>
+                          <div className="text-muted-foreground">tasa de engagement {p.value.toFixed(2)}% · {p.profiles} perfil(es)</div>
                         </div>
                       );
                     }}
                   />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))">
-                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {report.analytics.networkEngagement.map((n, i) => (
+                      <Cell key={i} fill={colorForNetwork(n.network)} />
+                    ))}
+                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} fontWeight={700} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
               {isBrand
-                ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${report.clientName} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.`
-                : `Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.`}
+                ? `Lectura: cada barra muestra la tasa de interacción promedio (interacciones ÷ seguidores) que ${report.clientName} consigue en cada red donde está presente. Sirve para identificar qué canal está activando mejor a la audiencia propia y dónde hay que ajustar contenido o cadencia.`
+                : `Lectura: cada barra es la tasa de engagement promedio de todos los perfiles del sector en esa red, no solo los de ${report.clientName}. Una tasa muy baja indica que el canal está saturado para todas las marcas; una tasa alta señala dónde la audiencia sí está reaccionando y vale la pena invertir contenido.`}
             </p>
           </CardContent>
         </Card>
