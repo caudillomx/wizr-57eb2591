@@ -112,8 +112,41 @@ function cleanProfileName(name: string): string {
   return out || String(name || "").trim();
 }
 
+// Tokens descartables al canonicalizar marca: variantes geográficas y descriptores comunes
+const BRAND_NOISE_TOKENS = new Set([
+  "mx", "mex", "mexico", "latam", "latinoamerica",
+  "oficial", "official", "es", "espanol", "spanish", "english",
+  "analisis", "noticias", "news",
+  "grupo", "financiero", "banco", "casa", "bolsa",
+]);
+
+/**
+ * Canonicaliza una marca para agrupar variantes:
+ *   "Santander Mex", "Santander Mexico", "Santander México" → "santander"
+ *   "Grupo Financiero Actinver", "Actinver" → "actinver"
+ *   "Monex", "Monex Análisis" → "monex"
+ */
+function canonicalBrandKey(rawName: string): string {
+  const cleaned = cleanProfileName(rawName)
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const tokens = cleaned.split(" ").filter((t) => t && !BRAND_NOISE_TOKENS.has(t));
+  return (tokens.length > 0 ? tokens.join(" ") : cleaned).trim();
+}
+
 function brandKeyFromProfile(p: FKProfileExt): string {
-  return cleanProfileName(getFKProfileDisplayName(p));
+  return canonicalBrandKey(getFKProfileDisplayName(p));
+}
+
+// Elige el display name más representativo para un grupo de variantes
+function pickBrandDisplay(variants: string[]): string {
+  const counts = new Map<string, number>();
+  for (const v of variants) counts.set(v, (counts.get(v) ?? 0) + 1);
+  // ordena por frecuencia desc, luego por longitud asc (más corto = más limpio)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].length - b[0].length)[0][0];
 }
 
 function computeAnalytics(
@@ -226,17 +259,21 @@ function computeAnalytics(
       return b.avgInteractionsPerPost - a.avgInteractionsPerPost;
     });
 
-  // ── Brand-level aggregation ──
-  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number; networks: Set<string> }>();
+  // ── Brand-level aggregation (canonicalizada para colapsar variantes Mex/México/etc) ──
+  const brandMap = new Map<string, { isOwn: boolean; displayVariants: string[]; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number; networks: Set<string> }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const brand = brandKeyFromProfile(p);
+    const brandKey = brandKeyFromProfile(p);
+    const displayVariant = cleanProfileName(getFKProfileDisplayName(p));
     const eng = Number(k?.engagement_rate);
     const fol = Number(k?.followers);
-    if (!brandMap.has(brand)) {
-      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0, networks: new Set() });
+    if (!brandMap.has(brandKey)) {
+      brandMap.set(brandKey, { isOwn: !p.is_competitor, displayVariants: [], engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0, networks: new Set() });
     }
-    const slot = brandMap.get(brand)!;
+    const slot = brandMap.get(brandKey)!;
+    // Si cualquiera de las variantes es propia, la marca es propia
+    if (!p.is_competitor) slot.isOwn = true;
+    slot.displayVariants.push(displayVariant);
     slot.profiles += 1;
     slot.networks.add(p.network);
     if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
@@ -248,8 +285,8 @@ function computeAnalytics(
     }
   }
   const brandEngagement = Array.from(brandMap.entries())
-    .map(([brand, v]) => ({
-      brand,
+    .map(([, v]) => ({
+      brand: pickBrandDisplay(v.displayVariants),
       isOwn: v.isOwn,
       avgEngagement: v.engs.length ? pct(v.engs.reduce((s, e) => s + e, 0) / v.engs.length) : 0,
       totalInteractions: Math.round(v.engsAbs),
