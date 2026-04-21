@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Building2, ChevronRight, Loader2, Trash2 } from "lucide-react";
+import { Plus, Building2, ChevronRight, Loader2, Trash2, Users2 } from "lucide-react";
 import { Client, useCreateClient, useDeleteClient } from "@/hooks/useClients";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -20,15 +21,17 @@ export function ClientList({ clients, isLoading, onSelect }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [clientType, setClientType] = useState<"branded" | "benchmark">("branded");
   const create = useCreateClient();
   const del = useDeleteClient();
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    const c = await create.mutateAsync({ name: name.trim(), description: description.trim() });
+    const c = await create.mutateAsync({ name: name.trim(), description: description.trim(), client_type: clientType });
     setOpen(false);
     setName("");
     setDescription("");
+    setClientType("branded");
     onSelect(c.id);
   };
 
@@ -60,6 +63,33 @@ export function ClientList({ clients, isLoading, onSelect }: Props) {
               <div>
                 <label className="text-sm font-medium">Descripción (opcional)</label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tipo de cliente</label>
+                <RadioGroup value={clientType} onValueChange={(v) => setClientType(v as "branded" | "benchmark")} className="grid grid-cols-1 gap-2">
+                  <label htmlFor="ct-branded" className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${clientType === "branded" ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
+                    <RadioGroupItem value="branded" id="ct-branded" className="mt-1" />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Building2 className="h-4 w-4 text-primary" /> Cliente con marca propia
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Tiene marca propia y competencia. La vista separa Marca vs Benchmark.
+                      </p>
+                    </div>
+                  </label>
+                  <label htmlFor="ct-benchmark" className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${clientType === "benchmark" ? "border-primary bg-primary/5" : "hover:bg-accent"}`}>
+                    <RadioGroupItem value="benchmark" id="ct-benchmark" className="mt-1" />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Users2 className="h-4 w-4 text-primary" /> Grupo de benchmark
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Solo cuentas a comparar entre sí (ej. instituciones, funcionarios). Sin marca propia.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
               </div>
             </div>
             <DialogFooter>
@@ -131,8 +161,19 @@ export function ClientList({ clients, isLoading, onSelect }: Props) {
                 {c.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{c.description}</p>
                 )}
-                <div className="flex items-center justify-end text-xs text-primary font-medium">
-                  Abrir <ChevronRight className="h-3 w-3 ml-1" />
+                <div className="flex items-center justify-between text-xs">
+                  {c.client_type === "benchmark" ? (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Users2 className="h-3 w-3" /> Benchmark
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Building2 className="h-3 w-3" /> Marca propia
+                    </span>
+                  )}
+                  <span className="text-primary font-medium inline-flex items-center">
+                    Abrir <ChevronRight className="h-3 w-3 ml-1" />
+                  </span>
                 </div>
               </CardContent>
             </Card>

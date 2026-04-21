@@ -6,7 +6,7 @@ import type { FKProfile, FKProfileKPI, FKDailyTopPost } from "./useFanpageKarma"
 type FKProfileExt = FKProfile & { is_competitor?: boolean };
 import { getFKProfileDisplayName } from "@/lib/fkProfileUtils";
 
-export type PerformanceReportMode = "brand" | "benchmark";
+export type PerformanceReportMode = "brand" | "benchmark" | "comparative";
 
 export interface PerformanceReportHighlight {
   label: string;
@@ -495,8 +495,11 @@ export function usePerformanceReport() {
         .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
         .slice(0, 10);
 
+      // Backend solo conoce brand/benchmark; "comparative" se envía como benchmark pero el título y la UI lo presentan distinto
+      const backendMode = config.reportMode === "comparative" ? "benchmark" : config.reportMode;
       const payload = {
-        reportMode: config.reportMode,
+        reportMode: backendMode,
+        clientMode: config.reportMode, // hint para el prompt si lo soporta
         clientName: config.clientName,
         brandName: config.brandName,
         dateRange: config.dateRange,
@@ -549,8 +552,15 @@ export function usePerformanceReport() {
         ? await waitForJob(data.jobId as string)
         : (data as Partial<PerformanceReportContent>);
 
+      const defaultTitle = config.reportMode === "comparative"
+        ? `Análisis Comparativo — ${config.clientName}`
+        : config.reportMode === "brand"
+          ? `Reporte de Marca — ${config.clientName}`
+          : `Reporte Benchmark — ${config.clientName}`;
       const enriched: PerformanceReportContent = {
-        title: reportData.title || `Reporte de Performance — ${config.clientName}`,
+        title: config.reportMode === "comparative"
+          ? `Análisis Comparativo — ${config.clientName}`
+          : (reportData.title || defaultTitle),
         summary: reportData.summary || "",
         highlights: reportData.highlights || [],
         keyFindings: reportData.keyFindings || [],

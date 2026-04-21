@@ -12,9 +12,12 @@ export interface Client {
   logo_url: string | null;
   services_enabled: Record<string, unknown>;
   kimediamx_profile_id: string | null;
+  client_type: "branded" | "benchmark";
   created_at: string;
   updated_at: string;
 }
+
+export type ClientType = "branded" | "benchmark";
 
 export function useClients() {
   const { user } = useAuth();
@@ -53,11 +56,11 @@ export function useCreateClient() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async ({ name, description }: { name: string; description?: string }) => {
+    mutationFn: async ({ name, description, client_type = "branded" }: { name: string; description?: string; client_type?: "branded" | "benchmark" }) => {
       if (!user) throw new Error("No autenticado");
       const { data, error } = await supabase
         .from("clients")
-        .insert({ user_id: user.id, name, description: description || null })
+        .insert({ user_id: user.id, name, description: description || null, client_type } as any)
         .select()
         .single();
       if (error) throw error;

@@ -38,7 +38,8 @@ type ViewMode = "brand" | "benchmark";
 
 export function ClientDetail({ client, onBack }: Props) {
   const qc = useQueryClient();
-  const [view, setView] = useState<ViewMode>("brand");
+  const isBenchmarkOnly = client.client_type === "benchmark";
+  const [view, setView] = useState<ViewMode>(isBenchmarkOnly ? "benchmark" : "brand");
   const [activeTab, setActiveTab] = useState<
     "ranking" | "insights" | "evolution" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
   >("ranking");
@@ -60,15 +61,15 @@ export function ClientDetail({ client, onBack }: Props) {
 
   const profiles = useMemo<FKProfile[]>(() => {
     return rawProfiles
-      .filter((p) => (view === "brand" ? !p.is_competitor : true))
+      .filter((p) => (isBenchmarkOnly ? true : view === "brand" ? !p.is_competitor : true))
       .map((p) => ({
         ...p,
         project_id: null,
         ranking_id: null,
-        is_own_profile: !p.is_competitor,
+        is_own_profile: isBenchmarkOnly ? false : !p.is_competitor,
         network: p.network as FKNetwork,
       })) as unknown as FKProfile[];
-  }, [rawProfiles, view]);
+  }, [rawProfiles, view, isBenchmarkOnly]);
 
   const profileIds = profiles.map((p) => p.id);
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
@@ -107,25 +108,35 @@ export function ClientDetail({ client, onBack }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{brandCount} marca</Badge>
-          <Badge variant="outline">{compCount} competencia</Badge>
+          {isBenchmarkOnly ? (
+            <Badge variant="secondary" className="gap-1">
+              <Users2 className="h-3 w-3" /> {rawProfiles.length} perfiles
+            </Badge>
+          ) : (
+            <>
+              <Badge variant="secondary">{brandCount} marca</Badge>
+              <Badge variant="outline">{compCount} competencia</Badge>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Target className="h-4 w-4" />
-          Vista actual
+      {!isBenchmarkOnly && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Target className="h-4 w-4" />
+            Vista actual
+          </div>
+          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)}>
+            <ToggleGroupItem value="brand" className="gap-2">
+              <Building2 className="h-4 w-4" /> Marca ({brandCount})
+            </ToggleGroupItem>
+            <ToggleGroupItem value="benchmark" className="gap-2">
+              <Users2 className="h-4 w-4" /> Benchmark ({brandCount + compCount})
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
-        <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)}>
-          <ToggleGroupItem value="brand" className="gap-2">
-            <Building2 className="h-4 w-4" /> Marca ({brandCount})
-          </ToggleGroupItem>
-          <ToggleGroupItem value="benchmark" className="gap-2">
-            <Users2 className="h-4 w-4" /> Benchmark ({brandCount + compCount})
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      )}
 
       {activeTab !== "config" && activeTab !== "evolution" && profiles.length > 0 && (
         <RankingDateFilter
@@ -155,7 +166,9 @@ export function ClientDetail({ client, onBack }: Props) {
             <div className="text-center py-12 border rounded-lg border-dashed">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">
-                {view === "brand" ? "Aún no hay perfiles de marca" : "Aún no hay perfiles cargados"}
+                {isBenchmarkOnly
+                  ? "Aún no hay perfiles cargados"
+                  : view === "brand" ? "Aún no hay perfiles de marca" : "Aún no hay perfiles cargados"}
               </h3>
               <p className="text-muted-foreground mb-4">
                 Ve a Configuración para importar Excel de KPIs y Posts.
@@ -188,7 +201,7 @@ export function ClientDetail({ client, onBack }: Props) {
             <DailyTopPostsPanel profiles={profiles} topPosts={dailyTopPosts} isLoading={loadingProfiles || loadingTop} onRefresh={handleRefreshTopPosts} />
             <div className="grid gap-6 lg:grid-cols-2">
               <RankingQuestionsPanel profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} onAskAI={handleAskAI} />
-              <RankingAIChat profiles={profiles} kpis={kpis} rankingName={`${client.name} (${view === "brand" ? "Marca" : "Benchmark"})`} />
+              <RankingAIChat profiles={profiles} kpis={kpis} rankingName={`${client.name}${isBenchmarkOnly ? " (Comparativo)" : ` (${view === "brand" ? "Marca" : "Benchmark"})`}`} />
             </div>
           </div>
         </TabsContent>
@@ -208,7 +221,7 @@ export function ClientDetail({ client, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="content" className="mt-6">
-          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext={view} brandName={client.name} />
+          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext={isBenchmarkOnly ? "benchmark" : view} brandName={isBenchmarkOnly ? undefined : client.name} />
         </TabsContent>
 
         <TabsContent value="narratives" className="mt-6">
@@ -218,10 +231,10 @@ export function ClientDetail({ client, onBack }: Props) {
         <TabsContent value="reports" className="mt-6">
           <div className="space-y-6">
             <PerformanceReportGenerator
-              reportMode={view}
+              reportMode={isBenchmarkOnly ? "comparative" : view}
               clientId={client.id}
               clientName={client.name}
-              brandName={client.name}
+              brandName={isBenchmarkOnly ? undefined : client.name}
               profiles={profiles}
               kpis={kpis}
               topPosts={dailyTopPosts}
@@ -239,7 +252,7 @@ export function ClientDetail({ client, onBack }: Props) {
             <RankingAIChat
               profiles={profiles}
               kpis={kpis}
-              rankingName={`${client.name} (${view === "brand" ? "Marca" : "Benchmark"})`}
+              rankingName={`${client.name}${isBenchmarkOnly ? " (Comparativo)" : ` (${view === "brand" ? "Marca" : "Benchmark"})`}`}
               initialQuestion={aiInitialQuestion}
             />
           </div>
