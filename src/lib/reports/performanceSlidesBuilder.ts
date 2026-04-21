@@ -453,36 +453,65 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Ranking" });
 }
 
-function slideShareOfVoice(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const sov = report.analytics.shareOfVoice.filter((s) => s.engagementShare > 0).slice(0, 8);
-  const data = sov.map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn }));
-  const insight = report.sovInsight || report.competitiveInsight || "";
+function slideShareOfInteractions(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  // Agrupa share por marca canónica (suma de interactionsShare de todos los perfiles de la marca)
+  const sov = report.analytics.shareOfVoice.filter((s) => s.interactionsShare > 0);
+  const byBrand = new Map<string, { name: string; value: number; isOwn: boolean }>();
+  for (const s of sov) {
+    const key = cleanProfileName(s.name).toLowerCase();
+    const prev = byBrand.get(key);
+    if (prev) {
+      prev.value += s.interactionsShare;
+      prev.isOwn = prev.isOwn || s.isOwn;
+    } else {
+      byBrand.set(key, { name: cleanProfileName(s.name), value: s.interactionsShare, isOwn: s.isOwn });
+    }
+  }
+  const data = Array.from(byBrand.values())
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7)
+    .map((d) => ({ label: d.name, value: d.value, isOwn: d.isOwn }));
+
+  const own = data.find((d) => d.isOwn);
+  const leader = data[0];
+  const totalShown = data.reduce((s, d) => s + d.value, 0);
+  const interp = (() => {
+    if (!leader) return "Sin datos suficientes para calcular el reparto de interacciones del período.";
+    if (own && leader.isOwn) {
+      return `${own.label} lidera el reparto de interacciones del período con ${own.value.toFixed(1)}% del total agregado, manteniendo ventaja sobre el resto del set competitivo.`;
+    }
+    if (own) {
+      const gap = leader.value > 0 ? (leader.value / Math.max(own.value, 0.01)) : 0;
+      return `${leader.label} concentra ${leader.value.toFixed(1)}% de las interacciones del período, mientras que ${own.label} captura ${own.value.toFixed(1)}%${gap > 1 ? ` — una brecha de ${gap.toFixed(1)}× respecto al líder` : ""}. Las ${data.length} marcas mostradas suman ${totalShown.toFixed(1)}% del total.`;
+    }
+    return `${leader.label} encabeza la distribución con ${leader.value.toFixed(1)}% de las interacciones agregadas del set.`;
+  })();
+
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
+      <div>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Share of Interactions</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Reparto del volumen total de interacciones</h2>
+        <p style="font-size:17px;color:${C.textMid};margin:10px 0 0 0;">Distribución porcentual de las interacciones absolutas (likes + comentarios + shares) generadas por cada marca en el período.</p>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;flex:1;">
-        <div style="display:flex;flex-direction:column;gap:24px;">
-          <div>
-            <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
-            <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-            ${data.slice(0, 6).map((d, i) => {
-              const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
-              const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
-              return `<div style="display:flex;align-items:center;gap:14px;font-size:17px;">
-                <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
-                <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
-                <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
-              </div>`;
-            }).join("")}
-          </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${data.map((d, i) => {
+            const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E", "#EAB308"];
+            const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+            return `<div style="display:flex;align-items:center;gap:14px;font-size:18px;padding:6px 0;">
+              <span style="width:16px;height:16px;border-radius:4px;background:${color};flex-shrink:0;"></span>
+              <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 800 : 500};">${esc(d.label)}${d.isOwn ? " (marca propia)" : ""}</span>
+              <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
+            </div>`;
+          }).join("")}
         </div>
         <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
       </div>
-      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 360))}</div>` : ""}
+      <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(interp, 420))}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Voice" });
+  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Interactions" });
 }
 
 function slideNetworkBreakdown(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
