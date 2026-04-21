@@ -103,6 +103,31 @@ function cleanProfileName(name: string): string {
   return out || String(name || "").trim();
 }
 
+/** Clave canónica para agrupar marcas: sin acentos, lowercase, colapsa "mex/mexico/méxico" y normaliza espacios/guiones bajos */
+function brandKey(name: string): string {
+  const cleaned = cleanProfileName(name);
+  return cleaned
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .toLowerCase()
+    .replace(/[_\-.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b(mexico|mex|mx)\b/g, "mexico"); // colapsa variantes
+}
+
+/** Elige la mejor etiqueta visible entre variantes (prefiere la más larga / con acentos) */
+function pickDisplayName(candidates: string[]): string {
+  return candidates
+    .map((c) => cleanProfileName(c))
+    .sort((a, b) => {
+      const aHasAccent = /[áéíóúñ]/i.test(a) ? 1 : 0;
+      const bHasAccent = /[áéíóúñ]/i.test(b) ? 1 : 0;
+      if (aHasAccent !== bHasAccent) return bHasAccent - aHasAccent;
+      return b.length - a.length;
+    })[0] || candidates[0];
+}
+
 function sparkles(color: string, opacity = 1): string {
   return `<svg width="180" height="180" viewBox="0 0 180 180" style="opacity:${opacity};">
     <path d="M90 20 L96 50 L126 56 L96 62 L90 92 L84 62 L54 56 L84 50 Z" fill="${color}"/>
@@ -466,23 +491,24 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
 }
 
 function slideShareOfInteractions(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  // Agrupa share por marca canónica (suma de interactionsShare de todos los perfiles de la marca)
+  // Agrupa share por marca canónica (sin acentos / mex≡méxico) sumando interactionsShare
   const sov = report.analytics.shareOfVoice.filter((s) => s.interactionsShare > 0);
-  const byBrand = new Map<string, { name: string; value: number; isOwn: boolean }>();
+  const byBrand = new Map<string, { variants: string[]; value: number; isOwn: boolean }>();
   for (const s of sov) {
-    const key = cleanProfileName(s.name).toLowerCase();
+    const key = brandKey(s.name);
     const prev = byBrand.get(key);
     if (prev) {
       prev.value += s.interactionsShare;
+      prev.variants.push(s.name);
       prev.isOwn = prev.isOwn || s.isOwn;
     } else {
-      byBrand.set(key, { name: cleanProfileName(s.name), value: s.interactionsShare, isOwn: s.isOwn });
+      byBrand.set(key, { variants: [s.name], value: s.interactionsShare, isOwn: s.isOwn });
     }
   }
   const data = Array.from(byBrand.values())
     .sort((a, b) => b.value - a.value)
     .slice(0, 7)
-    .map((d) => ({ label: d.name, value: d.value, isOwn: d.isOwn }));
+    .map((d) => ({ label: pickDisplayName(d.variants), value: d.value, isOwn: d.isOwn }));
 
   const own = data.find((d) => d.isOwn);
   const leader = data[0];
@@ -629,7 +655,7 @@ function slideTopContent(report: PerformanceReportContent, clientName: string, m
       ${next2.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:18px;">
         ${next2.map((p, i) => renderCard(p, i + 3)).join("")}
       </div>` : ""}
-      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:16px;line-height:1.55;color:${C.text};">${esc(truncate(report.topContentInsight, 520))}</div>` : ""}
+      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:18px 26px;font-size:15px;line-height:1.55;color:${C.text};max-height:none;">${esc(truncate(report.topContentInsight, 900))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Top Contenidos" });
