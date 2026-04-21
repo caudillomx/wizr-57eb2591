@@ -454,24 +454,28 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
 
-      {/* Conclusion */}
+      {/* ── Conclusión (editorial closing) ── */}
       {report.conclusion && (
-        <Card className="bg-muted/30">
-          <CardHeader>
-            <CardTitle className="text-base">Conclusión</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EditableText
-              editing={editing}
-              value={report.conclusion}
-              onChange={(v) => update({ conclusion: v })}
-              multiline
-              minRows={2}
-              className="block text-sm"
-              placeholder="Conclusión ejecutiva"
-            />
-          </CardContent>
-        </Card>
+        <div
+          className="rounded-xl px-8 py-7 text-white shadow-md"
+          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="h-4 w-4" style={{ color: "#c7d2fe" }} />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "#c7d2fe" }}>
+              Conclusión ejecutiva
+            </span>
+          </div>
+          <EditableText
+            editing={editing}
+            value={report.conclusion}
+            onChange={(v) => update({ conclusion: v })}
+            multiline
+            minRows={2}
+            className="block text-[14px] leading-[1.75] text-white/90"
+            placeholder="Conclusión ejecutiva"
+          />
+        </div>
       )}
     </div>
   );
