@@ -427,19 +427,27 @@ function slideKpis(report: PerformanceReportContent, clientName: string, modeLab
 }
 
 function slideRanking(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const data = report.analytics.rankingByEngagement.slice(0, 8).map((r) => ({
-    label: `${r.name} · ${networkLabel(r.network)}`,
-    value: r.engagement,
-    isOwn: r.isOwn,
-  }));
+  const data = report.analytics.rankingByEngagement
+    .filter((r) => r.hasData)
+    .slice(0, 8)
+    .map((r) => ({
+      label: `${r.name} · ${networkLabel(r.network)}`,
+      value: r.avgInteractionsPerPost,
+      isOwn: r.isOwn,
+      color: r.isOwn ? C.violet : networkColor(r.network),
+      valueLabel: fmtInt(r.avgInteractionsPerPost),
+    }));
+  const insight = report.rankingInsight
+    || (data.length > 0 ? `${data[0].label.split(" · ")[0]} encabeza con ${fmtInt(data[0].value)} interacciones promedio por publicación, marcando la referencia de desempeño del período.` : "");
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
       <div>
         <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Ranking</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Engagement por perfil</h2>
-        <p style="font-size:18px;color:${C.textMid};margin:14px 0 0 0;">${report.reportMode === "brand" ? "Desempeño relativo de los perfiles de la marca." : "Marca propia (violeta) vs competencia (gris)."}</p>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Interacciones promedio por post</h2>
+        <p style="font-size:18px;color:${C.textMid};margin:12px 0 0 0;">${report.reportMode === "brand" ? "Desempeño de los perfiles de la marca por interacciones absolutas." : "Marca propia (violeta) vs competencia (color de red social)."}</p>
       </div>
-      <div style="flex:1;display:flex;align-items:center;justify-content:center;">${svgRankingBars(data)}</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;">${svgRankingBars(data, 1620, 64)}</div>
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Ranking" });
@@ -448,26 +456,30 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
 function slideShareOfVoice(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const sov = report.analytics.shareOfVoice.filter((s) => s.engagementShare > 0).slice(0, 8);
   const data = sov.map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn }));
+  const insight = report.sovInsight || report.competitiveInsight || "";
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;">
-      <div style="display:flex;flex-direction:column;gap:24px;">
-        <div>
-          <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
-          <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;flex:1;">
+        <div style="display:flex;flex-direction:column;gap:24px;">
+          <div>
+            <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
+            <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            ${data.slice(0, 6).map((d, i) => {
+              const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
+              const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+              return `<div style="display:flex;align-items:center;gap:14px;font-size:17px;">
+                <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
+                <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
+                <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
+              </div>`;
+            }).join("")}
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-          ${data.slice(0, 6).map((d, i) => {
-            const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
-            const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
-            return `<div style="display:flex;align-items:center;gap:14px;font-size:18px;">
-              <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
-              <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
-              <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
-            </div>`;
-          }).join("")}
-        </div>
+        <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 360))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Voice" });
