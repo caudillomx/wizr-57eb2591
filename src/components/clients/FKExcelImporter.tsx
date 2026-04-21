@@ -11,6 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Upload, FileSpreadsheet, Loader2, X, Info, CheckCircle2, AlertTriangle, CalendarIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { FKNetwork } from "@/hooks/useFanpageKarma";
@@ -339,6 +349,9 @@ export function FKExcelImporter({ clientId }: Props) {
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [overlapInfo, setOverlapInfo] = useState<{
+    overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }>;
+  } | null>(null);
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
@@ -374,6 +387,12 @@ export function FKExcelImporter({ clientId }: Props) {
     (f) => f.kind === "kpis" && (!f.periodStart || !f.periodEnd)
   );
 
+  /**
+   * Pre-check: detecta periodos de KPIs que se solapan con snapshots existentes
+   * (sin ser idénticos). Si hay solapamiento, muestra un aviso global y deja que
+   * el usuario decida reemplazar (borrar existentes solapados) o cancelar.
+   * Igualdad exacta (mismo period_start+period_end) NO es solapamiento: es upsert natural.
+   */
   const handleImport = async () => {
     if (missingPeriod) {
       toast({
@@ -383,10 +402,92 @@ export function FKExcelImporter({ clientId }: Props) {
       });
       return;
     }
+
+    const kpiFiles = files.filter((f) => f.kind === "kpis" && f.periodStart && f.periodEnd);
+    if (kpiFiles.length === 0) {
+      return runImport(false);
+    }
+
+    const incoming: Array<{ network: FKNetwork; displayName: string; profileId: string; periodStart: string; periodEnd: string }> = [];
+    for (const f of kpiFiles) {
+      const buf = await f.file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      const ps = formatDate(f.periodStart!, "yyyy-MM-dd");
+      const pe = formatDate(f.periodEnd!, "yyyy-MM-dd");
+      for (const sheetName of wb.SheetNames) {
+        const { rows, kind } = readSheetWithHeaderDetection(wb.Sheets[sheetName]);
+        if (kind !== "kpis") continue;
+        for (const r of rows) {
+          const m = mapKpiRow(r);
+          if (m) incoming.push({ network: m.network, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+        }
+      }
+    }
+
+    if (incoming.length === 0) return runImport(false);
+
+    const { data: existingProfiles } = await supabase
+      .from("fk_profiles")
+      .select("id, network, profile_id, display_name")
+      .eq("client_id", clientId);
+
+    const profileMap = new Map<string, { id: string; displayName: string; network: string }>();
+    (existingProfiles || []).forEach((e: any) => {
+      buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+        profileMap.set(key, { id: e.id, displayName: e.display_name || e.profile_id, network: e.network });
+      });
+    });
+
+    const existingIds = Array.from(new Set(Array.from(profileMap.values()).map((p) => p.id)));
+    let existingKpis: Array<{ fk_profile_id: string; period_start: string; period_end: string }> = [];
+    if (existingIds.length > 0) {
+      const { data } = await supabase
+        .from("fk_profile_kpis")
+        .select("fk_profile_id, period_start, period_end")
+        .in("fk_profile_id", existingIds);
+      existingKpis = data || [];
+    }
+
+    const overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }> = [];
+    const seen = new Set<string>();
+    for (const inc of incoming) {
+      const candidates = buildCandidateKeys(inc.network, inc.displayName, inc.profileId);
+      const matched = candidates.map((k) => profileMap.get(k)).find(Boolean);
+      if (!matched) continue;
+      for (const ek of existingKpis) {
+        if (ek.fk_profile_id !== matched.id) continue;
+        const sameRange = ek.period_start === inc.periodStart && ek.period_end === inc.periodEnd;
+        if (sameRange) continue;
+        const intersects = ek.period_start <= inc.periodEnd && ek.period_end >= inc.periodStart;
+        if (intersects) {
+          const key = `${matched.id}|${ek.period_start}|${ek.period_end}|${inc.periodStart}|${inc.periodEnd}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            overlaps.push({
+              profileName: matched.displayName,
+              network: matched.network,
+              existing: `${ek.period_start} → ${ek.period_end}`,
+              incoming: `${inc.periodStart} → ${inc.periodEnd}`,
+            });
+          }
+        }
+      }
+    }
+
+    if (overlaps.length === 0) {
+      return runImport(false);
+    }
+
+    setOverlapInfo({ overlaps });
+  };
+
+  const runImport = async (replaceOverlaps: boolean) => {
+    setOverlapInfo(null);
     setImporting(true);
     let totalProfiles = 0;
     let totalKpis = 0;
     let totalPosts = 0;
+    let deletedOverlaps = 0;
 
     try {
       for (const f of files) {
@@ -486,6 +587,32 @@ export function FKExcelImporter({ clientId }: Props) {
             .filter(Boolean) as any[];
 
           if (kpiPayload.length > 0) {
+            // Si el usuario eligió reemplazar solapamientos, borramos los snapshots
+            // que intersectan con el rango entrante (sin ser idénticos — el mismo
+            // rango ya se maneja como upsert natural).
+            if (replaceOverlaps) {
+              const profileIds = Array.from(new Set(kpiPayload.map((p) => p.fk_profile_id)));
+              const { data: existingForDelete } = await supabase
+                .from("fk_profile_kpis")
+                .select("id, fk_profile_id, period_start, period_end")
+                .in("fk_profile_id", profileIds);
+              const idsToDelete = (existingForDelete || [])
+                .filter((ek: any) => {
+                  const sameRange = ek.period_start === periodStart && ek.period_end === periodEnd;
+                  if (sameRange) return false;
+                  return ek.period_start <= periodEnd && ek.period_end >= periodStart;
+                })
+                .map((ek: any) => ek.id);
+              if (idsToDelete.length > 0) {
+                const { error: delErr } = await supabase
+                  .from("fk_profile_kpis")
+                  .delete()
+                  .in("id", idsToDelete);
+                if (delErr) console.error("Overlap delete", delErr);
+                else deletedOverlaps += idsToDelete.length;
+              }
+            }
+
             // Idempotent: re-importing same period updates the row
             const { error } = await supabase
               .from("fk_profile_kpis")
@@ -638,7 +765,9 @@ export function FKExcelImporter({ clientId }: Props) {
 
       toast({
         title: "Importación completada",
-        description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts.`,
+        description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts${
+          deletedOverlaps > 0 ? ` · ${deletedOverlaps} snapshots solapados reemplazados` : ""
+        }.`,
       });
       setFiles([]);
       qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
@@ -799,6 +928,54 @@ export function FKExcelImporter({ clientId }: Props) {
           </span>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!overlapInfo} onOpenChange={(open) => !open && setOverlapInfo(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Periodos solapados detectados
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {overlapInfo?.overlaps.length} snapshot(s) existentes se solapan con los periodos que estás subiendo (sin ser idénticos).
+                  Esto suele pasar cuando combinas exportes de rangos distintos (p.ej. semanal vs. mensual) que terminan el mismo día.
+                </p>
+                <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/40 p-2 text-xs font-mono space-y-1">
+                  {overlapInfo?.overlaps.slice(0, 20).map((o, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        <strong>{o.profileName}</strong> · {o.network}
+                      </span>
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        {o.existing} <span className="text-destructive">↔</span> {o.incoming}
+                      </span>
+                    </div>
+                  ))}
+                  {overlapInfo && overlapInfo.overlaps.length > 20 && (
+                    <div className="text-muted-foreground">… y {overlapInfo.overlaps.length - 20} más</div>
+                  )}
+                </div>
+                <p className="text-sm">
+                  <strong>Reemplazar</strong> borra los snapshots solapados existentes y mantiene los nuevos (recomendado para evitar series duplicadas).
+                  <br />
+                  <strong>Conservar ambos</strong> importa sin borrar: quedarán varios snapshots terminando el mismo día.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button variant="outline" onClick={() => runImport(false)}>
+              Conservar ambos
+            </Button>
+            <AlertDialogAction onClick={() => runImport(true)}>
+              Reemplazar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
