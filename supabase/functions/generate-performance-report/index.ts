@@ -123,6 +123,42 @@ Deno.serve(async (req) => {
         };
       });
 
+    // ── Pre-flag automatic findings the AI MUST cover (computed, not invented) ──
+    const ownProfiles = profiles.filter((p) => !p.is_competitor);
+    const competitorProfiles = profiles.filter((p) => p.is_competitor);
+    const ownIds = new Set(ownProfiles.map((p) => p.id));
+    const ownInTop5 = top5Posts.length === 0
+      ? null
+      : [...topPosts]
+          .sort((a, b) => b.engagement - a.engagement)
+          .slice(0, 5)
+          .filter((p) => {
+            const prof = profiles.find((pr) => pr.id === p.fk_profile_id);
+            return prof && !prof.is_competitor;
+          }).length;
+
+    const profilesWithoutEng = profilesSummary.filter(
+      (p) => p.engagement_rate == null || p.engagement_rate <= 0,
+    ).length;
+
+    const negativeGrowth = profilesSummary
+      .filter((p) => p.growth_percent != null && p.growth_percent < 0)
+      .map((p) => `${p.name} (${p.network}): ${p.growth_percent?.toFixed(2)}%`);
+
+    const lowFrequency = profilesSummary
+      .filter((p) => p.posts_per_day != null && p.posts_per_day < 0.3)
+      .map((p) => `${p.name} (${p.network}): ${p.posts_per_day?.toFixed(2)} posts/día`);
+
+    const autoFlags = {
+      own_posts_in_top5: ownInTop5,
+      total_top5: top5Posts.length,
+      own_profiles_count: ownProfiles.length,
+      competitor_profiles_count: competitorProfiles.length,
+      profiles_without_engagement: profilesWithoutEng,
+      profiles_with_negative_growth: negativeGrowth,
+      profiles_with_low_frequency: lowFrequency,
+    };
+
     const modeBlock = isBrand
       ? `MODO: ANÁLISIS DE MARCA PROPIA (${brandName || clientName}).
 Estás analizando EXCLUSIVAMENTE el desempeño en redes sociales de la marca propia. NO menciones competidores, NO compares con "el sector", NO uses frases como "se diferencia de competidores" ni "frente a otras marcas". El foco es:
@@ -139,42 +175,63 @@ Estás analizando comparativamente la marca propia vs sus competidores. El foco 
 - Recomendaciones para cerrar brechas y aprovechar oportunidades`;
 
     const focusBlock = strategicFocus?.trim()
-      ? `\nENFOQUE ESTRATÉGICO DEL REPORTE (lente con la que debes leer todo):\n${strategicFocus.trim()}\n`
+      ? `\nENFOQUE ESTRATÉGICO DEL REPORTE (lente con la que debes leer todo, anclar al menos 2 hallazgos y 2 recomendaciones a este enfoque):\n${strategicFocus.trim()}\n`
       : "";
+
+    const autoFlagsBlock = `\nSEÑALES AUTOMÁTICAS DETECTADAS (debes incorporarlas como hallazgos concretos cuando apliquen):
+${JSON.stringify(autoFlags, null, 2)}
+
+REGLAS DE INCORPORACIÓN OBLIGATORIA:
+${!isBrand && ownInTop5 === 0 && top5Posts.length > 0
+  ? `- HALLAZGO CRÍTICO: ningún post de la marca propia aparece en el Top 5 del período. Debe ser uno de los primeros 2 hallazgos.\n`
+  : ""}
+${profilesWithoutEng > 0
+  ? `- ${profilesWithoutEng} perfil(es) sin datos de engagement en el período. Debes mencionarlo explícitamente como limitación o hallazgo de cobertura.\n`
+  : ""}
+${negativeGrowth.length > 0
+  ? `- ${negativeGrowth.length} perfil(es) con crecimiento negativo. Debe haber al menos 1 hallazgo y 1 recomendación al respecto.\n`
+  : ""}
+${lowFrequency.length > 0
+  ? `- ${lowFrequency.length} perfil(es) con frecuencia <0.3 posts/día. Debe haber 1 recomendación específica de cadencia.\n`
+  : ""}`;
 
     const systemPrompt = `Eres un analista senior de performance en redes sociales para Wizr. Generas reportes ejecutivos en español, claros, accionables y SIN inventar datos.
 
 ${modeBlock}
 ${focusBlock}
+${autoFlagsBlock}
 REGLAS DURAS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres ni números.
-- Cada hallazgo debe citar al menos una cifra concreta tomada de los datos (engagement, followers, %, etc.).
-- Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, frecuencia, plataforma, mensaje). NO recomiendes acciones de producto, RH, legal o áreas internas.
-- No uses símbolos de markdown (asteriscos, almohadillas). Texto plano.
+- Cada hallazgo debe citar al menos UNA cifra concreta tomada de los datos (engagement, followers, %, etc.) Y mencionar el perfil/red donde ocurre.
+- Estructura interna obligatoria de cada hallazgo (en una sola redacción fluida, sin viñetas): QUÉ pasó + DÓNDE (perfil/red) + IMPLICACIÓN para la marca.
+- Estructura interna obligatoria de cada recomendación: DECISIÓN concreta + PLAZO sugerido (corto/mediano plazo o ventana específica) + RIESGO u OPORTUNIDAD asociada.
+- Cada hallazgo: mínimo 2 oraciones, máximo 4. Cada recomendación: mínimo 2 oraciones, máximo 3.
+- Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, frecuencia, plataforma, mensaje, contenido). NO recomiendes acciones de producto, RH, legal, presupuesto o áreas internas.
+- No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta). Texto plano.
 - En modo MARCA: prohibido mencionar competidores o "el sector".
 - En modo BENCHMARK: usa nombres reales de competidores presentes en los datos.
 
 Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
 {
   "title": "Título corto y específico del reporte",
-  "summary": "Resumen ejecutivo de 3-5 oraciones con las cifras más relevantes del período",
+  "summary": "Resumen ejecutivo de 4-6 oraciones que abre con la cifra/hallazgo más relevante del período",
   "highlights": [
     { "label": "Etiqueta corta", "value": "Cifra o dato", "context": "Una oración explicando" }
   ],
   "keyFindings": [
-    "Hallazgo 1 con cifra concreta",
+    "Hallazgo 1 (QUÉ + DÓNDE + IMPLICACIÓN, con cifra concreta)",
     "Hallazgo 2..."
   ],
   "recommendations": [
-    "Recomendación 1 accionable y digital",
+    "Recomendación 1 (DECISIÓN + PLAZO + RIESGO/OPORTUNIDAD)",
     "Recomendación 2..."
   ],
-  "topContentInsight": "Análisis de 2-3 oraciones sobre el patrón del contenido top del período",
-  "competitiveInsight": "Solo en BENCHMARK: análisis de 2-3 oraciones sobre posicionamiento competitivo. En MARCA: omitir o cadena vacía.",
-  "conclusion": "Cierre ejecutivo de 2-3 oraciones"
+  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top del período (formato, tema, autor recurrente, brecha vs marca propia si aplica)",
+  "competitiveInsight": "Solo en BENCHMARK: análisis de 3-4 oraciones sobre posicionamiento competitivo. En MARCA: cadena vacía.",
+  "conclusion": "Cierre ejecutivo de 2-3 oraciones que sintetiza la lectura del período"
 }
 
-Mínimos: 4 highlights, 5 keyFindings, 4 recommendations.`;
+Mínimos OBLIGATORIOS: 4 highlights, 6 keyFindings (idealmente 7-8), 5 recommendations (idealmente 6-7).`;
 
     const userPrompt = `Cliente: ${clientName}
 Período: ${dateRange.label} (${dateRange.start} → ${dateRange.end})
@@ -188,7 +245,8 @@ ${JSON.stringify(profilesSummary, null, 2)}
 TOP 5 CONTENIDOS POR ENGAGEMENT EN EL PERÍODO:
 ${JSON.stringify(top5Posts, null, 2)}
 
-Genera el reporte siguiendo el JSON especificado.`;
+Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hallazgos/recomendaciones y la estructura interna QUÉ+DÓNDE+IMPLICACIÓN / DECISIÓN+PLAZO+RIESGO.`;
+
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
