@@ -40,14 +40,26 @@ export function PerformanceReportView({
     update({ [key]: arr } as Partial<PerformanceReportContent>);
   };
 
-  const rankingChartData = report.analytics.rankingByEngagement.slice(0, 10).map((r) => ({
-    name: r.name.length > 18 ? `${r.name.substring(0, 16)}…` : r.name,
-    fullName: r.name,
-    network: r.network,
-    value: r.engagement,
-    fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 57%)",
-    isOwn: r.isOwn,
-  }));
+  const networkShort = (n: string) => {
+    const map: Record<string, string> = {
+      facebook: "FB", instagram: "IG", youtube: "YT", twitter: "X",
+      tiktok: "TT", linkedin: "LI", threads: "TH",
+    };
+    return map[n.toLowerCase()] || n;
+  };
+
+  const rankingValid = report.analytics.rankingByEngagement.filter((r) => r.hasData !== false && r.engagement > 0);
+  const rankingChartData = rankingValid.slice(0, 10).map((r) => {
+    const labelBase = `${r.name} · ${networkShort(r.network)}`;
+    return {
+      name: labelBase.length > 22 ? `${labelBase.substring(0, 20)}…` : labelBase,
+      fullName: r.name,
+      network: r.network,
+      value: r.engagement,
+      fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 57%)",
+      isOwn: r.isOwn,
+    };
+  });
 
   const sovChartData = report.analytics.shareOfVoice
     .filter((s) => s.engagementShare > 0)
@@ -148,33 +160,44 @@ export function PerformanceReportView({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
-                <Tooltip
-                  cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const p = payload[0].payload;
-                    return (
-                      <div className="rounded-md border bg-background p-2 shadow-md text-xs">
-                        <div className="font-semibold">{p.fullName}</div>
-                        <div className="text-muted-foreground">{p.network} · {p.value}%</div>
-                        {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                  {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} fontSize={10} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {rankingChartData.length === 0 ? (
+            <div className="h-[200px] flex flex-col items-center justify-center text-center px-4">
+              <Trophy className="h-8 w-8 text-muted-foreground/40 mb-2" />
+              <p className="text-sm font-medium text-muted-foreground">Sin datos de engagement en este período</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Fanpage Karma aún no ha calculado el engagement rate para los perfiles del rango seleccionado.
+                Prueba con un período más amplio (ej. últimos 7 días).
+              </p>
+            </div>
+          ) : (
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.fullName}</div>
+                          <div className="text-muted-foreground">{p.network} · {p.value}%</div>
+                          {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                    <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} fontSize={10} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 

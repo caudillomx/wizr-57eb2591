@@ -58,7 +58,7 @@ interface RequestBody {
     bestPerformer: { name: string; network: string; engagement: number } | null;
     fastestGrower: { name: string; network: string; growth: number } | null;
     shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
-    rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean }>;
+    rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData?: boolean }>;
   };
 }
 
