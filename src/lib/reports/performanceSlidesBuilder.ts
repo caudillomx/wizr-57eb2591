@@ -63,6 +63,12 @@ function fmtNum(n: number): string {
   return Math.round(n).toLocaleString("es-MX");
 }
 
+/** Número entero con separador de miles (sin abreviar) */
+function fmtInt(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString("es-MX");
+}
+
 function networkLabel(n: string): string {
   const m: Record<string, string> = {
     facebook: "Facebook",
