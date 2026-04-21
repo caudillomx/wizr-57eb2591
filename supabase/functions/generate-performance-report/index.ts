@@ -202,7 +202,9 @@ ${focusBlock}
 ${autoFlagsBlock}
 REGLAS DURAS DE DATOS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres, métricas, porcentajes ni perfiles.
-- TODA cifra debe llevar UNIDAD explícita: engagement como "X.XX%", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día", interacciones absolutas como "X likes" o "X comentarios".
+- MÉTRICA PRINCIPAL DE ENGAGEMENT: usa "interacciones promedio por publicación" (campo avgInteractionsPerPost en analytics; suma de likes+comentarios+shares dividida entre número de posts del período). Es la métrica universal del reporte. Cita siempre "≈X interacciones por post" en lugar de tasas % crudas.
+- LAS TASAS % (engagement_rate) son CONTEXTO SECUNDARIO. Solo cítalas cuando aporten lectura (ej. "tasa marginal de 0.16%"); jamás como cifra principal de un highlight ni hallazgo.
+- TODA cifra debe llevar UNIDAD explícita: interacciones como "≈X interacciones/post" o "X,XXX interacciones totales", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día".
 - NUNCA escribas paréntesis al estilo "(BBVA México, instagram)". En su lugar usa: "BBVA México en Instagram" o "Banamex (TikTok)" SOLO con la red en mayúscula correcta.
 - El "summary" debe abrir citando la cifra más relevante del período (ej. "X% de engagement", "Y nuevos seguidores", "Z posts") y nombrar al perfil/red protagonista, además de explicitar qué significa para ${clientName}.
 - La "conclusion" debe cerrar con una lectura accionable para ${clientName}, citando al menos 1 cifra y 1 perfil/red concretos.
@@ -213,7 +215,7 @@ REGLAS DURAS DE DATOS:
 
 REGLAS PARA HIGHLIGHTS (4 KPI cards de cabecera, las más visibles del reporte):
 - "label": 2-4 palabras MÁXIMO, totalmente claras (ej. "Engagement líder del período", "Brecha vs líder", "Cuota de voz", "Posts del Top 5").
-- "value": LA CIFRA con UNIDAD COMPLETA (ej. "600 interacciones", "0.02% engagement", "13× por debajo", "0 de 5"). NUNCA solo "600" o "0.02".
+- "value": LA CIFRA con UNIDAD COMPLETA, prefiriendo INTERACCIONES ABSOLUTAS o PROMEDIO POR POST (ej. "≈350 interacciones/post", "12.4K interacciones totales", "+8.3% seguidores", "13× por debajo del líder"). NUNCA solo tasas como "0.02%" sin contexto adicional. NUNCA solo "600" o "0.02".
 - "context": 1 oración explicativa que conecte la cifra con ${clientName} (ej. "BBVA México en Instagram lidera el período; ningún post de ${clientName} alcanzó este nivel.").
 - Los 4 highlights deben cubrir ángulos COMPLEMENTARIOS y útiles: NUNCA repitas engagement medio, audiencia total ni métricas que sumadas dan 0 o son redundantes.
 ${isBrand
