@@ -35,6 +35,8 @@ export interface FKProfileKPI {
   previous_position: number | null;
   raw_data: Record<string, unknown>;
   fetched_at: string;
+  /** True cuando el KPI no cae dentro del rango solicitado y se devolvió como fallback (último snapshot disponible). */
+  isFallback?: boolean;
 }
 
 export interface FKPost {
