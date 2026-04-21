@@ -593,16 +593,17 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Cuota de interacciones (donut por marca) ── */}
+      {/* ── Cuota de interacciones (donut por marca) — usa interacciones absolutas ── */}
       {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
-        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const donutData = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
-          .map((b, i) => ({
+          .filter((b) => b.totalInteractions > 0)
+          .map((b) => ({
             name: b.brand,
-            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            value: Math.round((b.totalInteractions / total) * 1000) / 10,
+            absolute: b.totalInteractions,
             isOwn: b.isOwn,
-            fill: b.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
+            fill: colorForBrand(b.brand, b.isOwn, brandsList),
           }));
         if (donutData.length === 0) return null;
         return (
@@ -613,11 +614,11 @@ export function PerformanceReportView({
                 Cuota de interacciones por marca
               </CardTitle>
               <CardDescription className="text-xs">
-                ¿Qué marca obtuvo mayor participación del engagement total?
+                ¿Qué marca concentra la mayor parte de las interacciones del período?
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[320px]">
+              <div className="h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -641,7 +642,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.name}</div>
-                            <div className="text-muted-foreground">{p.value}% del engagement total</div>
+                            <div className="text-muted-foreground">{formatNumber(p.absolute)} interacciones · {p.value}% del total</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
                         );
@@ -651,6 +652,9 @@ export function PerformanceReportView({
                   </PieChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación. Para {report.clientName}, este es el termómetro real de presencia frente a competencia.
+              </p>
             </CardContent>
           </Card>
         );
