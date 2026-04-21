@@ -586,6 +586,7 @@ export function buildPerformanceReportHTML(
     ${networkEngBlock}
     ${rankingChart}
     ${sovDonutBlock}
+    ${sovProfileDonutBlock}
     ${sovBlock}
     ${profilesBlock}
     ${topContentBlock}
