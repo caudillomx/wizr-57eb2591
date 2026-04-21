@@ -691,8 +691,23 @@ export function FKExcelImporter({ clientId }: Props) {
           }
 
           // Build payload + dedupe within batch by (fk_profile_id, external_id)
+          // AND by content fingerprint (fk_profile_id + published_at + message snippet + link)
+          // because FK exports often assign different external_ids to the same post across exports.
           const seen = new Set<string>();
+          const seenContent = new Set<string>();
           const postsPayload: any[] = [];
+          // Pre-load existing content fingerprints to skip already-imported posts
+          const profileIdsForPosts = Array.from(new Set(postRows.map((p) => resolveProfileId(p.network, p.displayName)).filter(Boolean) as string[]));
+          if (profileIdsForPosts.length > 0) {
+            const { data: existingPosts } = await supabase
+              .from("fk_posts")
+              .select("fk_profile_id, published_at, message, link")
+              .in("fk_profile_id", profileIdsForPosts);
+            (existingPosts || []).forEach((ep: any) => {
+              const fp = `${ep.fk_profile_id}::${ep.published_at}::${(ep.message || "").slice(0, 200)}::${ep.link || ""}`;
+              seenContent.add(fp);
+            });
+          }
           for (const p of postRows) {
             const id = resolveProfileId(p.network, p.displayName);
             if (!id) continue;
@@ -702,7 +717,10 @@ export function FKExcelImporter({ clientId }: Props) {
               || `${p.publishedAt}::${(p.message || "").slice(0, 80)}`;
             const dedupKey = `${id}::${extId}`;
             if (seen.has(dedupKey)) continue;
+            const contentKey = `${id}::${p.publishedAt}::${(p.message || "").slice(0, 200)}::${p.link || ""}`;
+            if (seenContent.has(contentKey)) continue;
             seen.add(dedupKey);
+            seenContent.add(contentKey);
             postsPayload.push({
               fk_profile_id: id,
               network: p.network,

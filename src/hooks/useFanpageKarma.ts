@@ -125,7 +125,6 @@ export function useFKProfileKPIs(profileIds: string[], periodStart?: string, per
         .order("fetched_at", { ascending: false });
 
       // If period is specified, filter for KPIs that overlap with the requested period
-      // This allows finding relevant data even if sync was done with different date ranges
       if (periodStart && periodEnd) {
         query = query
           .lte("period_start", periodEnd)
@@ -134,7 +133,28 @@ export function useFKProfileKPIs(profileIds: string[], periodStart?: string, per
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as FKProfileKPI[];
+      let result = (data as FKProfileKPI[]) || [];
+
+      // Fallback: si el filtro no cubre algunos perfiles, devolvemos su snapshot
+      // más reciente disponible. Evita que la tabla de Ranking aparezca vacía
+      // cuando los Excels importados son semanales/mensuales y el usuario filtró
+      // por un día puntual fuera del rango exacto del snapshot.
+      const coveredIds = new Set(result.map((k) => k.fk_profile_id));
+      const missingIds = profileIds.filter((id) => !coveredIds.has(id));
+      if (missingIds.length > 0) {
+        const { data: latest } = await supabase
+          .from("fk_profile_kpis")
+          .select("*")
+          .in("fk_profile_id", missingIds)
+          .order("period_end", { ascending: false })
+          .order("fetched_at", { ascending: false });
+        const latestByProfile = new Map<string, FKProfileKPI>();
+        (latest || []).forEach((k: any) => {
+          if (!latestByProfile.has(k.fk_profile_id)) latestByProfile.set(k.fk_profile_id, k);
+        });
+        result = [...result, ...Array.from(latestByProfile.values())];
+      }
+      return result;
     },
     enabled: profileIds.length > 0,
   });
