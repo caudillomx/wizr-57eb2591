@@ -259,17 +259,21 @@ function computeAnalytics(
       return b.avgInteractionsPerPost - a.avgInteractionsPerPost;
     });
 
-  // ── Brand-level aggregation ──
-  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number; networks: Set<string> }>();
+  // ── Brand-level aggregation (canonicalizada para colapsar variantes Mex/México/etc) ──
+  const brandMap = new Map<string, { isOwn: boolean; displayVariants: string[]; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number; networks: Set<string> }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const brand = brandKeyFromProfile(p);
+    const brandKey = brandKeyFromProfile(p);
+    const displayVariant = cleanProfileName(getFKProfileDisplayName(p));
     const eng = Number(k?.engagement_rate);
     const fol = Number(k?.followers);
-    if (!brandMap.has(brand)) {
-      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0, networks: new Set() });
+    if (!brandMap.has(brandKey)) {
+      brandMap.set(brandKey, { isOwn: !p.is_competitor, displayVariants: [], engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0, networks: new Set() });
     }
-    const slot = brandMap.get(brand)!;
+    const slot = brandMap.get(brandKey)!;
+    // Si cualquiera de las variantes es propia, la marca es propia
+    if (!p.is_competitor) slot.isOwn = true;
+    slot.displayVariants.push(displayVariant);
     slot.profiles += 1;
     slot.networks.add(p.network);
     if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
@@ -281,8 +285,8 @@ function computeAnalytics(
     }
   }
   const brandEngagement = Array.from(brandMap.entries())
-    .map(([brand, v]) => ({
-      brand,
+    .map(([, v]) => ({
+      brand: pickBrandDisplay(v.displayVariants),
       isOwn: v.isOwn,
       avgEngagement: v.engs.length ? pct(v.engs.reduce((s, e) => s + e, 0) / v.engs.length) : 0,
       totalInteractions: Math.round(v.engsAbs),
