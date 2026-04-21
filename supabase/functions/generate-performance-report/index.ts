@@ -128,13 +128,12 @@ Deno.serve(async (req) => {
     const ownProfiles = profiles.filter((p) => !p.is_competitor);
     const competitorProfiles = profiles.filter((p) => p.is_competitor);
     const ownIds = new Set(ownProfiles.map((p) => p.id));
-    const ownInTop5 = top5Posts.length === 0
+    const ownInTop5 = topPostsForAI.length === 0
       ? null
-      : [...topPosts]
-          .sort((a, b) => b.engagement - a.engagement)
+      : topPostsForAI
           .slice(0, 5)
           .filter((p) => {
-            const prof = profiles.find((pr) => pr.id === p.fk_profile_id);
+            const prof = profiles.find((pr) => pr.display_name === p.author || pr.profile_id === p.author);
             return prof && !prof.is_competitor;
           }).length;
 
