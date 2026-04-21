@@ -269,31 +269,31 @@ export function PerformanceReportView({
           <CardTitle className="text-base flex items-center gap-2">
             <Trophy className="h-4 w-4 text-primary" />
             {isBrand
-              ? `Engagement por perfil · ${report.clientName}`
-              : `Top perfiles por engagement (Top ${Math.min(rankingChartData.length, 10)})`}
+              ? `Interacciones promedio por publicación · perfiles de ${report.clientName}`
+              : `Top perfiles por interacciones por publicación (Top ${Math.min(rankingChartData.length, 10)})`}
           </CardTitle>
           <CardDescription className="text-xs">
             {isBrand
-              ? "Comparativa interna entre los perfiles de la marca en sus distintas redes"
-              : "Engagement rate por perfil individual · vista detallada por red"}
+              ? "Promedio de reacciones por contenido publicado · color por red social"
+              : "Volumen real de reacciones por publicación · marca y competencia · color por red"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {rankingChartData.length === 0 ? (
             <div className="h-[200px] flex flex-col items-center justify-center text-center px-4">
               <Trophy className="h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-medium text-muted-foreground">Sin datos de engagement en este período</p>
+              <p className="text-sm font-medium text-muted-foreground">Sin posts con interacciones en este período</p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Fanpage Karma aún no ha calculado el engagement rate. Prueba un período más amplio.
+                Aún no se han capturado publicaciones con engagement. Prueba un período más amplio.
               </p>
             </div>
           ) : (
             <>
               <div className="h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 50, left: 0, bottom: 8 }}>
+                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 70, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
                     <YAxis type="category" dataKey="name" tick={(props) => <TwoLineTick {...props} />} width={170} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
@@ -303,7 +303,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.fullName}</div>
-                            <div className="text-muted-foreground">{networkLabel(p.network)} · tasa de engagement {p.value.toFixed(2)}%</div>
+                            <div className="text-muted-foreground">{networkLabel(p.network)} · {formatNumber(p.value)} interacciones promedio · {p.posts} posts</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
                         );
@@ -311,13 +311,13 @@ export function PerformanceReportView({
                     />
                     <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                       {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} fontWeight={700} />
+                      <LabelList dataKey="value" position="right" formatter={(v: number) => formatNumber(v)} fontSize={10} fontWeight={700} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: ranking por tasa de engagement (interacciones / seguidores). Cada barra usa el color de su red social para identificar de un vistazo dónde está la conversación; los perfiles de {report.clientName} se resaltan en violeta.
+                Lectura: ranking de perfiles por reacciones promedio (likes + comentarios + compartidos) por publicación. Esta métrica iguala marcas grandes y pequeñas porque mide cuánta conversación moviliza cada contenido, no la audiencia total. El color de cada barra identifica la red social del perfil.
               </p>
               {report.rankingInsight && (
                 <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
@@ -337,8 +337,6 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
       )}
-
-      {/* ── Crecimiento por red social (agregado) ── */}
       {report.analytics.networkGrowth.length > 0 && (
         <Card>
           <CardHeader>
