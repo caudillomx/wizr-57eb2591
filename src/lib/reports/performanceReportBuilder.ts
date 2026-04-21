@@ -373,7 +373,7 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Ranking chart (top 10 perfiles) ----------
+  // ---------- Ranking chart (top 10 perfiles, color por red) ----------
   const rankingChart = report.analytics.rankingByEngagement.length
     ? section(
         "Top 10 perfiles por engagement",
@@ -383,22 +383,24 @@ export function buildPerformanceReportHTML(
             value: r.engagement,
             isOwn: r.isOwn,
             sub: networkLabel(r.network),
+            color: r.isOwn ? C.violet : colorForNetwork(r.network),
           })),
         ) + (report.rankingInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.rankingInsight)}</div>` : ""),
         { eyebrow: "Sección 05 · Ranking de perfiles" },
       )
     : "";
 
-  // ---------- Share of voice (benchmark) por marca ----------
+  // ---------- Share of voice (benchmark) por marca · usa interacciones absolutas ----------
   const sovBlock = !isBrand && report.analytics.brandEngagement?.length
     ? (() => {
-        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const totalInter = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const data = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
+          .filter((b) => b.totalInteractions > 0)
           .map((b) => ({
             label: b.brand,
-            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            value: Math.round((b.totalInteractions / totalInter) * 1000) / 10,
             isOwn: b.isOwn,
+            sub: `${fmtNum(b.totalInteractions)} interacciones`,
           }));
         return section(
           "Share of voice por marca",
@@ -462,19 +464,36 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Cuota de interacciones (donut) ----------
+  // ---------- Cuota de interacciones (donut) · interacciones absolutas ----------
   const sovDonutBlock = !isBrand && report.analytics.brandEngagement?.length
     ? (() => {
         const data = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
-          .map((b) => ({ label: b.brand, value: b.avgEngagement, isOwn: b.isOwn }));
+          .filter((b) => b.totalInteractions > 0)
+          .map((b) => ({ label: b.brand, value: b.totalInteractions, isOwn: b.isOwn }));
         if (data.length === 0) return "";
         return section(
           "Cuota de interacciones por marca",
-          donutChartSVG(data),
+          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Para ${esc(clientName)}, este es el termómetro real de presencia frente a competencia.</p>`,
           { eyebrow: "Sección · Cuota de mercado" },
         );
       })()
+    : "";
+
+  // ---------- Interacciones por red social (modo MARCA) ----------
+  const networkInterBlock = isBrand && (report.analytics.networkInteractions?.length ?? 0) > 0
+    ? section(
+        "Interacciones por red social",
+        chartVerticalBars(
+          report.analytics.networkInteractions.map((n) => ({
+            label: networkLabel(n.network),
+            value: n.totalInteractions,
+            color: colorForNetwork(n.network),
+          })),
+          "",
+          (v) => fmtNum(v),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra suma las interacciones absolutas (likes + comentarios + compartidos) del contenido top de ${esc(clientName)} en cada red. Es el volumen real de conversación generado por canal — más informativo que la tasa de engagement cuando las cuentas son grandes.</p>`,
+        { eyebrow: "Sección · Interacciones por red" },
+      )
     : "";
 
   // ---------- Findings ----------
