@@ -392,27 +392,35 @@ function slideKpis(report: PerformanceReportContent, clientName: string, modeLab
   const a = report.analytics;
   const cards = [
     { label: "Perfiles", value: String(report.profiles.length), sub: a.networks.map(networkLabel).join(" · ") },
-    { label: "Engagement Promedio", value: `${a.avgEngagement}%`, sub: a.bestPerformer ? `Mejor: ${a.bestPerformer.name}` : "" },
-    { label: "Crecimiento Promedio", value: `${a.avgGrowth}%`, sub: a.fastestGrower ? `Top: ${a.fastestGrower.name}` : "" },
+    { label: "Interacciones / post", value: fmtInt(a.avgInteractionsPerPost), sub: a.bestPerformer ? `Mejor: ${a.bestPerformer.name} (${fmtInt(a.bestPerformer.avgInteractionsPerPost)})` : "" },
+    { label: "Crecimiento Promedio", value: `${a.avgGrowth.toFixed(2)}%`, sub: a.fastestGrower ? `Top: ${a.fastestGrower.name}` : "" },
     { label: "Total Seguidores", value: fmtNum(a.totalFollowers), sub: "Suma de audiencia" },
   ];
 
+  // Párrafo interpretativo: usa el primer highlight con context o construye uno desde los datos
+  const interp = report.highlights[0]?.context
+    || (a.bestPerformer && a.fastestGrower
+      ? `${a.bestPerformer.name} lidera en interacciones promedio por post con ${fmtInt(a.bestPerformer.avgInteractionsPerPost)}, mientras que ${a.fastestGrower.name} encabeza el crecimiento de seguidores con ${a.fastestGrower.growth.toFixed(2)}%. La audiencia consolidada del set alcanza ${fmtNum(a.totalFollowers)} seguidores.`
+      : `El conjunto agrupa ${report.profiles.length} perfiles distribuidos en ${a.networks.length} redes, con un promedio de ${fmtInt(a.avgInteractionsPerPost)} interacciones por publicación.`);
+
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:54px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:32px;">
       <div>
         <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">KPIs del Período</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Métricas clave</h2>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Métricas clave</h2>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:28px;">
+      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:22px;">
         ${cards.map((c) => `
-          <div style="background:${C.paperAlt};border:1px solid ${C.border};border-radius:18px;padding:36px 40px;">
-            <div style="font-size:14px;letter-spacing:0.25em;color:${C.textMuted};font-weight:700;text-transform:uppercase;">${esc(c.label)}</div>
-            <div style="font-size:96px;font-weight:800;color:${C.violet};margin:10px 0;letter-spacing:-0.04em;line-height:1;">${esc(c.value)}</div>
-            ${c.sub ? `<div style="font-size:18px;color:${C.textMid};">${esc(c.sub)}</div>` : ""}
+          <div style="background:${C.paperAlt};border:1px solid ${C.border};border-radius:18px;padding:28px 34px;">
+            <div style="font-size:13px;letter-spacing:0.25em;color:${C.textMuted};font-weight:700;text-transform:uppercase;">${esc(c.label)}</div>
+            <div style="font-size:72px;font-weight:800;color:${C.violet};margin:8px 0;letter-spacing:-0.04em;line-height:1;">${esc(c.value)}</div>
+            ${c.sub ? `<div style="font-size:17px;color:${C.textMid};">${esc(c.sub)}</div>` : ""}
           </div>
         `).join("")}
       </div>
+
+      <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:18px 26px;font-size:18px;line-height:1.55;color:${C.text};">${esc(truncate(interp, 360))}</div>
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "KPIs" });
