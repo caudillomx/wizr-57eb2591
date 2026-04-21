@@ -928,6 +928,54 @@ export function FKExcelImporter({ clientId }: Props) {
           </span>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!overlapInfo} onOpenChange={(open) => !open && setOverlapInfo(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Periodos solapados detectados
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {overlapInfo?.overlaps.length} snapshot(s) existentes se solapan con los periodos que estás subiendo (sin ser idénticos).
+                  Esto suele pasar cuando combinas exportes de rangos distintos (p.ej. semanal vs. mensual) que terminan el mismo día.
+                </p>
+                <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/40 p-2 text-xs font-mono space-y-1">
+                  {overlapInfo?.overlaps.slice(0, 20).map((o, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        <strong>{o.profileName}</strong> · {o.network}
+                      </span>
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        {o.existing} <span className="text-amber-600">↔</span> {o.incoming}
+                      </span>
+                    </div>
+                  ))}
+                  {overlapInfo && overlapInfo.overlaps.length > 20 && (
+                    <div className="text-muted-foreground">… y {overlapInfo.overlaps.length - 20} más</div>
+                  )}
+                </div>
+                <p className="text-sm">
+                  <strong>Reemplazar</strong> borra los snapshots solapados existentes y mantiene los nuevos (recomendado para evitar series duplicadas).
+                  <br />
+                  <strong>Conservar ambos</strong> importa sin borrar: quedarán varios snapshots terminando el mismo día.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button variant="outline" onClick={() => runImport(false)}>
+              Conservar ambos
+            </Button>
+            <AlertDialogAction onClick={() => runImport(true)}>
+              Reemplazar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
