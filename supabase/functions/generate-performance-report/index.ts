@@ -182,7 +182,7 @@ Estás analizando comparativamente la marca propia vs sus competidores. El foco 
 ${JSON.stringify(autoFlags, null, 2)}
 
 REGLAS DE INCORPORACIÓN OBLIGATORIA:
-${!isBrand && ownInTop5 === 0 && top5Posts.length > 0
+${!isBrand && ownInTop5 === 0 && topPostsForAI.length > 0
   ? `- HALLAZGO CRÍTICO: ningún post de la marca propia aparece en el Top 5 del período. Debe ser uno de los primeros 2 hallazgos.\n`
   : ""}
 ${profilesWithoutEng > 0
