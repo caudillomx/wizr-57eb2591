@@ -721,7 +721,7 @@ export function PerformanceReportView({
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: cada porción agrega las interacciones de todas las redes sociales de cada marca. Útil para ver qué marca concentra mayor presencia conversacional global, sin importar el canal.
+                Lectura: cada porción agrega las interacciones de TODAS las redes sociales por marca. Solo aparecen las marcas con interacciones registradas en el período — entran por mérito según volumen real, sin inclusión forzada.
               </p>
             </CardContent>
           </Card>
