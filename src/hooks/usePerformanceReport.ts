@@ -112,8 +112,41 @@ function cleanProfileName(name: string): string {
   return out || String(name || "").trim();
 }
 
+// Tokens descartables al canonicalizar marca: variantes geográficas y descriptores comunes
+const BRAND_NOISE_TOKENS = new Set([
+  "mx", "mex", "mexico", "latam", "latinoamerica",
+  "oficial", "official", "es", "espanol", "spanish", "english",
+  "analisis", "noticias", "news",
+  "grupo", "financiero", "banco", "casa", "bolsa",
+]);
+
+/**
+ * Canonicaliza una marca para agrupar variantes:
+ *   "Santander Mex", "Santander Mexico", "Santander México" → "santander"
+ *   "Grupo Financiero Actinver", "Actinver" → "actinver"
+ *   "Monex", "Monex Análisis" → "monex"
+ */
+function canonicalBrandKey(rawName: string): string {
+  const cleaned = cleanProfileName(rawName)
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const tokens = cleaned.split(" ").filter((t) => t && !BRAND_NOISE_TOKENS.has(t));
+  return (tokens.length > 0 ? tokens.join(" ") : cleaned).trim();
+}
+
 function brandKeyFromProfile(p: FKProfileExt): string {
-  return cleanProfileName(getFKProfileDisplayName(p));
+  return canonicalBrandKey(getFKProfileDisplayName(p));
+}
+
+// Elige el display name más representativo para un grupo de variantes
+function pickBrandDisplay(variants: string[]): string {
+  const counts = new Map<string, number>();
+  for (const v of variants) counts.set(v, (counts.get(v) ?? 0) + 1);
+  // ordena por frecuencia desc, luego por longitud asc (más corto = más limpio)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].length - b[0].length)[0][0];
 }
 
 function computeAnalytics(
