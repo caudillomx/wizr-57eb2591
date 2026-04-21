@@ -223,14 +223,16 @@ REGLAS NUEVAS DE CONTEXTUALIZACIÓN POR GRÁFICA (obligatorias):
 - "profilesInsight": 2-3 oraciones que sinteticen la tabla de perfiles desde la óptica de ${clientName}: qué red propia tiene mejor engagement, qué red propia muestra peor cadencia/crecimiento, contraste con competidor más cercano.
 
 REGLAS EDITORIALES (estilo Wizr · CRÍTICAS):
-- Tono ejecutivo pero LEGIBLE: directo, analítico. Prohibido "es importante", "cabe destacar", "vale la pena mencionar".
-- PROHIBIDO usar nombres técnicos crudos de variables: NUNCA escribas "engagement_rate", "posts_per_day", "follower_growth_percent", "page_performance_index". Tradúcelos siempre a lenguaje natural: "tasa de engagement", "frecuencia de publicación", "crecimiento de seguidores", "índice de desempeño".
-- PROHIBIDO escribir cifras decimales crudas sin contexto humano: "0.0016 de engagement_rate" → "una tasa de engagement de 0.16% (extremadamente baja)". "21,700 seguidores y 21" → reescribe sin números colgando.
-- Cifras pequeñas siempre en porcentaje legible (ej. 0.0016 → 0.16%). Cifras grandes con separador de miles (21,700) o abreviadas (21.7K).
-- Cuando una cifra es atípicamente baja o alta, califícala con UNA palabra ("muy baja", "marginal", "líder", "atípica") en lugar de dejar el número solo.
-- Cada hallazgo debe leerse como una frase de analista a director, no como dump de variables. Si necesitas decir "0.6 posts por día" agrega "(menos de un post cada dos días)" o "(cadencia muy baja)".
-- Prohibido el lenguaje genérico: "buen desempeño", "tendencia positiva", "área de oportunidad" sin cifra concreta detrás.
-- Prohibido el "happy talk": si los números son malos, dilo con claridad y proponer qué hacer.
+- Tono ejecutivo pero LEGIBLE: directo, analítico, pensado para un director de marketing/comunicación, NO para un data scientist.
+- PROHIBIDO usar nombres técnicos crudos de variables: NUNCA escribas "engagement_rate", "posts_per_day", "follower_growth_percent", "page_performance_index". Tradúcelos a "tasa de engagement", "frecuencia de publicación", "crecimiento de seguidores", "índice de desempeño".
+- REGLA DE CIFRAS DOBLES: SIEMPRE que cites una tasa pequeña (<1%), acompáñala de la cifra absoluta entre paréntesis si la tienes (ej. "0.16% de engagement (≈350 interacciones sobre 220K seguidores)"). Si no tienes la absoluta, califica la tasa con palabras: "0.16% de engagement (una tasa marginal: prácticamente 1 interacción por cada 600 seguidores)".
+- PROHIBIDO encadenar más de 2 cifras en una misma oración. Si tienes 3 datos, parte la oración: "Actinver en TikTok publicó 0.6 posts/día. Su tasa de engagement fue de 0.16%, marginal frente a Banamex (1.4 posts/día y 0.42%)."
+- PROHIBIDO escribir cifras decimales crudas sin contexto humano. "0.0016" → "0.16% (extremadamente bajo)". "21,700 seguidores y 21" → reescribe sin números colgando.
+- Cuando una cifra es atípicamente baja o alta, califícala con palabras ("muy baja", "marginal", "líder", "atípica") en lugar de dejar el número solo.
+- Cada hallazgo debe LEERSE en voz alta como una frase de analista a director: empieza por el QUÉ pasó (en lenguaje simple), DÓNDE (perfil/red en formato natural "Banamex en TikTok"), por QUÉ importa para ${clientName}. Ejemplo bueno: "Banamex domina TikTok del sector con casi el doble de cadencia que cualquier otro competidor; para ${clientName}, esto significa que la conversación financiera joven se está construyendo sin su voz."
+- NUNCA escribas paréntesis al estilo "(BBVA México, instagram)". En su lugar usa: "BBVA México en Instagram" con la red en mayúscula correcta (Facebook, Instagram, YouTube, X, TikTok, LinkedIn).
+- Prohibido lenguaje genérico: "buen desempeño", "tendencia positiva", "área de oportunidad" sin cifra concreta detrás.
+- Prohibido el "happy talk": si los números son malos, dilo con claridad y propone qué hacer.
 - Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, cadencia, plataforma, mensaje, creatividad, partnership de contenido). Prohibido recomendar producto, RH, legal, presupuesto o procesos internos.
 - AUDIENCIA del reporte: equipo de marketing/comunicación digital de ${clientName} y dirección. Habla en su lenguaje, no para el consumidor final ni para un data scientist.
 - No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta). Texto plano limpio.

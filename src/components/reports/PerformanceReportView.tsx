@@ -734,7 +734,7 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
 
-      {/* Top content */}
+      {/* Top content — Top 10 en 2 columnas */}
       {(report.topPosts?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
@@ -743,35 +743,37 @@ export function PerformanceReportView({
               Mejores contenidos del período
             </CardTitle>
             <CardDescription className="text-xs">
-              Top {Math.min(report.topPosts!.length, 5)} posts por engagement
+              Top {Math.min(report.topPosts!.length, 10)} posts por interacciones absolutas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {report.topPosts.slice(0, 5).map((p, i) => (
-              <div key={i} className="rounded-md border p-3 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-semibold">#{i + 1}</span>
-                  <span className="font-medium">{p.authorName}</span>
-                  <NetworkBadge network={p.network} size="xs" />
-                  <span className="text-muted-foreground">· {p.postDate}</span>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {report.topPosts.slice(0, 10).map((p, i) => (
+                <div key={i} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[10px]">{i + 1}</span>
+                    <span className="font-medium">{p.authorName}</span>
+                    <NetworkBadge network={p.network} size="xs" />
+                    <span className="text-muted-foreground">· {p.postDate}</span>
+                  </div>
+                  {p.postContent && (
+                    <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>Interacciones: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
+                    <span>Likes: {formatNumber(p.likes)}</span>
+                    <span>Comentarios: {formatNumber(p.comments)}</span>
+                    {p.shares > 0 && <span>Compartidos: {formatNumber(p.shares)}</span>}
+                    {p.views > 0 && <span>Vistas: {formatNumber(p.views)}</span>}
+                  </div>
+                  {p.postUrl && (
+                    <a href={p.postUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Ver publicación →
+                    </a>
+                  )}
                 </div>
-                {p.postContent && (
-                  <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
-                )}
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  <span>Engagement: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
-                  <span>Likes: {formatNumber(p.likes)}</span>
-                  <span>Comentarios: {formatNumber(p.comments)}</span>
-                  {p.shares > 0 && <span>Compartidos: {formatNumber(p.shares)}</span>}
-                  {p.views > 0 && <span>Vistas: {formatNumber(p.views)}</span>}
-                </div>
-                {p.postUrl && (
-                  <a href={p.postUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                    Ver publicación →
-                  </a>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
           {report.topContentInsight && (
             <CardContent className="pt-0">
