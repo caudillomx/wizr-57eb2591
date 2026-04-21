@@ -192,6 +192,8 @@ export function RankingTable({
     return data;
   }, [profiles, kpis, sortMetric, sortDirection, filterNetwork]);
 
+  const hasAnyKpi = useMemo(() => rankedData.some((item) => item.kpi !== null), [rankedData]);
+
   const profileNetworks = profiles.map(p => p.network as FKNetwork);
 
   // Calculate max values for relative bars
@@ -215,14 +217,16 @@ export function RankingTable({
     );
   }
 
-  if (rankedData.length === 0) {
+  if (rankedData.length === 0 || !hasAnyKpi) {
     return (
       <Card className="py-12">
         <CardContent className="text-center">
           <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">Sin datos de ranking</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Sincroniza los perfiles para obtener sus métricas y generar el ranking.
+            {profiles.length > 0
+              ? "Hay perfiles cargados, pero todavía no existen snapshots KPI importados o sincronizados para este conjunto."
+              : "Sincroniza los perfiles para obtener sus métricas y generar el ranking."}
           </p>
         </CardContent>
       </Card>
