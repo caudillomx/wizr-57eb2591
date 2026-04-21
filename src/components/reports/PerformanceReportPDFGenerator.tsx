@@ -63,6 +63,55 @@ export function PerformanceReportPDFGenerator({
       [data-pdf-host] svg { overflow: visible; }
       [data-pdf-host] .recharts-wrapper,
       [data-pdf-host] .recharts-surface { overflow: visible !important; }
+
+      /* Network badges: html2canvas mis-aligns inline-flex + lucide SVGs.
+         Force a roomy text-only chip with safe sRGB colors and explicit
+         line-height so the label is always centered and visible. */
+      [data-pdf-host] [data-network-badge] {
+        display: inline-block !important;
+        padding: 2px 8px !important;
+        border-radius: 9999px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        line-height: 14px !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        vertical-align: middle !important;
+      }
+      [data-pdf-host] [data-network-badge] svg { display: none !important; }
+      [data-pdf-host] [data-network-badge="facebook"] { background:#dbeafe !important; color:#1e3a8a !important; border-color:#bfdbfe !important; }
+      [data-pdf-host] [data-network-badge="instagram"] { background:#fce7f3 !important; color:#9d174d !important; border-color:#fbcfe8 !important; }
+      [data-pdf-host] [data-network-badge="twitter"],
+      [data-pdf-host] [data-network-badge="x"] { background:#e2e8f0 !important; color:#1e293b !important; border-color:#cbd5e1 !important; }
+      [data-pdf-host] [data-network-badge="youtube"] { background:#fee2e2 !important; color:#991b1b !important; border-color:#fecaca !important; }
+      [data-pdf-host] [data-network-badge="tiktok"] { background:#e4e4e7 !important; color:#18181b !important; border-color:#d4d4d8 !important; }
+      [data-pdf-host] [data-network-badge="linkedin"] { background:#e0f2fe !important; color:#075985 !important; border-color:#bae6fd !important; }
+
+      /* Numbered circles in Top Content cards: html2canvas drops the digit
+         to the bottom because of flex baseline. Switch to block + line-height. */
+      [data-pdf-host] [data-numbered-bullet] {
+        display: inline-block !important;
+        width: 18px !important;
+        height: 18px !important;
+        line-height: 18px !important;
+        text-align: center !important;
+        border-radius: 9999px !important;
+        background: #4338ca !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 10px !important;
+        vertical-align: middle !important;
+        padding: 0 !important;
+      }
+
+      /* Don't truncate post bodies in PDF — let them flow */
+      [data-pdf-host] .line-clamp-3,
+      [data-pdf-host] .line-clamp-2 {
+        -webkit-line-clamp: unset !important;
+        display: block !important;
+        overflow: visible !important;
+      }
     `;
     host.appendChild(safetyStyle);
 
