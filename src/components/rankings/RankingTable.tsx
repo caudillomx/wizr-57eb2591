@@ -19,6 +19,18 @@ import { NetworkFilter } from "./NetworkFilter";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
+function shouldReplaceKpi(candidate: FKProfileKPI, existing: FKProfileKPI) {
+  const candidateEnd = new Date(`${candidate.period_end}T00:00:00Z`).getTime();
+  const existingEnd = new Date(`${existing.period_end}T00:00:00Z`).getTime();
+
+  if (candidateEnd !== existingEnd) return candidateEnd > existingEnd;
+  if (!!candidate.isFallback !== !!existing.isFallback) return !candidate.isFallback;
+
+  const candidateFetched = new Date(candidate.fetched_at).getTime();
+  const existingFetched = new Date(existing.fetched_at).getTime();
+  return candidateFetched > existingFetched;
+}
+
 function formatPeriod(start: string, end: string): string {
   try {
     const s = parseISO(start);
@@ -156,7 +168,7 @@ export function RankingTable({
     const kpiMap = new Map<string, FKProfileKPI>();
     kpis.forEach((kpi) => {
       const existing = kpiMap.get(kpi.fk_profile_id);
-      if (!existing || new Date(kpi.fetched_at) > new Date(existing.fetched_at)) {
+      if (!existing || shouldReplaceKpi(kpi, existing)) {
         kpiMap.set(kpi.fk_profile_id, kpi);
       }
     });
