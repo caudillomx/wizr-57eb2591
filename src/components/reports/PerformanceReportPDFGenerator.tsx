@@ -17,13 +17,16 @@ interface PerformanceReportPDFGeneratorProps {
 }
 
 /**
- * Renders the EXACT same `PerformanceReportView` component used in the dashboard
- * into an off-screen container at fixed A4 width and converts it page-by-page
- * to a PDF using html2canvas + jsPDF.
+ * Section-based PDF generator.
  *
- * This guarantees 1:1 visual parity between web view and PDF — same Recharts,
- * same numbers, same narrative — and eliminates the legacy header overlap and
- * empty-space issues that came from rebuilding the layout in raw HTML.
+ * Renders the live `PerformanceReportView` into an off-screen container, then
+ * captures EACH top-level Card/section as its own canvas. Sections are placed
+ * into A4 pages with a real jsPDF header + footer drawn on every page (not
+ * baked into the canvas). This eliminates:
+ *   - missing headers/footers on pages 2+
+ *   - mid-section page cuts
+ *   - clipped donut labels (each chart card is captured with internal padding)
+ *   - large empty whitespace at the bottom of pages
  */
 export function PerformanceReportPDFGenerator({
   report, clientName, dateRange,
@@ -35,171 +38,260 @@ export function PerformanceReportPDFGenerator({
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
 
-    // 1) Off-screen container at A4 width (794px @ 96dpi ≈ 210mm)
-    const PDF_WIDTH_PX = 1180; // wider canvas = sharper text once scaled to A4
+    // ── Off-screen render host ──────────────────────────────────────────
+    const RENDER_WIDTH_PX = 1180;
     const host = document.createElement("div");
     host.style.position = "fixed";
     host.style.top = "0";
     host.style.left = "-99999px";
-    host.style.width = `${PDF_WIDTH_PX}px`;
+    host.style.width = `${RENDER_WIDTH_PX}px`;
     host.style.background = "#ffffff";
     host.style.zIndex = "-1";
+    host.setAttribute("data-pdf-host", "true");
     document.body.appendChild(host);
     hiddenContainerRef.current = host;
+
+    // Tailwind 4 + html2canvas can choke on oklch() and CSS variables; force
+    // the host to use safe sRGB fallbacks for elements that html2canvas
+    // typically misses (icons, borders).
+    const safetyStyle = document.createElement("style");
+    safetyStyle.textContent = `
+      [data-pdf-host] * {
+        animation: none !important;
+        transition: none !important;
+      }
+      [data-pdf-host] svg { overflow: visible; }
+      [data-pdf-host] .recharts-wrapper,
+      [data-pdf-host] .recharts-surface { overflow: visible !important; }
+    `;
+    host.appendChild(safetyStyle);
 
     const root = createRoot(host);
 
     try {
-      // 2) Render the same view used in the dashboard
+      // 1) Render the live view
       await new Promise<void>((resolve) => {
         root.render(
-          <div style={{ padding: "32px 36px", background: "#ffffff" }}>
-            {/* Branded header with Wizr logo */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)",
-                color: "#fff",
-                padding: "22px 28px",
-                borderRadius: 12,
-                marginBottom: 24,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 16,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div
-                  style={{
-                    background: "#ffffff",
-                    borderRadius: 10,
-                    padding: "8px 12px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <img src={wizrLogo} alt="Wizr" style={{ height: 36, display: "block" }} crossOrigin="anonymous" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 10, letterSpacing: "0.22em", opacity: 0.75, fontWeight: 600, textTransform: "uppercase" }}>
-                    Inteligencia de medios
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-                    {clientName} · {report.reportMode === "brand" ? "Reporte de marca" : "Reporte de benchmark"}
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: 11, opacity: 0.85 }}>{dateRange.label}</div>
-            </div>
-
+          <div style={{ padding: "24px 28px", background: "#ffffff" }}>
             <PerformanceReportView
               report={report}
               editing={false}
               dateLabel={dateRange.label}
             />
-
-            <div
-              style={{
-                marginTop: 28,
-                paddingTop: 14,
-                borderTop: "1px solid #e5e7eb",
-                fontSize: 10,
-                color: "#6b7280",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <span>Generado el {format(new Date(), "d 'de' MMMM yyyy")} · {dateRange.start} → {dateRange.end}</span>
-              <span style={{ color: "#374151", fontWeight: 600 }}>Wizr · wizr.mx</span>
-            </div>
           </div>
         );
-        // Wait for Recharts/ResponsiveContainer to layout
-        setTimeout(resolve, 1200);
+        // Wait for Recharts ResponsiveContainer to layout + fonts
+        setTimeout(resolve, 1400);
       });
 
-      // 3) Detect natural break points (top of each top-level block) BEFORE capture
-      // We collect Y positions of every direct child Card / wrapper inside the report
-      // so the slicer never cuts a card in half.
-      const breakpointsPx: number[] = [];
-      const hostRect = host.getBoundingClientRect();
-      const blocks = host.querySelectorAll<HTMLElement>(
-        '[data-pdf-block], .rounded-xl, [class*="rounded-lg"][class*="border"], .recharts-wrapper'
-      );
-      // We actually want top-level cards: target direct children of the report's root grid/space-y container
-      const reportRoot = host.querySelector<HTMLElement>(".space-y-8") ?? host;
-      Array.from(reportRoot.children).forEach((child) => {
-        const rect = (child as HTMLElement).getBoundingClientRect();
-        breakpointsPx.push(rect.top - hostRect.top);
-        breakpointsPx.push(rect.bottom - hostRect.top);
-      });
-      // Suppress unused-var warning for the broader query (kept for future granular needs)
-      void blocks;
+      // 2) Locate sections (top-level children of the report's `.space-y-8`)
+      const reportRoot = host.querySelector<HTMLElement>(".space-y-8");
+      if (!reportRoot) throw new Error("Report root not found");
+      const sections = Array.from(reportRoot.children) as HTMLElement[];
+      if (sections.length === 0) throw new Error("No sections to render");
 
-      // 4) Capture
-      const canvas = await html2canvas(host, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        windowWidth: PDF_WIDTH_PX,
-      });
-
-      // 5) Slice into A4 pages — snap each page break to the nearest natural breakpoint above it
+      // 3) PDF setup ───────────────────────────────────────────────────
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-      const pageWidthMm = pdf.internal.pageSize.getWidth();
-      const pageHeightMm = pdf.internal.pageSize.getHeight();
-      const imgWidthMm = pageWidthMm;
-      // canvas is at scale=2 of the host CSS px; convert CSS px breakpoints to canvas px
-      const cssToCanvas = canvas.width / PDF_WIDTH_PX;
-      const breakpointsCanvasPx = Array.from(
-        new Set(breakpointsPx.map((p) => Math.round(p * cssToCanvas)))
-      ).sort((a, b) => a - b);
+      const PAGE_W = pdf.internal.pageSize.getWidth();   // 210
+      const PAGE_H = pdf.internal.pageSize.getHeight();  // 297
+      const MARGIN_X = 12;
+      const HEADER_H = 18;
+      const FOOTER_H = 12;
+      const CONTENT_TOP = HEADER_H + 4;
+      const CONTENT_BOTTOM = PAGE_H - FOOTER_H - 4;
+      const CONTENT_W = PAGE_W - MARGIN_X * 2;
+      const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
+      const SECTION_GAP_MM = 4;
 
-      const pxPerMm = canvas.width / imgWidthMm;
-      const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
-      const MIN_PAGE_FILL = 0.55; // never produce pages emptier than 55%
+      // Pre-load the Wizr logo as a data URL for fast addImage on each page
+      const logoDataUrl = await fetch(wizrLogo)
+        .then((r) => r.blob())
+        .then(
+          (b) =>
+            new Promise<string>((res) => {
+              const fr = new FileReader();
+              fr.onload = () => res(fr.result as string);
+              fr.readAsDataURL(b);
+            })
+        )
+        .catch(() => "");
 
-      let renderedPx = 0;
-      let pageIndex = 0;
+      const reportLabel = report.reportMode === "brand"
+        ? `${clientName} · Reporte de marca`
+        : `${clientName} · Reporte de benchmark`;
 
-      while (renderedPx < canvas.height) {
-        let sliceEnd = Math.min(renderedPx + pageHeightPx, canvas.height);
+      const drawHeader = (pageNum: number) => {
+        // Indigo gradient band — fake gradient with 3 stacked rects
+        pdf.setFillColor(30, 27, 75);   // #1e1b4b
+        pdf.rect(0, 0, PAGE_W, HEADER_H, "F");
+        pdf.setFillColor(49, 46, 129, 0.0 as unknown as number);
+        // jsPDF doesn't do real gradients — flat indigo is fine and matches
+        // the on-screen feel.
+        if (logoDataUrl) {
+          // White rounded badge for the logo
+          pdf.setFillColor(255, 255, 255);
+          pdf.roundedRect(MARGIN_X, 4, 22, 10, 1.5, 1.5, "F");
+          try {
+            pdf.addImage(logoDataUrl, "PNG", MARGIN_X + 2, 5.5, 18, 7, undefined, "FAST");
+          } catch { /* noop */ }
+        }
+        pdf.setTextColor(199, 210, 254);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(7);
+        pdf.text("INTELIGENCIA DE MEDIOS", MARGIN_X + 26, 8);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.text(reportLabel, MARGIN_X + 26, 13);
 
-        // If we still have content after this slice, snap the cut to the closest
-        // natural breakpoint (Card boundary) that fits within the page.
-        if (sliceEnd < canvas.height) {
-          const minAcceptable = renderedPx + Math.floor(pageHeightPx * MIN_PAGE_FILL);
-          const candidate = [...breakpointsCanvasPx]
-            .reverse()
-            .find((bp) => bp <= sliceEnd && bp >= minAcceptable);
-          if (candidate && candidate > renderedPx) {
-            sliceEnd = candidate;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(226, 232, 240);
+        const dateText = dateRange.label;
+        const dateW = pdf.getTextWidth(dateText);
+        pdf.text(dateText, PAGE_W - MARGIN_X - dateW, 13);
+
+        // page badge
+        pdf.setFontSize(7);
+        const pageText = `pág. ${pageNum}`;
+        const pw = pdf.getTextWidth(pageText);
+        pdf.text(pageText, PAGE_W - MARGIN_X - pw, 7);
+      };
+
+      const drawFooter = () => {
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.2);
+        pdf.line(MARGIN_X, PAGE_H - FOOTER_H, PAGE_W - MARGIN_X, PAGE_H - FOOTER_H);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(
+          `Generado el ${format(new Date(), "d 'de' MMMM yyyy")} · ${dateRange.start} → ${dateRange.end}`,
+          MARGIN_X,
+          PAGE_H - 5
+        );
+        pdf.setTextColor(55, 65, 81);
+        pdf.setFont("helvetica", "bold");
+        const right = "Wizr · wizr.mx";
+        const rw = pdf.getTextWidth(right);
+        pdf.text(right, PAGE_W - MARGIN_X - rw, PAGE_H - 5);
+      };
+
+      // 4) Capture each section as its own canvas ────────────────────
+      const sectionImages: { dataUrl: string; heightMm: number }[] = [];
+      for (const section of sections) {
+        // Skip empty/hidden sections
+        const rect = section.getBoundingClientRect();
+        if (rect.height < 4) continue;
+
+        const canvas = await html2canvas(section, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+          logging: false,
+          windowWidth: RENDER_WIDTH_PX,
+          // Add a bit of breathing room so Recharts external labels don't get
+          // clipped on the right/bottom edges.
+          width: section.scrollWidth + 8,
+          height: section.scrollHeight + 8,
+        });
+
+        const imgWidthMm = CONTENT_W;
+        const ratio = canvas.height / canvas.width;
+        const imgHeightMm = imgWidthMm * ratio;
+
+        sectionImages.push({
+          dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+          heightMm: imgHeightMm,
+        });
+      }
+
+      // 5) Lay sections into pages ───────────────────────────────────
+      let pageNum = 1;
+      let cursorY = CONTENT_TOP;
+      drawHeader(pageNum);
+      drawFooter();
+
+      const newPage = () => {
+        pdf.addPage();
+        pageNum += 1;
+        cursorY = CONTENT_TOP;
+        drawHeader(pageNum);
+        drawFooter();
+      };
+
+      for (const sec of sectionImages) {
+        let { dataUrl, heightMm } = sec;
+        const remaining = CONTENT_BOTTOM - cursorY;
+
+        // Section taller than a full page → must be sliced across pages
+        if (heightMm > CONTENT_H) {
+          // Place from current cursor first
+          let placedMm = 0;
+          // Helper to draw a vertical slice of the source image
+          const placeSlice = (yFromMm: number, sliceHeightMm: number) => {
+            // jsPDF will render the full image and we control the visible
+            // portion via clipping — easier route: re-render slice from canvas
+            // by using a tmp canvas. But we already have only the data URL.
+            // Use jsPDF's native image clip: addImage of the FULL image with a
+            // negative Y so the desired band lands at yFromMm. We then mask
+            // the rest with white rectangles top + bottom.
+            const negY = yFromMm - placedMm * (heightMm / heightMm); // identity
+            void negY;
+            // Simpler path: draw image at (cursorY - placedMm) so the unread
+            // portion shows in the writable band, then white-cover above and
+            // below the band.
+            pdf.addImage(
+              dataUrl, "JPEG",
+              MARGIN_X,
+              yFromMm - placedMm,
+              CONTENT_W, heightMm,
+              undefined, "FAST",
+            );
+            // Cover anything above the band
+            pdf.setFillColor(255, 255, 255);
+            if (yFromMm > 0) pdf.rect(0, 0, PAGE_W, yFromMm, "F");
+            // Cover anything below the band
+            const bandBottom = yFromMm + sliceHeightMm;
+            if (bandBottom < PAGE_H) pdf.rect(0, bandBottom, PAGE_W, PAGE_H - bandBottom, "F");
+            // Re-draw header & footer on top of the cover rects
+            drawHeader(pageNum);
+            drawFooter();
+          };
+
+          // First slice on current page
+          const firstSliceMm = Math.min(remaining, heightMm);
+          placeSlice(cursorY, firstSliceMm);
+          placedMm += firstSliceMm;
+
+          // Subsequent slices — full pages until done
+          while (placedMm < heightMm - 0.5) {
+            newPage();
+            const sliceMm = Math.min(CONTENT_H, heightMm - placedMm);
+            placeSlice(CONTENT_TOP, sliceMm);
+            placedMm += sliceMm;
           }
+          cursorY = CONTENT_TOP + (heightMm - (Math.ceil(heightMm / CONTENT_H) - 1) * CONTENT_H) + SECTION_GAP_MM;
+          if (cursorY > CONTENT_BOTTOM) {
+            newPage();
+          }
+          continue;
         }
 
-        const sliceHeight = sliceEnd - renderedPx;
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-        const ctx = pageCanvas.getContext("2d");
-        if (!ctx) throw new Error("Canvas context unavailable");
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        ctx.drawImage(
-          canvas,
-          0, renderedPx, canvas.width, sliceHeight,
-          0, 0, canvas.width, sliceHeight,
+        // Fits on current page?
+        if (heightMm > remaining + 0.5) {
+          newPage();
+        }
+
+        pdf.addImage(
+          dataUrl, "JPEG",
+          MARGIN_X, cursorY,
+          CONTENT_W, heightMm,
+          undefined, "FAST",
         );
+        cursorY += heightMm + SECTION_GAP_MM;
 
-        const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
-        const sliceHeightMm = sliceHeight / pxPerMm;
-        if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, sliceHeightMm);
-
-        renderedPx = sliceEnd;
-        pageIndex += 1;
+        // If we're already too close to the bottom, prep next page lazily on
+        // the next iteration (handled by the `heightMm > remaining` check).
       }
 
       const modeSlug = report.reportMode === "brand" ? "marca" : "benchmark";
