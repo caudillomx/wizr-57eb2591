@@ -64,8 +64,13 @@ export interface PerformanceReportContent {
   recommendations: string[];
   topContentInsight: string;
   competitiveInsight: string;
+  /** Lectura contextual debajo del ranking de engagement */
+  rankingInsight?: string;
+  /** Lectura contextual debajo del share of voice */
+  sovInsight?: string;
+  /** Lectura contextual debajo de la tabla de perfiles */
+  profilesInsight?: string;
   conclusion: string;
-  // Snapshot of the data the report was based on (for the public view)
   reportMode: PerformanceReportMode;
   clientName: string;
   brandName?: string;
@@ -403,6 +408,9 @@ export function usePerformanceReport() {
         recommendations: reportData.recommendations || [],
         topContentInsight: reportData.topContentInsight || "",
         competitiveInsight: reportData.competitiveInsight || "",
+        rankingInsight: reportData.rankingInsight || "",
+        sovInsight: reportData.sovInsight || "",
+        profilesInsight: reportData.profilesInsight || "",
         conclusion: reportData.conclusion || "",
         reportMode: config.reportMode,
         clientName: config.clientName,
