@@ -16,8 +16,14 @@ const C = {
   paperAlt: "#F8F7FC",
   border: "#E5E3EE",
   borderLight: "#F1F0F8",
-  violet: "#3D1FD8",
-  violetSoft: "#EBE8FB",
+  // Editorial indigo palette (paridad con PerformanceReportView)
+  indigoDeep: "#1e1b4b",
+  indigoMid: "#312e81",
+  indigoBright: "#4338ca",
+  indigoSoft: "#EEF2FF",
+  indigoText: "#c7d2fe",
+  violet: "#4338ca", // alias usado por gráficos/badges
+  violetSoft: "#EEF2FF",
   orange: "#FF6B2C",
   orangeSoft: "#FFE9DD",
   text: "#0B0A1F",
@@ -27,6 +33,8 @@ const C = {
   negative: "#EF4444",
   neutral: "#9CA3AF",
 };
+
+const INDIGO_GRADIENT = "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)";
 
 function esc(t: string | null | undefined): string {
   if (!t) return "";
@@ -78,10 +86,15 @@ function chartHorizontalBars(
     .join("")}</div>`;
 }
 
-function section(title: string, body: string): string {
-  return `<div style="border-radius:6px;overflow:hidden;border:1px solid ${C.border};background:${C.paper};margin-bottom:12px;break-inside:avoid;page-break-inside:avoid;">
-    <div style="background:${C.violet};color:#fff;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;padding:8px 16px;">${esc(title)}</div>
-    <div style="padding:14px 16px;">${body}</div>
+function section(title: string, body: string, opts?: { eyebrow?: string; accent?: "indigo" | "orange" }): string {
+  const accent = opts?.accent ?? "indigo";
+  const accentColor = accent === "orange" ? C.orange : C.indigoBright;
+  return `<div style="border-radius:8px;overflow:hidden;border:1px solid ${C.border};background:${C.paper};margin-bottom:14px;break-inside:avoid;page-break-inside:avoid;border-left:4px solid ${accentColor};">
+    <div style="padding:12px 18px 4px 18px;">
+      <div style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.22em;color:${accentColor};">${esc(opts?.eyebrow ?? "Sección")}</div>
+      <div style="font-size:13px;font-weight:800;color:${C.text};margin-top:3px;letter-spacing:-0.01em;">${esc(title)}</div>
+    </div>
+    <div style="padding:10px 18px 16px 18px;">${body}</div>
   </div>`;
 }
 
@@ -162,13 +175,14 @@ function topPostsList(report: PerformanceReportContent): string {
     .join("")}</div>`;
 }
 
-function numberedList(items: string[]): string {
+function numberedList(items: string[], accent: "indigo" | "orange" = "indigo"): string {
   if (!items.length) return `<div style="font-size:9.5px;color:${C.textMuted};font-style:italic;">Sin elementos.</div>`;
-  return `<ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">${items
+  const accentColor = accent === "orange" ? C.orange : C.indigoBright;
+  return `<ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;">${items
     .map(
-      (it, i) => `<li style="display:flex;gap:8px;align-items:flex-start;break-inside:avoid;page-break-inside:avoid;">
-        <span style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${C.violetSoft};color:${C.violet};font-weight:700;font-size:9px;margin-top:1px;">${i + 1}</span>
-        <span style="flex:1;font-size:10px;line-height:1.55;color:${C.text};">${esc(it)}</span>
+      (it, i) => `<li style="display:flex;gap:14px;align-items:flex-start;break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid ${C.borderLight};padding-bottom:10px;">
+        <span style="flex-shrink:0;font-size:22px;font-weight:800;color:${accentColor};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;min-width:28px;">${String(i + 1).padStart(2, "0")}</span>
+        <span style="flex:1;font-size:10.5px;line-height:1.65;color:${C.text};">${esc(it)}</span>
       </li>`,
     )
     .join("")}</ol>`;
