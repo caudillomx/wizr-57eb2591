@@ -491,6 +491,10 @@ export function usePerformanceReport() {
       const analytics = computeAnalytics(profiles, kpis, topPosts);
       const snapshots = buildSnapshots(profiles, kpis, topPosts);
 
+      const payloadTopPosts = [...topPosts]
+        .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
+        .slice(0, 10);
+
       const payload = {
         reportMode: config.reportMode,
         clientName: config.clientName,
@@ -513,7 +517,7 @@ export function usePerformanceReport() {
           posts_per_day: k.posts_per_day,
           page_performance_index: k.page_performance_index,
         })),
-        topPosts: topPosts.slice(0, 50).map((tp) => ({
+        topPosts: payloadTopPosts.map((tp) => ({
           fk_profile_id: tp.fk_profile_id,
           network: tp.network,
           post_content: tp.post_content,
