@@ -91,6 +91,18 @@ function truncate(s: string, n: number): string {
   return t.length <= n ? t : t.slice(0, n - 1) + "…";
 }
 
+// Quita sufijos de red social del nombre de un perfil para agrupar variantes
+const NETWORK_SUFFIX_RE = /[\s_\-·|]+\(?(fb|facebook|ig|instagram|tw|twitter|x|yt|youtube|tt|tiktok|li|linkedin|th|threads)\)?\s*$/i;
+function cleanProfileName(name: string): string {
+  let out = String(name || "").trim();
+  for (let i = 0; i < 3; i += 1) {
+    const replaced = out.replace(NETWORK_SUFFIX_RE, "").trim();
+    if (replaced === out) break;
+    out = replaced;
+  }
+  return out || String(name || "").trim();
+}
+
 function sparkles(color: string, opacity = 1): string {
   return `<svg width="180" height="180" viewBox="0 0 180 180" style="opacity:${opacity};">
     <path d="M90 20 L96 50 L126 56 L96 62 L90 92 L84 62 L54 56 L84 50 Z" fill="${color}"/>
