@@ -54,27 +54,40 @@ export function PerformanceReportPDFGenerator({
       await new Promise<void>((resolve) => {
         root.render(
           <div style={{ padding: "32px 36px", background: "#ffffff" }}>
-            {/* Branded header to mirror the public link */}
+            {/* Branded header with Wizr logo */}
             <div
               style={{
                 background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)",
                 color: "#fff",
-                padding: "20px 28px",
+                padding: "22px 28px",
                 borderRadius: 12,
                 marginBottom: 24,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 flexWrap: "wrap",
-                gap: 12,
+                gap: 16,
               }}
             >
-              <div>
-                <div style={{ fontSize: 10, letterSpacing: "0.22em", opacity: 0.75, fontWeight: 600, textTransform: "uppercase" }}>
-                  Wizr · Inteligencia de medios
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: 10,
+                    padding: "8px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <img src={wizrLogo} alt="Wizr" style={{ height: 36, display: "block" }} crossOrigin="anonymous" />
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
-                  {clientName} · {report.reportMode === "brand" ? "Reporte de marca" : "Reporte de benchmark"}
+                <div>
+                  <div style={{ fontSize: 10, letterSpacing: "0.22em", opacity: 0.75, fontWeight: 600, textTransform: "uppercase" }}>
+                    Inteligencia de medios
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+                    {clientName} · {report.reportMode === "brand" ? "Reporte de marca" : "Reporte de benchmark"}
+                  </div>
                 </div>
               </div>
               <div style={{ fontSize: 11, opacity: 0.85 }}>{dateRange.label}</div>
