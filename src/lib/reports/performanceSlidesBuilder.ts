@@ -91,6 +91,18 @@ function truncate(s: string, n: number): string {
   return t.length <= n ? t : t.slice(0, n - 1) + "…";
 }
 
+// Quita sufijos de red social del nombre de un perfil para agrupar variantes
+const NETWORK_SUFFIX_RE = /[\s_\-·|]+\(?(fb|facebook|ig|instagram|tw|twitter|x|yt|youtube|tt|tiktok|li|linkedin|th|threads)\)?\s*$/i;
+function cleanProfileName(name: string): string {
+  let out = String(name || "").trim();
+  for (let i = 0; i < 3; i += 1) {
+    const replaced = out.replace(NETWORK_SUFFIX_RE, "").trim();
+    if (replaced === out) break;
+    out = replaced;
+  }
+  return out || String(name || "").trim();
+}
+
 function sparkles(color: string, opacity = 1): string {
   return `<svg width="180" height="180" viewBox="0 0 180 180" style="opacity:${opacity};">
     <path d="M90 20 L96 50 L126 56 L96 62 L90 92 L84 62 L54 56 L84 50 Z" fill="${color}"/>
@@ -453,36 +465,65 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Ranking" });
 }
 
-function slideShareOfVoice(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const sov = report.analytics.shareOfVoice.filter((s) => s.engagementShare > 0).slice(0, 8);
-  const data = sov.map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn }));
-  const insight = report.sovInsight || report.competitiveInsight || "";
+function slideShareOfInteractions(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  // Agrupa share por marca canónica (suma de interactionsShare de todos los perfiles de la marca)
+  const sov = report.analytics.shareOfVoice.filter((s) => s.interactionsShare > 0);
+  const byBrand = new Map<string, { name: string; value: number; isOwn: boolean }>();
+  for (const s of sov) {
+    const key = cleanProfileName(s.name).toLowerCase();
+    const prev = byBrand.get(key);
+    if (prev) {
+      prev.value += s.interactionsShare;
+      prev.isOwn = prev.isOwn || s.isOwn;
+    } else {
+      byBrand.set(key, { name: cleanProfileName(s.name), value: s.interactionsShare, isOwn: s.isOwn });
+    }
+  }
+  const data = Array.from(byBrand.values())
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 7)
+    .map((d) => ({ label: d.name, value: d.value, isOwn: d.isOwn }));
+
+  const own = data.find((d) => d.isOwn);
+  const leader = data[0];
+  const totalShown = data.reduce((s, d) => s + d.value, 0);
+  const interp = (() => {
+    if (!leader) return "Sin datos suficientes para calcular el reparto de interacciones del período.";
+    if (own && leader.isOwn) {
+      return `${own.label} lidera el reparto de interacciones del período con ${own.value.toFixed(1)}% del total agregado, manteniendo ventaja sobre el resto del set competitivo.`;
+    }
+    if (own) {
+      const gap = leader.value > 0 ? (leader.value / Math.max(own.value, 0.01)) : 0;
+      return `${leader.label} concentra ${leader.value.toFixed(1)}% de las interacciones del período, mientras que ${own.label} captura ${own.value.toFixed(1)}%${gap > 1 ? ` — una brecha de ${gap.toFixed(1)}× respecto al líder` : ""}. Las ${data.length} marcas mostradas suman ${totalShown.toFixed(1)}% del total.`;
+    }
+    return `${leader.label} encabeza la distribución con ${leader.value.toFixed(1)}% de las interacciones agregadas del set.`;
+  })();
+
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
+      <div>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Share of Interactions</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Reparto del volumen total de interacciones</h2>
+        <p style="font-size:17px;color:${C.textMid};margin:10px 0 0 0;">Distribución porcentual de las interacciones absolutas (likes + comentarios + shares) generadas por cada marca en el período.</p>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;flex:1;">
-        <div style="display:flex;flex-direction:column;gap:24px;">
-          <div>
-            <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
-            <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-            ${data.slice(0, 6).map((d, i) => {
-              const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
-              const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
-              return `<div style="display:flex;align-items:center;gap:14px;font-size:17px;">
-                <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
-                <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
-                <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
-              </div>`;
-            }).join("")}
-          </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${data.map((d, i) => {
+            const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E", "#EAB308"];
+            const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+            return `<div style="display:flex;align-items:center;gap:14px;font-size:18px;padding:6px 0;">
+              <span style="width:16px;height:16px;border-radius:4px;background:${color};flex-shrink:0;"></span>
+              <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 800 : 500};">${esc(d.label)}${d.isOwn ? " (marca propia)" : ""}</span>
+              <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
+            </div>`;
+          }).join("")}
         </div>
         <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
       </div>
-      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 360))}</div>` : ""}
+      <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(interp, 420))}</div>
     </div>
   `;
-  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Voice" });
+  return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Interactions" });
 }
 
 function slideNetworkBreakdown(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
@@ -509,10 +550,25 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  const insight = report.profilesInsight
-    || (eng.length > 0 && brand.length > 0
-      ? `${eng[0].label} concentra el mayor volumen de interacciones por publicación (${fmtInt(eng[0].value)}), mientras que ${brand[0].label} encabeza el desempeño agregado entre marcas con ${fmtInt(brand[0].value)} interacciones promedio.`
-      : "");
+  const insight = (() => {
+    if (!eng.length || !brand.length) return report.profilesInsight || "";
+    const topNet = eng[0];
+    const lowNet = eng[eng.length - 1];
+    const topBrand = brand[0];
+    const ownBrand = brand.find((b) => b.isOwn);
+    const netGap = lowNet && topNet.value > 0 ? (topNet.value / Math.max(lowNet.value, 1)) : 0;
+    let s = `Por red social, ${topNet.label} concentra el mejor desempeño con ${fmtInt(topNet.value)} interacciones promedio por publicación`;
+    if (lowNet && lowNet.label !== topNet.label && netGap > 1) {
+      s += `, frente a ${fmtInt(lowNet.value)} de ${lowNet.label} (${netGap.toFixed(1)}× de diferencia entre la mejor y la peor red del set)`;
+    }
+    s += `. Por marca, ${topBrand.label} encabeza con ${fmtInt(topBrand.value)} interacciones promedio por post`;
+    if (ownBrand && !ownBrand.isOwn === false && ownBrand.label !== topBrand.label) {
+      const gap = topBrand.value > 0 ? (topBrand.value / Math.max(ownBrand.value, 1)) : 0;
+      s += `, mientras que ${ownBrand.label} (marca propia) registra ${fmtInt(ownBrand.value)} — una brecha de ${gap.toFixed(1)}× respecto al líder`;
+    }
+    s += ".";
+    return s;
+  })();
 
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
@@ -533,7 +589,7 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
         </div>
       </div>
 
-      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 480))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Por Red Social" });
@@ -542,17 +598,17 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
 function slideTopContent(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const posts = report.topPosts.slice(0, 5);
   const renderCard = (p: typeof posts[number], i: number) => `
-    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
+    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:24px 26px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;">${i + 1}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:16px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
+          <div style="font-size:17px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
           <div style="font-size:12px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
         </div>
         <span style="display:inline-block;padding:3px 10px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">${esc(networkLabel(p.network))}</span>
       </div>
-      ${p.postContent ? `<p style="font-size:13px;line-height:1.45;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 180))}</p>` : ""}
-      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:8px;">
+      ${p.postContent ? `<p style="font-size:14px;line-height:1.5;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 320))}</p>` : ""}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:10px;">
         <span><strong style="color:${C.violet};font-size:15px;">${fmtNum(p.engagement)}</strong> engagement</span>
         <span>${fmtNum(p.likes)} likes</span>
         <span>${fmtNum(p.comments)} coment.</span>
@@ -573,7 +629,7 @@ function slideTopContent(report: PerformanceReportContent, clientName: string, m
       ${next2.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:18px;">
         ${next2.map((p, i) => renderCard(p, i + 3)).join("")}
       </div>` : ""}
-      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 22px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(report.topContentInsight, 280))}</div>` : ""}
+      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:16px;line-height:1.55;color:${C.text};">${esc(truncate(report.topContentInsight, 520))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Top Contenidos" });
@@ -698,7 +754,7 @@ export function buildPerformanceSlidesReport(
     { label: "KPIs del período", desc: "Métricas clave consolidadas" },
     { label: "Ranking por Engagement", desc: "Desempeño por perfil" },
   ];
-  if (hasSov) agendaItems.push({ label: "Share of Voice", desc: "Distribución del engagement total" });
+  if (hasSov) agendaItems.push({ label: "Share of Interactions", desc: "Reparto del volumen de interacciones por marca" });
   if (hasNetworkBreakdown) agendaItems.push({ label: "Por Red Social", desc: "Desempeño por plataforma" });
   if (hasTopPosts) agendaItems.push({ label: "Top Contenidos", desc: "Mejores publicaciones del período" });
   agendaItems.push({ label: "Hallazgos Clave", desc: "Lo más relevante para destacar" });
@@ -754,7 +810,7 @@ export function buildPerformanceSlidesReport(
   slides.push(slideExecutiveSummary(report, clientName, modeLabel, p++, total));
   slides.push(slideKpis(report, clientName, modeLabel, p++, total));
   slides.push(slideRanking(report, clientName, modeLabel, p++, total));
-  if (hasSov) slides.push(slideShareOfVoice(report, clientName, modeLabel, p++, total));
+  if (hasSov) slides.push(slideShareOfInteractions(report, clientName, modeLabel, p++, total));
   if (hasNetworkBreakdown) slides.push(slideNetworkBreakdown(report, clientName, modeLabel, p++, total));
   if (hasTopPosts) slides.push(slideTopContent(report, clientName, modeLabel, p++, total));
 
