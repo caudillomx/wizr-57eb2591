@@ -636,6 +636,7 @@ export function PerformanceReportView({
         const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const donutData = report.analytics.brandEngagement
           .filter((b) => b.totalInteractions > 0)
+          .slice(0, 10)
           .map((b) => ({
             name: b.brand,
             value: Math.round((b.totalInteractions / total) * 1000) / 10,
