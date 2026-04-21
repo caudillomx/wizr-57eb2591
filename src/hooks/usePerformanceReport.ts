@@ -23,6 +23,12 @@ export interface PerformanceReportAnalytics {
   fastestGrower: { name: string; network: string; growth: number } | null;
   shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
+  /** Engagement promedio agregado por marca (todas sus redes) */
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; profiles: number; followers: number }>;
+  /** Crecimiento promedio agregado por red social */
+  networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
+  /** Brecha vs líder para la marca propia (en engagement) */
+  ownBrandGap: { ownAvg: number; leaderName: string; leaderAvg: number; multiple: number } | null;
 }
 
 export interface PerformanceTopPostSnapshot {
