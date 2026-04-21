@@ -203,35 +203,36 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Engagement promedio por marca (agregado) — solo BENCHMARK ── */}
+      {/* ── Engagement promedio por marca (interacciones promedio por post) — solo BENCHMARK ── */}
       {!isBrand && report.analytics.brandEngagement.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
-              Engagement promedio por marca
+              Interacciones promedio por publicación · por marca
             </CardTitle>
             <CardDescription className="text-xs">
-              Suma de los perfiles de cada marca · {report.clientName} resaltado
+              Volumen real de reacciones por contenido publicado · todas las marcas del set
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={report.analytics.brandEngagement.slice(0, 12).map((b) => ({
-                    name: b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand,
+                    name: b.brand.length > 20 ? `${b.brand.substring(0, 18)}…` : b.brand,
                     fullName: b.brand,
-                    value: b.avgEngagement,
+                    value: b.avgInteractionsPerPost,
+                    posts: b.postsCount,
                     profiles: b.profiles,
-                    fill: b.isOwn ? "hsl(var(--primary))" : "#94a3b8",
+                    fill: colorForBrand(b.brand, b.isOwn, brandsList),
                   }))}
                   layout="vertical"
-                  margin={{ top: 8, right: 30, left: 0, bottom: 8 }}
+                  margin={{ top: 8, right: 60, left: 0, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} width={140} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
@@ -240,30 +241,23 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
-                          <div className="text-muted-foreground">{p.value.toFixed(2)}% engagement · {p.profiles} perfil(es)</div>
+                          <div className="text-muted-foreground">{formatNumber(p.value)} interacciones promedio · {p.posts} posts · {p.profiles} perfil(es)</div>
                         </div>
                       );
                     }}
                   />
                   <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                     {report.analytics.brandEngagement.slice(0, 12).map((b, i) => (
-                      <Cell key={i} fill={b.isOwn ? "hsl(var(--primary))" : "#94a3b8"} />
+                      <Cell key={i} fill={colorForBrand(b.brand, b.isOwn, brandsList)} />
                     ))}
-                    <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                    <LabelList dataKey="value" position="right" formatter={(v: number) => formatNumber(v)} fontSize={10} fontWeight={700} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-primary" />
-                {report.clientName}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-slate-400" />
-                Competencia
-              </span>
-            </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Lectura: cada barra es el promedio de reacciones (likes + comentarios + compartidos) que cada publicación de la marca recibe en el período. Es la métrica que mejor compara marcas de tamaños distintos: prescinde del tamaño de la audiencia y revela cuánta conversación moviliza cada pieza de contenido. {report.clientName} se identifica con su color principal.
+            </p>
           </CardContent>
         </Card>
       )}
