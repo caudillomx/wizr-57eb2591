@@ -6,7 +6,7 @@ import type { FKProfile, FKProfileKPI, FKDailyTopPost } from "./useFanpageKarma"
 type FKProfileExt = FKProfile & { is_competitor?: boolean };
 import { getFKProfileDisplayName } from "@/lib/fkProfileUtils";
 
-export type PerformanceReportMode = "brand" | "benchmark";
+export type PerformanceReportMode = "brand" | "benchmark" | "comparative";
 
 export interface PerformanceReportHighlight {
   label: string;
