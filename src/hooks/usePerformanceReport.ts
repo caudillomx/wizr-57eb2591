@@ -19,21 +19,24 @@ export interface PerformanceReportAnalytics {
   avgEngagement: number;
   avgGrowth: number;
   totalFollowers: number;
-  bestPerformer: { name: string; network: string; engagement: number } | null;
+  /** Promedio universal de interacciones absolutas por publicación (todo el set) */
+  avgInteractionsPerPost: number;
+  bestPerformer: { name: string; network: string; engagement: number; avgInteractionsPerPost: number } | null;
   fastestGrower: { name: string; network: string; growth: number } | null;
-  shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
-  rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
+  shareOfVoice: Array<{ name: string; network: string; isOwn: boolean; engagementShare: number; followersShare: number; interactionsShare: number }>;
+  /** Ranking por interacciones promedio por post (no por tasa %) — name = nombre limpio sin sufijo de red */
+  rankingByEngagement: Array<{ name: string; network: string; engagement: number; avgInteractionsPerPost: number; postsCount: number; isOwn: boolean; hasData: boolean }>;
   /** Engagement promedio + interacciones absolutas agregadas por marca (todas sus redes) */
-  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; profiles: number; followers: number }>;
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
-  /** Engagement promedio agregado por red social */
-  networkEngagement: Array<{ network: string; avgEngagement: number; profiles: number }>;
+  /** Engagement (interacciones promedio por post) por red social */
+  networkEngagement: Array<{ network: string; avgInteractionsPerPost: number; totalInteractions: number; postsCount: number; profiles: number }>;
   /** Interacciones absolutas (likes+comments+shares de top posts) sumadas por red social */
   networkInteractions: Array<{ network: string; totalInteractions: number; profiles: number }>;
-  /** Followers ordenados por perfil (top N) */
+  /** Followers ordenados por perfil (top N) — name = nombre limpio */
   followersByProfile: Array<{ name: string; network: string; followers: number; isOwn: boolean }>;
-  /** Brecha vs líder para la marca propia (en engagement) */
+  /** Brecha vs líder para la marca propia (en interacciones promedio por post) */
   ownBrandGap: { ownAvg: number; leaderName: string; leaderAvg: number; multiple: number } | null;
 }
 
