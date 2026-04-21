@@ -1,6 +1,7 @@
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { PerformanceReportView } from "./PerformanceReportView";
-import { BarChart3, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import wizrLogo from "@/assets/wizr-logo-full.png";
 
 interface PerformanceReportPublicViewProps {
   report: PerformanceReportContent;
