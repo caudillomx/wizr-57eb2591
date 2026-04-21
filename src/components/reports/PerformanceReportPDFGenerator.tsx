@@ -119,7 +119,25 @@ export function PerformanceReportPDFGenerator({
         setTimeout(resolve, 1200);
       });
 
-      // 3) Capture
+      // 3) Detect natural break points (top of each top-level block) BEFORE capture
+      // We collect Y positions of every direct child Card / wrapper inside the report
+      // so the slicer never cuts a card in half.
+      const breakpointsPx: number[] = [];
+      const hostRect = host.getBoundingClientRect();
+      const blocks = host.querySelectorAll<HTMLElement>(
+        '[data-pdf-block], .rounded-xl, [class*="rounded-lg"][class*="border"], .recharts-wrapper'
+      );
+      // We actually want top-level cards: target direct children of the report's root grid/space-y container
+      const reportRoot = host.querySelector<HTMLElement>(".space-y-8") ?? host;
+      Array.from(reportRoot.children).forEach((child) => {
+        const rect = (child as HTMLElement).getBoundingClientRect();
+        breakpointsPx.push(rect.top - hostRect.top);
+        breakpointsPx.push(rect.bottom - hostRect.top);
+      });
+      // Suppress unused-var warning for the broader query (kept for future granular needs)
+      void blocks;
+
+      // 4) Capture
       const canvas = await html2canvas(host, {
         scale: 2,
         backgroundColor: "#ffffff",
@@ -128,19 +146,40 @@ export function PerformanceReportPDFGenerator({
         windowWidth: PDF_WIDTH_PX,
       });
 
-      // 4) Slice into A4 pages
+      // 5) Slice into A4 pages — snap each page break to the nearest natural breakpoint above it
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageWidthMm = pdf.internal.pageSize.getWidth();
       const pageHeightMm = pdf.internal.pageSize.getHeight();
       const imgWidthMm = pageWidthMm;
+      // canvas is at scale=2 of the host CSS px; convert CSS px breakpoints to canvas px
+      const cssToCanvas = canvas.width / PDF_WIDTH_PX;
+      const breakpointsCanvasPx = Array.from(
+        new Set(breakpointsPx.map((p) => Math.round(p * cssToCanvas)))
+      ).sort((a, b) => a - b);
+
       const pxPerMm = canvas.width / imgWidthMm;
       const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
+      const MIN_PAGE_FILL = 0.55; // never produce pages emptier than 55%
 
       let renderedPx = 0;
       let pageIndex = 0;
 
       while (renderedPx < canvas.height) {
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedPx);
+        let sliceEnd = Math.min(renderedPx + pageHeightPx, canvas.height);
+
+        // If we still have content after this slice, snap the cut to the closest
+        // natural breakpoint (Card boundary) that fits within the page.
+        if (sliceEnd < canvas.height) {
+          const minAcceptable = renderedPx + Math.floor(pageHeightPx * MIN_PAGE_FILL);
+          const candidate = [...breakpointsCanvasPx]
+            .reverse()
+            .find((bp) => bp <= sliceEnd && bp >= minAcceptable);
+          if (candidate && candidate > renderedPx) {
+            sliceEnd = candidate;
+          }
+        }
+
+        const sliceHeight = sliceEnd - renderedPx;
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width = canvas.width;
         pageCanvas.height = sliceHeight;
@@ -159,7 +198,7 @@ export function PerformanceReportPDFGenerator({
         if (pageIndex > 0) pdf.addPage();
         pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, sliceHeightMm);
 
-        renderedPx += sliceHeight;
+        renderedPx = sliceEnd;
         pageIndex += 1;
       }
 
