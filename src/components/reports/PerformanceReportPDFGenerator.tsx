@@ -171,14 +171,6 @@ export function PerformanceReportPDFGenerator({
             })
         )
         .catch(() => ({ dataUrl: "", aspect: 3 }));
-          (b) =>
-            new Promise<string>((res) => {
-              const fr = new FileReader();
-              fr.onload = () => res(fr.result as string);
-              fr.readAsDataURL(b);
-            })
-        )
-        .catch(() => ({ dataUrl: "", aspect: 3 }));
 
       const reportLabel = report.reportMode === "brand"
         ? `${clientName} · Reporte de marca`
