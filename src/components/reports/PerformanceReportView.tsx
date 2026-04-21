@@ -654,43 +654,35 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Cuota de interacciones (donut por marca) — incluye todas las propias + completa hasta 10 ── */}
+      {/* ── Donut A: Cuota de interacciones AGREGADA por marca (todas las redes sumadas) ── */}
       {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
-        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const withInter = report.analytics.brandEngagement.filter((b) => b.totalInteractions > 0);
-        const ownBrands = withInter.filter((b) => b.isOwn);
-        const compBrands = withInter.filter((b) => !b.isOwn).sort((a, b) => b.totalInteractions - a.totalInteractions);
-        const DONUT_TARGET = 10;
-        const selected = [...ownBrands, ...compBrands.slice(0, Math.max(DONUT_TARGET - ownBrands.length, 4))]
-          .sort((a, b) => b.totalInteractions - a.totalInteractions);
-        const donutData = selected.map((b) => {
-          const netLabel = b.networks && b.networks.length > 0
-            ? (b.networks.length === 1 ? networkLabel(b.networks[0]) : `${b.networks.length} redes`)
-            : "";
-          return {
-            name: netLabel ? `${b.brand} (${netLabel})` : b.brand,
+        if (withInter.length === 0) return null;
+        const total = withInter.reduce((s, b) => s + b.totalInteractions, 0) || 1;
+        const donutData = withInter
+          .sort((a, b) => b.totalInteractions - a.totalInteractions)
+          .map((b) => ({
+            name: b.brand,
             brand: b.brand,
             networks: b.networks,
             value: Math.round((b.totalInteractions / total) * 1000) / 10,
             absolute: b.totalInteractions,
             isOwn: b.isOwn,
             fill: colorForBrand(b.brand, b.isOwn, brandsList),
-          };
-        });
-        if (donutData.length === 0) return null;
+          }));
         return (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Users2 className="h-4 w-4 text-primary" />
-                Cuota de interacciones por marca (Top {donutData.length})
+                Cuota de interacciones por marca · agregado ({donutData.length} marcas)
               </CardTitle>
               <CardDescription className="text-xs">
-                ¿Qué marca concentra la mayor parte de las interacciones del período? · red social entre paréntesis
+                Suma de interacciones de TODAS las redes sociales por marca · una porción = una marca
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[340px]">
+              <div className="h-[360px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -717,7 +709,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.brand}</div>
-                            <div className="text-muted-foreground">{netStr}</div>
+                            <div className="text-muted-foreground">Redes: {netStr}</div>
                             <div className="text-muted-foreground">{formatNumber(p.absolute)} interacciones · {p.value}% del total</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
@@ -729,7 +721,79 @@ export function PerformanceReportView({
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Las marcas propias de {report.clientName} siempre aparecen para permitir comparación directa. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación.
+                Lectura: cada porción agrega las interacciones de todas las redes sociales de cada marca. Útil para ver qué marca concentra mayor presencia conversacional global, sin importar el canal.
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* ── Donut B: Cuota de interacciones por PERFIL (marca + red específica) ── */}
+      {!isBrand && (report.analytics.shareOfVoice?.length ?? 0) > 0 && (() => {
+        const withInter = (report.analytics.shareOfVoice ?? []).filter((s) => s.interactionsShare > 0);
+        if (withInter.length === 0) return null;
+        const own = withInter.filter((s) => s.isOwn);
+        const comp = withInter.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const TARGET = 10;
+        const selected = [...own, ...comp.slice(0, Math.max(TARGET - own.length, 4))]
+          .sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const donutData = selected.map((s) => ({
+          name: `${s.name} · ${networkLabel(s.network)}`,
+          profile: s.name,
+          network: s.network,
+          value: s.interactionsShare,
+          isOwn: s.isOwn,
+          fill: colorForNetwork(s.network),
+        }));
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users2 className="h-4 w-4 text-primary" />
+                Cuota de interacciones por perfil · marca + red (Top {donutData.length})
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Granularidad por canal · cada porción = un perfil específico de una marca en una red
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[360px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      label={({ name, value }) => `${name} · ${value}%`}
+                      labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                    >
+                      {donutData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                            <div className="font-semibold">{p.profile}</div>
+                            <div className="text-muted-foreground">{networkLabel(p.network)}</div>
+                            <div className="text-muted-foreground">{p.value}% del total de interacciones</div>
+                            {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Lectura: identifica qué perfil específico (marca + red) lidera la conversación. Permite ver, por ejemplo, si Banorte concentra interacciones en Facebook o en TikTok. Color por red social.
               </p>
             </CardContent>
           </Card>
