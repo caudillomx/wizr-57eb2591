@@ -293,12 +293,12 @@ export function PerformanceReportView({
             </div>
           ) : (
             <>
-              <div className="h-[320px]">
+              <div className="h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 50, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                    <YAxis type="category" dataKey="name" tick={(props) => <TwoLineTick {...props} />} width={170} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                       content={({ active, payload }) => {
@@ -307,7 +307,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.fullName}</div>
-                            <div className="text-muted-foreground">{p.network} · {p.value.toFixed(2)}%</div>
+                            <div className="text-muted-foreground">{networkLabel(p.network)} · tasa de engagement {p.value.toFixed(2)}%</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
                         );
@@ -315,11 +315,14 @@ export function PerformanceReportView({
                     />
                     <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                       {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} fontWeight={700} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Lectura: ranking por tasa de engagement (interacciones / seguidores). Cada barra usa el color de su red social para identificar de un vistazo dónde está la conversación; los perfiles de {report.clientName} se resaltan en violeta.
+              </p>
               {report.rankingInsight && (
                 <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
                   <EditableText
