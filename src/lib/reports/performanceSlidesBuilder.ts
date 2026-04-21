@@ -629,7 +629,7 @@ function slideTopContent(report: PerformanceReportContent, clientName: string, m
       ${next2.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:18px;">
         ${next2.map((p, i) => renderCard(p, i + 3)).join("")}
       </div>` : ""}
-      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 22px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(report.topContentInsight, 280))}</div>` : ""}
+      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:16px;line-height:1.55;color:${C.text};">${esc(truncate(report.topContentInsight, 520))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Top Contenidos" });
