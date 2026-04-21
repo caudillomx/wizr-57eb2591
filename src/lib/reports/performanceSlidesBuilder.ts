@@ -15,9 +15,16 @@ const C = {
   paper: "#FAFAFC",
   paperAlt: "#F2F1F8",
   border: "#E5E3EE",
-  violet: "#3D1FD8",
-  violetSoft: "#EBE8FB",
-  violetGlow: "#6B4FF5",
+  // Editorial indigo palette (paridad con PerformanceReportView)
+  indigoDeep: "#1e1b4b",
+  indigoMid: "#312e81",
+  indigoBright: "#4338ca",
+  indigoGlow: "#6366f1",
+  indigoSoft: "#EEF2FF",
+  indigoText: "#c7d2fe",
+  violet: "#4338ca", // alias para charts
+  violetSoft: "#EEF2FF",
+  violetGlow: "#6366f1",
   orange: "#FF6B2C",
   orangeSoft: "#FFE9DD",
   text: "#0B0A1F",
@@ -27,6 +34,9 @@ const C = {
   negative: "#EF4444",
   neutral: "#9CA3AF",
 };
+
+const INDIGO_GRADIENT = "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)";
+const INDIGO_GRADIENT_RADIAL = "radial-gradient(ellipse at top right, #312e81 0%, #1e1b4b 60%)";
 
 function esc(t: string | null | undefined): string {
   if (!t) return "";
