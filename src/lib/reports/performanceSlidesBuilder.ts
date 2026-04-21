@@ -754,7 +754,7 @@ export function buildPerformanceSlidesReport(
     { label: "KPIs del período", desc: "Métricas clave consolidadas" },
     { label: "Ranking por Engagement", desc: "Desempeño por perfil" },
   ];
-  if (hasSov) agendaItems.push({ label: "Share of Voice", desc: "Distribución del engagement total" });
+  if (hasSov) agendaItems.push({ label: "Share of Interactions", desc: "Reparto del volumen de interacciones por marca" });
   if (hasNetworkBreakdown) agendaItems.push({ label: "Por Red Social", desc: "Desempeño por plataforma" });
   if (hasTopPosts) agendaItems.push({ label: "Top Contenidos", desc: "Mejores publicaciones del período" });
   agendaItems.push({ label: "Hallazgos Clave", desc: "Lo más relevante para destacar" });
