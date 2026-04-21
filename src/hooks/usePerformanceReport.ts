@@ -228,6 +228,33 @@ export function usePerformanceReport() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const waitForJob = async (jobId: string): Promise<Partial<PerformanceReportContent>> => {
+    const maxAttempts = 90;
+    const intervalMs = 2000;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+
+      const { data: statusData, error: statusError } = await supabase.functions.invoke(
+        "generate-performance-report-async",
+        {
+          body: { action: "status", jobId },
+        },
+      );
+
+      if (statusError) throw statusError;
+      if (statusData?.error) throw new Error(statusData.error);
+      if (statusData?.status === "failed") {
+        throw new Error(statusData.error || "Error al generar reporte");
+      }
+      if (statusData?.status === "completed" && statusData.result) {
+        return statusData.result as Partial<PerformanceReportContent>;
+      }
+    }
+
+    throw new Error("La generación del reporte tardó demasiado. Intenta de nuevo.");
+  };
+
   const generateReport = async (
     profilesIn: FKProfile[],
     kpis: FKProfileKPI[],
@@ -251,44 +278,49 @@ export function usePerformanceReport() {
       const analytics = computeAnalytics(profiles, kpis);
       const snapshots = buildSnapshots(profiles, kpis, topPosts);
 
+      const payload = {
+        reportMode: config.reportMode,
+        clientName: config.clientName,
+        brandName: config.brandName,
+        dateRange: config.dateRange,
+        strategicFocus: config.strategicFocus,
+        profiles: profiles.map((p) => ({
+          id: p.id,
+          network: p.network,
+          display_name: p.display_name,
+          profile_id: p.profile_id,
+          is_competitor: !!p.is_competitor,
+          is_own_profile: p.is_own_profile,
+        })),
+        kpis: kpis.map((k) => ({
+          fk_profile_id: k.fk_profile_id,
+          followers: k.followers,
+          follower_growth_percent: k.follower_growth_percent,
+          engagement_rate: k.engagement_rate,
+          posts_per_day: k.posts_per_day,
+          page_performance_index: k.page_performance_index,
+        })),
+        topPosts: topPosts.slice(0, 50).map((tp) => ({
+          fk_profile_id: tp.fk_profile_id,
+          network: tp.network,
+          post_content: tp.post_content,
+          post_url: tp.post_url,
+          engagement: tp.engagement,
+          likes: tp.likes,
+          comments: tp.comments,
+          shares: tp.shares,
+          views: tp.views,
+          post_date: tp.post_date,
+        })),
+        analytics,
+      };
+
       const { data, error: fnError } = await supabase.functions.invoke(
-        "generate-performance-report",
+        "generate-performance-report-async",
         {
           body: {
-            reportMode: config.reportMode,
-            clientName: config.clientName,
-            brandName: config.brandName,
-            dateRange: config.dateRange,
-            strategicFocus: config.strategicFocus,
-            profiles: profiles.map((p) => ({
-              id: p.id,
-              network: p.network,
-              display_name: p.display_name,
-              profile_id: p.profile_id,
-              is_competitor: !!p.is_competitor,
-              is_own_profile: p.is_own_profile,
-            })),
-            kpis: kpis.map((k) => ({
-              fk_profile_id: k.fk_profile_id,
-              followers: k.followers,
-              follower_growth_percent: k.follower_growth_percent,
-              engagement_rate: k.engagement_rate,
-              posts_per_day: k.posts_per_day,
-              page_performance_index: k.page_performance_index,
-            })),
-            topPosts: topPosts.slice(0, 50).map((tp) => ({
-              fk_profile_id: tp.fk_profile_id,
-              network: tp.network,
-              post_content: tp.post_content,
-              post_url: tp.post_url,
-              engagement: tp.engagement,
-              likes: tp.likes,
-              comments: tp.comments,
-              shares: tp.shares,
-              views: tp.views,
-              post_date: tp.post_date,
-            })),
-            analytics,
+            action: "create",
+            payload,
           },
         },
       );
@@ -296,15 +328,19 @@ export function usePerformanceReport() {
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
 
+      const reportData = data?.jobId
+        ? await waitForJob(data.jobId as string)
+        : (data as Partial<PerformanceReportContent>);
+
       const enriched: PerformanceReportContent = {
-        title: data.title,
-        summary: data.summary,
-        highlights: data.highlights || [],
-        keyFindings: data.keyFindings || [],
-        recommendations: data.recommendations || [],
-        topContentInsight: data.topContentInsight || "",
-        competitiveInsight: data.competitiveInsight || "",
-        conclusion: data.conclusion || "",
+        title: reportData.title || `Reporte de Performance — ${config.clientName}`,
+        summary: reportData.summary || "",
+        highlights: reportData.highlights || [],
+        keyFindings: reportData.keyFindings || [],
+        recommendations: reportData.recommendations || [],
+        topContentInsight: reportData.topContentInsight || "",
+        competitiveInsight: reportData.competitiveInsight || "",
+        conclusion: reportData.conclusion || "",
         reportMode: config.reportMode,
         clientName: config.clientName,
         brandName: config.brandName,
