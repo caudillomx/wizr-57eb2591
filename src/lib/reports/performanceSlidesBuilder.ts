@@ -63,6 +63,12 @@ function fmtNum(n: number): string {
   return Math.round(n).toLocaleString("es-MX");
 }
 
+/** Número entero con separador de miles (sin abreviar) */
+function fmtInt(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString("es-MX");
+}
+
 function networkLabel(n: string): string {
   const m: Record<string, string> = {
     facebook: "Facebook",
@@ -145,26 +151,27 @@ function slideShell(opts: {
 // ---------- SVG charts ----------
 
 function svgRankingBars(
-  data: { label: string; value: number; isOwn: boolean }[],
+  data: { label: string; value: number; isOwn: boolean; color?: string; valueLabel?: string }[],
   width = 1620,
   rowH = 70,
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => d.value), 0.01);
   const labelW = 380;
-  const valueW = 160;
+  const valueW = 200;
   const barW = width - labelW - valueW - 60;
   const height = data.length * rowH + 20;
   const rows = data
     .map((d, i) => {
       const y = i * rowH + 10;
       const w = (d.value / max) * barW;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color || (d.isOwn ? C.violet : C.textMuted);
+      const vLabel = d.valueLabel ?? fmtInt(d.value);
       return `
         <text x="${labelW - 24}" y="${y + rowH / 2 + 7}" text-anchor="end" font-size="22" font-weight="${d.isOwn ? 800 : 600}" fill="${C.text}">${esc(truncate(d.label, 30))}</text>
         <rect x="${labelW}" y="${y + 16}" width="${barW}" height="${rowH - 32}" rx="6" fill="${C.paperAlt}"/>
-        <rect x="${labelW}" y="${y + 16}" width="${w}" height="${rowH - 32}" rx="6" fill="${color}"/>
-        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 7}" font-size="22" font-weight="800" fill="${C.text}">${d.value.toFixed(2)}%</text>
+        <rect x="${labelW}" y="${y + 16}" width="${w}" height="${rowH - 32}" rx="6" fill="${color}"${d.isOwn ? ` stroke="${C.violet}" stroke-width="2"` : ""}/>
+        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 7}" font-size="22" font-weight="800" fill="${C.text}">${esc(vLabel)}</text>
       `;
     })
     .join("");
@@ -208,20 +215,21 @@ function svgNetworkBars(
   unit = "",
 ): string {
   if (!data.length) return "";
-  const max = Math.max(...data.map((d) => d.value), 0.01);
+  const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
   const labelW = 280;
-  const valueW = 200;
+  const valueW = 240;
   const barW = width - labelW - valueW - 60;
   const height = data.length * rowH + 20;
   const rows = data
     .map((d, i) => {
       const y = i * rowH + 10;
-      const w = (d.value / max) * barW;
+      const w = (Math.abs(d.value) / max) * barW;
+      const valueText = unit === "%" ? `${d.value.toFixed(2)}%` : fmtInt(d.value);
       return `
         <text x="${labelW - 24}" y="${y + rowH / 2 + 8}" text-anchor="end" font-size="26" font-weight="700" fill="${C.text}">${esc(d.label)}</text>
         <rect x="${labelW}" y="${y + 18}" width="${barW}" height="${rowH - 36}" rx="8" fill="${C.paperAlt}"/>
         <rect x="${labelW}" y="${y + 18}" width="${w}" height="${rowH - 36}" rx="8" fill="${d.color}"/>
-        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 8}" font-size="26" font-weight="800" fill="${C.text}">${d.value.toFixed(unit === "%" ? 2 : 0)}${unit}</text>
+        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 8}" font-size="26" font-weight="800" fill="${C.text}">${esc(valueText)}</text>
       `;
     })
     .join("");
@@ -384,46 +392,62 @@ function slideKpis(report: PerformanceReportContent, clientName: string, modeLab
   const a = report.analytics;
   const cards = [
     { label: "Perfiles", value: String(report.profiles.length), sub: a.networks.map(networkLabel).join(" · ") },
-    { label: "Engagement Promedio", value: `${a.avgEngagement}%`, sub: a.bestPerformer ? `Mejor: ${a.bestPerformer.name}` : "" },
-    { label: "Crecimiento Promedio", value: `${a.avgGrowth}%`, sub: a.fastestGrower ? `Top: ${a.fastestGrower.name}` : "" },
+    { label: "Interacciones / post", value: fmtInt(a.avgInteractionsPerPost), sub: a.bestPerformer ? `Mejor: ${a.bestPerformer.name} (${fmtInt(a.bestPerformer.avgInteractionsPerPost)})` : "" },
+    { label: "Crecimiento Promedio", value: `${a.avgGrowth.toFixed(2)}%`, sub: a.fastestGrower ? `Top: ${a.fastestGrower.name}` : "" },
     { label: "Total Seguidores", value: fmtNum(a.totalFollowers), sub: "Suma de audiencia" },
   ];
 
+  // Párrafo interpretativo: usa el primer highlight con context o construye uno desde los datos
+  const interp = report.highlights[0]?.context
+    || (a.bestPerformer && a.fastestGrower
+      ? `${a.bestPerformer.name} lidera en interacciones promedio por post con ${fmtInt(a.bestPerformer.avgInteractionsPerPost)}, mientras que ${a.fastestGrower.name} encabeza el crecimiento de seguidores con ${a.fastestGrower.growth.toFixed(2)}%. La audiencia consolidada del set alcanza ${fmtNum(a.totalFollowers)} seguidores.`
+      : `El conjunto agrupa ${report.profiles.length} perfiles distribuidos en ${a.networks.length} redes, con un promedio de ${fmtInt(a.avgInteractionsPerPost)} interacciones por publicación.`);
+
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:54px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:32px;">
       <div>
         <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">KPIs del Período</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Métricas clave</h2>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Métricas clave</h2>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:28px;">
+      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:22px;">
         ${cards.map((c) => `
-          <div style="background:${C.paperAlt};border:1px solid ${C.border};border-radius:18px;padding:36px 40px;">
-            <div style="font-size:14px;letter-spacing:0.25em;color:${C.textMuted};font-weight:700;text-transform:uppercase;">${esc(c.label)}</div>
-            <div style="font-size:96px;font-weight:800;color:${C.violet};margin:10px 0;letter-spacing:-0.04em;line-height:1;">${esc(c.value)}</div>
-            ${c.sub ? `<div style="font-size:18px;color:${C.textMid};">${esc(c.sub)}</div>` : ""}
+          <div style="background:${C.paperAlt};border:1px solid ${C.border};border-radius:18px;padding:28px 34px;">
+            <div style="font-size:13px;letter-spacing:0.25em;color:${C.textMuted};font-weight:700;text-transform:uppercase;">${esc(c.label)}</div>
+            <div style="font-size:72px;font-weight:800;color:${C.violet};margin:8px 0;letter-spacing:-0.04em;line-height:1;">${esc(c.value)}</div>
+            ${c.sub ? `<div style="font-size:17px;color:${C.textMid};">${esc(c.sub)}</div>` : ""}
           </div>
         `).join("")}
       </div>
+
+      <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:18px 26px;font-size:18px;line-height:1.55;color:${C.text};">${esc(truncate(interp, 360))}</div>
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "KPIs" });
 }
 
 function slideRanking(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const data = report.analytics.rankingByEngagement.slice(0, 8).map((r) => ({
-    label: `${r.name} · ${networkLabel(r.network)}`,
-    value: r.engagement,
-    isOwn: r.isOwn,
-  }));
+  const data = report.analytics.rankingByEngagement
+    .filter((r) => r.hasData)
+    .slice(0, 8)
+    .map((r) => ({
+      label: `${r.name} · ${networkLabel(r.network)}`,
+      value: r.avgInteractionsPerPost,
+      isOwn: r.isOwn,
+      color: r.isOwn ? C.violet : networkColor(r.network),
+      valueLabel: fmtInt(r.avgInteractionsPerPost),
+    }));
+  const insight = report.rankingInsight
+    || (data.length > 0 ? `${data[0].label.split(" · ")[0]} encabeza con ${fmtInt(data[0].value)} interacciones promedio por publicación, marcando la referencia de desempeño del período.` : "");
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
       <div>
         <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Ranking</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Engagement por perfil</h2>
-        <p style="font-size:18px;color:${C.textMid};margin:14px 0 0 0;">${report.reportMode === "brand" ? "Desempeño relativo de los perfiles de la marca." : "Marca propia (violeta) vs competencia (gris)."}</p>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Interacciones promedio por post</h2>
+        <p style="font-size:18px;color:${C.textMid};margin:12px 0 0 0;">${report.reportMode === "brand" ? "Desempeño de los perfiles de la marca por interacciones absolutas." : "Marca propia (violeta) vs competencia (color de red social)."}</p>
       </div>
-      <div style="flex:1;display:flex;align-items:center;justify-content:center;">${svgRankingBars(data)}</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;">${svgRankingBars(data, 1620, 64)}</div>
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Ranking" });
@@ -432,32 +456,37 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
 function slideShareOfVoice(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const sov = report.analytics.shareOfVoice.filter((s) => s.engagementShare > 0).slice(0, 8);
   const data = sov.map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn }));
+  const insight = report.sovInsight || report.competitiveInsight || "";
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;">
-      <div style="display:flex;flex-direction:column;gap:24px;">
-        <div>
-          <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
-          <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;flex:1;">
+        <div style="display:flex;flex-direction:column;gap:24px;">
+          <div>
+            <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Share of Voice</div>
+            <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Distribución del<br/>engagement total</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            ${data.slice(0, 6).map((d, i) => {
+              const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
+              const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
+              return `<div style="display:flex;align-items:center;gap:14px;font-size:17px;">
+                <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
+                <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
+                <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
+              </div>`;
+            }).join("")}
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-          ${data.slice(0, 6).map((d, i) => {
-            const palette = [C.violet, "#F97316", "#06B6D4", "#8B5CF6", "#EC4899", "#22C55E"];
-            const color = d.isOwn ? C.violet : palette[(i + 1) % palette.length];
-            return `<div style="display:flex;align-items:center;gap:14px;font-size:18px;">
-              <span style="width:14px;height:14px;border-radius:3px;background:${color};"></span>
-              <span style="flex:1;color:${d.isOwn ? C.text : C.textMid};font-weight:${d.isOwn ? 700 : 500};">${esc(d.label)}</span>
-              <span style="font-weight:800;color:${C.text};font-variant-numeric:tabular-nums;">${d.value.toFixed(1)}%</span>
-            </div>`;
-          }).join("")}
-        </div>
+        <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:center;">${svgSovDonut(data)}</div>
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:16px 24px;font-size:17px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 360))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Share of Voice" });
 }
 
 function slideNetworkBreakdown(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  // Interacciones por red (con comas en miles)
   const eng = report.analytics.networkEngagement
     .filter((n) => n.totalInteractions > 0)
     .map((n) => ({
@@ -468,68 +497,83 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
-  const growth = report.analytics.networkGrowth
-    .filter((n) => Number.isFinite(n.avgGrowth))
-    .map((n) => ({
-      label: networkLabel(n.network),
-      value: n.avgGrowth,
-      color: networkColor(n.network),
+  // Interacciones promedio por marca (agregado de todas sus redes)
+  const brand = (report.analytics.brandEngagement || [])
+    .filter((b) => b.avgInteractionsPerPost > 0)
+    .map((b) => ({
+      label: b.brand,
+      value: b.avgInteractionsPerPost,
+      color: b.isOwn ? C.violet : C.textMuted,
+      isOwn: b.isOwn,
     }))
-    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-    .slice(0, 6);
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const insight = report.profilesInsight
+    || (eng.length > 0 && brand.length > 0
+      ? `${eng[0].label} concentra el mayor volumen de interacciones por publicación (${fmtInt(eng[0].value)}), mientras que ${brand[0].label} encabeza el desempeño agregado entre marcas con ${fmtInt(brand[0].value)} interacciones promedio.`
+      : "");
 
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Por Red Social</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Desempeño por plataforma</h2>
-        <p style="font-size:18px;color:${C.textMid};margin:14px 0 0 0;">Interacciones promedio por post y crecimiento de seguidores por red.</p>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Por Red Social y Marca</div>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Desempeño por plataforma</h2>
+        <p style="font-size:18px;color:${C.textMid};margin:12px 0 0 0;">Interacciones promedio por post, comparadas por red social y por marca.</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;flex:1;">
-        <div style="display:flex;flex-direction:column;gap:18px;">
-          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Interacciones por post</div>
-          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(eng, 780, 70, "")}</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:15px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Por red social</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(eng, 780, 64, "")}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:18px;">
-          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Crecimiento de seguidores</div>
-          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(growth, 780, 70, "%")}</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:15px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Por marca (agregado)</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(brand, 780, 56, "")}</div>
         </div>
       </div>
+
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Por Red Social" });
 }
 
 function slideTopContent(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const posts = report.topPosts.slice(0, 4);
+  const posts = report.topPosts.slice(0, 5);
+  const renderCard = (p: typeof posts[number], i: number) => `
+    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;">${i + 1}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
+          <div style="font-size:12px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
+        </div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">${esc(networkLabel(p.network))}</span>
+      </div>
+      ${p.postContent ? `<p style="font-size:13px;line-height:1.45;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 180))}</p>` : ""}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:8px;">
+        <span><strong style="color:${C.violet};font-size:15px;">${fmtNum(p.engagement)}</strong> engagement</span>
+        <span>${fmtNum(p.likes)} likes</span>
+        <span>${fmtNum(p.comments)} coment.</span>
+      </div>
+    </div>
+  `;
+  const top3 = posts.slice(0, 3);
+  const next2 = posts.slice(3, 5);
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:32px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Top Contenidos</div>
-        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Mejores publicaciones del período</h2>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Top Contenidos</div>
+        <h2 style="font-size:54px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Mejores publicaciones del período</h2>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:22px;flex:1;">
-        ${posts.map((p, i) => `
-          <div style="background:${C.paper};border:1px solid ${C.border};border-radius:16px;padding:26px 30px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 8px rgba(11,10,31,0.04);">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="width:36px;height:36px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">${i + 1}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:18px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
-                <div style="font-size:14px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
-              </div>
-              <span style="display:inline-block;padding:4px 12px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${esc(networkLabel(p.network))}</span>
-            </div>
-            ${p.postContent ? `<p style="font-size:15px;line-height:1.5;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 220))}</p>` : ""}
-            <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:12px;">
-              <span><strong style="color:${C.violet};font-size:18px;">${fmtNum(p.engagement)}</strong> engagement</span>
-              <span>${fmtNum(p.likes)} likes</span>
-              <span>${fmtNum(p.comments)} coment.</span>
-            </div>
-          </div>
-        `).join("")}
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
+        ${top3.map((p, i) => renderCard(p, i)).join("")}
       </div>
-      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:18px 24px;font-size:18px;line-height:1.55;color:${C.text};">${esc(truncate(report.topContentInsight, 300))}</div>` : ""}
+      ${next2.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:18px;">
+        ${next2.map((p, i) => renderCard(p, i + 3)).join("")}
+      </div>` : ""}
+      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 22px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(report.topContentInsight, 280))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Top Contenidos" });
@@ -538,16 +582,16 @@ function slideTopContent(report: PerformanceReportContent, clientName: string, m
 function slideFindings(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const items = report.keyFindings.slice(0, 5);
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 140px;display:flex;flex-direction:column;gap:28px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.indigoBright};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Sección · Hallazgos Clave</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Lo más relevante del período</h2>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.indigoBright};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Sección · Hallazgos Clave</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Lo más relevante del período</h2>
       </div>
-      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px;flex:1;">
+      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;flex:1;">
         ${items.map((it, i) => `
-          <li style="display:flex;gap:32px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.indigoBright};border-radius:14px;padding:26px 32px;">
-            <span style="flex-shrink:0;font-size:64px;font-weight:800;color:${C.indigoBright};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:80px;">${String(i + 1).padStart(2, "0")}</span>
-            <span style="flex:1;font-size:22px;line-height:1.55;color:${C.text};font-weight:500;padding-top:8px;">${esc(truncate(it, 380))}</span>
+          <li style="display:flex;gap:28px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.indigoBright};border-radius:12px;padding:20px 28px;">
+            <span style="flex-shrink:0;font-size:54px;font-weight:800;color:${C.indigoBright};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:72px;">${String(i + 1).padStart(2, "0")}</span>
+            <span style="flex:1;font-size:20px;line-height:1.5;color:${C.text};font-weight:500;padding-top:6px;">${esc(truncate(it, 360))}</span>
           </li>
         `).join("")}
       </ol>
@@ -559,16 +603,16 @@ function slideFindings(report: PerformanceReportContent, clientName: string, mod
 function slideRecommendations(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const items = report.recommendations.slice(0, 5);
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 140px;display:flex;flex-direction:column;gap:28px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Sección · Recomendaciones</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Próximos pasos</h2>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Sección · Recomendaciones</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Próximos pasos</h2>
       </div>
-      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px;flex:1;">
+      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;flex:1;">
         ${items.map((it, i) => `
-          <li style="display:flex;gap:32px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.orange};border-radius:14px;padding:26px 32px;">
-            <span style="flex-shrink:0;font-size:64px;font-weight:800;color:${C.orange};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:80px;">${String(i + 1).padStart(2, "0")}</span>
-            <span style="flex:1;font-size:22px;line-height:1.55;color:${C.text};font-weight:500;padding-top:8px;">${esc(truncate(it, 380))}</span>
+          <li style="display:flex;gap:28px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.orange};border-radius:12px;padding:20px 28px;">
+            <span style="flex-shrink:0;font-size:54px;font-weight:800;color:${C.orange};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:72px;">${String(i + 1).padStart(2, "0")}</span>
+            <span style="flex:1;font-size:20px;line-height:1.5;color:${C.text};font-weight:500;padding-top:6px;">${esc(truncate(it, 340))}</span>
           </li>
         `).join("")}
       </ol>
@@ -578,20 +622,23 @@ function slideRecommendations(report: PerformanceReportContent, clientName: stri
 }
 
 function slideClosing(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  const fullConclusion = (report.conclusion || "El período cierra con señales claras para la próxima ventana de acción.").trim();
+  const headline = truncate(fullConclusion.split(/[.!?]/)[0] + ".", 220);
+  const showBody = report.conclusion && fullConclusion.length > headline.length;
   const body = `
-    <div style="position:absolute;inset:0;padding:140px 120px;display:flex;flex-direction:column;justify-content:center;gap:48px;">
+    <div style="position:absolute;inset:0;padding:120px 120px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px;">
       <div style="position:absolute;bottom:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.35;pointer-events:none;"></div>
-      <div style="position:absolute;top:80px;right:80px;transform:scale(1.4);opacity:0.7;pointer-events:none;">${sparkles(C.orange, 0.85)}</div>
+      <div style="position:absolute;top:60px;right:80px;transform:scale(1.2);opacity:0.6;pointer-events:none;">${sparkles(C.orange, 0.85)}</div>
 
-      <div style="position:relative;z-index:5;max-width:1400px;">
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:24px;">Conclusión</div>
-        <h2 style="font-size:84px;font-weight:800;line-height:1.05;margin:0 0 32px 0;letter-spacing:-0.035em;color:#fff;">${esc(report.conclusion ? truncate(report.conclusion.split(/[.!?]/)[0] + ".", 180) : "El período cierra con señales claras para la próxima ventana de acción.")}</h2>
-        ${report.conclusion ? `<p style="font-size:24px;line-height:1.55;color:rgba(255,255,255,0.75);margin:0;max-width:1100px;">${esc(truncate(report.conclusion, 600))}</p>` : ""}
+      <div style="position:relative;z-index:5;max-width:1500px;">
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:18px;">Conclusión</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1.1;margin:0 0 24px 0;letter-spacing:-0.025em;color:#fff;">${esc(headline)}</h2>
+        ${showBody ? `<p style="font-size:21px;line-height:1.55;color:rgba(255,255,255,0.78);margin:0;max-width:1400px;">${esc(truncate(fullConclusion, 720))}</p>` : ""}
       </div>
 
-      <div style="position:relative;z-index:5;display:flex;align-items:center;gap:20px;border-top:1px solid rgba(255,255,255,0.15);padding-top:32px;margin-top:32px;">
-        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:40px;filter:brightness(0) invert(1);"/>
-        <span style="font-size:14px;letter-spacing:0.3em;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;">Performance Intelligence · ${esc(clientName)}</span>
+      <div style="position:relative;z-index:5;display:flex;align-items:center;gap:20px;border-top:1px solid rgba(255,255,255,0.15);padding-top:24px;margin-top:16px;">
+        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:36px;filter:brightness(0) invert(1);"/>
+        <span style="font-size:13px;letter-spacing:0.3em;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;">Performance Intelligence · ${esc(clientName)}</span>
       </div>
     </div>
   `;
