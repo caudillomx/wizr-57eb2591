@@ -157,8 +157,8 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Engagement promedio por marca (agregado) ── */}
-      {report.analytics.brandEngagement.length > 0 && (
+      {/* ── Engagement promedio por marca (agregado) — solo BENCHMARK ── */}
+      {!isBrand && report.analytics.brandEngagement.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -222,15 +222,20 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Ranking por engagement (perfiles individuales, top 10) ── */}
+      {/* ── Ranking por engagement (perfiles individuales) — solo cuando hay >1 perfil ── */}
+      {rankingChartData.length > 1 && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Trophy className="h-4 w-4 text-primary" />
-            Top perfiles por engagement (Top 10)
+            {isBrand
+              ? `Engagement por perfil · ${report.clientName}`
+              : `Top perfiles por engagement (Top ${Math.min(rankingChartData.length, 10)})`}
           </CardTitle>
           <CardDescription className="text-xs">
-            Engagement rate por perfil individual · vista detallada por red
+            {isBrand
+              ? "Comparativa interna entre los perfiles de la marca en sus distintas redes"
+              : "Engagement rate por perfil individual · vista detallada por red"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -288,6 +293,7 @@ export function PerformanceReportView({
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* ── Crecimiento por red social (agregado) ── */}
       {report.analytics.networkGrowth.length > 0 && (
