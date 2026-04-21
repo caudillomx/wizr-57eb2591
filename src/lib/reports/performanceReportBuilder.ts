@@ -65,8 +65,22 @@ function networkLabel(n: string): string {
   return m[n.toLowerCase()] || n;
 }
 
+// Color por red social (paridad con vista web)
+const NETWORK_COLOR: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "#E1306C",
+  youtube: "#FF0000",
+  twitter: "#1DA1F2",
+  x: "#1DA1F2",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+};
+function colorForNetwork(network: string): string {
+  return NETWORK_COLOR[network.toLowerCase()] || C.violet;
+}
+
 function chartHorizontalBars(
-  data: { label: string; value: number; isOwn?: boolean; sub?: string }[],
+  data: { label: string; value: number; isOwn?: boolean; sub?: string; color?: string }[],
   unit = "%",
   formatValue?: (v: number) => string,
 ): string {
@@ -75,10 +89,12 @@ function chartHorizontalBars(
   return `<div style="display:flex;flex-direction:column;gap:6px;">${data
     .map((d) => {
       const w = (Math.abs(d.value) / max) * 100;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
       return `<div style="display:flex;align-items:center;gap:8px;font-size:9px;">
-      <span style="min-width:130px;color:${C.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(d.label)}${d.sub ? ` <span style="color:${C.textMuted};">· ${esc(d.sub)}</span>` : ""}</span>
+      <span style="min-width:130px;color:${C.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <strong style="color:${C.text};">${esc(d.label)}</strong>${d.sub ? `<br/><span style="color:${C.textMuted};font-size:8px;">${esc(d.sub)}</span>` : ""}
+      </span>
       <div style="flex:1;background:${C.borderLight};border-radius:3px;height:12px;overflow:hidden;">
         <div style="width:${w}%;background:${color};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
@@ -129,7 +145,7 @@ function donutChartSVG(
 }
 
 function chartVerticalBars(
-  data: { label: string; value: number; isOwn?: boolean }[],
+  data: { label: string; value: number; isOwn?: boolean; color?: string }[],
   unit = "%",
   formatValue?: (v: number) => string,
 ): string {
@@ -139,7 +155,7 @@ function chartVerticalBars(
   return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
     .map((d) => {
       const h = (Math.abs(d.value) / max) * 130;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
       return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:${barW}px;">
         <span style="font-size:8px;font-weight:700;color:${C.text};">${valStr}</span>
