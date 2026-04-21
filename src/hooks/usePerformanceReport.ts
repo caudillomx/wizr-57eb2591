@@ -23,8 +23,8 @@ export interface PerformanceReportAnalytics {
   fastestGrower: { name: string; network: string; growth: number } | null;
   shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
-  /** Engagement promedio agregado por marca (todas sus redes) */
-  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; profiles: number; followers: number }>;
+  /** Engagement promedio + interacciones absolutas agregadas por marca (todas sus redes) */
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; profiles: number; followers: number }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
   /** Engagement promedio agregado por red social */
@@ -182,29 +182,42 @@ function computeAnalytics(
     });
 
   // ── Brand-level aggregation (sum profiles by brand) ──
-  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; followers: number; profiles: number }>();
+  // engsAbs = suma de interacciones absolutas (likes+comments+shares) de los top posts del período
+  // Esto evita el problema de "tasas en %" donde marcas grandes con %s pequeños desaparecen.
+  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; followers: number; profiles: number }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
     const brand = getFKProfileDisplayName(p);
     const eng = Number(k?.engagement_rate);
     const fol = Number(k?.followers);
     if (!brandMap.has(brand)) {
-      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], followers: 0, profiles: 0 });
+      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, followers: 0, profiles: 0 });
     }
     const slot = brandMap.get(brand)!;
     slot.profiles += 1;
     if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
     if (Number.isFinite(fol) && fol > 0) slot.followers += fol;
   }
+  // Sumar engagement absoluto de top posts por marca (vía profile.id → display_name)
+  for (const tp of topPosts) {
+    const profile = profiles.find((pr) => pr.id === tp.fk_profile_id);
+    if (!profile) continue;
+    const brand = getFKProfileDisplayName(profile);
+    const slot = brandMap.get(brand);
+    if (!slot) continue;
+    const eng = Number(tp.engagement);
+    if (Number.isFinite(eng) && eng > 0) slot.engsAbs += eng;
+  }
   const brandEngagement = Array.from(brandMap.entries())
     .map(([brand, v]) => ({
       brand,
       isOwn: v.isOwn,
       avgEngagement: v.engs.length ? pct(v.engs.reduce((s, e) => s + e, 0) / v.engs.length) : 0,
+      totalInteractions: Math.round(v.engsAbs),
       profiles: v.profiles,
       followers: v.followers,
     }))
-    .sort((a, b) => b.avgEngagement - a.avgEngagement);
+    .sort((a, b) => b.totalInteractions - a.totalInteractions || b.avgEngagement - a.avgEngagement);
 
   // ── Network-level growth + engagement aggregation ──
   const netGrowthMap = new Map<string, number[]>();
