@@ -549,8 +549,15 @@ export function usePerformanceReport() {
         ? await waitForJob(data.jobId as string)
         : (data as Partial<PerformanceReportContent>);
 
+      const defaultTitle = config.reportMode === "comparative"
+        ? `Análisis Comparativo — ${config.clientName}`
+        : config.reportMode === "brand"
+          ? `Reporte de Marca — ${config.clientName}`
+          : `Reporte Benchmark — ${config.clientName}`;
       const enriched: PerformanceReportContent = {
-        title: reportData.title || `Reporte de Performance — ${config.clientName}`,
+        title: config.reportMode === "comparative"
+          ? `Análisis Comparativo — ${config.clientName}`
+          : (reportData.title || defaultTitle),
         summary: reportData.summary || "",
         highlights: reportData.highlights || [],
         keyFindings: reportData.keyFindings || [],
