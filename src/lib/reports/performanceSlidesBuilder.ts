@@ -550,10 +550,25 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  const insight = report.profilesInsight
-    || (eng.length > 0 && brand.length > 0
-      ? `${eng[0].label} concentra el mayor volumen de interacciones por publicación (${fmtInt(eng[0].value)}), mientras que ${brand[0].label} encabeza el desempeño agregado entre marcas con ${fmtInt(brand[0].value)} interacciones promedio.`
-      : "");
+  const insight = (() => {
+    if (!eng.length || !brand.length) return report.profilesInsight || "";
+    const topNet = eng[0];
+    const lowNet = eng[eng.length - 1];
+    const topBrand = brand[0];
+    const ownBrand = brand.find((b) => b.isOwn);
+    const netGap = lowNet && topNet.value > 0 ? (topNet.value / Math.max(lowNet.value, 1)) : 0;
+    let s = `Por red social, ${topNet.label} concentra el mejor desempeño con ${fmtInt(topNet.value)} interacciones promedio por publicación`;
+    if (lowNet && lowNet.label !== topNet.label && netGap > 1) {
+      s += `, frente a ${fmtInt(lowNet.value)} de ${lowNet.label} (${netGap.toFixed(1)}× de diferencia entre la mejor y la peor red del set)`;
+    }
+    s += `. Por marca, ${topBrand.label} encabeza con ${fmtInt(topBrand.value)} interacciones promedio por post`;
+    if (ownBrand && !ownBrand.isOwn === false && ownBrand.label !== topBrand.label) {
+      const gap = topBrand.value > 0 ? (topBrand.value / Math.max(ownBrand.value, 1)) : 0;
+      s += `, mientras que ${ownBrand.label} (marca propia) registra ${fmtInt(ownBrand.value)} — una brecha de ${gap.toFixed(1)}× respecto al líder`;
+    }
+    s += ".";
+    return s;
+  })();
 
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
@@ -574,7 +589,7 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
         </div>
       </div>
 
-      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 480))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Por Red Social" });
@@ -583,17 +598,17 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
 function slideTopContent(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
   const posts = report.topPosts.slice(0, 5);
   const renderCard = (p: typeof posts[number], i: number) => `
-    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
+    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:24px 26px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;">${i + 1}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:16px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
+          <div style="font-size:17px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
           <div style="font-size:12px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
         </div>
         <span style="display:inline-block;padding:3px 10px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">${esc(networkLabel(p.network))}</span>
       </div>
-      ${p.postContent ? `<p style="font-size:13px;line-height:1.45;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 180))}</p>` : ""}
-      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:8px;">
+      ${p.postContent ? `<p style="font-size:14px;line-height:1.5;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 320))}</p>` : ""}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:10px;">
         <span><strong style="color:${C.violet};font-size:15px;">${fmtNum(p.engagement)}</strong> engagement</span>
         <span>${fmtNum(p.likes)} likes</span>
         <span>${fmtNum(p.comments)} coment.</span>
