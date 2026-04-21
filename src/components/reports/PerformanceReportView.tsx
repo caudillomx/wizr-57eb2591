@@ -721,7 +721,7 @@ export function PerformanceReportView({
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: cada porción agrega las interacciones de todas las redes sociales de cada marca. Útil para ver qué marca concentra mayor presencia conversacional global, sin importar el canal.
+                Lectura: cada porción agrega las interacciones de TODAS las redes sociales por marca. Solo aparecen las marcas con interacciones registradas en el período — entran por mérito según volumen real, sin inclusión forzada.
               </p>
             </CardContent>
           </Card>
@@ -732,11 +732,9 @@ export function PerformanceReportView({
       {!isBrand && (report.analytics.shareOfVoice?.length ?? 0) > 0 && (() => {
         const withInter = (report.analytics.shareOfVoice ?? []).filter((s) => s.interactionsShare > 0);
         if (withInter.length === 0) return null;
-        const own = withInter.filter((s) => s.isOwn);
-        const comp = withInter.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
-        const TARGET = 10;
-        const selected = [...own, ...comp.slice(0, Math.max(TARGET - own.length, 4))]
-          .sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const selected = [...withInter]
+          .sort((a, b) => b.interactionsShare - a.interactionsShare)
+          .slice(0, 10);
         const donutData = selected.map((s) => ({
           name: `${s.name} · ${networkLabel(s.network)}`,
           profile: s.name,
