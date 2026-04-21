@@ -1,6 +1,7 @@
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { PerformanceReportView } from "./PerformanceReportView";
-import { BarChart3, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import wizrLogo from "@/assets/wizr-logo-full.png";
 
 interface PerformanceReportPublicViewProps {
   report: PerformanceReportContent;
@@ -39,8 +40,8 @@ export function PerformanceReportPublicView({
       <div className="bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#4338ca] text-white px-6 sm:px-10 py-5 border-b border-white/10">
         <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
-              <BarChart3 className="h-4 w-4" />
+            <div className="h-10 px-2 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+              <img src={wizrLogo} alt="Wizr" className="h-7 w-auto block" />
             </div>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-white/70 font-semibold">
