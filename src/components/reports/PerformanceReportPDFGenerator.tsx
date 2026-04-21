@@ -63,6 +63,55 @@ export function PerformanceReportPDFGenerator({
       [data-pdf-host] svg { overflow: visible; }
       [data-pdf-host] .recharts-wrapper,
       [data-pdf-host] .recharts-surface { overflow: visible !important; }
+
+      /* Network badges: html2canvas mis-aligns inline-flex + lucide SVGs.
+         Force a roomy text-only chip with safe sRGB colors and explicit
+         line-height so the label is always centered and visible. */
+      [data-pdf-host] [data-network-badge] {
+        display: inline-block !important;
+        padding: 2px 8px !important;
+        border-radius: 9999px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        line-height: 14px !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        vertical-align: middle !important;
+      }
+      [data-pdf-host] [data-network-badge] svg { display: none !important; }
+      [data-pdf-host] [data-network-badge="facebook"] { background:#dbeafe !important; color:#1e3a8a !important; border-color:#bfdbfe !important; }
+      [data-pdf-host] [data-network-badge="instagram"] { background:#fce7f3 !important; color:#9d174d !important; border-color:#fbcfe8 !important; }
+      [data-pdf-host] [data-network-badge="twitter"],
+      [data-pdf-host] [data-network-badge="x"] { background:#e2e8f0 !important; color:#1e293b !important; border-color:#cbd5e1 !important; }
+      [data-pdf-host] [data-network-badge="youtube"] { background:#fee2e2 !important; color:#991b1b !important; border-color:#fecaca !important; }
+      [data-pdf-host] [data-network-badge="tiktok"] { background:#e4e4e7 !important; color:#18181b !important; border-color:#d4d4d8 !important; }
+      [data-pdf-host] [data-network-badge="linkedin"] { background:#e0f2fe !important; color:#075985 !important; border-color:#bae6fd !important; }
+
+      /* Numbered circles in Top Content cards: html2canvas drops the digit
+         to the bottom because of flex baseline. Switch to block + line-height. */
+      [data-pdf-host] [data-numbered-bullet] {
+        display: inline-block !important;
+        width: 18px !important;
+        height: 18px !important;
+        line-height: 18px !important;
+        text-align: center !important;
+        border-radius: 9999px !important;
+        background: #4338ca !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 10px !important;
+        vertical-align: middle !important;
+        padding: 0 !important;
+      }
+
+      /* Don't truncate post bodies in PDF — let them flow */
+      [data-pdf-host] .line-clamp-3,
+      [data-pdf-host] .line-clamp-2 {
+        -webkit-line-clamp: unset !important;
+        display: block !important;
+        overflow: visible !important;
+      }
     `;
     host.appendChild(safetyStyle);
 
@@ -103,36 +152,58 @@ export function PerformanceReportPDFGenerator({
       const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
       const SECTION_GAP_MM = 4;
 
-      // Pre-load the Wizr logo as a data URL for fast addImage on each page
-      const logoDataUrl = await fetch(wizrLogo)
+      // Pre-load the Wizr logo as a data URL AND measure its natural aspect
+      // ratio so we can place it without distortion.
+      const { dataUrl: logoDataUrl, aspect: logoAspect } = await fetch(wizrLogo)
         .then((r) => r.blob())
         .then(
           (b) =>
-            new Promise<string>((res) => {
+            new Promise<{ dataUrl: string; aspect: number }>((res) => {
               const fr = new FileReader();
-              fr.onload = () => res(fr.result as string);
+              fr.onload = () => {
+                const dataUrl = fr.result as string;
+                const probe = new Image();
+                probe.onload = () => res({ dataUrl, aspect: probe.naturalWidth / probe.naturalHeight });
+                probe.onerror = () => res({ dataUrl, aspect: 3 });
+                probe.src = dataUrl;
+              };
               fr.readAsDataURL(b);
             })
         )
-        .catch(() => "");
+        .catch(() => ({ dataUrl: "", aspect: 3 }));
 
       const reportLabel = report.reportMode === "brand"
         ? `${clientName} · Reporte de marca`
         : `${clientName} · Reporte de benchmark`;
 
       const drawHeader = (pageNum: number) => {
-        // Indigo gradient band — fake gradient with 3 stacked rects
+        // Indigo header band
         pdf.setFillColor(30, 27, 75);   // #1e1b4b
         pdf.rect(0, 0, PAGE_W, HEADER_H, "F");
-        pdf.setFillColor(49, 46, 129, 0.0 as unknown as number);
-        // jsPDF doesn't do real gradients — flat indigo is fine and matches
-        // the on-screen feel.
+
         if (logoDataUrl) {
-          // White rounded badge for the logo
+          // White rounded badge for the logo. Compute logo size preserving
+          // its natural aspect ratio so it never looks stretched.
+          const badgeH = 12;
+          const badgeY = (HEADER_H - badgeH) / 2;
+          const logoMaxH = badgeH - 3;          // padding inside the badge
+          const logoMaxW = 26;                  // visual cap
+          let logoH = logoMaxH;
+          let logoW = logoH * logoAspect;
+          if (logoW > logoMaxW) {
+            logoW = logoMaxW;
+            logoH = logoW / logoAspect;
+          }
+          const badgeW = logoW + 6;
           pdf.setFillColor(255, 255, 255);
-          pdf.roundedRect(MARGIN_X, 4, 22, 10, 1.5, 1.5, "F");
+          pdf.roundedRect(MARGIN_X, badgeY, badgeW, badgeH, 1.8, 1.8, "F");
           try {
-            pdf.addImage(logoDataUrl, "PNG", MARGIN_X + 2, 5.5, 18, 7, undefined, "FAST");
+            pdf.addImage(
+              logoDataUrl, "PNG",
+              MARGIN_X + 3, badgeY + (badgeH - logoH) / 2,
+              logoW, logoH,
+              undefined, "FAST",
+            );
           } catch { /* noop */ }
         }
         pdf.setTextColor(199, 210, 254);
@@ -165,7 +236,7 @@ export function PerformanceReportPDFGenerator({
         pdf.setFontSize(7.5);
         pdf.setTextColor(107, 114, 128);
         pdf.text(
-          `Generado el ${format(new Date(), "d 'de' MMMM yyyy")} · ${dateRange.start} → ${dateRange.end}`,
+          `Generado el ${format(new Date(), "d 'de' MMMM yyyy")}  ·  ${dateRange.start}  -  ${dateRange.end}`,
           MARGIN_X,
           PAGE_H - 5
         );
