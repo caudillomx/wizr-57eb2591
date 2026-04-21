@@ -63,10 +63,14 @@ export default function PublicReportPage() {
     report.report_kind === "performance_brand" ||
     report.report_kind === "performance_benchmark";
 
+  // Performance reports use the wider layout (1100px) and bring their own
+  // Wizr-branded header/footer. Smart Reports keep the legacy 920px card.
+  const wrapperMaxWidth = isPerformance ? "max-w-[1180px]" : "max-w-[920px]";
+
   return (
-    <div className="min-h-screen bg-muted/30 py-8 px-4">
-      {/* Banner */}
-      <div className="max-w-[920px] mx-auto mb-4 flex items-center justify-between text-xs text-muted-foreground">
+    <div className="min-h-screen bg-muted/30 py-6 px-3 sm:px-4">
+      {/* Mini banner */}
+      <div className={`${wrapperMaxWidth} mx-auto mb-3 flex items-center justify-between text-xs text-muted-foreground`}>
         <span className="flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
           Reporte compartido vía Wizr
@@ -77,7 +81,7 @@ export default function PublicReportPage() {
       </div>
 
       {/* Reporte */}
-      <div className="max-w-[920px] mx-auto bg-white shadow-lg rounded-md overflow-hidden">
+      <div className={`${wrapperMaxWidth} mx-auto bg-white shadow-lg rounded-lg overflow-hidden border`}>
         {isPerformance ? (
           <PerformanceReportPublicView
             report={report.content}
@@ -92,11 +96,6 @@ export default function PublicReportPage() {
             editedTemplate=""
           />
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="max-w-[920px] mx-auto mt-6 text-center text-xs text-muted-foreground">
-        <p>Generado con Wizr · Inteligencia de medios</p>
       </div>
     </div>
   );
