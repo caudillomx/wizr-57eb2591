@@ -692,11 +692,11 @@ function slideRecommendations(report: PerformanceReportContent, clientName: stri
         <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Sección · Recomendaciones</div>
         <h2 style="font-size:56px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Próximos pasos</h2>
       </div>
-      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;flex:1;">
+      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;flex:1;">
         ${items.map((it, i) => `
-          <li style="display:flex;gap:28px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.orange};border-radius:12px;padding:20px 28px;">
-            <span style="flex-shrink:0;font-size:54px;font-weight:800;color:${C.orange};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:72px;">${String(i + 1).padStart(2, "0")}</span>
-            <span style="flex:1;font-size:20px;line-height:1.5;color:${C.text};font-weight:500;padding-top:6px;">${esc(truncate(it, 340))}</span>
+          <li style="display:flex;gap:24px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.orange};border-radius:12px;padding:16px 24px;">
+            <span style="flex-shrink:0;font-size:44px;font-weight:800;color:${C.orange};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:64px;">${String(i + 1).padStart(2, "0")}</span>
+            <span style="flex:1;font-size:16px;line-height:1.5;color:${C.text};font-weight:500;padding-top:4px;">${esc(truncate(it, 600))}</span>
           </li>
         `).join("")}
       </ol>
