@@ -8,6 +8,7 @@ import jsPDF from "jspdf";
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { useToast } from "@/hooks/use-toast";
 import { PerformanceReportView } from "./PerformanceReportView";
+import wizrLogo from "@/assets/wizr-logo-full.png";
 
 interface PerformanceReportPDFGeneratorProps {
   report: PerformanceReportContent;
