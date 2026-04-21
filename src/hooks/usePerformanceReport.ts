@@ -495,8 +495,11 @@ export function usePerformanceReport() {
         .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
         .slice(0, 10);
 
+      // Backend solo conoce brand/benchmark; "comparative" se envía como benchmark pero el título y la UI lo presentan distinto
+      const backendMode = config.reportMode === "comparative" ? "benchmark" : config.reportMode;
       const payload = {
-        reportMode: config.reportMode,
+        reportMode: backendMode,
+        clientMode: config.reportMode, // hint para el prompt si lo soporta
         clientName: config.clientName,
         brandName: config.brandName,
         dateRange: config.dateRange,
