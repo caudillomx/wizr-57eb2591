@@ -84,8 +84,8 @@ export function RankingDateFilter({
       setAppliedPreset(next);
       setAppliedCustomRange(undefined);
       setHasChanges(false);
-      // Defer to next tick so parent state updates flush before onApply reads them
-      setTimeout(() => onApply?.(), 0);
+      // Pass the new preset explicitly to avoid stale closure on parent state
+      onApply?.(next, undefined);
       return;
     }
     setHasChanges(true);
@@ -102,7 +102,7 @@ export function RankingDateFilter({
   const handleApply = () => {
     setAppliedPreset(preset);
     setAppliedCustomRange(customRange);
-    onApply?.();
+    onApply?.(preset, customRange);
   };
 
   const canApply = hasChanges && (preset !== "custom" || (!!customRange?.from && !!customRange?.to));
