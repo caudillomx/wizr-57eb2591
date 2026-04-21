@@ -341,8 +341,8 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Brand-level engagement chart ----------
-  const brandEngBlock = report.analytics.brandEngagement?.length
+  // ---------- Brand-level engagement chart (solo BENCHMARK) ----------
+  const brandEngBlock = !isBrand && report.analytics.brandEngagement?.length > 1
     ? section(
         "Engagement promedio por marca",
         chartHorizontalBars(
@@ -392,13 +392,16 @@ export function buildPerformanceReportHTML(
       })()
     : "";
 
-  // ---------- Top 10 perfiles table ----------
+  // ---------- Tabla de perfiles ----------
   const top10ProfilesReport = {
     ...report,
     profiles: [...report.profiles].sort((a, b) => (b.engagementRate ?? 0) - (a.engagementRate ?? 0)).slice(0, 10),
   };
+  const profilesTitle = isBrand
+    ? `Perfiles de ${clientName} · detalle`
+    : `Top ${Math.min(report.profiles.length, 10)} perfiles · marca vs competencia`;
   const profilesBlock = section(
-    isBrand ? "Top 10 perfiles" : "Top 10 perfiles · marca vs competencia",
+    profilesTitle,
     profilesTable(top10ProfilesReport, isBrand) + (report.profilesInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.profilesInsight)}</div>` : ""),
     { eyebrow: "Sección 07 · Detalle" },
   );
@@ -412,8 +415,8 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Followers por perfil (Top 15) ----------
-  const followersBlock = report.analytics.followersByProfile?.length
+  // ---------- Followers por perfil (Top 15) — solo BENCHMARK ----------
+  const followersBlock = !isBrand && report.analytics.followersByProfile?.length
     ? section(
         "Perfiles con más seguidores (Top 15)",
         chartVerticalBars(
@@ -424,13 +427,13 @@ export function buildPerformanceReportHTML(
           })),
           "",
           (v) => fmtNum(v),
-        ),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: ranking de los perfiles con mayor audiencia del set. Permite dimensionar la brecha de alcance potencial entre ${esc(clientName)} y la competencia.</p>`,
         { eyebrow: "Sección · Audiencia" },
       )
     : "";
 
   // ---------- Engagement por red social ----------
-  const networkEngBlock = report.analytics.networkEngagement?.length
+  const networkEngBlock = report.analytics.networkEngagement?.length > 1
     ? section(
         "Engagement promedio por red social",
         chartVerticalBars(
@@ -438,7 +441,7 @@ export function buildPerformanceReportHTML(
             label: n.network.charAt(0).toUpperCase() + n.network.slice(1),
             value: n.avgEngagement,
           })),
-        ),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">${isBrand ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${esc(clientName)} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.` : "Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal."}</p>`,
         { eyebrow: "Sección · Engagement por red" },
       )
     : "";

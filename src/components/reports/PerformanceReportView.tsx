@@ -157,8 +157,8 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Engagement promedio por marca (agregado) ── */}
-      {report.analytics.brandEngagement.length > 0 && (
+      {/* ── Engagement promedio por marca (agregado) — solo BENCHMARK ── */}
+      {!isBrand && report.analytics.brandEngagement.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -222,15 +222,20 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Ranking por engagement (perfiles individuales, top 10) ── */}
+      {/* ── Ranking por engagement (perfiles individuales) — solo cuando hay >1 perfil ── */}
+      {rankingChartData.length > 1 && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Trophy className="h-4 w-4 text-primary" />
-            Top perfiles por engagement (Top 10)
+            {isBrand
+              ? `Engagement por perfil · ${report.clientName}`
+              : `Top perfiles por engagement (Top ${Math.min(rankingChartData.length, 10)})`}
           </CardTitle>
           <CardDescription className="text-xs">
-            Engagement rate por perfil individual · vista detallada por red
+            {isBrand
+              ? "Comparativa interna entre los perfiles de la marca en sus distintas redes"
+              : "Engagement rate por perfil individual · vista detallada por red"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -288,6 +293,7 @@ export function PerformanceReportView({
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* ── Crecimiento por red social (agregado) ── */}
       {report.analytics.networkGrowth.length > 0 && (
@@ -302,17 +308,17 @@ export function PerformanceReportView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[240px]">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={report.analytics.networkGrowth.map((n) => ({
                   name: n.network.charAt(0).toUpperCase() + n.network.slice(1),
                   value: n.avgGrowth,
                   profiles: n.profiles,
                   fill: n.avgGrowth >= 0 ? "#22c55e" : "#ef4444",
-                }))} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                }))} margin={{ top: 24, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} domain={["auto", "auto"]} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
@@ -335,6 +341,11 @@ export function PerformanceReportView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              {isBrand
+                ? `Lectura: cada barra muestra cómo evolucionó el número de seguidores de ${report.clientName} en cada red durante el período. Verde indica ganancia neta de audiencia; rojo, pérdida.`
+                : "Lectura: promedio del crecimiento de seguidores agregado por red en todo el set (marca + competencia). Permite ver qué plataforma está sumando audiencia en el sector y cuál se contrae."}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -408,8 +419,8 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Seguidores por perfil (Top 15) ── */}
-      {report.analytics.followersByProfile?.length > 0 && (
+      {/* ── Seguidores por perfil (Top 15) — solo BENCHMARK ── */}
+      {!isBrand && report.analytics.followersByProfile?.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -457,12 +468,15 @@ export function PerformanceReportView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Lectura: ranking de los perfiles con mayor audiencia del set. Permite dimensionar la brecha de alcance potencial entre {report.clientName} y la competencia.
+            </p>
           </CardContent>
         </Card>
       )}
 
       {/* ── Engagement promedio por red social ── */}
-      {report.analytics.networkEngagement?.length > 0 && (
+      {report.analytics.networkEngagement?.length > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -470,7 +484,9 @@ export function PerformanceReportView({
               Engagement promedio por red social
             </CardTitle>
             <CardDescription className="text-xs">
-              ¿Qué plataforma genera más interacción en el sector?
+              {isBrand
+                ? `¿En qué red está logrando ${report.clientName} mayor tasa de interacción?`
+                : "¿Qué plataforma genera más interacción en el sector?"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -503,6 +519,11 @@ export function PerformanceReportView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              {isBrand
+                ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${report.clientName} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.`
+                : `Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.`}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -570,11 +591,14 @@ export function PerformanceReportView({
         );
       })()}
 
-      {/* ── Tabla compacta: Top 10 perfiles ── */}
+      {/* ── Tabla compacta de perfiles ── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3Icon /> Top 10 perfiles por engagement
+            <BarChart3Icon />
+            {isBrand
+              ? `Perfiles de ${report.clientName} · detalle`
+              : `Top ${Math.min(report.profiles?.length ?? 0, 10)} perfiles por engagement`}
           </CardTitle>
           <CardDescription className="text-xs">
             Tabla resumen · ordenada por engagement rate
