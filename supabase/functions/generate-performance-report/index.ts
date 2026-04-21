@@ -202,6 +202,8 @@ ${focusBlock}
 ${autoFlagsBlock}
 REGLAS DURAS DE DATOS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres, métricas, porcentajes ni perfiles.
+- ANTI-INVENCIÓN DE TOP CONTENT (CRÍTICO): cuando referas a piezas concretas en "topContentInsight" o en cualquier hallazgo, USA ÚNICAMENTE los items del array TOP_POSTS provisto, identificándolos por su "rank" + "author" + "network" + "engagement". JAMÁS inventes un post (autor, red, cifra) que no esté literalmente en TOP_POSTS. Si dices "el post de X en Y con Z interacciones", X, Y, Z DEBEN coincidir EXACTAMENTE con un item de TOP_POSTS. Si no encuentras una pieza adecuada, NO la cites: habla del patrón agregado del top.
+- Cuando ejemplifiques posts, prefiere citar los rangos top 1, top 2 y top 3 del array, mencionando autor, red y cifra de "engagement" tal cual figuran.
 - MÉTRICA PRINCIPAL DE ENGAGEMENT: usa "interacciones promedio por publicación" (campo avgInteractionsPerPost en analytics; suma de likes+comentarios+shares dividida entre número de posts del período). Es la métrica universal del reporte. Cita siempre "≈X interacciones por post" en lugar de tasas % crudas.
 - LAS TASAS % (engagement_rate) son CONTEXTO SECUNDARIO. Solo cítalas cuando aporten lectura (ej. "tasa marginal de 0.16%"); jamás como cifra principal de un highlight ni hallazgo.
 - TODA cifra debe llevar UNIDAD explícita: interacciones como "≈X interacciones/post" o "X,XXX interacciones totales", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día".
