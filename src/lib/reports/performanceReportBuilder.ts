@@ -272,7 +272,11 @@ export function buildPerformanceReportHTML(
   report: PerformanceReportContent,
   clientName: string,
   dateRange: DateRange,
-): { html: string; header: string; footer: string } {
+): {
+  html: string;
+  header: { source: string; height: string; start_at?: number };
+  footer: { source: string; height: string; start_at?: number };
+} {
   const isBrand = report.reportMode === "brand";
   const generatedDate = format(new Date(), "d 'de' MMMM yyyy", { locale: es });
   const modeLabel = isBrand ? "Reporte de Marca" : "Reporte de Benchmark";
@@ -284,39 +288,39 @@ export function buildPerformanceReportHTML(
     }
   })();
 
-  // ---------- Cover page ----------
-  const cover = `<section style="page-break-after:always;break-after:page;background:${INDIGO_GRADIENT};color:#fff;min-height:1040px;padding:60px 56px 56px 56px;position:relative;overflow:hidden;font-family:'Inter','Segoe UI',sans-serif;">
-    <div style="position:absolute;bottom:-200px;left:-200px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, ${C.indigoBright} 0%, transparent 70%);opacity:0.55;"></div>
-    <div style="position:absolute;top:-140px;right:-140px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle, ${C.orange} 0%, transparent 70%);opacity:0.22;"></div>
+  // ---------- Cover page (1 página A4 exacta · sin desbordes) ----------
+  const cover = `<section style="page-break-after:always;break-after:page;background:${INDIGO_GRADIENT};color:#fff;height:265mm;padding:48px 52px;position:relative;overflow:hidden;font-family:'Inter','Segoe UI',sans-serif;display:flex;flex-direction:column;">
+    <div style="position:absolute;bottom:-180px;left:-180px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle, ${C.indigoBright} 0%, transparent 70%);opacity:0.55;"></div>
+    <div style="position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle, ${C.orange} 0%, transparent 70%);opacity:0.22;"></div>
 
     <div style="position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;">
-      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:42px;filter:brightness(0) invert(1);"/>
+      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:36px;filter:brightness(0) invert(1);"/>
       <div style="font-size:9px;letter-spacing:0.32em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Confidencial</div>
     </div>
 
-    <div style="position:relative;z-index:5;margin-top:140px;">
-      <div style="display:inline-flex;align-items:center;gap:10px;padding:7px 16px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:100px;margin-bottom:32px;">
+    <div style="position:relative;z-index:5;flex:1;display:flex;flex-direction:column;justify-content:center;max-width:760px;">
+      <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:10px;padding:7px 16px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:100px;margin-bottom:22px;">
         <span style="width:6px;height:6px;border-radius:50%;background:${C.orange};"></span>
         <span style="font-size:9px;letter-spacing:0.28em;color:#fff;font-weight:700;text-transform:uppercase;">Wizr · Performance · ${esc(modeLabel)}</span>
       </div>
 
-      <h1 style="font-size:62px;font-weight:800;line-height:1;margin:0 0 16px 0;letter-spacing:-0.025em;">${esc(report.title || clientName)}</h1>
+      <h1 style="font-size:40px;font-weight:800;line-height:1.08;margin:0 0 16px 0;letter-spacing:-0.025em;">${esc(report.title || clientName)}</h1>
 
-      <div style="display:flex;align-items:center;gap:14px;margin-top:24px;">
-        <span style="width:48px;height:2px;background:${C.orange};"></span>
-        <span style="font-size:11px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Cliente</span>
-        <span style="font-size:18px;color:#fff;font-weight:600;">${esc(clientName)}</span>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:14px;">
+        <span style="width:42px;height:2px;background:${C.orange};flex-shrink:0;"></span>
+        <span style="font-size:10px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;min-width:70px;">Cliente</span>
+        <span style="font-size:16px;color:#fff;font-weight:600;">${esc(clientName)}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;margin-top:10px;">
-        <span style="width:48px;height:2px;background:${C.orange};"></span>
-        <span style="font-size:11px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Período</span>
-        <span style="font-size:18px;color:#fff;font-weight:600;">${esc(periodPretty)}</span>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+        <span style="width:42px;height:2px;background:${C.orange};flex-shrink:0;"></span>
+        <span style="font-size:10px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;min-width:70px;">Período</span>
+        <span style="font-size:16px;color:#fff;font-weight:600;">${esc(periodPretty)}</span>
       </div>
 
-      ${report.summary ? `<p style="font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);font-weight:400;max-width:680px;margin:48px 0 0 0;">${esc(report.summary)}</p>` : ""}
+      ${report.summary ? `<p style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.85);font-weight:400;max-width:640px;margin:28px 0 0 0;">${esc(report.summary.length > 460 ? report.summary.slice(0, 457) + "…" : report.summary)}</p>` : ""}
     </div>
 
-    <div style="position:absolute;bottom:48px;left:56px;right:56px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:18px;z-index:5;">
+    <div style="position:relative;z-index:5;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:14px;">
       <div style="font-size:9px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Wizr · Performance Intelligence</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.78);">${esc(generatedDate)}</div>
     </div>
