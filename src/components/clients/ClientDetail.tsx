@@ -78,9 +78,9 @@ export function ClientDetail({ client, onBack }: Props) {
   const brandCount = rawProfiles.filter((p) => !p.is_competitor).length;
   const compCount = rawProfiles.filter((p) => p.is_competitor).length;
 
-  const handleApplyDateRange = () => {
-    setAppliedPreset(datePreset);
-    setAppliedCustomRange(customDateRange);
+  const handleApplyDateRange = (preset?: DateRangePreset, custom?: DateRange) => {
+    setAppliedPreset(preset ?? datePreset);
+    setAppliedCustomRange(custom ?? customDateRange);
   };
   const handleAskAI = (q: string) => { setAiInitialQuestion(q); setActiveTab("ai"); };
   const handleRefreshTopPosts = () => {
