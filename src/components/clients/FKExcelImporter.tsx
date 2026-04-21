@@ -765,7 +765,9 @@ export function FKExcelImporter({ clientId }: Props) {
 
       toast({
         title: "Importación completada",
-        description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts.`,
+        description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts${
+          deletedOverlaps > 0 ? ` · ${deletedOverlaps} snapshots solapados reemplazados` : ""
+        }.`,
       });
       setFiles([]);
       qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
