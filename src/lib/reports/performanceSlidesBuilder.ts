@@ -96,11 +96,11 @@ function slideShell(opts: {
   let fg: string;
   let subtle: string;
   if (isDark) {
-    bg = `background: radial-gradient(ellipse at top right, ${C.inkSoft} 0%, ${C.ink} 60%);`;
+    bg = `background: ${INDIGO_GRADIENT_RADIAL};`;
     fg = "#FFFFFF";
-    subtle = "rgba(255,255,255,0.5)";
+    subtle = C.indigoText;
   } else if (isAccent) {
-    bg = `background: linear-gradient(135deg, ${C.violetSoft} 0%, ${C.paper} 100%);`;
+    bg = `background: linear-gradient(135deg, ${C.indigoSoft} 0%, ${C.paper} 100%);`;
     fg = C.text;
     subtle = C.textMuted;
   } else {
