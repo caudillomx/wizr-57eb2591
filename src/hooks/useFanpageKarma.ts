@@ -50,6 +50,75 @@ function getKpiRangeDays(kpi: Pick<FKProfileKPI, "period_start" | "period_end">)
   return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
+type RequestedKpiRange = {
+  start: string;
+  end: string;
+};
+
+type KpiSelectionKind = "exact" | "overlap" | "latest";
+
+function getKpiSelectionKind(kpi: Pick<FKProfileKPI, "period_start" | "period_end">, requested: RequestedKpiRange): KpiSelectionKind {
+  if (kpi.period_start === requested.start && kpi.period_end === requested.end) {
+    return "exact";
+  }
+
+  if (kpi.period_start <= requested.end && kpi.period_end >= requested.start) {
+    return "overlap";
+  }
+
+  return "latest";
+}
+
+function getKpiOverlapDays(kpi: Pick<FKProfileKPI, "period_start" | "period_end">, requested: RequestedKpiRange): number {
+  const overlapStart = Math.max(
+    new Date(`${kpi.period_start}T00:00:00Z`).getTime(),
+    new Date(`${requested.start}T00:00:00Z`).getTime(),
+  );
+  const overlapEnd = Math.min(
+    new Date(`${kpi.period_end}T00:00:00Z`).getTime(),
+    new Date(`${requested.end}T00:00:00Z`).getTime(),
+  );
+
+  if (Number.isNaN(overlapStart) || Number.isNaN(overlapEnd) || overlapEnd < overlapStart) {
+    return 0;
+  }
+
+  return Math.round((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function shouldReplaceRequestedKpi(candidate: FKProfileKPI, existing: FKProfileKPI, requested: RequestedKpiRange) {
+  const priority: Record<KpiSelectionKind, number> = {
+    exact: 0,
+    overlap: 1,
+    latest: 2,
+  };
+
+  const candidateKind = getKpiSelectionKind(candidate, requested);
+  const existingKind = getKpiSelectionKind(existing, requested);
+
+  if (candidateKind !== existingKind) {
+    return priority[candidateKind] < priority[existingKind];
+  }
+
+  if (candidateKind === "overlap") {
+    const candidateOverlap = getKpiOverlapDays(candidate, requested);
+    const existingOverlap = getKpiOverlapDays(existing, requested);
+
+    if (candidateOverlap !== existingOverlap) {
+      return candidateOverlap > existingOverlap;
+    }
+  }
+
+  const candidateRangeDays = getKpiRangeDays(candidate);
+  const existingRangeDays = getKpiRangeDays(existing);
+
+  if (candidateRangeDays !== existingRangeDays) {
+    return candidateRangeDays < existingRangeDays;
+  }
+
+  return shouldReplaceLatestKpi(candidate, existing);
+}
+
 function shouldReplaceLatestKpi(candidate: FKProfileKPI, existing: FKProfileKPI) {
   const candidateEnd = new Date(`${candidate.period_end}T00:00:00Z`).getTime();
   const existingEnd = new Date(`${existing.period_end}T00:00:00Z`).getTime();
@@ -175,48 +244,37 @@ export function useFKProfileKPIs(profileIds: string[], periodStart?: string, per
         return Array.from(selectLatestKpisByProfile((data as FKProfileKPI[]) || []).values());
       }
 
-      const { data: exactData, error: exactError } = await supabase
+      const requestedRange: RequestedKpiRange = {
+        start: periodStart,
+        end: periodEnd,
+      };
+
+      const { data, error } = await supabase
         .from("fk_profile_kpis")
         .select("*")
         .in("fk_profile_id", profileIds)
-        .eq("period_start", periodStart)
-        .eq("period_end", periodEnd)
-        .order("fetched_at", { ascending: false });
-
-      if (exactError) throw exactError;
-
-      const exactByProfile = new Map<string, FKProfileKPI>();
-      ((exactData as FKProfileKPI[]) || []).forEach((row) => {
-        if (!exactByProfile.has(row.fk_profile_id)) {
-          exactByProfile.set(row.fk_profile_id, { ...row, isFallback: false });
-        }
-      });
-
-      const missingIds = profileIds.filter((id) => !exactByProfile.has(id));
-      if (missingIds.length === 0) {
-        return profileIds.flatMap((id) => {
-          const row = exactByProfile.get(id);
-          return row ? [row] : [];
-        });
-      }
-
-      const { data: latestData, error: latestError } = await supabase
-        .from("fk_profile_kpis")
-        .select("*")
-        .in("fk_profile_id", missingIds)
         .order("period_end", { ascending: false })
         .order("fetched_at", { ascending: false });
 
-      if (latestError) throw latestError;
+      if (error) throw error;
 
-      const latestByProfile = selectLatestKpisByProfile((latestData as FKProfileKPI[]) || []);
+      const selectedByProfile = new Map<string, FKProfileKPI>();
+
+      ((data as FKProfileKPI[]) || []).forEach((row) => {
+        const existing = selectedByProfile.get(row.fk_profile_id);
+        if (!existing || shouldReplaceRequestedKpi(row, existing, requestedRange)) {
+          selectedByProfile.set(row.fk_profile_id, row);
+        }
+      });
 
       return profileIds.flatMap((id) => {
-        const exact = exactByProfile.get(id);
-        if (exact) return [exact];
+        const row = selectedByProfile.get(id);
+        if (!row) return [];
 
-        const fallback = latestByProfile.get(id);
-        return fallback ? [{ ...fallback, isFallback: true }] : [];
+        return [{
+          ...row,
+          isFallback: getKpiSelectionKind(row, requestedRange) !== "exact",
+        }];
       });
     },
     enabled: profileIds.length > 0,
