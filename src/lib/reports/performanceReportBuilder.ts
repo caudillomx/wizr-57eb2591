@@ -151,16 +151,16 @@ function chartVerticalBars(
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
-  const barW = Math.max(28, Math.min(56, Math.floor(560 / data.length) - 8));
-  return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:175px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
     .map((d) => {
       const h = (Math.abs(d.value) / max) * 130;
       const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:${barW}px;">
-        <span style="font-size:8px;font-weight:700;color:${C.text};">${valStr}</span>
-        <div style="width:100%;background:${color};height:${h}px;border-radius:3px 3px 0 0;min-height:2px;"></div>
-        <span style="font-size:8px;color:${C.textMid};text-align:center;line-height:1.2;word-break:break-word;">${esc(d.label)}</span>
+      const labelText = d.label.length > 14 ? d.label.slice(0, 13) + "…" : d.label;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:0;max-width:64px;">
+        <span style="font-size:8px;font-weight:700;color:${C.text};line-height:1;">${valStr}</span>
+        <div style="width:80%;background:${color};height:${h}px;border-radius:3px 3px 0 0;min-height:2px;"></div>
+        <span style="font-size:7.5px;color:${C.textMid};text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;" title="${esc(d.label)}">${esc(labelText)}</span>
       </div>`;
     })
     .join("")}</div>`;
