@@ -236,7 +236,7 @@ export function PerformanceReportPDFGenerator({
         pdf.setFontSize(7.5);
         pdf.setTextColor(107, 114, 128);
         pdf.text(
-          `Generado el ${format(new Date(), "d 'de' MMMM yyyy")} · ${dateRange.start} → ${dateRange.end}`,
+          `Generado el ${format(new Date(), "d 'de' MMMM yyyy")}  ·  ${dateRange.start}  -  ${dateRange.end}`,
           MARGIN_X,
           PAGE_H - 5
         );
