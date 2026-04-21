@@ -48,6 +48,7 @@ export function PerformanceReportGenerator({
 
   const activeReport = editedReport ?? report;
   const isBrand = reportMode === "brand";
+  const isComparative = reportMode === "comparative";
 
   const dateLabel = `${format(dateRange.from, "d MMM")} – ${format(dateRange.to, "d MMM yyyy")}`;
   const dateRangeIso = {
@@ -80,12 +81,16 @@ export function PerformanceReportGenerator({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {isBrand ? <Target className="h-5 w-5 text-primary" /> : <Users2 className="h-5 w-5 text-primary" />}
-          Reporte de Performance — {isBrand ? "Marca" : "Benchmark"}
+          {isComparative
+            ? "Análisis Comparativo"
+            : `Reporte de Performance — ${isBrand ? "Marca" : "Benchmark"}`}
         </CardTitle>
         <CardDescription>
-          {isBrand
-            ? `Análisis del desempeño en redes sociales de ${brandName || clientName} en el período seleccionado.`
-            : `Comparativa de ${brandName || clientName} vs su competencia en el período seleccionado.`}
+          {isComparative
+            ? `Comparativa de desempeño entre los perfiles cargados en ${clientName} para el período seleccionado.`
+            : isBrand
+              ? `Análisis del desempeño en redes sociales de ${brandName || clientName} en el período seleccionado.`
+              : `Comparativa de ${brandName || clientName} vs su competencia en el período seleccionado.`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -99,9 +104,11 @@ export function PerformanceReportGenerator({
               <Textarea
                 value={strategicFocus}
                 onChange={(e) => setStrategicFocus(e.target.value)}
-                placeholder={isBrand
-                  ? "Ej: Evaluar si el incremento de frecuencia en Instagram en abril mejoró la salud orgánica del perfil."
-                  : "Ej: Identificar en qué redes y formatos la competencia nos está sacando ventaja."}
+                placeholder={isComparative
+                  ? "Ej: Identificar qué cuentas y formatos generan mayor conversación dentro del grupo."
+                  : isBrand
+                    ? "Ej: Evaluar si el incremento de frecuencia en Instagram en abril mejoró la salud orgánica del perfil."
+                    : "Ej: Identificar en qué redes y formatos la competencia nos está sacando ventaja."}
                 className="text-sm min-h-[80px]"
               />
               <p className="text-xs text-muted-foreground">
@@ -202,7 +209,7 @@ export function PerformanceReportGenerator({
             ownerKind="client"
             ownerId={clientId}
             ownerName={clientName}
-            reportKind={isBrand ? "performance_brand" : "performance_benchmark"}
+            reportKind={isComparative ? "performance_comparative" : isBrand ? "performance_brand" : "performance_benchmark"}
             report={activeReport}
             dateRange={dateRangeIso}
           />
