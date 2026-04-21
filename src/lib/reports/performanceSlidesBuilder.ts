@@ -103,6 +103,31 @@ function cleanProfileName(name: string): string {
   return out || String(name || "").trim();
 }
 
+/** Clave canónica para agrupar marcas: sin acentos, lowercase, colapsa "mex/mexico/méxico" y normaliza espacios/guiones bajos */
+function brandKey(name: string): string {
+  const cleaned = cleanProfileName(name);
+  return cleaned
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .toLowerCase()
+    .replace(/[_\-.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b(mexico|mex|mx)\b/g, "mexico"); // colapsa variantes
+}
+
+/** Elige la mejor etiqueta visible entre variantes (prefiere la más larga / con acentos) */
+function pickDisplayName(candidates: string[]): string {
+  return candidates
+    .map((c) => cleanProfileName(c))
+    .sort((a, b) => {
+      const aHasAccent = /[áéíóúñ]/i.test(a) ? 1 : 0;
+      const bHasAccent = /[áéíóúñ]/i.test(b) ? 1 : 0;
+      if (aHasAccent !== bHasAccent) return bHasAccent - aHasAccent;
+      return b.length - a.length;
+    })[0] || candidates[0];
+}
+
 function sparkles(color: string, opacity = 1): string {
   return `<svg width="180" height="180" viewBox="0 0 180 180" style="opacity:${opacity};">
     <path d="M90 20 L96 50 L126 56 L96 62 L90 92 L84 62 L54 56 L84 50 Z" fill="${color}"/>
