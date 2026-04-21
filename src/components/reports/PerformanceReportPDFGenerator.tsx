@@ -80,12 +80,17 @@ export function PerformanceReportPDFGenerator({
         color: #0f172a !important;
         vertical-align: middle !important;
         white-space: nowrap !important;
+        overflow: visible !important;
       }
       [data-pdf-host] [data-network-badge] > * {
         display: inline !important;
         vertical-align: baseline !important;
       }
       [data-pdf-host] [data-network-badge] svg { display: none !important; }
+      [data-pdf-host] [data-report-network-pill] {
+        min-width: 58px !important;
+        text-align: center !important;
+      }
       [data-pdf-host] [data-network-badge="facebook"] { background:#dbeafe !important; color:#1e3a8a !important; border-color:#bfdbfe !important; }
       [data-pdf-host] [data-network-badge="instagram"] { background:#fce7f3 !important; color:#9d174d !important; border-color:#fbcfe8 !important; }
       [data-pdf-host] [data-network-badge="twitter"],
@@ -123,6 +128,15 @@ export function PerformanceReportPDFGenerator({
         vertical-align: middle !important;
         margin-right: 6px !important;
       }
+      [data-pdf-host] [data-pdf-capture-grid="top-posts"] {
+        grid-template-columns: 1fr !important;
+      }
+      [data-pdf-host] [data-top-content-body] {
+        display: block !important;
+        overflow: visible !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+      }
 
       /* Don't truncate post bodies in PDF — let them flow */
       [data-pdf-host] .line-clamp-3,
@@ -155,7 +169,10 @@ export function PerformanceReportPDFGenerator({
       // 2) Locate sections (top-level children of the report's `.space-y-8`)
       const reportRoot = host.querySelector<HTMLElement>(".space-y-8");
       if (!reportRoot) throw new Error("Report root not found");
-      const sections = Array.from(reportRoot.children) as HTMLElement[];
+      const sections = (Array.from(reportRoot.children) as HTMLElement[]).flatMap((section) => {
+        const splitItems = Array.from(section.querySelectorAll<HTMLElement>("[data-pdf-capture-item]"));
+        return splitItems.length > 0 ? splitItems : [section];
+      });
       if (sections.length === 0) throw new Error("No sections to render");
 
       // 3) PDF setup ───────────────────────────────────────────────────

@@ -7,7 +7,6 @@ import {
 import { Target, Sparkles, Lightbulb, Trophy, TrendingUp, Users2, FileText } from "lucide-react";
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { EditableText } from "./EditableText";
-import { NetworkBadge } from "@/components/rankings/NetworkBadge";
 
 interface PerformanceReportViewProps {
   report: PerformanceReportContent;
@@ -58,6 +57,29 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return `${Math.round(n)}`;
+}
+
+function ReportNetworkPill({ network }: { network: string }) {
+  const key = (network || "").toLowerCase().trim();
+  const labelMap: Record<string, string> = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    youtube: "YouTube",
+    twitter: "X",
+    x: "X",
+    tiktok: "TikTok",
+    linkedin: "LinkedIn",
+  };
+
+  return (
+    <span
+      data-report-network-pill
+      data-network-badge={key || "unknown"}
+      className="inline-flex items-center whitespace-nowrap rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-semibold leading-none text-foreground"
+    >
+      {labelMap[key] || network}
+    </span>
+  );
 }
 
 export function PerformanceReportView({
@@ -832,7 +854,7 @@ export function PerformanceReportView({
                   .map((p) => (
                     <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
                       <td className="px-4 py-2 font-medium">{p.name}</td>
-                      <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
+                      <td className="px-4 py-2"><ReportNetworkPill network={p.network} /></td>
                       {!isBrand && (
                         <td className="px-4 py-2">
                           <Badge variant={p.isCompetitor ? "outline" : "default"} className="text-[10px]">
@@ -875,7 +897,7 @@ export function PerformanceReportView({
       {/* Top content — Top 10 en 2 columnas */}
       {(report.topPosts?.length ?? 0) > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader data-pdf-capture-item>
             <CardTitle className="text-base flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               Mejores contenidos del período
@@ -885,17 +907,17 @@ export function PerformanceReportView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div data-pdf-capture-grid="top-posts" className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {report.topPosts.slice(0, 10).map((p, i) => (
-                <div key={i} className="rounded-md border p-3 space-y-2">
+                <div key={i} data-pdf-capture-item className="rounded-md border p-3 space-y-2">
                   <div data-top-content-header className="flex items-center gap-2 flex-wrap text-xs">
                     <span data-numbered-bullet className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[10px]">{i + 1}</span>
-                    <span className="font-medium">{p.authorName}</span>
-                    <NetworkBadge network={p.network} size="xs" />
+                    <span className="font-medium break-words">{p.authorName}</span>
+                    <ReportNetworkPill network={p.network} />
                     <span className="text-muted-foreground">· {p.postDate}</span>
                   </div>
                   {p.postContent && (
-                    <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
+                    <p data-top-content-body className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">{p.postContent}</p>
                   )}
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span>Interacciones: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
@@ -914,7 +936,7 @@ export function PerformanceReportView({
             </div>
           </CardContent>
           {report.topContentInsight && (
-            <CardContent className="pt-0">
+            <CardContent data-pdf-capture-item className="pt-0">
               <div className="rounded-md bg-primary/5 border border-primary/20 p-3 text-sm">
                 <EditableText
                   editing={editing}
