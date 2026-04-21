@@ -215,20 +215,21 @@ function svgNetworkBars(
   unit = "",
 ): string {
   if (!data.length) return "";
-  const max = Math.max(...data.map((d) => d.value), 0.01);
+  const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
   const labelW = 280;
-  const valueW = 200;
+  const valueW = 240;
   const barW = width - labelW - valueW - 60;
   const height = data.length * rowH + 20;
   const rows = data
     .map((d, i) => {
       const y = i * rowH + 10;
-      const w = (d.value / max) * barW;
+      const w = (Math.abs(d.value) / max) * barW;
+      const valueText = unit === "%" ? `${d.value.toFixed(2)}%` : fmtInt(d.value);
       return `
         <text x="${labelW - 24}" y="${y + rowH / 2 + 8}" text-anchor="end" font-size="26" font-weight="700" fill="${C.text}">${esc(d.label)}</text>
         <rect x="${labelW}" y="${y + 18}" width="${barW}" height="${rowH - 36}" rx="8" fill="${C.paperAlt}"/>
         <rect x="${labelW}" y="${y + 18}" width="${w}" height="${rowH - 36}" rx="8" fill="${d.color}"/>
-        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 8}" font-size="26" font-weight="800" fill="${C.text}">${d.value.toFixed(unit === "%" ? 2 : 0)}${unit}</text>
+        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 8}" font-size="26" font-weight="800" fill="${C.text}">${esc(valueText)}</text>
       `;
     })
     .join("");
