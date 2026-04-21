@@ -272,8 +272,13 @@ export function RankingTable({
                     {index < 3 ? MEDAL_COLORS[index] : index + 1}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium" title={profile.profile_id}>
-                      {profile.display_name || profile.profile_id}
+                    <div className="flex items-center flex-wrap gap-1">
+                      <span className="font-medium" title={profile.profile_id}>
+                        {profile.display_name || profile.profile_id}
+                      </span>
+                      {kpi?.isFallback && (
+                        <FallbackBadge periodStart={kpi.period_start} periodEnd={kpi.period_end} />
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
