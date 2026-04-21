@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
     const autoFlags = {
       own_posts_in_top5: ownInTop5,
-      total_top5: top5Posts.length,
+      total_top5: Math.min(topPostsForAI.length, 5),
       own_profiles_count: ownProfiles.length,
       competitor_profiles_count: competitorProfiles.length,
       profiles_without_engagement: profilesWithoutEng,
