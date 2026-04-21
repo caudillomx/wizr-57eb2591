@@ -475,24 +475,38 @@ export function PerformanceReportView({
               Perfiles con más seguidores (Top 15)
             </CardTitle>
             <CardDescription className="text-xs">
-              Tamaño de audiencia por perfil · {report.clientName} resaltado
+              Tamaño de audiencia por perfil · color por red social
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[320px]">
+            <div className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={report.analytics.followersByProfile.slice(0, 15).map((f) => ({
-                    name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name} · ${networkShort(f.network)}`,
+                    name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name}|${networkLabel(f.network)}`,
                     fullName: f.name,
                     network: f.network,
                     value: f.followers,
                     isOwn: f.isOwn,
                   }))}
-                  margin={{ top: 16, right: 16, left: 0, bottom: 60 }}
+                  margin={{ top: 16, right: 16, left: 0, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={70} />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    height={80}
+                    tick={(props) => {
+                      const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
+                      const [n1, n2] = (payload?.value || "").split("|");
+                      return (
+                        <g transform={`translate(${x},${y})`}>
+                          <text x={0} y={10} textAnchor="middle" fontSize={9} fontWeight={600} fill="hsl(var(--foreground))">{n1}</text>
+                          <text x={0} y={22} textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{n2}</text>
+                        </g>
+                      );
+                    }}
+                  />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
@@ -502,21 +516,21 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
-                          <div className="text-muted-foreground">{p.network} · {formatNumber(p.value)} seguidores</div>
+                          <div className="text-muted-foreground">{networkLabel(p.network)} · {formatNumber(p.value)} seguidores</div>
                         </div>
                       );
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {report.analytics.followersByProfile.slice(0, 15).map((f, i) => (
-                      <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : "#94a3b8"} />
+                      <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : colorForNetwork(f.network)} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: ranking de los perfiles con mayor audiencia del set. Permite dimensionar la brecha de alcance potencial entre {report.clientName} y la competencia.
+              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
             </p>
           </CardContent>
         </Card>
