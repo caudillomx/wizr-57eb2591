@@ -469,23 +469,30 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Seguidores por perfil (Top 15) — solo BENCHMARK ── */}
-      {!isBrand && report.analytics.followersByProfile?.length > 0 && (
+      {/* ── Seguidores por perfil — incluye TODOS los propios + completa hasta 15 ── */}
+      {!isBrand && report.analytics.followersByProfile?.length > 0 && (() => {
+        const allFollowers = report.analytics.followersByProfile;
+        const ownFollowers = allFollowers.filter((f) => f.isOwn);
+        const compFollowers = allFollowers.filter((f) => !f.isOwn).sort((a, b) => b.followers - a.followers);
+        const TARGET = 15;
+        const followersData = [...ownFollowers, ...compFollowers.slice(0, Math.max(TARGET - ownFollowers.length, 6))]
+          .sort((a, b) => b.followers - a.followers);
+        return (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users2 className="h-4 w-4 text-primary" />
-              Perfiles con más seguidores (Top 15)
+              Perfiles con más seguidores (Top {followersData.length})
             </CardTitle>
             <CardDescription className="text-xs">
-              Tamaño de audiencia por perfil · color por red social
+              Tamaño de audiencia por perfil · incluye todos los perfiles de {report.clientName} · color por red social
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={report.analytics.followersByProfile.slice(0, 15).map((f) => ({
+                  data={followersData.map((f) => ({
                     name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name}|${networkLabel(f.network)}`,
                     fullName: f.name,
                     network: f.network,
@@ -525,7 +532,7 @@ export function PerformanceReportView({
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {report.analytics.followersByProfile.slice(0, 15).map((f, i) => (
+                    {followersData.map((f, i) => (
                       <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : colorForNetwork(f.network)} />
                     ))}
                   </Bar>
@@ -533,11 +540,12 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
+              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Los perfiles propios siempre aparecen para permitir comparación directa, aunque no estén en el top puro de tamaño. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
             </p>
           </CardContent>
         </Card>
-      )}
+        );
+      })()}
 
       {/* ── Interacciones por red social (modo MARCA usa absolutas; benchmark usa tasa) ── */}
       {isBrand && (report.analytics.networkInteractions?.length ?? 0) > 0 && (
