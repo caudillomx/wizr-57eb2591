@@ -519,6 +519,11 @@ export function PerformanceReportView({
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              {isBrand
+                ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${report.clientName} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.`
+                : `Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.`}
+            </p>
           </CardContent>
         </Card>
       )}
