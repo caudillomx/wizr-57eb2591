@@ -19,21 +19,24 @@ export interface PerformanceReportAnalytics {
   avgEngagement: number;
   avgGrowth: number;
   totalFollowers: number;
-  bestPerformer: { name: string; network: string; engagement: number } | null;
+  /** Promedio universal de interacciones absolutas por publicación (todo el set) */
+  avgInteractionsPerPost: number;
+  bestPerformer: { name: string; network: string; engagement: number; avgInteractionsPerPost: number } | null;
   fastestGrower: { name: string; network: string; growth: number } | null;
-  shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
-  rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
+  shareOfVoice: Array<{ name: string; network: string; isOwn: boolean; engagementShare: number; followersShare: number; interactionsShare: number }>;
+  /** Ranking por interacciones promedio por post (no por tasa %) — name = nombre limpio sin sufijo de red */
+  rankingByEngagement: Array<{ name: string; network: string; engagement: number; avgInteractionsPerPost: number; postsCount: number; isOwn: boolean; hasData: boolean }>;
   /** Engagement promedio + interacciones absolutas agregadas por marca (todas sus redes) */
-  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; profiles: number; followers: number }>;
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
-  /** Engagement promedio agregado por red social */
-  networkEngagement: Array<{ network: string; avgEngagement: number; profiles: number }>;
+  /** Engagement (interacciones promedio por post) por red social */
+  networkEngagement: Array<{ network: string; avgInteractionsPerPost: number; totalInteractions: number; postsCount: number; profiles: number }>;
   /** Interacciones absolutas (likes+comments+shares de top posts) sumadas por red social */
   networkInteractions: Array<{ network: string; totalInteractions: number; profiles: number }>;
-  /** Followers ordenados por perfil (top N) */
+  /** Followers ordenados por perfil (top N) — name = nombre limpio */
   followersByProfile: Array<{ name: string; network: string; followers: number; isOwn: boolean }>;
-  /** Brecha vs líder para la marca propia (en engagement) */
+  /** Brecha vs líder para la marca propia (en interacciones promedio por post) */
   ownBrandGap: { ownAvg: number; leaderName: string; leaderAvg: number; multiple: number } | null;
 }
 
@@ -97,6 +100,22 @@ function pct(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+// Quita sufijos tipo "_FB", "_IG", "- YT", "(Twitter)" de display_name
+const NETWORK_SUFFIX_RE = /[\s_\-·|]+\(?(fb|facebook|ig|instagram|tw|twitter|x|yt|youtube|tt|tiktok|li|linkedin|th|threads)\)?\s*$/i;
+function cleanProfileName(name: string): string {
+  let out = String(name || "").trim();
+  for (let i = 0; i < 3; i += 1) {
+    const replaced = out.replace(NETWORK_SUFFIX_RE, "").trim();
+    if (replaced === out) break;
+    out = replaced;
+  }
+  return out || String(name || "").trim();
+}
+
+function brandKeyFromProfile(p: FKProfileExt): string {
+  return cleanProfileName(getFKProfileDisplayName(p));
+}
+
 function computeAnalytics(
   profiles: FKProfileExt[],
   kpis: FKProfileKPI[],
@@ -122,21 +141,42 @@ function computeAnalytics(
     ? pct(validGrowth.reduce((s, v) => s + v, 0) / validGrowth.length)
     : 0;
 
-  // Best performer by engagement_rate
+  // ── Interacciones absolutas + posts por perfil (a partir de topPosts del periodo) ──
+  // Esta es la métrica universal que reemplaza al engagement_rate %
+  const profileInter = new Map<string, { total: number; posts: number }>();
+  for (const tp of topPosts) {
+    const eng = Number(tp.engagement);
+    if (!Number.isFinite(eng) || eng <= 0) continue;
+    if (!profileInter.has(tp.fk_profile_id)) profileInter.set(tp.fk_profile_id, { total: 0, posts: 0 });
+    const slot = profileInter.get(tp.fk_profile_id)!;
+    slot.total += eng;
+    slot.posts += 1;
+  }
+  const avgInteractionsPerPost = (() => {
+    let total = 0;
+    let posts = 0;
+    profileInter.forEach((v) => {
+      total += v.total;
+      posts += v.posts;
+    });
+    return posts > 0 ? Math.round(total / posts) : 0;
+  })();
+
+  // Best performer = mayor interacciones promedio por post
   let bestPerformer: PerformanceReportAnalytics["bestPerformer"] = null;
   let fastestGrower: PerformanceReportAnalytics["fastestGrower"] = null;
-  let bestEng = -Infinity;
+  let bestAvgInter = -Infinity;
   let bestGrowth = -Infinity;
 
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    if (!k) continue;
-    const eng = Number(k.engagement_rate);
-    const gr = Number(k.follower_growth_percent);
-    const name = getFKProfileDisplayName(p);
-    if (Number.isFinite(eng) && eng > bestEng) {
-      bestEng = eng;
-      bestPerformer = { name, network: p.network, engagement: pct(eng) };
+    const inter = profileInter.get(p.id);
+    const avgInter = inter && inter.posts > 0 ? inter.total / inter.posts : 0;
+    const gr = Number(k?.follower_growth_percent);
+    const name = cleanProfileName(getFKProfileDisplayName(p));
+    if (avgInter > bestAvgInter && avgInter > 0) {
+      bestAvgInter = avgInter;
+      bestPerformer = { name, network: p.network, engagement: pct(Number(k?.engagement_rate) || 0), avgInteractionsPerPost: Math.round(avgInter) };
     }
     if (Number.isFinite(gr) && gr > bestGrowth) {
       bestGrowth = gr;
@@ -144,36 +184,38 @@ function computeAnalytics(
     }
   }
 
-  // Share of voice: % of total engagement contribution and % of total followers
-  const totalEngContribution = profiles.reduce((s, p) => {
-    const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const eng = Number(k?.engagement_rate);
-    return s + (Number.isFinite(eng) && eng > 0 ? eng : 0);
-  }, 0) || 1;
-
+  // Share of voice (interacciones absolutas)
+  const totalInterAll = Array.from(profileInter.values()).reduce((s, v) => s + v.total, 0) || 1;
   const totalFollowersForShare = totalFollowers || 1;
 
   const shareOfVoice = profiles.map((p) => {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const eng = Number(k?.engagement_rate);
+    const inter = profileInter.get(p.id);
     const fol = Number(k?.followers);
+    const interTotal = inter?.total ?? 0;
     return {
-      name: getFKProfileDisplayName(p),
+      name: cleanProfileName(getFKProfileDisplayName(p)),
+      network: p.network,
       isOwn: !p.is_competitor,
-      engagementShare: pct(((Number.isFinite(eng) && eng > 0 ? eng : 0) / totalEngContribution) * 100),
+      engagementShare: pct((interTotal / totalInterAll) * 100),
+      interactionsShare: pct((interTotal / totalInterAll) * 100),
       followersShare: pct(((Number.isFinite(fol) && fol > 0 ? fol : 0) / totalFollowersForShare) * 100),
     };
   });
 
+  // Ranking por interacciones promedio por post
   const rankingByEngagement = profiles
     .map((p) => {
       const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-      const eng = Number(k?.engagement_rate);
-      const hasData = Number.isFinite(eng) && eng > 0;
+      const inter = profileInter.get(p.id);
+      const avgInter = inter && inter.posts > 0 ? Math.round(inter.total / inter.posts) : 0;
+      const hasData = avgInter > 0;
       return {
-        name: getFKProfileDisplayName(p),
+        name: cleanProfileName(getFKProfileDisplayName(p)),
         network: p.network,
-        engagement: hasData ? pct(eng) : 0,
+        engagement: pct(Number(k?.engagement_rate) || 0),
+        avgInteractionsPerPost: avgInter,
+        postsCount: inter?.posts ?? 0,
         isOwn: !p.is_competitor,
         hasData,
       };
@@ -181,35 +223,28 @@ function computeAnalytics(
     .sort((a, b) => {
       if (a.hasData && !b.hasData) return -1;
       if (!a.hasData && b.hasData) return 1;
-      return b.engagement - a.engagement;
+      return b.avgInteractionsPerPost - a.avgInteractionsPerPost;
     });
 
-  // ── Brand-level aggregation (sum profiles by brand) ──
-  // engsAbs = suma de interacciones absolutas (likes+comments+shares) de los top posts del período
-  // Esto evita el problema de "tasas en %" donde marcas grandes con %s pequeños desaparecen.
-  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; followers: number; profiles: number }>();
+  // ── Brand-level aggregation ──
+  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const brand = getFKProfileDisplayName(p);
+    const brand = brandKeyFromProfile(p);
     const eng = Number(k?.engagement_rate);
     const fol = Number(k?.followers);
     if (!brandMap.has(brand)) {
-      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, followers: 0, profiles: 0 });
+      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0 });
     }
     const slot = brandMap.get(brand)!;
     slot.profiles += 1;
     if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
     if (Number.isFinite(fol) && fol > 0) slot.followers += fol;
-  }
-  // Sumar engagement absoluto de top posts por marca (vía profile.id → display_name)
-  for (const tp of topPosts) {
-    const profile = profiles.find((pr) => pr.id === tp.fk_profile_id);
-    if (!profile) continue;
-    const brand = getFKProfileDisplayName(profile);
-    const slot = brandMap.get(brand);
-    if (!slot) continue;
-    const eng = Number(tp.engagement);
-    if (Number.isFinite(eng) && eng > 0) slot.engsAbs += eng;
+    const inter = profileInter.get(p.id);
+    if (inter) {
+      slot.engsAbs += inter.total;
+      slot.postsCount += inter.posts;
+    }
   }
   const brandEngagement = Array.from(brandMap.entries())
     .map(([brand, v]) => ({
@@ -217,26 +252,31 @@ function computeAnalytics(
       isOwn: v.isOwn,
       avgEngagement: v.engs.length ? pct(v.engs.reduce((s, e) => s + e, 0) / v.engs.length) : 0,
       totalInteractions: Math.round(v.engsAbs),
+      avgInteractionsPerPost: v.postsCount > 0 ? Math.round(v.engsAbs / v.postsCount) : 0,
+      postsCount: v.postsCount,
       profiles: v.profiles,
       followers: v.followers,
     }))
-    .sort((a, b) => b.totalInteractions - a.totalInteractions || b.avgEngagement - a.avgEngagement);
+    .sort((a, b) => b.avgInteractionsPerPost - a.avgInteractionsPerPost || b.totalInteractions - a.totalInteractions);
 
-  // ── Network-level growth + engagement aggregation ──
+  // ── Network-level aggregation ──
   const netGrowthMap = new Map<string, number[]>();
-  const netEngMap = new Map<string, number[]>();
+  const netInterAgg = new Map<string, { total: number; posts: number; profiles: Set<string> }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
     const gr = Number(k?.follower_growth_percent);
-    const eng = Number(k?.engagement_rate);
     if (Number.isFinite(gr)) {
       if (!netGrowthMap.has(p.network)) netGrowthMap.set(p.network, []);
       netGrowthMap.get(p.network)!.push(gr);
     }
-    if (Number.isFinite(eng) && eng > 0) {
-      if (!netEngMap.has(p.network)) netEngMap.set(p.network, []);
-      netEngMap.get(p.network)!.push(eng);
+    const inter = profileInter.get(p.id);
+    if (!netInterAgg.has(p.network)) netInterAgg.set(p.network, { total: 0, posts: 0, profiles: new Set() });
+    const slot = netInterAgg.get(p.network)!;
+    if (inter) {
+      slot.total += inter.total;
+      slot.posts += inter.posts;
     }
+    slot.profiles.add(p.id);
   }
   const networkGrowth = Array.from(netGrowthMap.entries())
     .map(([network, arr]) => ({
@@ -245,40 +285,34 @@ function computeAnalytics(
       profiles: arr.length,
     }))
     .sort((a, b) => b.avgGrowth - a.avgGrowth);
-  const networkEngagement = Array.from(netEngMap.entries())
-    .map(([network, arr]) => ({
+  const networkEngagement = Array.from(netInterAgg.entries())
+    .map(([network, v]) => ({
       network,
-      avgEngagement: pct(arr.reduce((s, v) => s + v, 0) / arr.length),
-      profiles: arr.length,
+      avgInteractionsPerPost: v.posts > 0 ? Math.round(v.total / v.posts) : 0,
+      totalInteractions: Math.round(v.total),
+      postsCount: v.posts,
+      profiles: v.profiles.size,
     }))
-    .sort((a, b) => b.avgEngagement - a.avgEngagement);
+    .filter((x) => x.avgInteractionsPerPost > 0)
+    .sort((a, b) => b.avgInteractionsPerPost - a.avgInteractionsPerPost);
 
-  // ── Interacciones absolutas por red social (suma desde top posts) ──
-  const netInterMap = new Map<string, { total: number; profiles: Set<string> }>();
-  for (const tp of topPosts) {
-    const eng = Number(tp.engagement);
-    if (!Number.isFinite(eng) || eng <= 0) continue;
-    const net = tp.network;
-    if (!netInterMap.has(net)) netInterMap.set(net, { total: 0, profiles: new Set() });
-    const slot = netInterMap.get(net)!;
-    slot.total += eng;
-    slot.profiles.add(tp.fk_profile_id);
-  }
-  const networkInteractions = Array.from(netInterMap.entries())
+  // ── Interacciones absolutas por red social ──
+  const networkInteractions = Array.from(netInterAgg.entries())
     .map(([network, v]) => ({
       network,
       totalInteractions: Math.round(v.total),
       profiles: v.profiles.size,
     }))
+    .filter((x) => x.totalInteractions > 0)
     .sort((a, b) => b.totalInteractions - a.totalInteractions);
 
-  // ── Followers por perfil (top followers) ──
+  // ── Followers por perfil ──
   const followersByProfile = profiles
     .map((p) => {
       const k = kpis.find((kp) => kp.fk_profile_id === p.id);
       const fol = Number(k?.followers);
       return {
-        name: getFKProfileDisplayName(p),
+        name: cleanProfileName(getFKProfileDisplayName(p)),
         network: p.network,
         followers: Number.isFinite(fol) && fol > 0 ? fol : 0,
         isOwn: !p.is_competitor,
@@ -287,16 +321,16 @@ function computeAnalytics(
     .filter((x) => x.followers > 0)
     .sort((a, b) => b.followers - a.followers);
 
-  // ── Own brand gap vs leader ──
+  // ── Own brand gap (en interacciones promedio por post) ──
   let ownBrandGap: PerformanceReportAnalytics["ownBrandGap"] = null;
-  const own = brandEngagement.find((b) => b.isOwn && b.avgEngagement > 0);
-  const leader = brandEngagement.find((b) => !b.isOwn && b.avgEngagement > 0);
+  const own = brandEngagement.find((b) => b.isOwn && b.avgInteractionsPerPost > 0);
+  const leader = brandEngagement.find((b) => !b.isOwn && b.avgInteractionsPerPost > 0);
   if (own && leader) {
     ownBrandGap = {
-      ownAvg: own.avgEngagement,
+      ownAvg: own.avgInteractionsPerPost,
       leaderName: leader.brand,
-      leaderAvg: leader.avgEngagement,
-      multiple: own.avgEngagement > 0 ? Math.round((leader.avgEngagement / own.avgEngagement) * 10) / 10 : 0,
+      leaderAvg: leader.avgInteractionsPerPost,
+      multiple: own.avgInteractionsPerPost > 0 ? Math.round((leader.avgInteractionsPerPost / own.avgInteractionsPerPost) * 10) / 10 : 0,
     };
   }
 
@@ -305,6 +339,7 @@ function computeAnalytics(
     avgEngagement,
     avgGrowth,
     totalFollowers,
+    avgInteractionsPerPost,
     bestPerformer,
     fastestGrower,
     shareOfVoice,
