@@ -14,15 +14,34 @@ export interface PerformanceReportHighlight {
   context: string;
 }
 
+export interface PerformanceNetworkBreakdown {
+  network: string;
+  followers: number;
+  avgEngagement: number;
+  avgGrowth: number;
+  postsPerDay: number;
+  profileCount: number;
+}
+
 export interface PerformanceReportAnalytics {
   networks: string[];
   avgEngagement: number;
   avgGrowth: number;
   totalFollowers: number;
+  avgPostsPerDay: number;
+  followersByNetwork: PerformanceNetworkBreakdown[];
+  bestNetworkByEngagement: { network: string; engagement: number } | null;
+  bestNetworkByGrowth: { network: string; growth: number } | null;
+  riskNetwork: { network: string; growth: number } | null;
   bestPerformer: { name: string; network: string; engagement: number } | null;
   fastestGrower: { name: string; network: string; growth: number } | null;
   shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
+  // Benchmark-only
+  ownPosition: { rank: number; total: number } | null;
+  ownEngagementShare: number;
+  gapToLeader: { leaderName: string; leaderNetwork: string; gapPercent: number } | null;
+  topCompetitor: { name: string; engagement: number } | null;
 }
 
 export interface PerformanceTopPostSnapshot {
