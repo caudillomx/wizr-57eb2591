@@ -450,16 +450,17 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Engagement por red social ----------
-  const networkEngBlock = report.analytics.networkEngagement?.length > 1
+  // ---------- Engagement por red social (BENCHMARK only) ----------
+  const networkEngBlock = !isBrand && (report.analytics.networkEngagement?.length ?? 0) > 1
     ? section(
         "Engagement promedio por red social",
         chartVerticalBars(
           report.analytics.networkEngagement.map((n) => ({
-            label: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+            label: networkLabel(n.network),
             value: n.avgEngagement,
+            color: colorForNetwork(n.network),
           })),
-        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">${isBrand ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${esc(clientName)} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.` : "Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal."}</p>`,
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.</p>`,
         { eyebrow: "Sección · Engagement por red" },
       )
     : "";
@@ -533,6 +534,7 @@ export function buildPerformanceReportHTML(
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
+    ${networkInterBlock}
     ${followersBlock}
     ${brandEngBlock}
     ${networkEngBlock}
