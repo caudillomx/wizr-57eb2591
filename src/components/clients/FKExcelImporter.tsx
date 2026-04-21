@@ -349,6 +349,9 @@ export function FKExcelImporter({ clientId }: Props) {
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [overlapInfo, setOverlapInfo] = useState<{
+    overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }>;
+  } | null>(null);
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
@@ -384,6 +387,12 @@ export function FKExcelImporter({ clientId }: Props) {
     (f) => f.kind === "kpis" && (!f.periodStart || !f.periodEnd)
   );
 
+  /**
+   * Pre-check: detecta periodos de KPIs que se solapan con snapshots existentes
+   * (sin ser idénticos). Si hay solapamiento, muestra un aviso global y deja que
+   * el usuario decida reemplazar (borrar existentes solapados) o cancelar.
+   * Igualdad exacta (mismo period_start+period_end) NO es solapamiento: es upsert natural.
+   */
   const handleImport = async () => {
     if (missingPeriod) {
       toast({
@@ -393,10 +402,92 @@ export function FKExcelImporter({ clientId }: Props) {
       });
       return;
     }
+
+    const kpiFiles = files.filter((f) => f.kind === "kpis" && f.periodStart && f.periodEnd);
+    if (kpiFiles.length === 0) {
+      return runImport(false);
+    }
+
+    const incoming: Array<{ network: FKNetwork; displayName: string; profileId: string; periodStart: string; periodEnd: string }> = [];
+    for (const f of kpiFiles) {
+      const buf = await f.file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      const ps = formatDate(f.periodStart!, "yyyy-MM-dd");
+      const pe = formatDate(f.periodEnd!, "yyyy-MM-dd");
+      for (const sheetName of wb.SheetNames) {
+        const { rows, kind } = readSheetWithHeaderDetection(wb.Sheets[sheetName]);
+        if (kind !== "kpis") continue;
+        for (const r of rows) {
+          const m = mapKpiRow(r);
+          if (m) incoming.push({ network: m.network, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+        }
+      }
+    }
+
+    if (incoming.length === 0) return runImport(false);
+
+    const { data: existingProfiles } = await supabase
+      .from("fk_profiles")
+      .select("id, network, profile_id, display_name")
+      .eq("client_id", clientId);
+
+    const profileMap = new Map<string, { id: string; displayName: string; network: string }>();
+    (existingProfiles || []).forEach((e: any) => {
+      buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+        profileMap.set(key, { id: e.id, displayName: e.display_name || e.profile_id, network: e.network });
+      });
+    });
+
+    const existingIds = Array.from(new Set(Array.from(profileMap.values()).map((p) => p.id)));
+    let existingKpis: Array<{ fk_profile_id: string; period_start: string; period_end: string }> = [];
+    if (existingIds.length > 0) {
+      const { data } = await supabase
+        .from("fk_profile_kpis")
+        .select("fk_profile_id, period_start, period_end")
+        .in("fk_profile_id", existingIds);
+      existingKpis = data || [];
+    }
+
+    const overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }> = [];
+    const seen = new Set<string>();
+    for (const inc of incoming) {
+      const candidates = buildCandidateKeys(inc.network, inc.displayName, inc.profileId);
+      const matched = candidates.map((k) => profileMap.get(k)).find(Boolean);
+      if (!matched) continue;
+      for (const ek of existingKpis) {
+        if (ek.fk_profile_id !== matched.id) continue;
+        const sameRange = ek.period_start === inc.periodStart && ek.period_end === inc.periodEnd;
+        if (sameRange) continue;
+        const intersects = ek.period_start <= inc.periodEnd && ek.period_end >= inc.periodStart;
+        if (intersects) {
+          const key = `${matched.id}|${ek.period_start}|${ek.period_end}|${inc.periodStart}|${inc.periodEnd}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            overlaps.push({
+              profileName: matched.displayName,
+              network: matched.network,
+              existing: `${ek.period_start} → ${ek.period_end}`,
+              incoming: `${inc.periodStart} → ${inc.periodEnd}`,
+            });
+          }
+        }
+      }
+    }
+
+    if (overlaps.length === 0) {
+      return runImport(false);
+    }
+
+    setOverlapInfo({ overlaps });
+  };
+
+  const runImport = async (replaceOverlaps: boolean) => {
+    setOverlapInfo(null);
     setImporting(true);
     let totalProfiles = 0;
     let totalKpis = 0;
     let totalPosts = 0;
+    let deletedOverlaps = 0;
 
     try {
       for (const f of files) {
