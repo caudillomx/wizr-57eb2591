@@ -106,16 +106,20 @@ export function PerformanceReportView({
     isOwn: r.isOwn,
   }));
 
-  const sovChartData = (report.analytics?.shareOfVoice ?? [])
-    .filter((s) => s.interactionsShare > 0)
-    .slice(0, 10)
-    .map((s) => ({
-      name: s.name,
-      network: s.network,
-      value: s.interactionsShare,
-      isOwn: s.isOwn,
-      fill: colorForNetwork(s.network),
-    }));
+  // Share of voice — garantiza inclusión de TODAS las marcas propias + completa con competencia hasta llegar al top
+  const sovAll = (report.analytics?.shareOfVoice ?? []).filter((s) => s.interactionsShare > 0);
+  const sovOwn = sovAll.filter((s) => s.isOwn);
+  const sovComp = sovAll.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
+  const SOV_TARGET = 12;
+  const sovCombined = [...sovOwn, ...sovComp.slice(0, Math.max(SOV_TARGET - sovOwn.length, 6))]
+    .sort((a, b) => b.interactionsShare - a.interactionsShare);
+  const sovChartData = sovCombined.map((s) => ({
+    name: s.name,
+    network: s.network,
+    value: s.interactionsShare,
+    isOwn: s.isOwn,
+    fill: colorForNetwork(s.network),
+  }));
 
   return (
     <div className="space-y-8">
@@ -219,28 +223,39 @@ export function PerformanceReportView({
             <div className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={report.analytics.brandEngagement.slice(0, 12).map((b) => ({
-                    name: b.brand.length > 20 ? `${b.brand.substring(0, 18)}…` : b.brand,
-                    fullName: b.brand,
-                    value: b.avgInteractionsPerPost,
-                    posts: b.postsCount,
-                    profiles: b.profiles,
-                    fill: colorForBrand(b.brand, b.isOwn, brandsList),
-                  }))}
+                  data={report.analytics.brandEngagement.slice(0, 12).map((b) => {
+                    const netLabel = b.networks && b.networks.length > 0
+                      ? (b.networks.length === 1 ? networkLabel(b.networks[0]) : `${b.networks.length} redes`)
+                      : "";
+                    const truncated = b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand;
+                    return {
+                      name: `${truncated}|${netLabel}`,
+                      fullName: b.brand,
+                      networks: b.networks,
+                      value: b.avgInteractionsPerPost,
+                      posts: b.postsCount,
+                      profiles: b.profiles,
+                      fill: colorForBrand(b.brand, b.isOwn, brandsList),
+                    };
+                  })}
                   layout="vertical"
                   margin={{ top: 8, right: 60, left: 0, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} width={140} />
+                  <YAxis type="category" dataKey="name" tick={(props) => <TwoLineTick {...props} />} width={170} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const p = payload[0].payload;
+                      const netStr = (p.networks && p.networks.length > 0)
+                        ? p.networks.map((n: string) => networkLabel(n)).join(", ")
+                        : "—";
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
+                          <div className="text-muted-foreground">{netStr}</div>
                           <div className="text-muted-foreground">{formatNumber(p.value)} interacciones promedio · {p.posts} posts · {p.profiles} perfil(es)</div>
                         </div>
                       );
@@ -256,7 +271,7 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: cada barra es el promedio de reacciones (likes + comentarios + compartidos) que cada publicación de la marca recibe en el período. Es la métrica que mejor compara marcas de tamaños distintos: prescinde del tamaño de la audiencia y revela cuánta conversación moviliza cada pieza de contenido. {report.clientName} se identifica con su color principal.
+              Lectura: cada barra es el promedio de reacciones (likes + comentarios + compartidos) por publicación de la marca, agregando todas sus redes activas (indicadas debajo del nombre). Iguala marcas de tamaños distintos: revela cuánta conversación moviliza cada pieza, no la audiencia. {report.clientName} se identifica con el color principal.
             </p>
           </CardContent>
         </Card>
@@ -454,23 +469,30 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Seguidores por perfil (Top 15) — solo BENCHMARK ── */}
-      {!isBrand && report.analytics.followersByProfile?.length > 0 && (
+      {/* ── Seguidores por perfil — incluye TODOS los propios + completa hasta 15 ── */}
+      {!isBrand && report.analytics.followersByProfile?.length > 0 && (() => {
+        const allFollowers = report.analytics.followersByProfile;
+        const ownFollowers = allFollowers.filter((f) => f.isOwn);
+        const compFollowers = allFollowers.filter((f) => !f.isOwn).sort((a, b) => b.followers - a.followers);
+        const TARGET = 15;
+        const followersData = [...ownFollowers, ...compFollowers.slice(0, Math.max(TARGET - ownFollowers.length, 6))]
+          .sort((a, b) => b.followers - a.followers);
+        return (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users2 className="h-4 w-4 text-primary" />
-              Perfiles con más seguidores (Top 15)
+              Perfiles con más seguidores (Top {followersData.length})
             </CardTitle>
             <CardDescription className="text-xs">
-              Tamaño de audiencia por perfil · color por red social
+              Tamaño de audiencia por perfil · incluye todos los perfiles de {report.clientName} · color por red social
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={report.analytics.followersByProfile.slice(0, 15).map((f) => ({
+                  data={followersData.map((f) => ({
                     name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name}|${networkLabel(f.network)}`,
                     fullName: f.name,
                     network: f.network,
@@ -510,7 +532,7 @@ export function PerformanceReportView({
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {report.analytics.followersByProfile.slice(0, 15).map((f, i) => (
+                    {followersData.map((f, i) => (
                       <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : colorForNetwork(f.network)} />
                     ))}
                   </Bar>
@@ -518,11 +540,12 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
+              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Los perfiles propios siempre aparecen para permitir comparación directa, aunque no estén en el top puro de tamaño. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
             </p>
           </CardContent>
         </Card>
-      )}
+        );
+      })()}
 
       {/* ── Interacciones por red social (modo MARCA usa absolutas; benchmark usa tasa) ── */}
       {isBrand && (report.analytics.networkInteractions?.length ?? 0) > 0 && (
@@ -625,35 +648,45 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: cada barra promedia las reacciones absolutas que cada publicación obtiene en esa red, sumando a todas las marcas del set. Si una red destaca, ahí es donde la audiencia del sector está más activa por contenido. Para {report.clientName} esto orienta dónde concentrar producción.
+              Lectura: cada barra promedia las reacciones absolutas que cada publicación obtiene en esa red, sumando a todas las marcas del set. Como referencia, el promedio del sector es ≈{formatNumber(report.analytics.avgInteractionsPerPost)} interacciones/post — barras por encima señalan redes donde la audiencia es más activa por contenido. Para {report.clientName} esto orienta dónde concentrar producción.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* ── Cuota de interacciones (donut por marca) — usa interacciones absolutas ── */}
+      {/* ── Cuota de interacciones (donut por marca) — incluye todas las propias + completa hasta 10 ── */}
       {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
         const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
-        const donutData = report.analytics.brandEngagement
-          .filter((b) => b.totalInteractions > 0)
-          .slice(0, 10)
-          .map((b) => ({
-            name: b.brand,
+        const withInter = report.analytics.brandEngagement.filter((b) => b.totalInteractions > 0);
+        const ownBrands = withInter.filter((b) => b.isOwn);
+        const compBrands = withInter.filter((b) => !b.isOwn).sort((a, b) => b.totalInteractions - a.totalInteractions);
+        const DONUT_TARGET = 10;
+        const selected = [...ownBrands, ...compBrands.slice(0, Math.max(DONUT_TARGET - ownBrands.length, 4))]
+          .sort((a, b) => b.totalInteractions - a.totalInteractions);
+        const donutData = selected.map((b) => {
+          const netLabel = b.networks && b.networks.length > 0
+            ? (b.networks.length === 1 ? networkLabel(b.networks[0]) : `${b.networks.length} redes`)
+            : "";
+          return {
+            name: netLabel ? `${b.brand} (${netLabel})` : b.brand,
+            brand: b.brand,
+            networks: b.networks,
             value: Math.round((b.totalInteractions / total) * 1000) / 10,
             absolute: b.totalInteractions,
             isOwn: b.isOwn,
             fill: colorForBrand(b.brand, b.isOwn, brandsList),
-          }));
+          };
+        });
         if (donutData.length === 0) return null;
         return (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Users2 className="h-4 w-4 text-primary" />
-                Cuota de interacciones por marca
+                Cuota de interacciones por marca (Top {donutData.length})
               </CardTitle>
               <CardDescription className="text-xs">
-                ¿Qué marca concentra la mayor parte de las interacciones del período?
+                ¿Qué marca concentra la mayor parte de las interacciones del período? · red social entre paréntesis
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -678,9 +711,13 @@ export function PerformanceReportView({
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const p = payload[0].payload;
+                        const netStr = (p.networks && p.networks.length > 0)
+                          ? p.networks.map((n: string) => networkLabel(n)).join(", ")
+                          : "—";
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
-                            <div className="font-semibold">{p.name}</div>
+                            <div className="font-semibold">{p.brand}</div>
+                            <div className="text-muted-foreground">{netStr}</div>
                             <div className="text-muted-foreground">{formatNumber(p.absolute)} interacciones · {p.value}% del total</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
@@ -692,7 +729,7 @@ export function PerformanceReportView({
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación. Para {report.clientName}, este es el termómetro real de presencia frente a competencia.
+                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Las marcas propias de {report.clientName} siempre aparecen para permitir comparación directa. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación.
               </p>
             </CardContent>
           </Card>

@@ -27,7 +27,7 @@ export interface PerformanceReportAnalytics {
   /** Ranking por interacciones promedio por post (no por tasa %) — name = nombre limpio sin sufijo de red */
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; avgInteractionsPerPost: number; postsCount: number; isOwn: boolean; hasData: boolean }>;
   /** Engagement promedio + interacciones absolutas agregadas por marca (todas sus redes) */
-  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number }>;
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number; networks: string[] }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
   /** Engagement (interacciones promedio por post) por red social */
@@ -227,17 +227,18 @@ function computeAnalytics(
     });
 
   // ── Brand-level aggregation ──
-  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number }>();
+  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; engsAbs: number; postsCount: number; followers: number; profiles: number; networks: Set<string> }>();
   for (const p of profiles) {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
     const brand = brandKeyFromProfile(p);
     const eng = Number(k?.engagement_rate);
     const fol = Number(k?.followers);
     if (!brandMap.has(brand)) {
-      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0 });
+      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], engsAbs: 0, postsCount: 0, followers: 0, profiles: 0, networks: new Set() });
     }
     const slot = brandMap.get(brand)!;
     slot.profiles += 1;
+    slot.networks.add(p.network);
     if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
     if (Number.isFinite(fol) && fol > 0) slot.followers += fol;
     const inter = profileInter.get(p.id);
@@ -256,6 +257,7 @@ function computeAnalytics(
       postsCount: v.postsCount,
       profiles: v.profiles,
       followers: v.followers,
+      networks: Array.from(v.networks),
     }))
     .sort((a, b) => b.avgInteractionsPerPost - a.avgInteractionsPerPost || b.totalInteractions - a.totalInteractions);
 

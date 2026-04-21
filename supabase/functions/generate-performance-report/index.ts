@@ -104,13 +104,14 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Top 5 posts overall by engagement (already filtered by date by the hook)
-    const top5Posts = [...topPosts]
+    // Top 10 posts overall by engagement (already filtered by date by the hook)
+    const topPostsForAI = [...topPosts]
       .sort((a, b) => b.engagement - a.engagement)
-      .slice(0, 5)
-      .map((p) => {
+      .slice(0, 10)
+      .map((p, idx) => {
         const profile = profiles.find((pr) => pr.id === p.fk_profile_id);
         return {
+          rank: idx + 1,
           author: profile?.display_name || profile?.profile_id || "—",
           network: p.network,
           date: p.post_date,
@@ -127,13 +128,12 @@ Deno.serve(async (req) => {
     const ownProfiles = profiles.filter((p) => !p.is_competitor);
     const competitorProfiles = profiles.filter((p) => p.is_competitor);
     const ownIds = new Set(ownProfiles.map((p) => p.id));
-    const ownInTop5 = top5Posts.length === 0
+    const ownInTop5 = topPostsForAI.length === 0
       ? null
-      : [...topPosts]
-          .sort((a, b) => b.engagement - a.engagement)
+      : topPostsForAI
           .slice(0, 5)
           .filter((p) => {
-            const prof = profiles.find((pr) => pr.id === p.fk_profile_id);
+            const prof = profiles.find((pr) => pr.display_name === p.author || pr.profile_id === p.author);
             return prof && !prof.is_competitor;
           }).length;
 
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
     const autoFlags = {
       own_posts_in_top5: ownInTop5,
-      total_top5: top5Posts.length,
+      total_top5: Math.min(topPostsForAI.length, 5),
       own_profiles_count: ownProfiles.length,
       competitor_profiles_count: competitorProfiles.length,
       profiles_without_engagement: profilesWithoutEng,
@@ -182,7 +182,7 @@ Estás analizando comparativamente la marca propia vs sus competidores. El foco 
 ${JSON.stringify(autoFlags, null, 2)}
 
 REGLAS DE INCORPORACIÓN OBLIGATORIA:
-${!isBrand && ownInTop5 === 0 && top5Posts.length > 0
+${!isBrand && ownInTop5 === 0 && topPostsForAI.length > 0
   ? `- HALLAZGO CRÍTICO: ningún post de la marca propia aparece en el Top 5 del período. Debe ser uno de los primeros 2 hallazgos.\n`
   : ""}
 ${profilesWithoutEng > 0
@@ -202,6 +202,8 @@ ${focusBlock}
 ${autoFlagsBlock}
 REGLAS DURAS DE DATOS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres, métricas, porcentajes ni perfiles.
+- ANTI-INVENCIÓN DE TOP CONTENT (CRÍTICO): cuando referas a piezas concretas en "topContentInsight" o en cualquier hallazgo, USA ÚNICAMENTE los items del array TOP_POSTS provisto, identificándolos por su "rank" + "author" + "network" + "engagement". JAMÁS inventes un post (autor, red, cifra) que no esté literalmente en TOP_POSTS. Si dices "el post de X en Y con Z interacciones", X, Y, Z DEBEN coincidir EXACTAMENTE con un item de TOP_POSTS. Si no encuentras una pieza adecuada, NO la cites: habla del patrón agregado del top.
+- Cuando ejemplifiques posts, prefiere citar los rangos top 1, top 2 y top 3 del array, mencionando autor, red y cifra de "engagement" tal cual figuran.
 - MÉTRICA PRINCIPAL DE ENGAGEMENT: usa "interacciones promedio por publicación" (campo avgInteractionsPerPost en analytics; suma de likes+comentarios+shares dividida entre número de posts del período). Es la métrica universal del reporte. Cita siempre "≈X interacciones por post" en lugar de tasas % crudas.
 - LAS TASAS % (engagement_rate) son CONTEXTO SECUNDARIO. Solo cítalas cuando aporten lectura (ej. "tasa marginal de 0.16%"); jamás como cifra principal de un highlight ni hallazgo.
 - TODA cifra debe llevar UNIDAD explícita: interacciones como "≈X interacciones/post" o "X,XXX interacciones totales", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día".
@@ -260,7 +262,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
     "Recomendación 1 (DECISIÓN + PLAZO + RIESGO/OPORTUNIDAD para ${clientName})",
     "Recomendación 2..."
   ],
-  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top y qué brecha de creatividad/formato implica para ${clientName}",
+  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top. Cita 1-2 ejemplos concretos USANDO ÚNICAMENTE items del array TOP_POSTS (autor + red + cifra de engagement EXACTOS). Si no encuentras ejemplo adecuado, habla del patrón agregado sin inventar piezas.",
   "competitiveInsight": "Solo en BENCHMARK: análisis de 3-4 oraciones sobre posicionamiento competitivo de ${clientName}. En MARCA: cadena vacía.",
   "rankingInsight": "2-3 oraciones leyendo el ranking desde la óptica de ${clientName}",
   "sovInsight": "Solo en BENCHMARK: 2-3 oraciones leyendo el share of voice desde ${clientName}. En MARCA: cadena vacía.",
@@ -279,10 +281,10 @@ ${JSON.stringify(analytics, null, 2)}
 PERFILES Y KPIS DEL PERÍODO:
 ${JSON.stringify(profilesSummary, null, 2)}
 
-TOP 5 CONTENIDOS POR ENGAGEMENT EN EL PERÍODO:
-${JSON.stringify(top5Posts, null, 2)}
+TOP_POSTS (Top 10 contenidos por engagement en el período · ÚNICA fuente válida para citar piezas concretas):
+${JSON.stringify(topPostsForAI, null, 2)}
 
-Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hallazgos/recomendaciones y la estructura interna QUÉ+DÓNDE+IMPLICACIÓN / DECISIÓN+PLAZO+RIESGO.`;
+Genera el reporte siguiendo el JSON especificado. Cuando cites una pieza concreta, copia EXACTAMENTE autor, red y cifra de engagement de un item de TOP_POSTS — está PROHIBIDO citar posts que no estén en este array.`;
 
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
