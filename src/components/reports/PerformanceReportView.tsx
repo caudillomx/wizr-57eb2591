@@ -72,31 +72,46 @@ export function PerformanceReportView({
     }));
 
   return (
-    <div className="space-y-6">
-      {/* Title + Summary */}
-      <div className="space-y-3">
+    <div className="space-y-8">
+      {/* ── Editorial header (Listening identity) ── */}
+      <div
+        className="rounded-xl px-8 py-7 text-white shadow-md"
+        style={{
+          background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-bold tracking-[0.2em] px-2.5 py-1 rounded"
+              style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "#c7d2fe" }}
+            >
+              {isBrand ? "PERFORMANCE · MARCA" : "PERFORMANCE · BENCHMARK"}
+            </span>
+            <span className="text-[10px] font-medium tracking-wider px-2.5 py-1 rounded bg-white/10 text-white/90">
+              {report.clientName}
+            </span>
+          </div>
+          <span className="text-[11px] font-semibold tracking-wider px-3 py-1.5 rounded-full bg-white/10 text-white/90 inline-flex items-center gap-1.5">
+            {isBrand ? <Target className="h-3 w-3" /> : <Users2 className="h-3 w-3" />}
+            {dateLabel}
+          </span>
+        </div>
         <EditableText
           editing={editing}
           value={report.title}
           onChange={(v) => update({ title: v })}
-          className="text-2xl font-bold block"
+          className="text-3xl font-bold block leading-tight mb-3 text-white"
           placeholder="Título del reporte"
         />
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline">{dateLabel}</Badge>
-          <Badge variant={isBrand ? "default" : "secondary"} className="gap-1">
-            {isBrand ? <Target className="h-3 w-3" /> : <Users2 className="h-3 w-3" />}
-            {isBrand ? "Reporte de Marca" : "Reporte de Benchmark"}
-          </Badge>
-          <Badge variant="outline">{report.clientName}</Badge>
-        </div>
+        <div className="h-px bg-white/15 my-3" />
         <EditableText
           editing={editing}
           value={report.summary}
           onChange={(v) => update({ summary: v })}
           multiline
           minRows={3}
-          className="text-muted-foreground block"
+          className="block text-[13.5px] leading-[1.7] text-white/85"
           placeholder="Resumen ejecutivo"
         />
       </div>
@@ -366,20 +381,26 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* Key findings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+      {/* ── Hallazgos clave (editorial) ── */}
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            Hallazgos clave
-          </CardTitle>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-primary uppercase">
+              Sección 01
+            </span>
+          </div>
+          <CardTitle className="text-xl font-bold mt-1">Hallazgos clave</CardTitle>
+          <CardDescription className="text-xs">
+            Lectura crítica del período · {report.clientName}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ol className="space-y-3">
+          <ol className="space-y-5">
             {(report.keyFindings ?? []).map((f, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center mt-0.5">
-                  {i + 1}
+              <li key={i} className="flex gap-4 pb-5 border-b last:border-0 last:pb-0">
+                <span className="flex-shrink-0 text-3xl font-bold text-primary leading-none tabular-nums w-10">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <EditableText
                   editing={editing}
@@ -387,7 +408,7 @@ export function PerformanceReportView({
                   onChange={(v) => updateArrayItem("keyFindings", i, v)}
                   multiline
                   minRows={2}
-                  className="flex-1 block"
+                  className="flex-1 block text-[13.5px] leading-[1.7] text-foreground"
                 />
               </li>
             ))}
@@ -395,20 +416,29 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
 
-      {/* Recommendations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-primary" />
-            Recomendaciones
-          </CardTitle>
+      {/* ── Recomendaciones (editorial) ── */}
+      <Card className="border-l-4" style={{ borderLeftColor: "#f97316" }}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" style={{ color: "#f97316" }} />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "#f97316" }}>
+              Sección 02
+            </span>
+          </div>
+          <CardTitle className="text-xl font-bold mt-1">Recomendaciones</CardTitle>
+          <CardDescription className="text-xs">
+            Decisiones accionables · ámbito digital
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ol className="space-y-3">
+          <ol className="space-y-5">
             {(report.recommendations ?? []).map((r, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="flex-shrink-0 h-6 w-6 rounded-full bg-secondary text-secondary-foreground font-semibold text-xs flex items-center justify-center mt-0.5">
-                  {i + 1}
+              <li key={i} className="flex gap-4 pb-5 border-b last:border-0 last:pb-0">
+                <span
+                  className="flex-shrink-0 text-3xl font-bold leading-none tabular-nums w-10"
+                  style={{ color: "#f97316" }}
+                >
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <EditableText
                   editing={editing}
@@ -416,7 +446,7 @@ export function PerformanceReportView({
                   onChange={(v) => updateArrayItem("recommendations", i, v)}
                   multiline
                   minRows={2}
-                  className="flex-1 block"
+                  className="flex-1 block text-[13.5px] leading-[1.7] text-foreground"
                 />
               </li>
             ))}
@@ -424,24 +454,28 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
 
-      {/* Conclusion */}
+      {/* ── Conclusión (editorial closing) ── */}
       {report.conclusion && (
-        <Card className="bg-muted/30">
-          <CardHeader>
-            <CardTitle className="text-base">Conclusión</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EditableText
-              editing={editing}
-              value={report.conclusion}
-              onChange={(v) => update({ conclusion: v })}
-              multiline
-              minRows={2}
-              className="block text-sm"
-              placeholder="Conclusión ejecutiva"
-            />
-          </CardContent>
-        </Card>
+        <div
+          className="rounded-xl px-8 py-7 text-white shadow-md"
+          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)" }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="h-4 w-4" style={{ color: "#c7d2fe" }} />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: "#c7d2fe" }}>
+              Conclusión ejecutiva
+            </span>
+          </div>
+          <EditableText
+            editing={editing}
+            value={report.conclusion}
+            onChange={(v) => update({ conclusion: v })}
+            multiline
+            minRows={2}
+            className="block text-[14px] leading-[1.75] text-white/90"
+            placeholder="Conclusión ejecutiva"
+          />
+        </div>
       )}
     </div>
   );
