@@ -80,12 +80,7 @@ export function RankingDateFilter({
     onPresetChange(next);
     if (next !== "custom") {
       onCustomRangeChange(undefined);
-      // Auto-apply for non-custom presets so users don't need to click "Aplicar"
-      setAppliedPreset(next);
-      setAppliedCustomRange(undefined);
-      setHasChanges(false);
-      // Pass the new preset explicitly to avoid stale closure on parent state
-      onApply?.(next, undefined);
+      setHasChanges(true);
       return;
     }
     setHasChanges(true);
