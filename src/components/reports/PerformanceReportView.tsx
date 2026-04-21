@@ -95,24 +95,26 @@ export function PerformanceReportView({
     );
   };
 
-  const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.engagement > 0);
+  const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.avgInteractionsPerPost > 0);
   const rankingChartData = rankingValid.slice(0, 10).map((r) => ({
     name: `${r.name}|${networkLabel(r.network)}`,
     fullName: r.name,
     network: r.network,
-    value: r.engagement,
-    fill: r.isOwn ? "hsl(var(--primary))" : colorForNetwork(r.network),
+    value: r.avgInteractionsPerPost,
+    posts: r.postsCount,
+    fill: colorForNetwork(r.network),
     isOwn: r.isOwn,
   }));
 
   const sovChartData = (report.analytics?.shareOfVoice ?? [])
-    .filter((s) => s.engagementShare > 0)
-    .slice(0, 8)
-    .map((s, i) => ({
+    .filter((s) => s.interactionsShare > 0)
+    .slice(0, 10)
+    .map((s) => ({
       name: s.name,
-      value: s.engagementShare,
+      network: s.network,
+      value: s.interactionsShare,
       isOwn: s.isOwn,
-      fill: s.isOwn ? "hsl(var(--primary))" : BRAND_PALETTE[(i + 1) % BRAND_PALETTE.length],
+      fill: colorForNetwork(s.network),
     }));
 
   return (
