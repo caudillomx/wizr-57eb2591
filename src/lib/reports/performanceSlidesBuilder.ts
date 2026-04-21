@@ -103,17 +103,19 @@ function cleanProfileName(name: string): string {
   return out || String(name || "").trim();
 }
 
-/** Clave canónica para agrupar marcas: sin acentos, lowercase, colapsa "mex/mexico/méxico" y normaliza espacios/guiones bajos */
+/** Clave canónica para agrupar marcas: sin acentos, lowercase, elimina sufijos geográficos (mx/mex/mexico) y normaliza separadores */
 function brandKey(name: string): string {
   const cleaned = cleanProfileName(name);
-  return cleaned
+  let k = cleaned
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // quita acentos
     .toLowerCase()
     .replace(/[_\-.]+/g, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b(mexico|mex|mx)\b/g, "mexico"); // colapsa variantes
+    .trim();
+  // Elimina tokens geográficos sueltos en cualquier posición (mx, mex, mexico, méxico, mx., latam, lat)
+  k = k.replace(/\b(mexico|mex|mx|latam|lat)\b/g, "").replace(/\s+/g, " ").trim();
+  return k;
 }
 
 /** Elige la mejor etiqueta visible entre variantes (prefiere la más larga / con acentos) */
