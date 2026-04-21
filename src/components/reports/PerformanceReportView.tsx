@@ -61,7 +61,7 @@ export function PerformanceReportView({
     };
   });
 
-  const sovChartData = report.analytics.shareOfVoice
+  const sovChartData = (report.analytics?.shareOfVoice ?? [])
     .filter((s) => s.engagementShare > 0)
     .slice(0, 8)
     .map((s, i) => ({
