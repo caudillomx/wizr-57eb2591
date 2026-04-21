@@ -215,7 +215,10 @@ REGLAS PARA HIGHLIGHTS (4 KPI cards de cabecera, las más visibles del reporte):
 - "label": 2-4 palabras MÁXIMO, totalmente claras (ej. "Engagement líder del período", "Brecha vs líder", "Cuota de voz", "Posts del Top 5").
 - "value": LA CIFRA con UNIDAD COMPLETA (ej. "600 interacciones", "0.02% engagement", "13× por debajo", "0 de 5"). NUNCA solo "600" o "0.02".
 - "context": 1 oración explicativa que conecte la cifra con ${clientName} (ej. "BBVA México en Instagram lidera el período; ningún post de ${clientName} alcanzó este nivel.").
-- Los 4 highlights deben cubrir ángulos COMPLEMENTARIOS y útiles: NUNCA repitas engagement medio, audiencia total ni métricas que sumadas dan 0 o son redundantes. Mezcla ej: (1) Pico de engagement del período + dueño, (2) Posición/brecha de ${clientName} vs líder, (3) Mayor crecimiento del período + red, (4) Frecuencia o cobertura de ${clientName}.
+- Los 4 highlights deben cubrir ángulos COMPLEMENTARIOS y útiles: NUNCA repitas engagement medio, audiencia total ni métricas que sumadas dan 0 o son redundantes.
+${isBrand
+  ? `- MODO MARCA: PROHIBIDO usar como highlight "Posts del Top 5" o cualquier métrica que mida "X de 5 posts top son propios" — es OBVIO porque solo se analiza esta marca y carece de valor analítico. Mezcla en cambio: (1) Mejor red por interacciones absolutas + cifra, (2) Red con mejor cadencia o frecuencia, (3) Red de mayor crecimiento o pérdida del período, (4) Pieza de contenido líder con sus interacciones absolutas.`
+  : `- MODO BENCHMARK: Mezcla ej: (1) Pico de engagement del período + dueño, (2) Posición/brecha de ${clientName} vs líder, (3) Mayor crecimiento del período + red, (4) Frecuencia o cobertura de ${clientName}.`}
 
 REGLAS NUEVAS DE CONTEXTUALIZACIÓN POR GRÁFICA (obligatorias):
 - "rankingInsight": 2-3 oraciones que lean el Top 10 perfiles desde la óptica de ${clientName}: dónde aparece, qué brecha tiene vs líder, qué red propia destaca o se queda atrás. Cifras concretas obligatorias.
@@ -236,7 +239,7 @@ REGLAS EDITORIALES (estilo Wizr · CRÍTICAS):
 - Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, cadencia, plataforma, mensaje, creatividad, partnership de contenido). Prohibido recomendar producto, RH, legal, presupuesto o procesos internos.
 - AUDIENCIA del reporte: equipo de marketing/comunicación digital de ${clientName} y dirección. Habla en su lenguaje, no para el consumidor final ni para un data scientist.
 - No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta). Texto plano limpio.
-- En modo MARCA: PROHIBIDO mencionar competidores, "el sector", "la industria", "frente a otras marcas", "líder del set". Tampoco hagas observaciones obvias del tipo "los 5 contenidos top son de la marca propia" cuando es la única marca analizada.
+- En modo MARCA: PROHIBIDO mencionar competidores, "el sector", "la industria", "frente a otras marcas", "líder del set". PROHIBIDO observaciones obvias del tipo "los 5 contenidos top son de la marca propia" o "5 de 5 posts pertenecen a ${clientName}" cuando es la única marca analizada — es trivialmente cierto y no aporta valor. PROHIBIDO highlight con label "Posts del Top 5" o "Concentración de top".
 - En modo BENCHMARK: nombra a los competidores tal cual aparecen en los datos.
 - Cuando referas a una pieza de contenido específica, NO digas "el adelanto del webinar" sin explicar de qué webinar; si no tienes el dato, di "una pieza de adelanto de evento" o describe el formato sin inventar el tema.
 
