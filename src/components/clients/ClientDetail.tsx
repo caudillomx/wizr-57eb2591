@@ -61,15 +61,15 @@ export function ClientDetail({ client, onBack }: Props) {
 
   const profiles = useMemo<FKProfile[]>(() => {
     return rawProfiles
-      .filter((p) => (view === "brand" ? !p.is_competitor : true))
+      .filter((p) => (isBenchmarkOnly ? true : view === "brand" ? !p.is_competitor : true))
       .map((p) => ({
         ...p,
         project_id: null,
         ranking_id: null,
-        is_own_profile: !p.is_competitor,
+        is_own_profile: isBenchmarkOnly ? false : !p.is_competitor,
         network: p.network as FKNetwork,
       })) as unknown as FKProfile[];
-  }, [rawProfiles, view]);
+  }, [rawProfiles, view, isBenchmarkOnly]);
 
   const profileIds = profiles.map((p) => p.id);
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
@@ -108,25 +108,35 @@ export function ClientDetail({ client, onBack }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{brandCount} marca</Badge>
-          <Badge variant="outline">{compCount} competencia</Badge>
+          {isBenchmarkOnly ? (
+            <Badge variant="secondary" className="gap-1">
+              <Users2 className="h-3 w-3" /> {rawProfiles.length} perfiles
+            </Badge>
+          ) : (
+            <>
+              <Badge variant="secondary">{brandCount} marca</Badge>
+              <Badge variant="outline">{compCount} competencia</Badge>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Target className="h-4 w-4" />
-          Vista actual
+      {!isBenchmarkOnly && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Target className="h-4 w-4" />
+            Vista actual
+          </div>
+          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)}>
+            <ToggleGroupItem value="brand" className="gap-2">
+              <Building2 className="h-4 w-4" /> Marca ({brandCount})
+            </ToggleGroupItem>
+            <ToggleGroupItem value="benchmark" className="gap-2">
+              <Users2 className="h-4 w-4" /> Benchmark ({brandCount + compCount})
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
-        <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)}>
-          <ToggleGroupItem value="brand" className="gap-2">
-            <Building2 className="h-4 w-4" /> Marca ({brandCount})
-          </ToggleGroupItem>
-          <ToggleGroupItem value="benchmark" className="gap-2">
-            <Users2 className="h-4 w-4" /> Benchmark ({brandCount + compCount})
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      )}
 
       {activeTab !== "config" && activeTab !== "evolution" && profiles.length > 0 && (
         <RankingDateFilter
