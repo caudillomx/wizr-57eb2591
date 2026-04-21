@@ -223,28 +223,39 @@ export function PerformanceReportView({
             <div className="h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={report.analytics.brandEngagement.slice(0, 12).map((b) => ({
-                    name: b.brand.length > 20 ? `${b.brand.substring(0, 18)}…` : b.brand,
-                    fullName: b.brand,
-                    value: b.avgInteractionsPerPost,
-                    posts: b.postsCount,
-                    profiles: b.profiles,
-                    fill: colorForBrand(b.brand, b.isOwn, brandsList),
-                  }))}
+                  data={report.analytics.brandEngagement.slice(0, 12).map((b) => {
+                    const netLabel = b.networks && b.networks.length > 0
+                      ? (b.networks.length === 1 ? networkLabel(b.networks[0]) : `${b.networks.length} redes`)
+                      : "";
+                    const truncated = b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand;
+                    return {
+                      name: `${truncated}|${netLabel}`,
+                      fullName: b.brand,
+                      networks: b.networks,
+                      value: b.avgInteractionsPerPost,
+                      posts: b.postsCount,
+                      profiles: b.profiles,
+                      fill: colorForBrand(b.brand, b.isOwn, brandsList),
+                    };
+                  })}
                   layout="vertical"
                   margin={{ top: 8, right: 60, left: 0, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} width={140} />
+                  <YAxis type="category" dataKey="name" tick={(props) => <TwoLineTick {...props} />} width={170} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       const p = payload[0].payload;
+                      const netStr = (p.networks && p.networks.length > 0)
+                        ? p.networks.map((n: string) => networkLabel(n)).join(", ")
+                        : "—";
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
+                          <div className="text-muted-foreground">{netStr}</div>
                           <div className="text-muted-foreground">{formatNumber(p.value)} interacciones promedio · {p.posts} posts · {p.profiles} perfil(es)</div>
                         </div>
                       );
@@ -260,7 +271,7 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: cada barra es el promedio de reacciones (likes + comentarios + compartidos) que cada publicación de la marca recibe en el período. Es la métrica que mejor compara marcas de tamaños distintos: prescinde del tamaño de la audiencia y revela cuánta conversación moviliza cada pieza de contenido. {report.clientName} se identifica con su color principal.
+              Lectura: cada barra es el promedio de reacciones (likes + comentarios + compartidos) por publicación de la marca, agregando todas sus redes activas (indicadas debajo del nombre). Iguala marcas de tamaños distintos: revela cuánta conversación moviliza cada pieza, no la audiencia. {report.clientName} se identifica con el color principal.
             </p>
           </CardContent>
         </Card>
