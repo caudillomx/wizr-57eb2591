@@ -202,7 +202,9 @@ ${focusBlock}
 ${autoFlagsBlock}
 REGLAS DURAS DE DATOS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres, métricas, porcentajes ni perfiles.
-- TODA cifra debe llevar UNIDAD explícita: engagement como "X.XX%", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día", interacciones absolutas como "X likes" o "X comentarios".
+- MÉTRICA PRINCIPAL DE ENGAGEMENT: usa "interacciones promedio por publicación" (campo avgInteractionsPerPost en analytics; suma de likes+comentarios+shares dividida entre número de posts del período). Es la métrica universal del reporte. Cita siempre "≈X interacciones por post" en lugar de tasas % crudas.
+- LAS TASAS % (engagement_rate) son CONTEXTO SECUNDARIO. Solo cítalas cuando aporten lectura (ej. "tasa marginal de 0.16%"); jamás como cifra principal de un highlight ni hallazgo.
+- TODA cifra debe llevar UNIDAD explícita: interacciones como "≈X interacciones/post" o "X,XXX interacciones totales", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día".
 - NUNCA escribas paréntesis al estilo "(BBVA México, instagram)". En su lugar usa: "BBVA México en Instagram" o "Banamex (TikTok)" SOLO con la red en mayúscula correcta.
 - El "summary" debe abrir citando la cifra más relevante del período (ej. "X% de engagement", "Y nuevos seguidores", "Z posts") y nombrar al perfil/red protagonista, además de explicitar qué significa para ${clientName}.
 - La "conclusion" debe cerrar con una lectura accionable para ${clientName}, citando al menos 1 cifra y 1 perfil/red concretos.
