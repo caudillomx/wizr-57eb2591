@@ -178,25 +178,40 @@ export function PerformanceReportPDFGenerator({
               fr.readAsDataURL(b);
             })
         )
-        .catch(() => "");
+        .catch(() => ({ dataUrl: "", aspect: 3 }));
 
       const reportLabel = report.reportMode === "brand"
         ? `${clientName} · Reporte de marca`
         : `${clientName} · Reporte de benchmark`;
 
       const drawHeader = (pageNum: number) => {
-        // Indigo gradient band — fake gradient with 3 stacked rects
+        // Indigo header band
         pdf.setFillColor(30, 27, 75);   // #1e1b4b
         pdf.rect(0, 0, PAGE_W, HEADER_H, "F");
-        pdf.setFillColor(49, 46, 129, 0.0 as unknown as number);
-        // jsPDF doesn't do real gradients — flat indigo is fine and matches
-        // the on-screen feel.
+
         if (logoDataUrl) {
-          // White rounded badge for the logo
+          // White rounded badge for the logo. Compute logo size preserving
+          // its natural aspect ratio so it never looks stretched.
+          const badgeH = 12;
+          const badgeY = (HEADER_H - badgeH) / 2;
+          const logoMaxH = badgeH - 3;          // padding inside the badge
+          const logoMaxW = 26;                  // visual cap
+          let logoH = logoMaxH;
+          let logoW = logoH * logoAspect;
+          if (logoW > logoMaxW) {
+            logoW = logoMaxW;
+            logoH = logoW / logoAspect;
+          }
+          const badgeW = logoW + 6;
           pdf.setFillColor(255, 255, 255);
-          pdf.roundedRect(MARGIN_X, 4, 22, 10, 1.5, 1.5, "F");
+          pdf.roundedRect(MARGIN_X, badgeY, badgeW, badgeH, 1.8, 1.8, "F");
           try {
-            pdf.addImage(logoDataUrl, "PNG", MARGIN_X + 2, 5.5, 18, 7, undefined, "FAST");
+            pdf.addImage(
+              logoDataUrl, "PNG",
+              MARGIN_X + 3, badgeY + (badgeH - logoH) / 2,
+              logoW, logoH,
+              undefined, "FAST",
+            );
           } catch { /* noop */ }
         }
         pdf.setTextColor(199, 210, 254);
