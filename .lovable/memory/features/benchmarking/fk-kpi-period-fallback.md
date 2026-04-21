@@ -1,16 +1,28 @@
 ---
 name: FK KPI Period Fallback
-description: useFKProfileKPIs devuelve fallback al snapshot más reciente cuando el filtro de fecha no cubre algunos perfiles — evita tabla de ranking vacía cuando Excels importados son semanales/mensuales y filtro pide un día puntual
+description: useFKProfileKPIs marca isFallback=true cuando el snapshot devuelto está fuera del rango filtrado; la UI (RankingTable) muestra badge ámbar con el período real, rojo si >90 días
 type: feature
 ---
-**Problema:** Los Excels de Fanpage Karma se exportan en rangos semanales o mensuales. Si el usuario importa un snapshot `2026-04-13 → 2026-04-19` y el filtro de Performance está en "Ayer" (2026-04-20), el overlap (`period_start <= 04-20 AND period_end >= 04-20`) falla porque el snapshot terminó el 19. La tabla aparece vacía aunque hay datos cargados.
+**Problema:** Los Excels de Fanpage Karma se exportan en rangos semanales o mensuales. Si el usuario filtra por un día puntual fuera del rango exacto del snapshot, el overlap (`period_start <= end AND period_end >= start`) falla y la tabla aparece vacía aunque hay datos cargados. Si simplemente devolvemos el snapshot más reciente, el filtro deja de tener efecto visible y todos los KPIs/insights se ven iguales sin importar qué rango pidas.
 
 **Solución (`src/hooks/useFanpageKarma.ts` → `useFKProfileKPIs`):**
-1. Ejecuta el query con overlap normal por `(period_start, period_end)`.
-2. Identifica perfiles que NO quedaron cubiertos por el filtro.
-3. Para esos perfiles hace una segunda query con `ORDER BY period_end DESC, fetched_at DESC` y toma el snapshot más reciente disponible.
-4. Devuelve la unión: KPIs filtrados + fallback de últimos snapshots.
+1. Query principal con overlap por `(period_start, period_end)`.
+2. Identifica perfiles no cubiertos por el filtro.
+3. Para esos hace una segunda query `ORDER BY period_end DESC, fetched_at DESC` y toma el snapshot más reciente.
+4. Marca cada KPI de fallback con `isFallback: true` (campo opcional en `FKProfileKPI`).
+5. Devuelve la unión: KPIs reales del rango + fallback marcado.
 
-**Default de período en Performance:** Cambiamos `ClientDetail.tsx` de `"1d"` a `"7d"` porque la cadencia natural de FK es semanal — alinea el preset con la realidad de los datos.
+**UI (`src/components/rankings/RankingTable.tsx` → `FallbackBadge`):**
+- Cada fila cuyo KPI tiene `isFallback === true` muestra un badge junto al nombre con el período real del snapshot (ej. "13–19 abr").
+- Color ámbar suave por defecto, rojo (`destructive/10`) si el snapshot tiene más de 90 días (`differenceInDays(now, period_end) > 90`).
+- Tooltip explica que el dato está fuera del rango filtrado y muestra antigüedad cuando es stale.
+- Si la fila tiene KPI dentro del rango (no es fallback), no se muestra badge — coexisten filas exactas y fallback en la misma tabla.
 
-**Diferencia con Benchmarking (Rankings):** Allá la sincronización es diaria via `scheduled-ranking-sync` y el default `"1d"` sigue siendo correcto. Esto solo aplica a clientes de Performance que dependen de Excel manuales.
+**Propagación de fechas (`ClientDetail.tsx`):**
+- `appliedPreset` / `appliedCustomRange` solo cambian al pulsar "Aplicar" en `RankingDateFilter` (no se re-fetchea al mover el selector).
+- `periodStart` / `periodEnd` derivados se pasan a `useFKProfileKPIs` y `useFKTopPosts`. `useFKAllKPIs` se queda sin filtrar a propósito (alimenta tendencias y evolución que necesitan histórico completo).
+- Los componentes hijos (`RankingInsightsPanel`, `RankingTable`, `RankingChart`, `TopContentTab`, `NarrativesAnalysisPanel`, `PerformanceReportGenerator`) reciben `kpis` / `dateRange` como props — no tienen estado de fecha local.
+
+**Default de período en Performance:** `ClientDetail.tsx` usa `"7d"` por defecto porque la cadencia natural de FK es semanal — alinea el preset con la realidad de los datos.
+
+**Diferencia con Benchmarking (Rankings):** En `RankingDetail` la sincronización es diaria via `scheduled-ranking-sync` y el default `"1d"` sigue siendo correcto. El badge de fallback aplica también allí porque comparten el mismo hook.
