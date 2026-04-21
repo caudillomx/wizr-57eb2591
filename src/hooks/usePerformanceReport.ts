@@ -98,6 +98,7 @@ function pct(value: number): number {
 function computeAnalytics(
   profiles: FKProfileExt[],
   kpis: FKProfileKPI[],
+  topPosts: FKDailyTopPost[] = [],
 ): PerformanceReportAnalytics {
   const networks = Array.from(new Set(profiles.map((p) => p.network)));
 
@@ -391,7 +392,7 @@ export function usePerformanceReport() {
     setError(null);
 
     try {
-      const analytics = computeAnalytics(profiles, kpis);
+      const analytics = computeAnalytics(profiles, kpis, topPosts);
       const snapshots = buildSnapshots(profiles, kpis, topPosts);
 
       const payload = {
