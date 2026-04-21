@@ -648,7 +648,7 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: cada barra promedia las reacciones absolutas que cada publicación obtiene en esa red, sumando a todas las marcas del set. Si una red destaca, ahí es donde la audiencia del sector está más activa por contenido. Para {report.clientName} esto orienta dónde concentrar producción.
+              Lectura: cada barra promedia las reacciones absolutas que cada publicación obtiene en esa red, sumando a todas las marcas del set. Como referencia, el promedio del sector es ≈{formatNumber(report.analytics.avgInteractionsPerPost)} interacciones/post — barras por encima señalan redes donde la audiencia es más activa por contenido. Para {report.clientName} esto orienta dónde concentrar producción.
             </p>
           </CardContent>
         </Card>
