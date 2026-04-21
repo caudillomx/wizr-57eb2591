@@ -166,7 +166,9 @@ export function ClientDetail({ client, onBack }: Props) {
             <div className="text-center py-12 border rounded-lg border-dashed">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">
-                {view === "brand" ? "Aún no hay perfiles de marca" : "Aún no hay perfiles cargados"}
+                {isBenchmarkOnly
+                  ? "Aún no hay perfiles cargados"
+                  : view === "brand" ? "Aún no hay perfiles de marca" : "Aún no hay perfiles cargados"}
               </h3>
               <p className="text-muted-foreground mb-4">
                 Ve a Configuración para importar Excel de KPIs y Posts.
@@ -199,7 +201,7 @@ export function ClientDetail({ client, onBack }: Props) {
             <DailyTopPostsPanel profiles={profiles} topPosts={dailyTopPosts} isLoading={loadingProfiles || loadingTop} onRefresh={handleRefreshTopPosts} />
             <div className="grid gap-6 lg:grid-cols-2">
               <RankingQuestionsPanel profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} onAskAI={handleAskAI} />
-              <RankingAIChat profiles={profiles} kpis={kpis} rankingName={`${client.name} (${view === "brand" ? "Marca" : "Benchmark"})`} />
+              <RankingAIChat profiles={profiles} kpis={kpis} rankingName={`${client.name}${isBenchmarkOnly ? " (Comparativo)" : ` (${view === "brand" ? "Marca" : "Benchmark"})`}`} />
             </div>
           </div>
         </TabsContent>
@@ -219,7 +221,7 @@ export function ClientDetail({ client, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="content" className="mt-6">
-          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext={view} brandName={client.name} />
+          <TopContentTab profiles={profiles} isLoading={loadingProfiles} dateRange={dateRange} analysisContext={isBenchmarkOnly ? "benchmark" : view} brandName={isBenchmarkOnly ? undefined : client.name} />
         </TabsContent>
 
         <TabsContent value="narratives" className="mt-6">
@@ -229,10 +231,10 @@ export function ClientDetail({ client, onBack }: Props) {
         <TabsContent value="reports" className="mt-6">
           <div className="space-y-6">
             <PerformanceReportGenerator
-              reportMode={view}
+              reportMode={isBenchmarkOnly ? "comparative" : view}
               clientId={client.id}
               clientName={client.name}
-              brandName={client.name}
+              brandName={isBenchmarkOnly ? undefined : client.name}
               profiles={profiles}
               kpis={kpis}
               topPosts={dailyTopPosts}
@@ -250,7 +252,7 @@ export function ClientDetail({ client, onBack }: Props) {
             <RankingAIChat
               profiles={profiles}
               kpis={kpis}
-              rankingName={`${client.name} (${view === "brand" ? "Marca" : "Benchmark"})`}
+              rankingName={`${client.name}${isBenchmarkOnly ? " (Comparativo)" : ` (${view === "brand" ? "Marca" : "Benchmark"})`}`}
               initialQuestion={aiInitialQuestion}
             />
           </div>
