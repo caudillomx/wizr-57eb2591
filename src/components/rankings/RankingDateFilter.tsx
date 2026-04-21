@@ -165,6 +165,10 @@ export function RankingDateFilter({
         </Popover>
       )}
 
+      <span className="text-xs text-muted-foreground hidden md:inline">
+        {rangeLabel}
+      </span>
+
       <Button 
         onClick={handleApply}
         size="sm"
