@@ -16,10 +16,42 @@ interface PerformanceReportViewProps {
   dateLabel: string;
 }
 
-const COLORS = [
-  "hsl(var(--primary))", "#f97316", "#22c55e", "#06b6d4",
-  "#8b5cf6", "#ec4899", "#eab308", "#ef4444",
+// Paleta consistente por marca (no gris). Marca propia siempre = primary (violeta Wizr).
+const BRAND_PALETTE = [
+  "#4338ca", // indigo
+  "#f97316", // orange
+  "#22c55e", // green
+  "#06b6d4", // cyan
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#eab308", // amber
+  "#ef4444", // red
+  "#0ea5e9", // sky
+  "#14b8a6", // teal
+  "#a855f7", // purple
+  "#f59e0b", // amber-500
 ];
+
+// Color por red social (consistente con badges de la app)
+const NETWORK_COLOR: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "#E1306C",
+  youtube: "#FF0000",
+  twitter: "#1DA1F2",
+  x: "#1DA1F2",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+};
+
+function colorForBrand(brand: string, isOwn: boolean, brandsList: string[]): string {
+  if (isOwn) return "hsl(var(--primary))";
+  const idx = brandsList.findIndex((b) => b === brand);
+  return BRAND_PALETTE[(idx + 1) % BRAND_PALETTE.length];
+}
+
+function colorForNetwork(network: string): string {
+  return NETWORK_COLOR[network.toLowerCase()] || "hsl(var(--primary))";
+}
 
 function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -40,26 +72,38 @@ export function PerformanceReportView({
     update({ [key]: arr } as Partial<PerformanceReportContent>);
   };
 
-  const networkShort = (n: string) => {
+  const networkLabel = (n: string) => {
     const map: Record<string, string> = {
-      facebook: "FB", instagram: "IG", youtube: "YT", twitter: "X",
-      tiktok: "TT", linkedin: "LI", threads: "TH",
+      facebook: "Facebook", instagram: "Instagram", youtube: "YouTube",
+      twitter: "X", x: "X", tiktok: "TikTok", linkedin: "LinkedIn",
     };
     return map[n.toLowerCase()] || n;
   };
 
+  // Brand list ordering for stable color assignment
+  const brandsList = (report.analytics?.brandEngagement ?? []).map((b) => b.brand);
+
+  // Custom Y-axis tick: marca arriba, red abajo
+  const TwoLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) => {
+    if (!payload?.value) return null;
+    const [line1, line2] = payload.value.split("|");
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={-8} y={-2} textAnchor="end" fontSize={10} fontWeight={600} fill="hsl(var(--foreground))">{line1}</text>
+        {line2 && <text x={-8} y={10} textAnchor="end" fontSize={9} fill="hsl(var(--muted-foreground))">{line2}</text>}
+      </g>
+    );
+  };
+
   const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.engagement > 0);
-  const rankingChartData = rankingValid.slice(0, 10).map((r) => {
-    const labelBase = `${r.name} · ${networkShort(r.network)}`;
-    return {
-      name: labelBase.length > 22 ? `${labelBase.substring(0, 20)}…` : labelBase,
-      fullName: r.name,
-      network: r.network,
-      value: r.engagement,
-      fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 57%)",
-      isOwn: r.isOwn,
-    };
-  });
+  const rankingChartData = rankingValid.slice(0, 10).map((r) => ({
+    name: `${r.name}|${networkLabel(r.network)}`,
+    fullName: r.name,
+    network: r.network,
+    value: r.engagement,
+    fill: r.isOwn ? "hsl(var(--primary))" : colorForNetwork(r.network),
+    isOwn: r.isOwn,
+  }));
 
   const sovChartData = (report.analytics?.shareOfVoice ?? [])
     .filter((s) => s.engagementShare > 0)
@@ -68,7 +112,7 @@ export function PerformanceReportView({
       name: s.name,
       value: s.engagementShare,
       isOwn: s.isOwn,
-      fill: s.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
+      fill: s.isOwn ? "hsl(var(--primary))" : BRAND_PALETTE[(i + 1) % BRAND_PALETTE.length],
     }));
 
   return (
