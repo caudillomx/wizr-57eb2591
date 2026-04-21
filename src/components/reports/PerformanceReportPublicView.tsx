@@ -4,7 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList,
   PieChart, Pie, Legend,
 } from "recharts";
-import { Target, Sparkles, Lightbulb, Trophy, TrendingUp, Users2, FileText, BarChart3 } from "lucide-react";
+import { Target, Sparkles, Lightbulb, Trophy, TrendingUp, Users2, FileText, BarChart3, ChevronDown } from "lucide-react";
+import { useState } from "react";
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { NetworkBadge } from "@/components/rankings/NetworkBadge";
 
@@ -23,7 +24,12 @@ function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return `${Math.round(n)}`;
+  return `${Math.round(n).toLocaleString("es-MX")}`;
+}
+
+function formatInt(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString("es-MX");
 }
 
 /**
@@ -34,6 +40,7 @@ export function PerformanceReportPublicView({
   report, clientName, dateRange,
 }: PerformanceReportPublicViewProps) {
   const isBrand = report.reportMode === "brand";
+  const [showAllProfiles, setShowAllProfiles] = useState(false);
 
   const networkShort = (n: string) => {
     const map: Record<string, string> = {
@@ -47,11 +54,11 @@ export function PerformanceReportPublicView({
   const rankingChartData = rankingValid.slice(0, 10).map((r) => {
     const labelBase = `${r.name} · ${networkShort(r.network)}`;
     return {
-      name: labelBase.length > 22 ? `${labelBase.substring(0, 20)}…` : labelBase,
+      name: labelBase.length > 26 ? `${labelBase.substring(0, 24)}…` : labelBase,
       fullName: r.name,
       network: r.network,
       value: r.engagement,
-      fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 57%)",
+      fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 65%)",
       isOwn: r.isOwn,
     };
   });
@@ -66,29 +73,32 @@ export function PerformanceReportPublicView({
       fill: s.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
     }));
 
+  const profilesToShow = showAllProfiles ? report.profiles : report.profiles.slice(0, 12);
+  const hiddenCount = report.profiles.length - profilesToShow.length;
+
   return (
     <div className="bg-white">
       {/* Wizr branded header */}
-      <div className="bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground px-8 py-10 space-y-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center">
+      <div className="bg-gradient-to-br from-primary via-primary to-primary/85 text-primary-foreground px-8 py-10">
+        <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center flex-shrink-0">
               <BarChart3 className="h-5 w-5" />
             </div>
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] opacity-80">Wizr · Performance</div>
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.22em] opacity-80">Wizr · Performance</div>
               <div className="text-sm font-medium opacity-90">
                 {isBrand ? "Reporte de Marca" : "Reporte de Benchmark"}
               </div>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-white/15 text-primary-foreground border-0 backdrop-blur">
+          <Badge variant="secondary" className="bg-white/15 text-primary-foreground border-0 backdrop-blur whitespace-nowrap flex-shrink-0">
             {dateRange.label}
           </Badge>
         </div>
 
-        <div className="space-y-2 pt-2">
-          <h1 className="text-3xl font-bold leading-tight">{report.title}</h1>
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-bold leading-tight break-words">{report.title}</h1>
           <p className="text-sm opacity-90">
             <span className="font-medium">{clientName}</span>
             <span className="opacity-75"> · {dateRange.start} → {dateRange.end}</span>
@@ -96,25 +106,25 @@ export function PerformanceReportPublicView({
         </div>
 
         {report.summary && (
-          <p className="text-sm leading-relaxed opacity-95 max-w-3xl pt-2 border-t border-white/15">
+          <p className="text-sm leading-relaxed opacity-95 max-w-3xl mt-5 pt-5 border-t border-white/15">
             {report.summary}
           </p>
         )}
       </div>
 
       {/* Body */}
-      <div className="px-8 py-8 space-y-6">
+      <div className="px-8 py-10 space-y-8">
         {/* Highlights */}
         {report.highlights.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {report.highlights.map((h, i) => (
-              <Card key={i} className="bg-gradient-to-br from-primary/5 to-transparent">
-                <CardContent className="p-4 space-y-1">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+              <Card key={i} className="bg-gradient-to-br from-primary/5 to-transparent border-primary/10">
+                <CardContent className="p-4 space-y-1.5">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium leading-tight min-h-[28px]">
                     {h.label}
                   </div>
-                  <div className="text-2xl font-bold text-primary">{h.value}</div>
-                  <div className="text-xs text-muted-foreground">{h.context}</div>
+                  <div className="text-xl font-bold text-primary leading-tight break-words hyphens-auto">{h.value}</div>
+                  <div className="text-xs text-muted-foreground leading-snug">{h.context}</div>
                 </CardContent>
               </Card>
             ))}
@@ -122,7 +132,7 @@ export function PerformanceReportPublicView({
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Card>
             <CardContent className="p-4">
               <div className="text-xs text-muted-foreground">Perfiles</div>
@@ -157,7 +167,7 @@ export function PerformanceReportPublicView({
               Ranking por engagement
             </CardTitle>
             <CardDescription className="text-xs">
-              {isBrand ? "Engagement rate por perfil de la marca" : "Marca propia vs competencia"}
+              {isBrand ? "Engagement rate por perfil de la marca" : "Marca propia (color primario) vs competencia"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -170,12 +180,12 @@ export function PerformanceReportPublicView({
                 </p>
               </div>
             ) : (
-              <div className="h-[320px]">
+              <div className="h-[360px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 50, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={180} interval={0} />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
@@ -207,9 +217,12 @@ export function PerformanceReportPublicView({
                 <Users2 className="h-4 w-4 text-primary" />
                 Share of voice (engagement)
               </CardTitle>
+              <CardDescription className="text-xs">
+                Distribución del engagement total entre las marcas del set
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[280px]">
+              <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -218,10 +231,10 @@ export function PerformanceReportPublicView({
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={90}
+                      outerRadius={100}
                       label={({ name, value }) => `${name}: ${value}%`}
                       labelLine={false}
-                      fontSize={10}
+                      fontSize={11}
                     >
                       {sovChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                     </Pie>
@@ -238,24 +251,27 @@ export function PerformanceReportPublicView({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Métricas por perfil</CardTitle>
+            <CardDescription className="text-xs">
+              {report.profiles.length} perfiles analizados en el período
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 border-b">
+                <thead className="bg-muted/40 border-b sticky top-0">
                   <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-2 font-medium">Perfil</th>
-                    <th className="px-4 py-2 font-medium">Red</th>
-                    {!isBrand && <th className="px-4 py-2 font-medium">Tipo</th>}
-                    <th className="px-4 py-2 font-medium text-right">Seguidores</th>
-                    <th className="px-4 py-2 font-medium text-right">Crecimiento</th>
-                    <th className="px-4 py-2 font-medium text-right">Engagement</th>
-                    <th className="px-4 py-2 font-medium text-right">Posts/día</th>
+                    <th className="px-4 py-2.5 font-medium">Perfil</th>
+                    <th className="px-4 py-2.5 font-medium">Red</th>
+                    {!isBrand && <th className="px-4 py-2.5 font-medium">Tipo</th>}
+                    <th className="px-4 py-2.5 font-medium text-right">Seguidores</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Crecimiento</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Engagement</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Posts/día</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {report.profiles.map((p) => (
-                    <tr key={p.id} className="border-b last:border-0">
+                  {profilesToShow.map((p, idx) => (
+                    <tr key={p.id} className={`border-b last:border-0 ${idx % 2 === 1 ? "bg-muted/20" : ""} hover:bg-muted/40 transition-colors`}>
                       <td className="px-4 py-2 font-medium">{p.name}</td>
                       <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
                       {!isBrand && (
@@ -265,17 +281,29 @@ export function PerformanceReportPublicView({
                           </Badge>
                         </td>
                       )}
-                      <td className="px-4 py-2 text-right">{p.followers != null ? formatNumber(p.followers) : "—"}</td>
-                      <td className={`px-4 py-2 text-right ${p.growthPercent != null && p.growthPercent < 0 ? "text-destructive" : p.growthPercent != null && p.growthPercent > 0 ? "text-green-600" : ""}`}>
+                      <td className="px-4 py-2 text-right tabular-nums">{p.followers != null ? formatNumber(p.followers) : "—"}</td>
+                      <td className={`px-4 py-2 text-right tabular-nums ${p.growthPercent != null && p.growthPercent < 0 ? "text-destructive" : p.growthPercent != null && p.growthPercent > 0 ? "text-green-600" : ""}`}>
                         {p.growthPercent != null ? `${p.growthPercent > 0 ? "+" : ""}${p.growthPercent.toFixed(2)}%` : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right font-medium">{p.engagementRate != null ? `${p.engagementRate.toFixed(2)}%` : "—"}</td>
-                      <td className="px-4 py-2 text-right">{p.postsPerDay != null ? p.postsPerDay.toFixed(2) : "—"}</td>
+                      <td className="px-4 py-2 text-right font-medium tabular-nums">{p.engagementRate != null ? `${p.engagementRate.toFixed(2)}%` : "—"}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{p.postsPerDay != null ? p.postsPerDay.toFixed(2) : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {hiddenCount > 0 && (
+              <div className="border-t bg-muted/20 p-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAllProfiles(true)}
+                  className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Ver {hiddenCount} perfiles más
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -290,9 +318,9 @@ export function PerformanceReportPublicView({
             </CardHeader>
             <CardContent className="space-y-3">
               {report.topPosts.slice(0, 5).map((p, i) => (
-                <div key={i} className="rounded-md border p-3 space-y-2">
+                <div key={i} className="rounded-md border p-3 space-y-2 hover:border-primary/40 transition-colors">
                   <div className="flex items-center gap-2 flex-wrap text-xs">
-                    <span className="font-semibold">#{i + 1}</span>
+                    <span className="font-semibold text-primary">#{i + 1}</span>
                     <span className="font-medium">{p.authorName}</span>
                     <NetworkBadge network={p.network} size="xs" />
                     <span className="text-muted-foreground">· {p.postDate}</span>
@@ -301,11 +329,11 @@ export function PerformanceReportPublicView({
                     <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
                   )}
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>Engagement: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
-                    <span>Likes: {formatNumber(p.likes)}</span>
-                    <span>Comentarios: {formatNumber(p.comments)}</span>
-                    {p.shares > 0 && <span>Compartidos: {formatNumber(p.shares)}</span>}
-                    {p.views > 0 && <span>Vistas: {formatNumber(p.views)}</span>}
+                    <span>Engagement: <strong className="text-foreground tabular-nums">{formatInt(p.engagement)}</strong></span>
+                    <span>Likes: <span className="tabular-nums">{formatInt(p.likes)}</span></span>
+                    <span>Comentarios: <span className="tabular-nums">{formatInt(p.comments)}</span></span>
+                    {p.shares > 0 && <span>Compartidos: <span className="tabular-nums">{formatInt(p.shares)}</span></span>}
+                    {p.views > 0 && <span>Vistas: <span className="tabular-nums">{formatInt(p.views)}</span></span>}
                   </div>
                   {p.postUrl && (
                     <a href={p.postUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
@@ -315,7 +343,7 @@ export function PerformanceReportPublicView({
                 </div>
               ))}
               {report.topContentInsight && (
-                <div className="rounded-md bg-primary/5 border border-primary/20 p-3 text-sm text-muted-foreground">
+                <div className="rounded-md bg-primary/5 border border-primary/20 p-4 text-sm text-foreground/80 leading-relaxed">
                   {report.topContentInsight}
                 </div>
               )}
@@ -333,7 +361,7 @@ export function PerformanceReportPublicView({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{report.competitiveInsight}</p>
+              <p className="text-sm text-foreground/80 whitespace-pre-line leading-relaxed">{report.competitiveInsight}</p>
             </CardContent>
           </Card>
         )}
@@ -348,9 +376,9 @@ export function PerformanceReportPublicView({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-3">
+              <ol className="space-y-3.5">
                 {report.keyFindings.map((f, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
+                  <li key={i} className="flex gap-3 text-sm leading-relaxed">
                     <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center mt-0.5">
                       {i + 1}
                     </span>
@@ -372,9 +400,9 @@ export function PerformanceReportPublicView({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-3">
+              <ol className="space-y-3.5">
                 {report.recommendations.map((r, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
+                  <li key={i} className="flex gap-3 text-sm leading-relaxed">
                     <span className="flex-shrink-0 h-6 w-6 rounded-full bg-secondary text-secondary-foreground font-semibold text-xs flex items-center justify-center mt-0.5">
                       {i + 1}
                     </span>
@@ -388,7 +416,7 @@ export function PerformanceReportPublicView({
 
         {/* Conclusion */}
         {report.conclusion && (
-          <Card className="bg-muted/30">
+          <Card className="bg-gradient-to-br from-primary/5 via-muted/30 to-transparent border-primary/20">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Target className="h-4 w-4 text-primary" />
@@ -396,7 +424,7 @@ export function PerformanceReportPublicView({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm whitespace-pre-line">{report.conclusion}</p>
+              <p className="text-sm whitespace-pre-line leading-relaxed">{report.conclusion}</p>
             </CardContent>
           </Card>
         )}
