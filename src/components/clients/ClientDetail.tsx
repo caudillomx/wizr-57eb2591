@@ -42,9 +42,9 @@ export function ClientDetail({ client, onBack }: Props) {
   const [activeTab, setActiveTab] = useState<
     "ranking" | "insights" | "evolution" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
   >("ranking");
-  const [datePreset, setDatePreset] = useState<DateRangePreset>("1d");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("7d");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
-  const [appliedPreset, setAppliedPreset] = useState<DateRangePreset>("1d");
+  const [appliedPreset, setAppliedPreset] = useState<DateRangePreset>("7d");
   const [appliedCustomRange, setAppliedCustomRange] = useState<DateRange | undefined>();
   const [aiInitialQuestion, setAiInitialQuestion] = useState("");
   const [filterNet, setFilterNet] = useState<FKNetwork | "all">("all");
