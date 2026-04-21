@@ -27,7 +27,7 @@ export interface PerformanceReportAnalytics {
   /** Ranking por interacciones promedio por post (no por tasa %) — name = nombre limpio sin sufijo de red */
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; avgInteractionsPerPost: number; postsCount: number; isOwn: boolean; hasData: boolean }>;
   /** Engagement promedio + interacciones absolutas agregadas por marca (todas sus redes) */
-  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number }>;
+  brandEngagement: Array<{ brand: string; isOwn: boolean; avgEngagement: number; totalInteractions: number; avgInteractionsPerPost: number; postsCount: number; profiles: number; followers: number; networks: string[] }>;
   /** Crecimiento promedio agregado por red social */
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
   /** Engagement (interacciones promedio por post) por red social */
