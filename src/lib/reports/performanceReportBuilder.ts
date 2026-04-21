@@ -495,8 +495,11 @@ export function buildPerformanceReportHTML(
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
+    ${followersBlock}
     ${brandEngBlock}
+    ${networkEngBlock}
     ${rankingChart}
+    ${sovDonutBlock}
     ${sovBlock}
     ${profilesBlock}
     ${topContentBlock}
