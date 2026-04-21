@@ -245,17 +245,18 @@ export function buildPerformanceReportHTML(
   // ---------- Highlights ----------
   const highlightsBlock = report.highlights.length
     ? section(
-        "Highlights",
+        "Highlights del período",
         `<div style="display:flex;gap:8px;flex-wrap:wrap;">${report.highlights
           .slice(0, 4)
           .map((h) => highlightCard(h.label, h.value, h.context))
           .join("")}</div>`,
+        { eyebrow: "Sección 01 · Highlights" },
       )
     : "";
 
   // ---------- KPIs row ----------
   const kpisBlock = section(
-    "KPIs Generales",
+    "KPIs generales",
     `<div style="display:flex;gap:8px;flex-wrap:wrap;">
       ${metricCard("Perfiles", String(report.profiles.length))}
       ${metricCard("Engagement Promedio", `${report.analytics.avgEngagement}%`)}
@@ -264,17 +265,22 @@ export function buildPerformanceReportHTML(
       ${report.analytics.bestPerformer ? metricCard("Top Engagement", `${report.analytics.bestPerformer.engagement.toFixed(2)}%`, report.analytics.bestPerformer.name) : ""}
       ${report.analytics.fastestGrower ? metricCard("Mayor Crecimiento", `${report.analytics.fastestGrower.growth > 0 ? "+" : ""}${report.analytics.fastestGrower.growth.toFixed(2)}%`, report.analytics.fastestGrower.name) : ""}
     </div>`,
+    { eyebrow: "Sección 02 · KPIs" },
   );
 
   // ---------- Summary ----------
   const summaryBlock = report.summary
-    ? section("Resumen Ejecutivo", `<p style="font-size:10.5px;line-height:1.65;color:${C.text};margin:0;">${esc(report.summary)}</p>`)
+    ? section(
+        "Resumen ejecutivo",
+        `<p style="font-size:10.5px;line-height:1.7;color:${C.text};margin:0;">${esc(report.summary)}</p>`,
+        { eyebrow: "Sección 03 · Síntesis" },
+      )
     : "";
 
   // ---------- Ranking chart ----------
   const rankingChart = report.analytics.rankingByEngagement.length
     ? section(
-        "Ranking por Engagement",
+        "Ranking por engagement",
         chartHorizontalBars(
           report.analytics.rankingByEngagement.slice(0, 10).map((r) => ({
             label: r.name,
@@ -283,56 +289,71 @@ export function buildPerformanceReportHTML(
             sub: networkLabel(r.network),
           })),
         ),
+        { eyebrow: "Sección 04 · Ranking" },
       )
     : "";
 
   // ---------- Share of voice (benchmark) ----------
   const sovBlock = !isBrand && report.analytics.shareOfVoice.length
     ? section(
-        "Share of Voice (Engagement)",
+        "Share of voice (engagement)",
         chartHorizontalBars(
           report.analytics.shareOfVoice
             .filter((s) => s.engagementShare > 0)
             .slice(0, 8)
             .map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn })),
         ),
+        { eyebrow: "Sección 05 · Participación" },
       )
     : "";
 
   // ---------- Comparative profiles table ----------
   const profilesBlock = section(
-    isBrand ? "Métricas por Perfil" : "Tabla Comparativa de Perfiles",
+    isBrand ? "Métricas por perfil" : "Tabla comparativa de perfiles",
     profilesTable(report, isBrand),
+    { eyebrow: "Sección 06 · Detalle" },
   );
 
   // ---------- Top content ----------
   const topContentBlock = report.topPosts.length
     ? section(
-        "Mejores Contenidos del Período",
-        `${topPostsList(report)}${report.topContentInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.violetSoft};border-left:3px solid ${C.violet};border-radius:0 4px 4px 0;font-size:10px;line-height:1.55;color:${C.text};">${esc(report.topContentInsight)}</div>` : ""}`,
+        "Mejores contenidos del período",
+        `${topPostsList(report)}${report.topContentInsight ? `<div style="margin-top:12px;padding:12px 14px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:10px;line-height:1.6;color:${C.text};">${esc(report.topContentInsight)}</div>` : ""}`,
+        { eyebrow: "Sección 07 · Top contenidos" },
       )
     : "";
 
   // ---------- Findings ----------
-  const findingsBlock = section("Hallazgos Clave", numberedList(report.keyFindings));
+  const findingsBlock = section(
+    "Hallazgos clave",
+    numberedList(report.keyFindings, "indigo"),
+    { eyebrow: "Sección 08 · Lectura crítica" },
+  );
 
   // ---------- Competitive insight (benchmark) ----------
   const competitiveBlock = !isBrand && report.competitiveInsight
     ? section(
-        "Posicionamiento Competitivo",
-        `<p style="font-size:10.5px;line-height:1.65;color:${C.text};margin:0;white-space:pre-line;">${esc(report.competitiveInsight)}</p>`,
+        "Posicionamiento competitivo",
+        `<p style="font-size:10.5px;line-height:1.7;color:${C.text};margin:0;white-space:pre-line;">${esc(report.competitiveInsight)}</p>`,
+        { eyebrow: "Sección 09 · Posicionamiento" },
       )
     : "";
 
   // ---------- Recommendations ----------
-  const recommendationsBlock = section("Recomendaciones", numberedList(report.recommendations));
+  const recommendationsBlock = section(
+    "Recomendaciones",
+    numberedList(report.recommendations, "orange"),
+    { eyebrow: "Sección 10 · Próximos pasos", accent: "orange" },
+  );
 
-  // ---------- Conclusion ----------
+  // ---------- Conclusion (editorial closing band) ----------
   const conclusionBlock = report.conclusion
-    ? section(
-        "Conclusión",
-        `<p style="font-size:10.5px;line-height:1.65;color:${C.text};margin:0;white-space:pre-line;">${esc(report.conclusion)}</p>`,
-      )
+    ? `<div style="background:${INDIGO_GRADIENT};color:#fff;border-radius:10px;padding:22px 24px;margin-bottom:14px;break-inside:avoid;page-break-inside:avoid;">
+        <div style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.28em;color:${C.indigoText};">Cierre ejecutivo</div>
+        <div style="font-size:14px;font-weight:800;color:#fff;margin:4px 0 10px 0;letter-spacing:-0.01em;">Conclusión</div>
+        <div style="height:1px;background:rgba(255,255,255,0.18);margin-bottom:12px;"></div>
+        <p style="font-size:11px;line-height:1.75;color:rgba(255,255,255,0.92);margin:0;white-space:pre-line;">${esc(report.conclusion)}</p>
+      </div>`
     : "";
 
   const body = `<div style="background:${C.paper};font-family:'Inter','Segoe UI',sans-serif;color:${C.text};padding:18px 16px;">
