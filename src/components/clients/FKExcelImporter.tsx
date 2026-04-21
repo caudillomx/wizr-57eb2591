@@ -587,6 +587,32 @@ export function FKExcelImporter({ clientId }: Props) {
             .filter(Boolean) as any[];
 
           if (kpiPayload.length > 0) {
+            // Si el usuario eligió reemplazar solapamientos, borramos los snapshots
+            // que intersectan con el rango entrante (sin ser idénticos — el mismo
+            // rango ya se maneja como upsert natural).
+            if (replaceOverlaps) {
+              const profileIds = Array.from(new Set(kpiPayload.map((p) => p.fk_profile_id)));
+              const { data: existingForDelete } = await supabase
+                .from("fk_profile_kpis")
+                .select("id, fk_profile_id, period_start, period_end")
+                .in("fk_profile_id", profileIds);
+              const idsToDelete = (existingForDelete || [])
+                .filter((ek: any) => {
+                  const sameRange = ek.period_start === periodStart && ek.period_end === periodEnd;
+                  if (sameRange) return false;
+                  return ek.period_start <= periodEnd && ek.period_end >= periodStart;
+                })
+                .map((ek: any) => ek.id);
+              if (idsToDelete.length > 0) {
+                const { error: delErr } = await supabase
+                  .from("fk_profile_kpis")
+                  .delete()
+                  .in("id", idsToDelete);
+                if (delErr) console.error("Overlap delete", delErr);
+                else deletedOverlaps += idsToDelete.length;
+              }
+            }
+
             // Idempotent: re-importing same period updates the row
             const { error } = await supabase
               .from("fk_profile_kpis")
