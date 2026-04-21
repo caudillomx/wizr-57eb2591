@@ -72,31 +72,46 @@ export function PerformanceReportView({
     }));
 
   return (
-    <div className="space-y-6">
-      {/* Title + Summary */}
-      <div className="space-y-3">
+    <div className="space-y-8">
+      {/* ── Editorial header (Listening identity) ── */}
+      <div
+        className="rounded-xl px-8 py-7 text-white shadow-md"
+        style={{
+          background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-bold tracking-[0.2em] px-2.5 py-1 rounded"
+              style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "#c7d2fe" }}
+            >
+              {isBrand ? "PERFORMANCE · MARCA" : "PERFORMANCE · BENCHMARK"}
+            </span>
+            <span className="text-[10px] font-medium tracking-wider px-2.5 py-1 rounded bg-white/10 text-white/90">
+              {report.clientName}
+            </span>
+          </div>
+          <span className="text-[11px] font-semibold tracking-wider px-3 py-1.5 rounded-full bg-white/10 text-white/90 inline-flex items-center gap-1.5">
+            {isBrand ? <Target className="h-3 w-3" /> : <Users2 className="h-3 w-3" />}
+            {dateLabel}
+          </span>
+        </div>
         <EditableText
           editing={editing}
           value={report.title}
           onChange={(v) => update({ title: v })}
-          className="text-2xl font-bold block"
+          className="text-3xl font-bold block leading-tight mb-3 text-white"
           placeholder="Título del reporte"
         />
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline">{dateLabel}</Badge>
-          <Badge variant={isBrand ? "default" : "secondary"} className="gap-1">
-            {isBrand ? <Target className="h-3 w-3" /> : <Users2 className="h-3 w-3" />}
-            {isBrand ? "Reporte de Marca" : "Reporte de Benchmark"}
-          </Badge>
-          <Badge variant="outline">{report.clientName}</Badge>
-        </div>
+        <div className="h-px bg-white/15 my-3" />
         <EditableText
           editing={editing}
           value={report.summary}
           onChange={(v) => update({ summary: v })}
           multiline
           minRows={3}
-          className="text-muted-foreground block"
+          className="block text-[13.5px] leading-[1.7] text-white/85"
           placeholder="Resumen ejecutivo"
         />
       </div>
