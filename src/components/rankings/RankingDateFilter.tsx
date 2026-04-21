@@ -16,7 +16,7 @@ interface RankingDateFilterProps {
   customRange?: DateRange;
   onPresetChange: (preset: DateRangePreset) => void;
   onCustomRangeChange: (range: DateRange | undefined) => void;
-  onApply?: () => void;
+  onApply?: (preset?: DateRangePreset, customRange?: DateRange) => void;
 }
 
 const presetLabels: Record<DateRangePreset, string> = {
