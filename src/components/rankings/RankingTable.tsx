@@ -12,9 +12,67 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Clock, AlertTriangle } from "lucide-react";
 import { FKProfile, FKProfileKPI, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
 import { NetworkFilter } from "./NetworkFilter";
+import { format, differenceInDays, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+
+function formatPeriod(start: string, end: string): string {
+  try {
+    const s = parseISO(start);
+    const e = parseISO(end);
+    const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+    if (sameMonth) {
+      return `${format(s, "d", { locale: es })}–${format(e, "d MMM", { locale: es })}`;
+    }
+    return `${format(s, "d MMM", { locale: es })} – ${format(e, "d MMM", { locale: es })}`;
+  } catch {
+    return `${start} – ${end}`;
+  }
+}
+
+interface FallbackBadgeProps {
+  periodStart: string;
+  periodEnd: string;
+}
+
+function FallbackBadge({ periodStart, periodEnd }: FallbackBadgeProps) {
+  const ageDays = (() => {
+    try {
+      return differenceInDays(new Date(), parseISO(periodEnd));
+    } catch {
+      return 0;
+    }
+  })();
+  const isStale = ageDays > 90;
+  const Icon = isStale ? AlertTriangle : Clock;
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant="outline"
+            className={
+              isStale
+                ? "ml-2 gap-1 border-destructive/40 bg-destructive/10 text-destructive text-[10px] px-1.5 py-0"
+                : "ml-2 gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0"
+            }
+          >
+            <Icon className="h-2.5 w-2.5" />
+            {formatPeriod(periodStart, periodEnd)}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          {isStale
+            ? `Dato desactualizado (${ageDays} días). Mostrando snapshot ${formatPeriod(periodStart, periodEnd)} porque no hay datos en el rango seleccionado.`
+            : `Snapshot fuera del rango filtrado. Período real del dato: ${formatPeriod(periodStart, periodEnd)}.`}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 type SortMetric = "followers" | "engagement_rate" | "follower_growth_percent" | "posts_per_day";
 type SortDirection = "asc" | "desc";
