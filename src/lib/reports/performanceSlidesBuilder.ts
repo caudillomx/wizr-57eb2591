@@ -540,34 +540,40 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
 }
 
 function slideTopContent(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  const posts = report.topPosts.slice(0, 4);
+  const posts = report.topPosts.slice(0, 5);
+  const renderCard = (p: typeof posts[number], i: number) => `
+    <div style="background:${C.paper};border:1px solid ${C.border};border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(11,10,31,0.04);min-height:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;">${i + 1}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
+          <div style="font-size:12px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
+        </div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">${esc(networkLabel(p.network))}</span>
+      </div>
+      ${p.postContent ? `<p style="font-size:13px;line-height:1.45;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 180))}</p>` : ""}
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:8px;">
+        <span><strong style="color:${C.violet};font-size:15px;">${fmtNum(p.engagement)}</strong> engagement</span>
+        <span>${fmtNum(p.likes)} likes</span>
+        <span>${fmtNum(p.comments)} coment.</span>
+      </div>
+    </div>
+  `;
+  const top3 = posts.slice(0, 3);
+  const next2 = posts.slice(3, 5);
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:32px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:20px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Top Contenidos</div>
-        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Mejores publicaciones del período</h2>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:12px;">Top Contenidos</div>
+        <h2 style="font-size:54px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Mejores publicaciones del período</h2>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:22px;flex:1;">
-        ${posts.map((p, i) => `
-          <div style="background:${C.paper};border:1px solid ${C.border};border-radius:16px;padding:26px 30px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 8px rgba(11,10,31,0.04);">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="width:36px;height:36px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">${i + 1}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:18px;font-weight:700;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.authorName)}</div>
-                <div style="font-size:14px;color:${C.textMuted};">${esc(networkLabel(p.network))} · ${esc(p.postDate)}</div>
-              </div>
-              <span style="display:inline-block;padding:4px 12px;border-radius:100px;background:${networkColor(p.network)};color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;">${esc(networkLabel(p.network))}</span>
-            </div>
-            ${p.postContent ? `<p style="font-size:15px;line-height:1.5;color:${C.textMid};margin:0;">${esc(truncate(p.postContent, 220))}</p>` : ""}
-            <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:${C.textMid};margin-top:auto;border-top:1px solid ${C.border};padding-top:12px;">
-              <span><strong style="color:${C.violet};font-size:18px;">${fmtNum(p.engagement)}</strong> engagement</span>
-              <span>${fmtNum(p.likes)} likes</span>
-              <span>${fmtNum(p.comments)} coment.</span>
-            </div>
-          </div>
-        `).join("")}
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;">
+        ${top3.map((p, i) => renderCard(p, i)).join("")}
       </div>
-      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:18px 24px;font-size:18px;line-height:1.55;color:${C.text};">${esc(truncate(report.topContentInsight, 300))}</div>` : ""}
+      ${next2.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:18px;">
+        ${next2.map((p, i) => renderCard(p, i + 3)).join("")}
+      </div>` : ""}
+      ${report.topContentInsight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 22px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(report.topContentInsight, 280))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Top Contenidos" });
