@@ -6,6 +6,24 @@ export function normalizeFKText(value: string | null | undefined): string {
     .trim();
 }
 
+// Brand acronyms / known names that should never be lower-cased.
+const BRAND_PRESERVE = new Set(["bbva", "hsbc", "gbm", "bbva mexico", "bbva méxico"]);
+
+function toTitleCase(input: string): string {
+  return input
+    .split(" ")
+    .map((word) => {
+      if (!word) return word;
+      const lower = word.toLowerCase();
+      // Preserve known acronyms in uppercase
+      if (BRAND_PRESERVE.has(lower)) return word.toUpperCase();
+      // Don't transform numeric IDs
+      if (/^\d+$/.test(word)) return word;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
 export function prettifyFKIdentifier(value: string | null | undefined): string {
   const cleaned = String(value || "")
     .replace(/^@+/, "")
@@ -14,7 +32,10 @@ export function prettifyFKIdentifier(value: string | null | undefined): string {
     .replace(/\s+/g, " ")
     .trim();
 
-  return cleaned || String(value || "").replace(/^@+/, "").trim();
+  const base = cleaned || String(value || "").replace(/^@+/, "").trim();
+  // Skip purely numeric IDs (TikTok internal IDs etc.)
+  if (/^\d+$/.test(base)) return base;
+  return toTitleCase(base);
 }
 
 export function canonicalizeFKProfileIdentity(value: string | null | undefined): string {
