@@ -491,23 +491,24 @@ function slideRanking(report: PerformanceReportContent, clientName: string, mode
 }
 
 function slideShareOfInteractions(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
-  // Agrupa share por marca canónica (suma de interactionsShare de todos los perfiles de la marca)
+  // Agrupa share por marca canónica (sin acentos / mex≡méxico) sumando interactionsShare
   const sov = report.analytics.shareOfVoice.filter((s) => s.interactionsShare > 0);
-  const byBrand = new Map<string, { name: string; value: number; isOwn: boolean }>();
+  const byBrand = new Map<string, { variants: string[]; value: number; isOwn: boolean }>();
   for (const s of sov) {
-    const key = cleanProfileName(s.name).toLowerCase();
+    const key = brandKey(s.name);
     const prev = byBrand.get(key);
     if (prev) {
       prev.value += s.interactionsShare;
+      prev.variants.push(s.name);
       prev.isOwn = prev.isOwn || s.isOwn;
     } else {
-      byBrand.set(key, { name: cleanProfileName(s.name), value: s.interactionsShare, isOwn: s.isOwn });
+      byBrand.set(key, { variants: [s.name], value: s.interactionsShare, isOwn: s.isOwn });
     }
   }
   const data = Array.from(byBrand.values())
     .sort((a, b) => b.value - a.value)
     .slice(0, 7)
-    .map((d) => ({ label: d.name, value: d.value, isOwn: d.isOwn }));
+    .map((d) => ({ label: pickDisplayName(d.variants), value: d.value, isOwn: d.isOwn }));
 
   const own = data.find((d) => d.isOwn);
   const leader = data[0];
