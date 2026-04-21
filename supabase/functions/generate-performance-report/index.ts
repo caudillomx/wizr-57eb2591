@@ -62,6 +62,45 @@ interface RequestBody {
   };
 }
 
+function normalizeText(value: string): string {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildSafeTopContentInsight(
+  insight: string,
+  topPostsForAI: Array<{ rank: number; author: string; network: string; date: string; content_preview: string; engagement: number; likes: number; comments: number; shares: number; views: number }>,
+  clientName: string,
+): string {
+  if (!topPostsForAI.length) return "";
+
+  const normalizedInsight = normalizeText(insight);
+  const matchedPosts = topPostsForAI.filter((post) => {
+    const authorOk = normalizedInsight.includes(normalizeText(post.author));
+    const networkOk = normalizedInsight.includes(normalizeText(post.network));
+    const engagementOk = normalizedInsight.includes(String(post.engagement))
+      || normalizedInsight.includes(`${Math.round(post.engagement / 100) / 10}k`)
+      || normalizedInsight.includes(`${Math.round(post.engagement / 1000)}k`);
+    return authorOk && (networkOk || engagementOk);
+  });
+
+  if (matchedPosts.length > 0) {
+    return insight;
+  }
+
+  const top3 = topPostsForAI.slice(0, 3);
+  const examples = top3
+    .map((post) => `${post.author} en ${post.network} con ${post.engagement.toLocaleString("en-US")} interacciones`)
+    .join(top3.length === 2 ? " y " : ", ");
+
+  return `El contenido con mejor desempeño del período se concentra en piezas que ya dominan el Top 10 por interacciones absolutas. Los casos más claros son ${examples}. Para ${clientName}, la lectura útil no está en inventar excepciones, sino en replicar los formatos, temas y ganchos narrativos que sí aparecen de forma verificable entre las publicaciones líderes.`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -350,7 +389,7 @@ Genera el reporte siguiendo el JSON especificado. Cuando cites una pieza concret
       highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
       keyFindings: Array.isArray(parsed.keyFindings) ? parsed.keyFindings : [],
       recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
-      topContentInsight: String(parsed.topContentInsight || ""),
+      topContentInsight: buildSafeTopContentInsight(String(parsed.topContentInsight || ""), topPostsForAI, clientName),
       competitiveInsight: isBrand ? "" : String(parsed.competitiveInsight || ""),
       rankingInsight: String(parsed.rankingInsight || ""),
       sovInsight: isBrand ? "" : String(parsed.sovInsight || ""),
