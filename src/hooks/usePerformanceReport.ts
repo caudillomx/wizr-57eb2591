@@ -167,11 +167,65 @@ function computeAnalytics(
       };
     })
     .sort((a, b) => {
-      // Profiles with data always come first
       if (a.hasData && !b.hasData) return -1;
       if (!a.hasData && b.hasData) return 1;
       return b.engagement - a.engagement;
     });
+
+  // ── Brand-level aggregation (sum profiles by brand) ──
+  const brandMap = new Map<string, { isOwn: boolean; engs: number[]; followers: number; profiles: number }>();
+  for (const p of profiles) {
+    const k = kpis.find((kp) => kp.fk_profile_id === p.id);
+    const brand = getFKProfileDisplayName(p);
+    const eng = Number(k?.engagement_rate);
+    const fol = Number(k?.followers);
+    if (!brandMap.has(brand)) {
+      brandMap.set(brand, { isOwn: !p.is_competitor, engs: [], followers: 0, profiles: 0 });
+    }
+    const slot = brandMap.get(brand)!;
+    slot.profiles += 1;
+    if (Number.isFinite(eng) && eng > 0) slot.engs.push(eng);
+    if (Number.isFinite(fol) && fol > 0) slot.followers += fol;
+  }
+  const brandEngagement = Array.from(brandMap.entries())
+    .map(([brand, v]) => ({
+      brand,
+      isOwn: v.isOwn,
+      avgEngagement: v.engs.length ? pct(v.engs.reduce((s, e) => s + e, 0) / v.engs.length) : 0,
+      profiles: v.profiles,
+      followers: v.followers,
+    }))
+    .sort((a, b) => b.avgEngagement - a.avgEngagement);
+
+  // ── Network-level growth aggregation ──
+  const netMap = new Map<string, number[]>();
+  for (const p of profiles) {
+    const k = kpis.find((kp) => kp.fk_profile_id === p.id);
+    const gr = Number(k?.follower_growth_percent);
+    if (!Number.isFinite(gr)) continue;
+    if (!netMap.has(p.network)) netMap.set(p.network, []);
+    netMap.get(p.network)!.push(gr);
+  }
+  const networkGrowth = Array.from(netMap.entries())
+    .map(([network, arr]) => ({
+      network,
+      avgGrowth: pct(arr.reduce((s, v) => s + v, 0) / arr.length),
+      profiles: arr.length,
+    }))
+    .sort((a, b) => b.avgGrowth - a.avgGrowth);
+
+  // ── Own brand gap vs leader ──
+  let ownBrandGap: PerformanceReportAnalytics["ownBrandGap"] = null;
+  const own = brandEngagement.find((b) => b.isOwn && b.avgEngagement > 0);
+  const leader = brandEngagement.find((b) => !b.isOwn && b.avgEngagement > 0);
+  if (own && leader) {
+    ownBrandGap = {
+      ownAvg: own.avgEngagement,
+      leaderName: leader.brand,
+      leaderAvg: leader.avgEngagement,
+      multiple: own.avgEngagement > 0 ? Math.round((leader.avgEngagement / own.avgEngagement) * 10) / 10 : 0,
+    };
+  }
 
   return {
     networks,
@@ -182,6 +236,9 @@ function computeAnalytics(
     fastestGrower,
     shareOfVoice,
     rankingByEngagement,
+    brandEngagement,
+    networkGrowth,
+    ownBrandGap,
   };
 }
 
