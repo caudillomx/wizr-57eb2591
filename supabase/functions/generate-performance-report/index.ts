@@ -215,7 +215,7 @@ REGLAS DURAS DE DATOS:
 
 REGLAS PARA HIGHLIGHTS (4 KPI cards de cabecera, las más visibles del reporte):
 - "label": 2-4 palabras MÁXIMO, totalmente claras (ej. "Engagement líder del período", "Brecha vs líder", "Cuota de voz", "Posts del Top 5").
-- "value": LA CIFRA con UNIDAD COMPLETA (ej. "600 interacciones", "0.02% engagement", "13× por debajo", "0 de 5"). NUNCA solo "600" o "0.02".
+- "value": LA CIFRA con UNIDAD COMPLETA, prefiriendo INTERACCIONES ABSOLUTAS o PROMEDIO POR POST (ej. "≈350 interacciones/post", "12.4K interacciones totales", "+8.3% seguidores", "13× por debajo del líder"). NUNCA solo tasas como "0.02%" sin contexto adicional. NUNCA solo "600" o "0.02".
 - "context": 1 oración explicativa que conecte la cifra con ${clientName} (ej. "BBVA México en Instagram lidera el período; ningún post de ${clientName} alcanzó este nivel.").
 - Los 4 highlights deben cubrir ángulos COMPLEMENTARIOS y útiles: NUNCA repitas engagement medio, audiencia total ni métricas que sumadas dan 0 o son redundantes.
 ${isBrand
