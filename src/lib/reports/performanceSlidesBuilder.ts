@@ -15,9 +15,16 @@ const C = {
   paper: "#FAFAFC",
   paperAlt: "#F2F1F8",
   border: "#E5E3EE",
-  violet: "#3D1FD8",
-  violetSoft: "#EBE8FB",
-  violetGlow: "#6B4FF5",
+  // Editorial indigo palette (paridad con PerformanceReportView)
+  indigoDeep: "#1e1b4b",
+  indigoMid: "#312e81",
+  indigoBright: "#4338ca",
+  indigoGlow: "#6366f1",
+  indigoSoft: "#EEF2FF",
+  indigoText: "#c7d2fe",
+  violet: "#4338ca", // alias para charts
+  violetSoft: "#EEF2FF",
+  violetGlow: "#6366f1",
   orange: "#FF6B2C",
   orangeSoft: "#FFE9DD",
   text: "#0B0A1F",
@@ -27,6 +34,9 @@ const C = {
   negative: "#EF4444",
   neutral: "#9CA3AF",
 };
+
+const INDIGO_GRADIENT = "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)";
+const INDIGO_GRADIENT_RADIAL = "radial-gradient(ellipse at top right, #312e81 0%, #1e1b4b 60%)";
 
 function esc(t: string | null | undefined): string {
   if (!t) return "";
@@ -86,11 +96,11 @@ function slideShell(opts: {
   let fg: string;
   let subtle: string;
   if (isDark) {
-    bg = `background: radial-gradient(ellipse at top right, ${C.inkSoft} 0%, ${C.ink} 60%);`;
+    bg = `background: ${INDIGO_GRADIENT_RADIAL};`;
     fg = "#FFFFFF";
-    subtle = "rgba(255,255,255,0.5)";
+    subtle = C.indigoText;
   } else if (isAccent) {
-    bg = `background: linear-gradient(135deg, ${C.violetSoft} 0%, ${C.paper} 100%);`;
+    bg = `background: linear-gradient(135deg, ${C.indigoSoft} 0%, ${C.paper} 100%);`;
     fg = C.text;
     subtle = C.textMuted;
   } else {
@@ -384,14 +394,14 @@ function slideFindings(report: PerformanceReportContent, clientName: string, mod
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Hallazgos Clave</div>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.indigoBright};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Sección · Hallazgos Clave</div>
         <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Lo más relevante del período</h2>
       </div>
       <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px;flex:1;">
         ${items.map((it, i) => `
-          <li style="display:flex;gap:24px;align-items:flex-start;background:${C.paperAlt};border:1px solid ${C.border};border-radius:14px;padding:22px 28px;">
-            <span style="flex-shrink:0;width:48px;height:48px;border-radius:50%;background:${C.violet};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;">${i + 1}</span>
-            <span style="flex:1;font-size:22px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(it, 360))}</span>
+          <li style="display:flex;gap:32px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.indigoBright};border-radius:14px;padding:26px 32px;">
+            <span style="flex-shrink:0;font-size:64px;font-weight:800;color:${C.indigoBright};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:80px;">${String(i + 1).padStart(2, "0")}</span>
+            <span style="flex:1;font-size:22px;line-height:1.55;color:${C.text};font-weight:500;padding-top:8px;">${esc(truncate(it, 380))}</span>
           </li>
         `).join("")}
       </ol>
@@ -405,14 +415,14 @@ function slideRecommendations(report: PerformanceReportContent, clientName: stri
   const body = `
     <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Recomendaciones</div>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Sección · Recomendaciones</div>
         <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Próximos pasos</h2>
       </div>
       <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px;flex:1;">
         ${items.map((it, i) => `
-          <li style="display:flex;gap:24px;align-items:flex-start;background:${C.paperAlt};border:1px solid ${C.border};border-left:5px solid ${C.orange};border-radius:14px;padding:22px 28px;">
-            <span style="flex-shrink:0;width:48px;height:48px;border-radius:50%;background:${C.orange};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;">${i + 1}</span>
-            <span style="flex:1;font-size:22px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(it, 360))}</span>
+          <li style="display:flex;gap:32px;align-items:flex-start;background:#FFFFFF;border:1px solid ${C.border};border-left:6px solid ${C.orange};border-radius:14px;padding:26px 32px;">
+            <span style="flex-shrink:0;font-size:64px;font-weight:800;color:${C.orange};line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.04em;min-width:80px;">${String(i + 1).padStart(2, "0")}</span>
+            <span style="flex:1;font-size:22px;line-height:1.55;color:${C.text};font-weight:500;padding-top:8px;">${esc(truncate(it, 380))}</span>
           </li>
         `).join("")}
       </ol>
