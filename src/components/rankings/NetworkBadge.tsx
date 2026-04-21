@@ -65,6 +65,7 @@ export function NetworkBadge({ network, size = "xs", className }: NetworkBadgePr
   return (
     <Badge
       variant="outline"
+      data-network-badge={key || "unknown"}
       className={cn("inline-flex items-center gap-1 font-medium border", meta.classes, sizeClasses, className)}
     >
       <Icon className={iconSize} />
