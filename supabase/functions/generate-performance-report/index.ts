@@ -274,13 +274,14 @@ Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hal
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
       }),
+      signal: AbortSignal.timeout(120000),
     });
 
     if (!response.ok) {
@@ -288,7 +289,10 @@ Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hal
       console.error("AI Gateway error:", response.status, errText);
       return new Response(
         JSON.stringify({ error: `AI Gateway error ${response.status}: ${errText}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: response.status === 402 || response.status === 429 ? response.status : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
