@@ -14,34 +14,15 @@ export interface PerformanceReportHighlight {
   context: string;
 }
 
-export interface PerformanceNetworkBreakdown {
-  network: string;
-  followers: number;
-  avgEngagement: number;
-  avgGrowth: number;
-  postsPerDay: number;
-  profileCount: number;
-}
-
 export interface PerformanceReportAnalytics {
   networks: string[];
   avgEngagement: number;
   avgGrowth: number;
   totalFollowers: number;
-  avgPostsPerDay: number;
-  followersByNetwork: PerformanceNetworkBreakdown[];
-  bestNetworkByEngagement: { network: string; engagement: number } | null;
-  bestNetworkByGrowth: { network: string; growth: number } | null;
-  riskNetwork: { network: string; growth: number } | null;
   bestPerformer: { name: string; network: string; engagement: number } | null;
   fastestGrower: { name: string; network: string; growth: number } | null;
   shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
   rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
-  // Benchmark-only
-  ownPosition: { rank: number; total: number } | null;
-  ownEngagementShare: number;
-  gapToLeader: { leaderName: string; leaderNetwork: string; gapPercent: number } | null;
-  topCompetitor: { name: string; engagement: number } | null;
 }
 
 export interface PerformanceTopPostSnapshot {
@@ -145,74 +126,26 @@ function computeAnalytics(
     }
   }
 
-  // Followers + métricas por red social (agregado)
-  const networkMap = new Map<string, { followers: number; engs: number[]; growths: number[]; posts: number[]; count: number }>();
-  for (const p of profiles) {
-    const k = kpis.find((kp) => kp.fk_profile_id === p.id);
-    const net = p.network;
-    if (!networkMap.has(net)) networkMap.set(net, { followers: 0, engs: [], growths: [], posts: [], count: 0 });
-    const bucket = networkMap.get(net)!;
-    bucket.count += 1;
-    const fol = Number(k?.followers);
-    if (Number.isFinite(fol) && fol > 0) bucket.followers += fol;
-    const eng = Number(k?.engagement_rate);
-    if (Number.isFinite(eng) && eng > 0) bucket.engs.push(eng);
-    const gr = Number(k?.follower_growth_percent);
-    if (Number.isFinite(gr)) bucket.growths.push(gr);
-    const ppd = Number(k?.posts_per_day);
-    if (Number.isFinite(ppd) && ppd > 0) bucket.posts.push(ppd);
-  }
-  const followersByNetwork: PerformanceNetworkBreakdown[] = Array.from(networkMap.entries())
-    .map(([network, b]) => ({
-      network,
-      followers: b.followers,
-      avgEngagement: b.engs.length ? pct(b.engs.reduce((s, v) => s + v, 0) / b.engs.length) : 0,
-      avgGrowth: b.growths.length ? pct(b.growths.reduce((s, v) => s + v, 0) / b.growths.length) : 0,
-      postsPerDay: b.posts.length ? pct(b.posts.reduce((s, v) => s + v, 0) / b.posts.length) : 0,
-      profileCount: b.count,
-    }))
-    .sort((a, b) => b.followers - a.followers);
-
-  const bestNetworkByEngagement = followersByNetwork
-    .filter((n) => n.avgEngagement > 0)
-    .sort((a, b) => b.avgEngagement - a.avgEngagement)[0]
-    ? { network: followersByNetwork.filter((n) => n.avgEngagement > 0).sort((a, b) => b.avgEngagement - a.avgEngagement)[0].network,
-        engagement: followersByNetwork.filter((n) => n.avgEngagement > 0).sort((a, b) => b.avgEngagement - a.avgEngagement)[0].avgEngagement }
-    : null;
-  const bestNetworkByGrowth = followersByNetwork
-    .filter((n) => n.avgGrowth !== 0)
-    .sort((a, b) => b.avgGrowth - a.avgGrowth)[0]
-    ? { network: followersByNetwork.filter((n) => n.avgGrowth !== 0).sort((a, b) => b.avgGrowth - a.avgGrowth)[0].network,
-        growth: followersByNetwork.filter((n) => n.avgGrowth !== 0).sort((a, b) => b.avgGrowth - a.avgGrowth)[0].avgGrowth }
-    : null;
-  const riskCandidate = followersByNetwork
-    .filter((n) => n.avgGrowth < 0)
-    .sort((a, b) => a.avgGrowth - b.avgGrowth)[0];
-  const riskNetwork = riskCandidate ? { network: riskCandidate.network, growth: riskCandidate.avgGrowth } : null;
-
-  const validPosts = kpis
-    .map((k) => Number(k.posts_per_day))
-    .filter((v) => Number.isFinite(v) && v > 0);
-  const avgPostsPerDay = validPosts.length ? pct(validPosts.reduce((s, v) => s + v, 0) / validPosts.length) : 0;
-
-  // Share of voice ponderado por engagement absoluto (followers * engagement_rate)
-  // así reflejamos peso real en lugar de solo sumar tasas
-  const weightedContribs = profiles.map((p) => {
+  // Share of voice: % of total engagement contribution and % of total followers
+  const totalEngContribution = profiles.reduce((s, p) => {
     const k = kpis.find((kp) => kp.fk_profile_id === p.id);
     const eng = Number(k?.engagement_rate);
-    const fol = Number(k?.followers);
-    const weight = (Number.isFinite(eng) && eng > 0 ? eng : 0) * (Number.isFinite(fol) && fol > 0 ? fol : 0);
-    return { p, k, weight, eng: Number.isFinite(eng) && eng > 0 ? eng : 0, fol: Number.isFinite(fol) && fol > 0 ? fol : 0 };
-  });
-  const totalWeight = weightedContribs.reduce((s, w) => s + w.weight, 0) || 1;
+    return s + (Number.isFinite(eng) && eng > 0 ? eng : 0);
+  }, 0) || 1;
+
   const totalFollowersForShare = totalFollowers || 1;
 
-  const shareOfVoice = weightedContribs.map(({ p, weight, fol }) => ({
-    name: getFKProfileDisplayName(p),
-    isOwn: !p.is_competitor,
-    engagementShare: pct((weight / totalWeight) * 100),
-    followersShare: pct((fol / totalFollowersForShare) * 100),
-  }));
+  const shareOfVoice = profiles.map((p) => {
+    const k = kpis.find((kp) => kp.fk_profile_id === p.id);
+    const eng = Number(k?.engagement_rate);
+    const fol = Number(k?.followers);
+    return {
+      name: getFKProfileDisplayName(p),
+      isOwn: !p.is_competitor,
+      engagementShare: pct(((Number.isFinite(eng) && eng > 0 ? eng : 0) / totalEngContribution) * 100),
+      followersShare: pct(((Number.isFinite(fol) && fol > 0 ? fol : 0) / totalFollowersForShare) * 100),
+    };
+  });
 
   const rankingByEngagement = profiles
     .map((p) => {
@@ -228,54 +161,21 @@ function computeAnalytics(
       };
     })
     .sort((a, b) => {
+      // Profiles with data always come first
       if (a.hasData && !b.hasData) return -1;
       if (!a.hasData && b.hasData) return 1;
       return b.engagement - a.engagement;
     });
-
-  // Métricas competitivas (benchmark)
-  const ownProfiles = rankingByEngagement.filter((r) => r.isOwn && r.hasData);
-  const allWithData = rankingByEngagement.filter((r) => r.hasData);
-  let ownPosition: PerformanceReportAnalytics["ownPosition"] = null;
-  let gapToLeader: PerformanceReportAnalytics["gapToLeader"] = null;
-  let topCompetitor: PerformanceReportAnalytics["topCompetitor"] = null;
-  let ownEngagementShare = 0;
-
-  if (ownProfiles.length > 0 && allWithData.length > 0) {
-    const bestOwn = ownProfiles[0];
-    const bestOwnIdx = allWithData.findIndex((r) => r.name === bestOwn.name && r.network === bestOwn.network);
-    ownPosition = { rank: bestOwnIdx + 1, total: allWithData.length };
-    const leader = allWithData[0];
-    if (leader && !leader.isOwn) {
-      gapToLeader = {
-        leaderName: leader.name,
-        leaderNetwork: leader.network,
-        gapPercent: pct(leader.engagement - bestOwn.engagement),
-      };
-    }
-    const competitor = allWithData.find((r) => !r.isOwn);
-    if (competitor) topCompetitor = { name: competitor.name, engagement: competitor.engagement };
-  }
-  ownEngagementShare = pct(shareOfVoice.filter((s) => s.isOwn).reduce((s, v) => s + v.engagementShare, 0));
 
   return {
     networks,
     avgEngagement,
     avgGrowth,
     totalFollowers,
-    avgPostsPerDay,
-    followersByNetwork,
-    bestNetworkByEngagement,
-    bestNetworkByGrowth,
-    riskNetwork,
     bestPerformer,
     fastestGrower,
     shareOfVoice,
     rankingByEngagement,
-    ownPosition,
-    ownEngagementShare,
-    gapToLeader,
-    topCompetitor,
   };
 }
 

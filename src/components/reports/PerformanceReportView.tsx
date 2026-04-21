@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList,
   PieChart, Pie, Legend,
 } from "recharts";
-import { Target, Sparkles, Lightbulb, Trophy, TrendingUp, TrendingDown, Users2, FileText, Network, Activity, AlertTriangle } from "lucide-react";
+import { Target, Sparkles, Lightbulb, Trophy, TrendingUp, Users2, FileText } from "lucide-react";
 import type { PerformanceReportContent } from "@/hooks/usePerformanceReport";
 import { EditableText } from "./EditableText";
 import { NetworkBadge } from "@/components/rankings/NetworkBadge";
@@ -48,7 +48,7 @@ export function PerformanceReportView({
     return map[n.toLowerCase()] || n;
   };
 
-  const rankingValid = report.analytics.rankingByEngagement.filter((r) => r.hasData !== false && r.engagement > 0);
+  const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.engagement > 0);
   const rankingChartData = rankingValid.slice(0, 10).map((r) => {
     const labelBase = `${r.name} · ${networkShort(r.network)}`;
     return {
@@ -61,7 +61,7 @@ export function PerformanceReportView({
     };
   });
 
-  const sovChartData = report.analytics.shareOfVoice
+  const sovChartData = (report.analytics?.shareOfVoice ?? [])
     .filter((s) => s.engagementShare > 0)
     .slice(0, 8)
     .map((s, i) => ({
@@ -102,9 +102,9 @@ export function PerformanceReportView({
       </div>
 
       {/* Highlights */}
-      {report.highlights.length > 0 && (
+      {(report.highlights?.length ?? 0) > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {report.highlights.map((h, i) => (
+          {report.highlights!.map((h, i) => (
             <Card key={i} className="bg-gradient-to-br from-primary/5 to-transparent">
               <CardContent className="p-4 space-y-1">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
@@ -118,173 +118,33 @@ export function PerformanceReportView({
         </div>
       )}
 
-      {/* KPIs accionables */}
-      {isBrand ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Network className="h-3 w-3" /> Redes activas
-              </div>
-              <div className="text-2xl font-bold">{report.analytics.networks.length}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{report.profiles.length} perfiles</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Trophy className="h-3 w-3" /> Mejor red por engagement
-              </div>
-              {report.analytics.bestNetworkByEngagement ? (
-                <>
-                  <div className="text-2xl font-bold capitalize">{report.analytics.bestNetworkByEngagement.network}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{report.analytics.bestNetworkByEngagement.engagement}% promedio</div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground mt-1">Sin datos</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <TrendingUp className="h-3 w-3" /> Mejor red por crecimiento
-              </div>
-              {report.analytics.bestNetworkByGrowth ? (
-                <>
-                  <div className="text-2xl font-bold capitalize">{report.analytics.bestNetworkByGrowth.network}</div>
-                  <div className={`text-xs mt-0.5 ${report.analytics.bestNetworkByGrowth.growth >= 0 ? "text-green-600" : "text-destructive"}`}>
-                    {report.analytics.bestNetworkByGrowth.growth >= 0 ? "+" : ""}{report.analytics.bestNetworkByGrowth.growth}%
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground mt-1">Sin datos</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                {report.analytics.riskNetwork ? <AlertTriangle className="h-3 w-3 text-destructive" /> : <Activity className="h-3 w-3" />}
-                {report.analytics.riskNetwork ? "Red en riesgo" : "Frecuencia"}
-              </div>
-              {report.analytics.riskNetwork ? (
-                <>
-                  <div className="text-2xl font-bold capitalize">{report.analytics.riskNetwork.network}</div>
-                  <div className="text-xs text-destructive mt-0.5">{report.analytics.riskNetwork.growth}% crecimiento</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{report.analytics.avgPostsPerDay}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">posts/día promedio</div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Trophy className="h-3 w-3" /> Posición de {report.brandName || report.clientName}
-              </div>
-              {report.analytics.ownPosition ? (
-                <>
-                  <div className="text-2xl font-bold">#{report.analytics.ownPosition.rank} <span className="text-sm font-normal text-muted-foreground">de {report.analytics.ownPosition.total}</span></div>
-                  <div className="text-xs text-muted-foreground mt-0.5">por engagement rate</div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground mt-1">Sin datos comparables</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Users2 className="h-3 w-3" /> Share of voice propio
-              </div>
-              <div className="text-2xl font-bold text-primary">{report.analytics.ownEngagementShare}%</div>
-              <div className="text-xs text-muted-foreground mt-0.5">del engagement total</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <TrendingDown className="h-3 w-3" /> Brecha vs líder
-              </div>
-              {report.analytics.gapToLeader ? (
-                <>
-                  <div className="text-2xl font-bold text-destructive">-{report.analytics.gapToLeader.gapPercent}%</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 truncate">vs {report.analytics.gapToLeader.leaderName}</div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground mt-1">Liderando o sin datos</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Trophy className="h-3 w-3" /> Mejor red propia
-              </div>
-              {report.analytics.bestNetworkByEngagement ? (
-                <>
-                  <div className="text-2xl font-bold capitalize">{report.analytics.bestNetworkByEngagement.network}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{report.analytics.bestNetworkByEngagement.engagement}% engagement</div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground mt-1">Sin datos</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Followers por red social */}
-      {report.analytics.followersByNetwork.length > 0 && (
+      {/* KPIs grid (always-visible computed numbers) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Network className="h-4 w-4 text-primary" />
-              Distribución por red social
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Audiencia, engagement y frecuencia agregadas por plataforma
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 border-b">
-                  <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-2 font-medium">Red</th>
-                    <th className="px-4 py-2 font-medium text-right">Perfiles</th>
-                    <th className="px-4 py-2 font-medium text-right">Followers</th>
-                    <th className="px-4 py-2 font-medium text-right">Engagement</th>
-                    <th className="px-4 py-2 font-medium text-right">Crecimiento</th>
-                    <th className="px-4 py-2 font-medium text-right">Posts/día</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.analytics.followersByNetwork.map((n) => (
-                    <tr key={n.network} className="border-b last:border-0 hover:bg-muted/20">
-                      <td className="px-4 py-2"><NetworkBadge network={n.network} size="xs" /></td>
-                      <td className="px-4 py-2 text-right">{n.profileCount}</td>
-                      <td className="px-4 py-2 text-right font-medium">{formatNumber(n.followers)}</td>
-                      <td className="px-4 py-2 text-right">{n.avgEngagement > 0 ? `${n.avgEngagement}%` : "—"}</td>
-                      <td className={`px-4 py-2 text-right ${n.avgGrowth < 0 ? "text-destructive" : n.avgGrowth > 0 ? "text-green-600" : ""}`}>
-                        {n.avgGrowth !== 0 ? `${n.avgGrowth > 0 ? "+" : ""}${n.avgGrowth}%` : "—"}
-                      </td>
-                      <td className="px-4 py-2 text-right">{n.postsPerDay > 0 ? n.postsPerDay.toFixed(2) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Perfiles analizados</div>
+            <div className="text-2xl font-bold">{report.profiles?.length ?? 0}</div>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Engagement promedio</div>
+            <div className="text-2xl font-bold">{report.analytics.avgEngagement}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Crecimiento promedio</div>
+            <div className="text-2xl font-bold">{report.analytics.avgGrowth}%</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">Total seguidores</div>
+            <div className="text-2xl font-bold">{formatNumber(report.analytics.totalFollowers)}</div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Ranking chart */}
       <Card>
@@ -401,7 +261,7 @@ export function PerformanceReportView({
                 </tr>
               </thead>
               <tbody>
-                {report.profiles.map((p) => (
+                {(report.profiles ?? []).map((p) => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-2 font-medium">{p.name}</td>
                     <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
@@ -427,7 +287,7 @@ export function PerformanceReportView({
       </Card>
 
       {/* Top content */}
-      {report.topPosts.length > 0 && (
+      {(report.topPosts?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -435,7 +295,7 @@ export function PerformanceReportView({
               Mejores contenidos del período
             </CardTitle>
             <CardDescription className="text-xs">
-              Top {Math.min(report.topPosts.length, 5)} posts por engagement
+              Top {Math.min(report.topPosts!.length, 5)} posts por engagement
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -516,7 +376,7 @@ export function PerformanceReportView({
         </CardHeader>
         <CardContent>
           <ol className="space-y-3">
-            {report.keyFindings.map((f, i) => (
+            {(report.keyFindings ?? []).map((f, i) => (
               <li key={i} className="flex gap-3 text-sm">
                 <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center mt-0.5">
                   {i + 1}
@@ -545,7 +405,7 @@ export function PerformanceReportView({
         </CardHeader>
         <CardContent>
           <ol className="space-y-3">
-            {report.recommendations.map((r, i) => (
+            {(report.recommendations ?? []).map((r, i) => (
               <li key={i} className="flex gap-3 text-sm">
                 <span className="flex-shrink-0 h-6 w-6 rounded-full bg-secondary text-secondary-foreground font-semibold text-xs flex items-center justify-center mt-0.5">
                   {i + 1}
