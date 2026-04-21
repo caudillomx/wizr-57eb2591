@@ -949,7 +949,7 @@ export function FKExcelImporter({ clientId }: Props) {
                         <strong>{o.profileName}</strong> · {o.network}
                       </span>
                       <span className="text-muted-foreground whitespace-nowrap">
-                        {o.existing} <span className="text-amber-600">↔</span> {o.incoming}
+                        {o.existing} <span className="text-destructive">↔</span> {o.incoming}
                       </span>
                     </div>
                   ))}
