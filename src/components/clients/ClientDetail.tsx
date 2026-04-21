@@ -38,7 +38,8 @@ type ViewMode = "brand" | "benchmark";
 
 export function ClientDetail({ client, onBack }: Props) {
   const qc = useQueryClient();
-  const [view, setView] = useState<ViewMode>("brand");
+  const isBenchmarkOnly = client.client_type === "benchmark";
+  const [view, setView] = useState<ViewMode>(isBenchmarkOnly ? "benchmark" : "brand");
   const [activeTab, setActiveTab] = useState<
     "ranking" | "insights" | "evolution" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
   >("ranking");
