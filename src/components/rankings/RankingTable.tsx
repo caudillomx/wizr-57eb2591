@@ -78,8 +78,8 @@ function FallbackBadge({ periodStart, periodEnd }: FallbackBadgeProps) {
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
           {isStale
-            ? `Dato desactualizado (${ageDays} días). Mostrando snapshot ${formatPeriod(periodStart, periodEnd)} porque no hay datos en el rango seleccionado.`
-            : `Snapshot fuera del rango filtrado. Período real del dato: ${formatPeriod(periodStart, periodEnd)}.`}
+            ? `Dato desactualizado (${ageDays} días). Mostrando el snapshot importado ${formatPeriod(periodStart, periodEnd)} porque no hay un corte más reciente para el rango seleccionado.`
+            : `Período real del KPI: snapshot importado ${formatPeriod(periodStart, periodEnd)}. No existe un corte exacto para el rango seleccionado.`}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -194,6 +194,22 @@ export function RankingTable({
 
   const hasAnyKpi = useMemo(() => rankedData.some((item) => item.kpi !== null), [rankedData]);
 
+  const fallbackSummary = useMemo(() => {
+    const fallbackRows = rankedData.filter((item) => item.kpi?.isFallback);
+    if (fallbackRows.length === 0) return null;
+
+    const uniquePeriods = Array.from(
+      new Set(fallbackRows.map((item) => `${item.kpi?.period_start}|${item.kpi?.period_end}`)),
+    );
+
+    if (fallbackRows.length === rankedData.length && uniquePeriods.length === 1) {
+      const [periodStart, periodEnd] = uniquePeriods[0].split("|");
+      return `Todos los perfiles usan el snapshot importado ${formatPeriod(periodStart, periodEnd)}. El ranking no cambiará hasta que existan otros cortes KPI para ese período.`;
+    }
+
+    return `${fallbackRows.length} perfil${fallbackRows.length === 1 ? "" : "es"} muestran el snapshot importado más cercano porque no hay un corte exacto en el rango aplicado.`;
+  }, [rankedData]);
+
   const profileNetworks = profiles.map(p => p.network as FKNetwork);
 
   // Calculate max values for relative bars
@@ -247,6 +263,12 @@ export function RankingTable({
                 sortMetric === "followers" ? "Seguidores" :
                 sortMetric === "follower_growth_percent" ? "Crecimiento" : "Posts/día"}
             </CardDescription>
+            {fallbackSummary && (
+              <p className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
+                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{fallbackSummary}</span>
+              </p>
+            )}
           </div>
           <NetworkFilter
             networks={profileNetworks}
