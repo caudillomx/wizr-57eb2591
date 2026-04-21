@@ -357,55 +357,73 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Brand-level engagement chart (solo BENCHMARK) ----------
+  // ---------- Brand-level interactions per post chart (solo BENCHMARK) ----------
+  const brandPalette = [C.violet, C.orange, "#22c55e", "#06b6d4", "#8b5cf6", "#ec4899", "#eab308", "#ef4444", "#0ea5e9", "#14b8a6", "#a855f7", "#f59e0b"];
+  const brandsList = (report.analytics.brandEngagement ?? []).map((b) => b.brand);
+  const colorForBrand = (brand: string, isOwn: boolean): string => {
+    if (isOwn) return C.violet;
+    const idx = brandsList.findIndex((b) => b === brand);
+    return brandPalette[(idx + 1) % brandPalette.length];
+  };
+
   const brandEngBlock = !isBrand && report.analytics.brandEngagement?.length > 1
     ? section(
-        "Engagement promedio por marca",
+        "Interacciones promedio por publicación · por marca",
         chartHorizontalBars(
           report.analytics.brandEngagement.slice(0, 12).map((b) => ({
             label: b.brand,
-            value: b.avgEngagement,
+            value: b.avgInteractionsPerPost,
             isOwn: b.isOwn,
-            sub: `${b.profiles} perfil(es)`,
+            sub: `${b.profiles} perfil(es) · ${b.postsCount} posts`,
+            color: colorForBrand(b.brand, b.isOwn),
           })),
-        ),
-        { eyebrow: "Sección 04 · Engagement por marca" },
+          "",
+          (v) => fmtNum(v),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: promedio de reacciones (likes + comentarios + compartidos) por cada publicación de la marca. Iguala marcas grandes y pequeñas porque mide cuánta conversación moviliza cada contenido.</p>`,
+        { eyebrow: "Sección · Engagement por marca" },
       )
     : "";
 
-  // ---------- Ranking chart (top 10 perfiles, color por red) ----------
-  const rankingChart = report.analytics.rankingByEngagement.length
+  // ---------- Ranking chart (top 10 perfiles por interacciones promedio · color por red) ----------
+  const rankingChart = (report.analytics.rankingByEngagement ?? []).filter((r) => r.avgInteractionsPerPost > 0).length
     ? section(
-        "Top 10 perfiles por engagement",
+        "Top 10 perfiles por interacciones promedio por publicación",
         chartHorizontalBars(
-          report.analytics.rankingByEngagement.slice(0, 10).map((r) => ({
-            label: r.name,
-            value: r.engagement,
-            isOwn: r.isOwn,
-            sub: networkLabel(r.network),
-            color: r.isOwn ? C.violet : colorForNetwork(r.network),
-          })),
+          report.analytics.rankingByEngagement
+            .filter((r) => r.avgInteractionsPerPost > 0)
+            .slice(0, 10)
+            .map((r) => ({
+              label: r.name,
+              value: r.avgInteractionsPerPost,
+              isOwn: r.isOwn,
+              sub: networkLabel(r.network),
+              color: colorForNetwork(r.network),
+            })),
+          "",
+          (v) => fmtNum(v),
         ) + (report.rankingInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.rankingInsight)}</div>` : ""),
-        { eyebrow: "Sección 05 · Ranking de perfiles" },
+        { eyebrow: "Sección · Ranking de perfiles" },
       )
     : "";
 
-  // ---------- Share of voice (benchmark) por marca · usa interacciones absolutas ----------
-  const sovBlock = !isBrand && report.analytics.brandEngagement?.length
+  // ---------- Share of voice por perfil (top 10) · color por red ----------
+  const sovBlock = !isBrand && report.analytics.shareOfVoice?.length
     ? (() => {
-        const totalInter = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
-        const data = report.analytics.brandEngagement
-          .filter((b) => b.totalInteractions > 0)
-          .map((b) => ({
-            label: b.brand,
-            value: Math.round((b.totalInteractions / totalInter) * 1000) / 10,
-            isOwn: b.isOwn,
-            sub: `${fmtNum(b.totalInteractions)} interacciones`,
+        const data = (report.analytics.shareOfVoice || [])
+          .filter((s) => s.interactionsShare > 0)
+          .slice(0, 10)
+          .map((s) => ({
+            label: s.name,
+            value: s.interactionsShare,
+            isOwn: s.isOwn,
+            sub: networkLabel(s.network),
+            color: colorForNetwork(s.network),
           }));
+        if (data.length === 0) return "";
         return section(
-          "Share of voice por marca",
+          "Share of voice · participación en interacciones (Top 10)",
           chartHorizontalBars(data) + (report.sovInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.sovInsight)}</div>` : ""),
-          { eyebrow: "Sección 06 · Participación" },
+          { eyebrow: "Sección · Participación" },
         );
       })()
     : "";
@@ -421,7 +439,7 @@ export function buildPerformanceReportHTML(
   const profilesBlock = section(
     profilesTitle,
     profilesTable(top10ProfilesReport, isBrand) + (report.profilesInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.profilesInsight)}</div>` : ""),
-    { eyebrow: "Sección 07 · Detalle" },
+    { eyebrow: "Sección · Detalle" },
   );
 
   // ---------- Top content ----------
@@ -429,38 +447,41 @@ export function buildPerformanceReportHTML(
     ? section(
         "Mejores contenidos del período",
         `${topPostsList(report)}${report.topContentInsight ? `<div style="margin-top:12px;padding:12px 14px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:10px;line-height:1.6;color:${C.text};">${esc(report.topContentInsight)}</div>` : ""}`,
-        { eyebrow: "Sección 07 · Top contenidos" },
+        { eyebrow: "Sección · Top contenidos" },
       )
     : "";
 
-  // ---------- Followers por perfil (Top 15) — solo BENCHMARK ----------
+  // ---------- Followers por perfil (Top 15) — solo BENCHMARK · color por red ----------
   const followersBlock = !isBrand && report.analytics.followersByProfile?.length
     ? section(
         "Perfiles con más seguidores (Top 15)",
         chartVerticalBars(
           report.analytics.followersByProfile.slice(0, 15).map((f) => ({
-            label: `${f.name.length > 10 ? f.name.substring(0, 9) + "…" : f.name}`,
+            label: f.name.length > 12 ? f.name.substring(0, 11) + "…" : f.name,
             value: f.followers,
             isOwn: f.isOwn,
+            color: colorForNetwork(f.network),
           })),
           "",
           (v) => fmtNum(v),
-        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: ranking de los perfiles con mayor audiencia del set. Permite dimensionar la brecha de alcance potencial entre ${esc(clientName)} y la competencia.</p>`,
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: ranking de los perfiles con mayor audiencia · color por red social. Permite dimensionar la brecha de alcance potencial entre ${esc(clientName)} y la competencia.</p>`,
         { eyebrow: "Sección · Audiencia" },
       )
     : "";
 
-  // ---------- Engagement por red social (BENCHMARK only) ----------
+  // ---------- Interacciones promedio por publicación · por red social (BENCHMARK) ----------
   const networkEngBlock = !isBrand && (report.analytics.networkEngagement?.length ?? 0) > 1
     ? section(
-        "Engagement promedio por red social",
+        "Interacciones promedio por publicación · por red social",
         chartVerticalBars(
           report.analytics.networkEngagement.map((n) => ({
             label: networkLabel(n.network),
-            value: n.avgEngagement,
+            value: n.avgInteractionsPerPost,
             color: colorForNetwork(n.network),
           })),
-        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.</p>`,
+          "",
+          (v) => fmtNum(v),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra promedia las reacciones absolutas por publicación en esa red, sumando todas las marcas del set. Si destaca una red, es donde la audiencia del sector reacciona más por contenido.</p>`,
         { eyebrow: "Sección · Engagement por red" },
       )
     : "";
