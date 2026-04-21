@@ -66,18 +66,24 @@ export function PerformanceReportPDFGenerator({
 
       /* Network badges: html2canvas mis-aligns inline-flex + lucide SVGs.
          Force a roomy text-only chip with safe sRGB colors and explicit
-         line-height so the label is always centered and visible. */
+         line-height. Force inner children to inline so the text label
+         actually renders inside the pill. */
       [data-pdf-host] [data-network-badge] {
         display: inline-block !important;
-        padding: 2px 8px !important;
+        padding: 3px 10px !important;
         border-radius: 9999px !important;
         font-size: 10px !important;
         font-weight: 600 !important;
-        line-height: 14px !important;
+        line-height: 12px !important;
         border: 1px solid #cbd5e1 !important;
         background: #f1f5f9 !important;
         color: #0f172a !important;
         vertical-align: middle !important;
+        white-space: nowrap !important;
+      }
+      [data-pdf-host] [data-network-badge] > * {
+        display: inline !important;
+        vertical-align: baseline !important;
       }
       [data-pdf-host] [data-network-badge] svg { display: none !important; }
       [data-pdf-host] [data-network-badge="facebook"] { background:#dbeafe !important; color:#1e3a8a !important; border-color:#bfdbfe !important; }
@@ -103,6 +109,19 @@ export function PerformanceReportPDFGenerator({
         font-size: 10px !important;
         vertical-align: middle !important;
         padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Top Content header row: switch flex to inline-baseline so the
+         numbered bullet, brand name and network chip share a baseline
+         and don't drop below their pills. */
+      [data-pdf-host] [data-top-content-header] {
+        display: block !important;
+      }
+      [data-pdf-host] [data-top-content-header] > * {
+        display: inline-block !important;
+        vertical-align: middle !important;
+        margin-right: 6px !important;
       }
 
       /* Don't truncate post bodies in PDF — let them flow */

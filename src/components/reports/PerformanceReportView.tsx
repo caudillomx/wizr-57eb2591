@@ -888,7 +888,7 @@ export function PerformanceReportView({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {report.topPosts.slice(0, 10).map((p, i) => (
                 <div key={i} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <div data-top-content-header className="flex items-center gap-2 flex-wrap text-xs">
                     <span data-numbered-bullet className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[10px]">{i + 1}</span>
                     <span className="font-medium">{p.authorName}</span>
                     <NetworkBadge network={p.network} size="xs" />
