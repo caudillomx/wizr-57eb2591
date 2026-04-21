@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export type SharedReportKind = "listening" | "performance_brand" | "performance_benchmark";
+export type SharedReportKind = "listening" | "performance_brand" | "performance_benchmark" | "performance_comparative";
 
 export interface SharedReport {
   id: string;
