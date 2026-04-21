@@ -107,6 +107,9 @@ export function RankingDateFilter({
 
   const canApply = hasChanges && (preset !== "custom" || (!!customRange?.from && !!customRange?.to));
 
+  const effectiveRange = getDateRangeFromPreset(preset, customRange);
+  const rangeLabel = `${format(effectiveRange.from, "d MMM", { locale: es })} – ${format(effectiveRange.to, "d MMM yyyy", { locale: es })}`;
+
   return (
     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
       <span className="text-sm font-medium text-muted-foreground">Período:</span>
