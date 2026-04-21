@@ -262,7 +262,7 @@ Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
     "Recomendación 1 (DECISIÓN + PLAZO + RIESGO/OPORTUNIDAD para ${clientName})",
     "Recomendación 2..."
   ],
-  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top y qué brecha de creatividad/formato implica para ${clientName}",
+  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top. Cita 1-2 ejemplos concretos USANDO ÚNICAMENTE items del array TOP_POSTS (autor + red + cifra de engagement EXACTOS). Si no encuentras ejemplo adecuado, habla del patrón agregado sin inventar piezas.",
   "competitiveInsight": "Solo en BENCHMARK: análisis de 3-4 oraciones sobre posicionamiento competitivo de ${clientName}. En MARCA: cadena vacía.",
   "rankingInsight": "2-3 oraciones leyendo el ranking desde la óptica de ${clientName}",
   "sovInsight": "Solo en BENCHMARK: 2-3 oraciones leyendo el share of voice desde ${clientName}. En MARCA: cadena vacía.",
@@ -281,10 +281,10 @@ ${JSON.stringify(analytics, null, 2)}
 PERFILES Y KPIS DEL PERÍODO:
 ${JSON.stringify(profilesSummary, null, 2)}
 
-TOP 5 CONTENIDOS POR ENGAGEMENT EN EL PERÍODO:
-${JSON.stringify(top5Posts, null, 2)}
+TOP_POSTS (Top 10 contenidos por engagement en el período · ÚNICA fuente válida para citar piezas concretas):
+${JSON.stringify(topPostsForAI, null, 2)}
 
-Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hallazgos/recomendaciones y la estructura interna QUÉ+DÓNDE+IMPLICACIÓN / DECISIÓN+PLAZO+RIESGO.`;
+Genera el reporte siguiendo el JSON especificado. Cuando cites una pieza concreta, copia EXACTAMENTE autor, red y cifra de engagement de un item de TOP_POSTS — está PROHIBIDO citar posts que no estén en este array.`;
 
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
