@@ -412,6 +412,52 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
+  // ---------- Followers por perfil (Top 15) ----------
+  const followersBlock = report.analytics.followersByProfile?.length
+    ? section(
+        "Perfiles con más seguidores (Top 15)",
+        chartVerticalBars(
+          report.analytics.followersByProfile.slice(0, 15).map((f) => ({
+            label: `${f.name.length > 10 ? f.name.substring(0, 9) + "…" : f.name}`,
+            value: f.followers,
+            isOwn: f.isOwn,
+          })),
+          "",
+          (v) => fmtNum(v),
+        ),
+        { eyebrow: "Sección · Audiencia" },
+      )
+    : "";
+
+  // ---------- Engagement por red social ----------
+  const networkEngBlock = report.analytics.networkEngagement?.length
+    ? section(
+        "Engagement promedio por red social",
+        chartVerticalBars(
+          report.analytics.networkEngagement.map((n) => ({
+            label: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+            value: n.avgEngagement,
+          })),
+        ),
+        { eyebrow: "Sección · Engagement por red" },
+      )
+    : "";
+
+  // ---------- Cuota de interacciones (donut) ----------
+  const sovDonutBlock = !isBrand && report.analytics.brandEngagement?.length
+    ? (() => {
+        const data = report.analytics.brandEngagement
+          .filter((b) => b.avgEngagement > 0)
+          .map((b) => ({ label: b.brand, value: b.avgEngagement, isOwn: b.isOwn }));
+        if (data.length === 0) return "";
+        return section(
+          "Cuota de interacciones por marca",
+          donutChartSVG(data),
+          { eyebrow: "Sección · Cuota de mercado" },
+        );
+      })()
+    : "";
+
   // ---------- Findings ----------
   const findingsBlock = section(
     "Hallazgos clave",
