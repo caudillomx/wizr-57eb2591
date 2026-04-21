@@ -56,9 +56,9 @@ export function RankingDetail({ ranking, onBack }: RankingDetailProps) {
     setActiveTab("ai");
   };
 
-  const handleApplyDateRange = () => {
-    setAppliedPreset(datePreset);
-    setAppliedCustomRange(customDateRange);
+  const handleApplyDateRange = (preset?: DateRangePreset, custom?: DateRange) => {
+    setAppliedPreset(preset ?? datePreset);
+    setAppliedCustomRange(custom ?? customDateRange);
   };
 
   const handleRefreshTopPosts = () => {
