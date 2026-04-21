@@ -203,6 +203,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          client_type: string
           created_at: string
           description: string | null
           id: string
@@ -214,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_type?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -225,6 +227,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_type?: string
           created_at?: string
           description?: string | null
           id?: string
