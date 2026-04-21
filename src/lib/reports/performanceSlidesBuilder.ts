@@ -486,6 +486,7 @@ function slideShareOfVoice(report: PerformanceReportContent, clientName: string,
 }
 
 function slideNetworkBreakdown(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  // Interacciones por red (con comas en miles)
   const eng = report.analytics.networkEngagement
     .filter((n) => n.totalInteractions > 0)
     .map((n) => ({
@@ -496,34 +497,43 @@ function slideNetworkBreakdown(report: PerformanceReportContent, clientName: str
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
-  const growth = report.analytics.networkGrowth
-    .filter((n) => Number.isFinite(n.avgGrowth))
-    .map((n) => ({
-      label: networkLabel(n.network),
-      value: n.avgGrowth,
-      color: networkColor(n.network),
+  // Interacciones promedio por marca (agregado de todas sus redes)
+  const brand = (report.analytics.brandEngagement || [])
+    .filter((b) => b.avgInteractionsPerPost > 0)
+    .map((b) => ({
+      label: b.brand,
+      value: b.avgInteractionsPerPost,
+      color: b.isOwn ? C.violet : C.textMuted,
+      isOwn: b.isOwn,
     }))
-    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-    .slice(0, 6);
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const insight = report.profilesInsight
+    || (eng.length > 0 && brand.length > 0
+      ? `${eng[0].label} concentra el mayor volumen de interacciones por publicación (${fmtInt(eng[0].value)}), mientras que ${brand[0].label} encabeza el desempeño agregado entre marcas con ${fmtInt(brand[0].value)} interacciones promedio.`
+      : "");
 
   const body = `
-    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:36px;">
+    <div style="position:absolute;inset:0;padding:160px 120px 130px;display:flex;flex-direction:column;gap:24px;">
       <div>
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Por Red Social</div>
-        <h2 style="font-size:64px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Desempeño por plataforma</h2>
-        <p style="font-size:18px;color:${C.textMid};margin:14px 0 0 0;">Interacciones promedio por post y crecimiento de seguidores por red.</p>
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:14px;">Por Red Social y Marca</div>
+        <h2 style="font-size:60px;font-weight:800;line-height:1;margin:0;letter-spacing:-0.03em;color:${C.text};">Desempeño por plataforma</h2>
+        <p style="font-size:18px;color:${C.textMid};margin:12px 0 0 0;">Interacciones promedio por post, comparadas por red social y por marca.</p>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;flex:1;">
-        <div style="display:flex;flex-direction:column;gap:18px;">
-          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Interacciones por post</div>
-          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(eng, 780, 70, "")}</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:15px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Por red social</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(eng, 780, 64, "")}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:18px;">
-          <div style="font-size:16px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Crecimiento de seguidores</div>
-          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(growth, 780, 70, "%")}</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:15px;letter-spacing:0.2em;color:${C.textMuted};font-weight:800;text-transform:uppercase;">Por marca (agregado)</div>
+          <div style="flex:1;display:flex;align-items:center;">${svgNetworkBars(brand, 780, 56, "")}</div>
         </div>
       </div>
+
+      ${insight ? `<div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:0 8px 8px 0;padding:14px 24px;font-size:16px;line-height:1.5;color:${C.text};">${esc(truncate(insight, 320))}</div>` : ""}
     </div>
   `;
   return slideShell({ bg: "light", pageNumber: page, total, clientName, modeLabel, body, sectionLabel: "Por Red Social" });
