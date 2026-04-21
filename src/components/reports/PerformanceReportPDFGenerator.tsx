@@ -162,16 +162,24 @@ export function PerformanceReportPDFGenerator({
             />
           </div>
         );
-        // Wait for Recharts ResponsiveContainer to layout + fonts
-        setTimeout(resolve, 1400);
+        // Wait for Recharts ResponsiveContainer to layout + fonts.
+        // 600ms is enough on modern hardware; the previous 1400ms was just
+        // padding and added measurable latency before captures started.
+        setTimeout(resolve, 600);
       });
 
-      // 2) Locate sections (top-level children of the report's `.space-y-8`)
+      // 2) Locate sections (top-level children of the report's `.space-y-8`).
+      // If a section has explicit `data-pdf-capture-item` children, capture
+      // those instead so long lists (e.g. "Mejores contenidos") can break
+      // across pages cleanly. Otherwise capture the whole section.
       const reportRoot = host.querySelector<HTMLElement>(".space-y-8");
       if (!reportRoot) throw new Error("Report root not found");
       const sections = (Array.from(reportRoot.children) as HTMLElement[]).flatMap((section) => {
+        // Only split if the section is genuinely tall (otherwise the extra
+        // captures cost more than they save).
+        if (section.scrollHeight < 900) return [section];
         const splitItems = Array.from(section.querySelectorAll<HTMLElement>("[data-pdf-capture-item]"));
-        return splitItems.length > 0 ? splitItems : [section];
+        return splitItems.length > 1 ? splitItems : [section];
       });
       if (sections.length === 0) throw new Error("No sections to render");
 
@@ -290,8 +298,10 @@ export function PerformanceReportPDFGenerator({
         const rect = section.getBoundingClientRect();
         if (rect.height < 4) continue;
 
+        // scale: 1.5 keeps text crisp at A4 (~150 DPI effective) while cutting
+        // canvas pixel area by ~44% versus scale: 2 → much faster captures.
         const canvas = await html2canvas(section, {
-          scale: 2,
+          scale: 1.5,
           backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
@@ -300,6 +310,8 @@ export function PerformanceReportPDFGenerator({
           // clipped on the right/bottom edges.
           width: section.scrollWidth + 8,
           height: section.scrollHeight + 8,
+          // Skip the extra DOM clone pass for elements we don't need to mutate.
+          removeContainer: true,
         });
 
         const imgWidthMm = CONTENT_W;
@@ -307,7 +319,7 @@ export function PerformanceReportPDFGenerator({
         const imgHeightMm = imgWidthMm * ratio;
 
         sectionImages.push({
-          dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+          dataUrl: canvas.toDataURL("image/jpeg", 0.85),
           heightMm: imgHeightMm,
         });
       }
