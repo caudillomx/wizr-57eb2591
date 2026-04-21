@@ -391,58 +391,52 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Share of voice agrupado por marca (benchmark only) ── */}
-      {!isBrand && report.analytics.brandEngagement.length > 0 && (
+      {/* ── Share of voice por perfil (benchmark only) — interacciones absolutas, color por red ── */}
+      {!isBrand && sovChartData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users2 className="h-4 w-4 text-primary" />
-              Share of voice por marca (engagement)
+              Share of voice · participación en interacciones (Top 10)
             </CardTitle>
             <CardDescription className="text-xs">
-              Participación de cada marca en el engagement total · agregando todas sus redes
+              Porcentaje del total de interacciones del sector capturado por cada perfil · color por red social
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(() => {
-              const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
-              const data = report.analytics.brandEngagement
-                .filter((b) => b.avgEngagement > 0)
-                .map((b) => ({
-                  name: b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand,
-                  fullName: b.brand,
-                  value: Math.round((b.avgEngagement / total) * 1000) / 10,
-                  isOwn: b.isOwn,
-                  fill: b.isOwn ? "hsl(var(--primary))" : "#94a3b8",
-                }));
-              return (
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const p = payload[0].payload;
-                          return (
-                            <div className="rounded-md border bg-background p-2 shadow-md text-xs">
-                              <div className="font-semibold">{p.fullName}</div>
-                              <div className="text-muted-foreground">{p.value.toFixed(1)}% del engagement total</div>
-                            </div>
-                          );
-                        }}
-                      />
-                      <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                        {data.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                        <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} fontSize={10} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              );
-            })()}
+            <div className="h-[340px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={sovChartData.map((d) => ({ ...d, label: `${d.name}|${networkLabel(d.network)}` }))}
+                  layout="vertical"
+                  margin={{ top: 8, right: 50, left: 0, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <YAxis type="category" dataKey="label" tick={(props) => <TwoLineTick {...props} />} width={170} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.name}</div>
+                          <div className="text-muted-foreground">{networkLabel(p.network)} · {p.value.toFixed(1)}% del total de interacciones</div>
+                          {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {sovChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                    <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} fontSize={10} fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Lectura: cada barra muestra qué porción de toda la conversación del sector capturó ese perfil en el período. A diferencia del engagement por perfil, esta vista revela la concentración: si pocos perfiles acumulan la mayor parte, hay un líder claro de visibilidad. Para {report.clientName} indica cuánto espacio de conversación está ganando frente a la competencia.
+            </p>
             {report.sovInsight && (
               <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
                 <EditableText
