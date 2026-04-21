@@ -151,16 +151,16 @@ function chartVerticalBars(
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => Math.abs(d.value)), 0.01);
-  const barW = Math.max(28, Math.min(56, Math.floor(560 / data.length) - 8));
-  return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:175px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
     .map((d) => {
       const h = (Math.abs(d.value) / max) * 130;
       const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:${barW}px;">
-        <span style="font-size:8px;font-weight:700;color:${C.text};">${valStr}</span>
-        <div style="width:100%;background:${color};height:${h}px;border-radius:3px 3px 0 0;min-height:2px;"></div>
-        <span style="font-size:8px;color:${C.textMid};text-align:center;line-height:1.2;word-break:break-word;">${esc(d.label)}</span>
+      const labelText = d.label.length > 14 ? d.label.slice(0, 13) + "…" : d.label;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:0;max-width:64px;">
+        <span style="font-size:8px;font-weight:700;color:${C.text};line-height:1;">${valStr}</span>
+        <div style="width:80%;background:${color};height:${h}px;border-radius:3px 3px 0 0;min-height:2px;"></div>
+        <span style="font-size:7.5px;color:${C.textMid};text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;" title="${esc(d.label)}">${esc(labelText)}</span>
       </div>`;
     })
     .join("")}</div>`;
@@ -272,7 +272,11 @@ export function buildPerformanceReportHTML(
   report: PerformanceReportContent,
   clientName: string,
   dateRange: DateRange,
-): { html: string; header: string; footer: string } {
+): {
+  html: string;
+  header: { source: string; height: string; start_at?: number };
+  footer: { source: string; height: string; start_at?: number };
+} {
   const isBrand = report.reportMode === "brand";
   const generatedDate = format(new Date(), "d 'de' MMMM yyyy", { locale: es });
   const modeLabel = isBrand ? "Reporte de Marca" : "Reporte de Benchmark";
@@ -284,39 +288,39 @@ export function buildPerformanceReportHTML(
     }
   })();
 
-  // ---------- Cover page ----------
-  const cover = `<section style="page-break-after:always;break-after:page;background:${INDIGO_GRADIENT};color:#fff;min-height:1040px;padding:60px 56px 56px 56px;position:relative;overflow:hidden;font-family:'Inter','Segoe UI',sans-serif;">
-    <div style="position:absolute;bottom:-200px;left:-200px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle, ${C.indigoBright} 0%, transparent 70%);opacity:0.55;"></div>
-    <div style="position:absolute;top:-140px;right:-140px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle, ${C.orange} 0%, transparent 70%);opacity:0.22;"></div>
+  // ---------- Cover page (1 página A4 exacta · sin desbordes) ----------
+  const cover = `<section style="page-break-after:always;break-after:page;background:${INDIGO_GRADIENT};color:#fff;height:265mm;padding:48px 52px;position:relative;overflow:hidden;font-family:'Inter','Segoe UI',sans-serif;display:flex;flex-direction:column;">
+    <div style="position:absolute;bottom:-180px;left:-180px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle, ${C.indigoBright} 0%, transparent 70%);opacity:0.55;"></div>
+    <div style="position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle, ${C.orange} 0%, transparent 70%);opacity:0.22;"></div>
 
     <div style="position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;">
-      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:42px;filter:brightness(0) invert(1);"/>
+      <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:36px;filter:brightness(0) invert(1);"/>
       <div style="font-size:9px;letter-spacing:0.32em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Confidencial</div>
     </div>
 
-    <div style="position:relative;z-index:5;margin-top:140px;">
-      <div style="display:inline-flex;align-items:center;gap:10px;padding:7px 16px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:100px;margin-bottom:32px;">
+    <div style="position:relative;z-index:5;flex:1;display:flex;flex-direction:column;justify-content:center;max-width:760px;">
+      <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:10px;padding:7px 16px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:100px;margin-bottom:22px;">
         <span style="width:6px;height:6px;border-radius:50%;background:${C.orange};"></span>
         <span style="font-size:9px;letter-spacing:0.28em;color:#fff;font-weight:700;text-transform:uppercase;">Wizr · Performance · ${esc(modeLabel)}</span>
       </div>
 
-      <h1 style="font-size:62px;font-weight:800;line-height:1;margin:0 0 16px 0;letter-spacing:-0.025em;">${esc(report.title || clientName)}</h1>
+      <h1 style="font-size:40px;font-weight:800;line-height:1.08;margin:0 0 16px 0;letter-spacing:-0.025em;">${esc(report.title || clientName)}</h1>
 
-      <div style="display:flex;align-items:center;gap:14px;margin-top:24px;">
-        <span style="width:48px;height:2px;background:${C.orange};"></span>
-        <span style="font-size:11px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Cliente</span>
-        <span style="font-size:18px;color:#fff;font-weight:600;">${esc(clientName)}</span>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:14px;">
+        <span style="width:42px;height:2px;background:${C.orange};flex-shrink:0;"></span>
+        <span style="font-size:10px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;min-width:70px;">Cliente</span>
+        <span style="font-size:16px;color:#fff;font-weight:600;">${esc(clientName)}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;margin-top:10px;">
-        <span style="width:48px;height:2px;background:${C.orange};"></span>
-        <span style="font-size:11px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Período</span>
-        <span style="font-size:18px;color:#fff;font-weight:600;">${esc(periodPretty)}</span>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+        <span style="width:42px;height:2px;background:${C.orange};flex-shrink:0;"></span>
+        <span style="font-size:10px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;min-width:70px;">Período</span>
+        <span style="font-size:16px;color:#fff;font-weight:600;">${esc(periodPretty)}</span>
       </div>
 
-      ${report.summary ? `<p style="font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);font-weight:400;max-width:680px;margin:48px 0 0 0;">${esc(report.summary)}</p>` : ""}
+      ${report.summary ? `<p style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.85);font-weight:400;max-width:640px;margin:28px 0 0 0;">${esc(report.summary.length > 460 ? report.summary.slice(0, 457) + "…" : report.summary)}</p>` : ""}
     </div>
 
-    <div style="position:absolute;bottom:48px;left:56px;right:56px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:18px;z-index:5;">
+    <div style="position:relative;z-index:5;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,0.15);padding-top:14px;">
       <div style="font-size:9px;letter-spacing:0.3em;color:${C.indigoText};font-weight:700;text-transform:uppercase;">Wizr · Performance Intelligence</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.78);">${esc(generatedDate)}</div>
     </div>
@@ -574,23 +578,27 @@ export function buildPerformanceReportHTML(
       </div>`
     : "";
 
-  const body = `<div style="background:${C.paper};font-family:'Inter','Segoe UI',sans-serif;color:${C.text};padding:18px 16px;">
+  // Bloques que conviene iniciar en página nueva para evitar huecos grandes
+  const pb = (block: string) =>
+    block ? `<div style="page-break-before:always;break-before:page;">${block}</div>` : "";
+
+  const body = `<div style="background:${C.paper};font-family:'Inter','Segoe UI',sans-serif;color:${C.text};padding:6px 4px;">
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
     ${networkInterBlock}
     ${followersBlock}
-    ${brandEngBlock}
+    ${pb(brandEngBlock)}
     ${networkEngBlock}
-    ${rankingChart}
+    ${pb(rankingChart)}
     ${sovDonutBlock}
-    ${sovProfileDonutBlock}
+    ${pb(sovProfileDonutBlock)}
     ${sovBlock}
-    ${profilesBlock}
-    ${topContentBlock}
-    ${findingsBlock}
+    ${pb(profilesBlock)}
+    ${pb(topContentBlock)}
+    ${pb(findingsBlock)}
     ${competitiveBlock}
-    ${recommendationsBlock}
+    ${pb(recommendationsBlock)}
     ${conclusionBlock}
   </div>`;
 
@@ -601,8 +609,11 @@ export function buildPerformanceReportHTML(
 <title>${esc(report.title || clientName)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 0; background: ${C.paper}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  @page { size: A4; margin: 14mm 12mm 18mm 12mm; }
+  html, body { margin: 0; padding: 0; background: ${C.paper}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* La portada usa su propia altura completa: sin margen alrededor */
+  @page { size: A4; margin: 0; }
+  /* Páginas internas: dejar espacio para header (14mm) y footer (12mm) globales */
+  @page :not(:first) { margin: 18mm 12mm 16mm 12mm; }
   ol, ul { margin: 0; padding: 0; }
 </style>
 </head>
@@ -612,15 +623,23 @@ ${body}
 </body>
 </html>`;
 
-  const header = `<div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:6px 12mm 0 12mm;display:flex;justify-content:space-between;width:100%;">
-    <span style="font-weight:700;text-transform:uppercase;letter-spacing:0.15em;">${esc(clientName)} · ${esc(modeLabel)}</span>
-    <span>${esc(periodPretty)}</span>
-  </div>`;
+  const headerHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;">
+    <div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:6mm 12mm 0 12mm;display:flex;justify-content:space-between;align-items:center;width:100%;border-bottom:1px solid ${C.borderLight};">
+      <span style="font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:${C.indigoBright};">Wizr · ${esc(modeLabel)}</span>
+      <span style="color:${C.textMid};">${esc(clientName)} · ${esc(periodPretty)}</span>
+    </div>
+  </body></html>`;
 
-  const footer = `<div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:0 12mm 6px 12mm;display:flex;justify-content:space-between;width:100%;">
-    <span>Wizr · Performance Intelligence</span>
-    <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
-  </div>`;
+  const footerHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;">
+    <div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:0 12mm 6mm 12mm;display:flex;justify-content:space-between;align-items:center;width:100%;border-top:1px solid ${C.borderLight};padding-top:4mm;">
+      <span style="text-transform:uppercase;letter-spacing:0.15em;">Wizr · Performance Intelligence</span>
+      <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+    </div>
+  </body></html>`;
 
-  return { html: fullHtml, header, footer };
+  return {
+    html: fullHtml,
+    header: { source: headerHtml, height: "14mm", start_at: 2 },
+    footer: { source: footerHtml, height: "12mm", start_at: 2 },
+  };
 }
