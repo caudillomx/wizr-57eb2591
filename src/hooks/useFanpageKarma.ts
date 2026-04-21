@@ -152,7 +152,9 @@ export function useFKProfileKPIs(profileIds: string[], periodStart?: string, per
           .order("fetched_at", { ascending: false });
         const latestByProfile = new Map<string, FKProfileKPI>();
         (latest || []).forEach((k: any) => {
-          if (!latestByProfile.has(k.fk_profile_id)) latestByProfile.set(k.fk_profile_id, k);
+          if (!latestByProfile.has(k.fk_profile_id)) {
+            latestByProfile.set(k.fk_profile_id, { ...k, isFallback: true });
+          }
         });
         result = [...result, ...Array.from(latestByProfile.values())];
       }
