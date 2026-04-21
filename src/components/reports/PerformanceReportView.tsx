@@ -102,9 +102,9 @@ export function PerformanceReportView({
       </div>
 
       {/* Highlights */}
-      {report.highlights.length > 0 && (
+      {(report.highlights?.length ?? 0) > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {report.highlights.map((h, i) => (
+          {report.highlights!.map((h, i) => (
             <Card key={i} className="bg-gradient-to-br from-primary/5 to-transparent">
               <CardContent className="p-4 space-y-1">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
@@ -123,7 +123,7 @@ export function PerformanceReportView({
         <Card>
           <CardContent className="p-4">
             <div className="text-xs text-muted-foreground">Perfiles analizados</div>
-            <div className="text-2xl font-bold">{report.profiles.length}</div>
+            <div className="text-2xl font-bold">{report.profiles?.length ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -261,7 +261,7 @@ export function PerformanceReportView({
                 </tr>
               </thead>
               <tbody>
-                {report.profiles.map((p) => (
+                {(report.profiles ?? []).map((p) => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-2 font-medium">{p.name}</td>
                     <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
@@ -287,7 +287,7 @@ export function PerformanceReportView({
       </Card>
 
       {/* Top content */}
-      {report.topPosts.length > 0 && (
+      {(report.topPosts?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -295,7 +295,7 @@ export function PerformanceReportView({
               Mejores contenidos del período
             </CardTitle>
             <CardDescription className="text-xs">
-              Top {Math.min(report.topPosts.length, 5)} posts por engagement
+              Top {Math.min(report.topPosts!.length, 5)} posts por engagement
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -376,7 +376,7 @@ export function PerformanceReportView({
         </CardHeader>
         <CardContent>
           <ol className="space-y-3">
-            {report.keyFindings.map((f, i) => (
+            {(report.keyFindings ?? []).map((f, i) => (
               <li key={i} className="flex gap-3 text-sm">
                 <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center mt-0.5">
                   {i + 1}
@@ -405,7 +405,7 @@ export function PerformanceReportView({
         </CardHeader>
         <CardContent>
           <ol className="space-y-3">
-            {report.recommendations.map((r, i) => (
+            {(report.recommendations ?? []).map((r, i) => (
               <li key={i} className="flex gap-3 text-sm">
                 <span className="flex-shrink-0 h-6 w-6 rounded-full bg-secondary text-secondary-foreground font-semibold text-xs flex items-center justify-center mt-0.5">
                   {i + 1}
