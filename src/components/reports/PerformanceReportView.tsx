@@ -16,10 +16,42 @@ interface PerformanceReportViewProps {
   dateLabel: string;
 }
 
-const COLORS = [
-  "hsl(var(--primary))", "#f97316", "#22c55e", "#06b6d4",
-  "#8b5cf6", "#ec4899", "#eab308", "#ef4444",
+// Paleta consistente por marca (no gris). Marca propia siempre = primary (violeta Wizr).
+const BRAND_PALETTE = [
+  "#4338ca", // indigo
+  "#f97316", // orange
+  "#22c55e", // green
+  "#06b6d4", // cyan
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#eab308", // amber
+  "#ef4444", // red
+  "#0ea5e9", // sky
+  "#14b8a6", // teal
+  "#a855f7", // purple
+  "#f59e0b", // amber-500
 ];
+
+// Color por red social (consistente con badges de la app)
+const NETWORK_COLOR: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "#E1306C",
+  youtube: "#FF0000",
+  twitter: "#1DA1F2",
+  x: "#1DA1F2",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+};
+
+function colorForBrand(brand: string, isOwn: boolean, brandsList: string[]): string {
+  if (isOwn) return "hsl(var(--primary))";
+  const idx = brandsList.findIndex((b) => b === brand);
+  return BRAND_PALETTE[(idx + 1) % BRAND_PALETTE.length];
+}
+
+function colorForNetwork(network: string): string {
+  return NETWORK_COLOR[network.toLowerCase()] || "hsl(var(--primary))";
+}
 
 function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -40,26 +72,38 @@ export function PerformanceReportView({
     update({ [key]: arr } as Partial<PerformanceReportContent>);
   };
 
-  const networkShort = (n: string) => {
+  const networkLabel = (n: string) => {
     const map: Record<string, string> = {
-      facebook: "FB", instagram: "IG", youtube: "YT", twitter: "X",
-      tiktok: "TT", linkedin: "LI", threads: "TH",
+      facebook: "Facebook", instagram: "Instagram", youtube: "YouTube",
+      twitter: "X", x: "X", tiktok: "TikTok", linkedin: "LinkedIn",
     };
     return map[n.toLowerCase()] || n;
   };
 
+  // Brand list ordering for stable color assignment
+  const brandsList = (report.analytics?.brandEngagement ?? []).map((b) => b.brand);
+
+  // Custom Y-axis tick: marca arriba, red abajo
+  const TwoLineTick = ({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) => {
+    if (!payload?.value) return null;
+    const [line1, line2] = payload.value.split("|");
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={-8} y={-2} textAnchor="end" fontSize={10} fontWeight={600} fill="hsl(var(--foreground))">{line1}</text>
+        {line2 && <text x={-8} y={10} textAnchor="end" fontSize={9} fill="hsl(var(--muted-foreground))">{line2}</text>}
+      </g>
+    );
+  };
+
   const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.engagement > 0);
-  const rankingChartData = rankingValid.slice(0, 10).map((r) => {
-    const labelBase = `${r.name} · ${networkShort(r.network)}`;
-    return {
-      name: labelBase.length > 22 ? `${labelBase.substring(0, 20)}…` : labelBase,
-      fullName: r.name,
-      network: r.network,
-      value: r.engagement,
-      fill: r.isOwn ? "hsl(var(--primary))" : "hsl(215, 16%, 57%)",
-      isOwn: r.isOwn,
-    };
-  });
+  const rankingChartData = rankingValid.slice(0, 10).map((r) => ({
+    name: `${r.name}|${networkLabel(r.network)}`,
+    fullName: r.name,
+    network: r.network,
+    value: r.engagement,
+    fill: r.isOwn ? "hsl(var(--primary))" : colorForNetwork(r.network),
+    isOwn: r.isOwn,
+  }));
 
   const sovChartData = (report.analytics?.shareOfVoice ?? [])
     .filter((s) => s.engagementShare > 0)
@@ -68,7 +112,7 @@ export function PerformanceReportView({
       name: s.name,
       value: s.engagementShare,
       isOwn: s.isOwn,
-      fill: s.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
+      fill: s.isOwn ? "hsl(var(--primary))" : BRAND_PALETTE[(i + 1) % BRAND_PALETTE.length],
     }));
 
   return (
@@ -249,12 +293,12 @@ export function PerformanceReportView({
             </div>
           ) : (
             <>
-              <div className="h-[320px]">
+              <div className="h-[380px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 50, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                    <YAxis type="category" dataKey="name" tick={(props) => <TwoLineTick {...props} />} width={170} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                       content={({ active, payload }) => {
@@ -263,7 +307,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.fullName}</div>
-                            <div className="text-muted-foreground">{p.network} · {p.value.toFixed(2)}%</div>
+                            <div className="text-muted-foreground">{networkLabel(p.network)} · tasa de engagement {p.value.toFixed(2)}%</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
                         );
@@ -271,11 +315,14 @@ export function PerformanceReportView({
                     />
                     <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                       {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} fontWeight={700} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Lectura: ranking por tasa de engagement (interacciones / seguidores). Cada barra usa el color de su red social para identificar de un vistazo dónde está la conversación; los perfiles de {report.clientName} se resaltan en violeta.
+              </p>
               {report.rankingInsight && (
                 <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
                   <EditableText
@@ -428,24 +475,38 @@ export function PerformanceReportView({
               Perfiles con más seguidores (Top 15)
             </CardTitle>
             <CardDescription className="text-xs">
-              Tamaño de audiencia por perfil · {report.clientName} resaltado
+              Tamaño de audiencia por perfil · color por red social
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[320px]">
+            <div className="h-[360px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={report.analytics.followersByProfile.slice(0, 15).map((f) => ({
-                    name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name} · ${networkShort(f.network)}`,
+                    name: `${f.name.length > 14 ? f.name.substring(0, 12) + "…" : f.name}|${networkLabel(f.network)}`,
                     fullName: f.name,
                     network: f.network,
                     value: f.followers,
                     isOwn: f.isOwn,
                   }))}
-                  margin={{ top: 16, right: 16, left: 0, bottom: 60 }}
+                  margin={{ top: 16, right: 16, left: 0, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" interval={0} height={70} />
+                  <XAxis
+                    dataKey="name"
+                    interval={0}
+                    height={80}
+                    tick={(props) => {
+                      const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
+                      const [n1, n2] = (payload?.value || "").split("|");
+                      return (
+                        <g transform={`translate(${x},${y})`}>
+                          <text x={0} y={10} textAnchor="middle" fontSize={9} fontWeight={600} fill="hsl(var(--foreground))">{n1}</text>
+                          <text x={0} y={22} textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{n2}</text>
+                        </g>
+                      );
+                    }}
+                  />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
@@ -455,21 +516,21 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
-                          <div className="text-muted-foreground">{p.network} · {formatNumber(p.value)} seguidores</div>
+                          <div className="text-muted-foreground">{networkLabel(p.network)} · {formatNumber(p.value)} seguidores</div>
                         </div>
                       );
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {report.analytics.followersByProfile.slice(0, 15).map((f, i) => (
-                      <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : "#94a3b8"} />
+                      <Cell key={i} fill={f.isOwn ? "hsl(var(--primary))" : colorForNetwork(f.network)} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              Lectura: ranking de los perfiles con mayor audiencia del set. Permite dimensionar la brecha de alcance potencial entre {report.clientName} y la competencia.
+              Lectura: dimensiona la brecha de alcance potencial entre {report.clientName} (resaltado en violeta) y la competencia. Una audiencia más grande no garantiza más interacción, pero sí amplifica la entrega orgánica de cualquier contenido publicado.
             </p>
           </CardContent>
         </Card>
@@ -490,16 +551,17 @@ export function PerformanceReportView({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[240px]">
+            <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={report.analytics.networkEngagement.map((n) => ({
-                  name: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+                  name: networkLabel(n.network),
+                  network: n.network,
                   value: n.avgEngagement,
                   profiles: n.profiles,
-                }))} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                }))} margin={{ top: 24, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} domain={[0, "auto"]} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
@@ -508,36 +570,40 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.name}</div>
-                          <div className="text-muted-foreground">{p.value.toFixed(2)}% engagement · {p.profiles} perfil(es)</div>
+                          <div className="text-muted-foreground">tasa de engagement {p.value.toFixed(2)}% · {p.profiles} perfil(es)</div>
                         </div>
                       );
                     }}
                   />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))">
-                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {report.analytics.networkEngagement.map((n, i) => (
+                      <Cell key={i} fill={colorForNetwork(n.network)} />
+                    ))}
+                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} fontWeight={700} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
               {isBrand
-                ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${report.clientName} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.`
-                : `Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.`}
+                ? `Lectura: cada barra muestra la tasa de interacción promedio (interacciones ÷ seguidores) que ${report.clientName} consigue en cada red donde está presente. Sirve para identificar qué canal está activando mejor a la audiencia propia y dónde hay que ajustar contenido o cadencia.`
+                : `Lectura: cada barra es la tasa de engagement promedio de todos los perfiles del sector en esa red, no solo los de ${report.clientName}. Una tasa muy baja indica que el canal está saturado para todas las marcas; una tasa alta señala dónde la audiencia sí está reaccionando y vale la pena invertir contenido.`}
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* ── Cuota de interacciones (donut por marca) ── */}
+      {/* ── Cuota de interacciones (donut por marca) — usa interacciones absolutas ── */}
       {!isBrand && report.analytics.brandEngagement.length > 0 && (() => {
-        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const donutData = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
-          .map((b, i) => ({
+          .filter((b) => b.totalInteractions > 0)
+          .map((b) => ({
             name: b.brand,
-            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            value: Math.round((b.totalInteractions / total) * 1000) / 10,
+            absolute: b.totalInteractions,
             isOwn: b.isOwn,
-            fill: b.isOwn ? "hsl(var(--primary))" : COLORS[(i + 1) % COLORS.length],
+            fill: colorForBrand(b.brand, b.isOwn, brandsList),
           }));
         if (donutData.length === 0) return null;
         return (
@@ -548,11 +614,11 @@ export function PerformanceReportView({
                 Cuota de interacciones por marca
               </CardTitle>
               <CardDescription className="text-xs">
-                ¿Qué marca obtuvo mayor participación del engagement total?
+                ¿Qué marca concentra la mayor parte de las interacciones del período?
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[320px]">
+              <div className="h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -576,7 +642,7 @@ export function PerformanceReportView({
                         return (
                           <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                             <div className="font-semibold">{p.name}</div>
-                            <div className="text-muted-foreground">{p.value}% del engagement total</div>
+                            <div className="text-muted-foreground">{formatNumber(p.absolute)} interacciones · {p.value}% del total</div>
                             {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
                           </div>
                         );
@@ -586,6 +652,9 @@ export function PerformanceReportView({
                   </PieChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Una cuota baja indica visibilidad limitada; una cuota alta concentra la conversación. Para {report.clientName}, este es el termómetro real de presencia frente a competencia.
+              </p>
             </CardContent>
           </Card>
         );
@@ -665,7 +734,7 @@ export function PerformanceReportView({
         </CardContent>
       </Card>
 
-      {/* Top content */}
+      {/* Top content — Top 10 en 2 columnas */}
       {(report.topPosts?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
@@ -674,35 +743,37 @@ export function PerformanceReportView({
               Mejores contenidos del período
             </CardTitle>
             <CardDescription className="text-xs">
-              Top {Math.min(report.topPosts!.length, 5)} posts por engagement
+              Top {Math.min(report.topPosts!.length, 10)} posts por interacciones absolutas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {report.topPosts.slice(0, 5).map((p, i) => (
-              <div key={i} className="rounded-md border p-3 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-semibold">#{i + 1}</span>
-                  <span className="font-medium">{p.authorName}</span>
-                  <NetworkBadge network={p.network} size="xs" />
-                  <span className="text-muted-foreground">· {p.postDate}</span>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {report.topPosts.slice(0, 10).map((p, i) => (
+                <div key={i} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[10px]">{i + 1}</span>
+                    <span className="font-medium">{p.authorName}</span>
+                    <NetworkBadge network={p.network} size="xs" />
+                    <span className="text-muted-foreground">· {p.postDate}</span>
+                  </div>
+                  {p.postContent && (
+                    <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>Interacciones: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
+                    <span>Likes: {formatNumber(p.likes)}</span>
+                    <span>Comentarios: {formatNumber(p.comments)}</span>
+                    {p.shares > 0 && <span>Compartidos: {formatNumber(p.shares)}</span>}
+                    {p.views > 0 && <span>Vistas: {formatNumber(p.views)}</span>}
+                  </div>
+                  {p.postUrl && (
+                    <a href={p.postUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Ver publicación →
+                    </a>
+                  )}
                 </div>
-                {p.postContent && (
-                  <p className="text-sm line-clamp-3 text-muted-foreground">{p.postContent}</p>
-                )}
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  <span>Engagement: <strong className="text-foreground">{formatNumber(p.engagement)}</strong></span>
-                  <span>Likes: {formatNumber(p.likes)}</span>
-                  <span>Comentarios: {formatNumber(p.comments)}</span>
-                  {p.shares > 0 && <span>Compartidos: {formatNumber(p.shares)}</span>}
-                  {p.views > 0 && <span>Vistas: {formatNumber(p.views)}</span>}
-                </div>
-                {p.postUrl && (
-                  <a href={p.postUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                    Ver publicación →
-                  </a>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
           {report.topContentInsight && (
             <CardContent className="pt-0">
