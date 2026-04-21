@@ -591,11 +591,14 @@ export function PerformanceReportView({
         );
       })()}
 
-      {/* ── Tabla compacta: Top 10 perfiles ── */}
+      {/* ── Tabla compacta de perfiles ── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3Icon /> Top 10 perfiles por engagement
+            <BarChart3Icon />
+            {isBrand
+              ? `Perfiles de ${report.clientName} · detalle`
+              : `Top ${Math.min(report.profiles?.length ?? 0, 10)} perfiles por engagement`}
           </CardTitle>
           <CardDescription className="text-xs">
             Tabla resumen · ordenada por engagement rate
