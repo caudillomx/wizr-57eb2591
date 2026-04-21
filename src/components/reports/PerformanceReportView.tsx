@@ -106,16 +106,20 @@ export function PerformanceReportView({
     isOwn: r.isOwn,
   }));
 
-  const sovChartData = (report.analytics?.shareOfVoice ?? [])
-    .filter((s) => s.interactionsShare > 0)
-    .slice(0, 10)
-    .map((s) => ({
-      name: s.name,
-      network: s.network,
-      value: s.interactionsShare,
-      isOwn: s.isOwn,
-      fill: colorForNetwork(s.network),
-    }));
+  // Share of voice — garantiza inclusión de TODAS las marcas propias + completa con competencia hasta llegar al top
+  const sovAll = (report.analytics?.shareOfVoice ?? []).filter((s) => s.interactionsShare > 0);
+  const sovOwn = sovAll.filter((s) => s.isOwn);
+  const sovComp = sovAll.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
+  const SOV_TARGET = 12;
+  const sovCombined = [...sovOwn, ...sovComp.slice(0, Math.max(SOV_TARGET - sovOwn.length, 6))]
+    .sort((a, b) => b.interactionsShare - a.interactionsShare);
+  const sovChartData = sovCombined.map((s) => ({
+    name: s.name,
+    network: s.network,
+    value: s.interactionsShare,
+    isOwn: s.isOwn,
+    fill: colorForNetwork(s.network),
+  }));
 
   return (
     <div className="space-y-8">
