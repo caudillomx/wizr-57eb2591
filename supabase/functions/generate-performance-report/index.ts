@@ -280,7 +280,6 @@ Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hal
           { role: "user", content: userPrompt },
         ],
         response_format: { type: "json_object" },
-        reasoning: { effort: "medium" },
       }),
     });
 
