@@ -622,20 +622,23 @@ function slideRecommendations(report: PerformanceReportContent, clientName: stri
 }
 
 function slideClosing(report: PerformanceReportContent, clientName: string, modeLabel: string, page: number, total: number): string {
+  const fullConclusion = (report.conclusion || "El período cierra con señales claras para la próxima ventana de acción.").trim();
+  const headline = truncate(fullConclusion.split(/[.!?]/)[0] + ".", 220);
+  const showBody = report.conclusion && fullConclusion.length > headline.length;
   const body = `
-    <div style="position:absolute;inset:0;padding:140px 120px;display:flex;flex-direction:column;justify-content:center;gap:48px;">
+    <div style="position:absolute;inset:0;padding:120px 120px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px;">
       <div style="position:absolute;bottom:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle, ${C.violetGlow} 0%, transparent 70%);opacity:0.35;pointer-events:none;"></div>
-      <div style="position:absolute;top:80px;right:80px;transform:scale(1.4);opacity:0.7;pointer-events:none;">${sparkles(C.orange, 0.85)}</div>
+      <div style="position:absolute;top:60px;right:80px;transform:scale(1.2);opacity:0.6;pointer-events:none;">${sparkles(C.orange, 0.85)}</div>
 
-      <div style="position:relative;z-index:5;max-width:1400px;">
-        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:24px;">Conclusión</div>
-        <h2 style="font-size:84px;font-weight:800;line-height:1.05;margin:0 0 32px 0;letter-spacing:-0.035em;color:#fff;">${esc(report.conclusion ? truncate(report.conclusion.split(/[.!?]/)[0] + ".", 180) : "El período cierra con señales claras para la próxima ventana de acción.")}</h2>
-        ${report.conclusion ? `<p style="font-size:24px;line-height:1.55;color:rgba(255,255,255,0.75);margin:0;max-width:1100px;">${esc(truncate(report.conclusion, 600))}</p>` : ""}
+      <div style="position:relative;z-index:5;max-width:1500px;">
+        <div style="font-size:14px;letter-spacing:0.3em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-bottom:18px;">Conclusión</div>
+        <h2 style="font-size:56px;font-weight:800;line-height:1.1;margin:0 0 24px 0;letter-spacing:-0.025em;color:#fff;">${esc(headline)}</h2>
+        ${showBody ? `<p style="font-size:21px;line-height:1.55;color:rgba(255,255,255,0.78);margin:0;max-width:1400px;">${esc(truncate(fullConclusion, 720))}</p>` : ""}
       </div>
 
-      <div style="position:relative;z-index:5;display:flex;align-items:center;gap:20px;border-top:1px solid rgba(255,255,255,0.15);padding-top:32px;margin-top:32px;">
-        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:40px;filter:brightness(0) invert(1);"/>
-        <span style="font-size:14px;letter-spacing:0.3em;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;">Performance Intelligence · ${esc(clientName)}</span>
+      <div style="position:relative;z-index:5;display:flex;align-items:center;gap:20px;border-top:1px solid rgba(255,255,255,0.15);padding-top:24px;margin-top:16px;">
+        <img src="${WIZR_LOGO_COLOR_B64}" alt="Wizr" style="height:36px;filter:brightness(0) invert(1);"/>
+        <span style="font-size:13px;letter-spacing:0.3em;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;">Performance Intelligence · ${esc(clientName)}</span>
       </div>
     </div>
   `;
