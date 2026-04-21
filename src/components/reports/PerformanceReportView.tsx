@@ -48,7 +48,7 @@ export function PerformanceReportView({
     return map[n.toLowerCase()] || n;
   };
 
-  const rankingValid = report.analytics.rankingByEngagement.filter((r) => r.hasData !== false && r.engagement > 0);
+  const rankingValid = (report.analytics?.rankingByEngagement ?? []).filter((r) => r.hasData !== false && r.engagement > 0);
   const rankingChartData = rankingValid.slice(0, 10).map((r) => {
     const labelBase = `${r.name} · ${networkShort(r.network)}`;
     return {
