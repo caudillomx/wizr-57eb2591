@@ -39,6 +39,48 @@ export interface FKProfileKPI {
   isFallback?: boolean;
 }
 
+function getKpiRangeDays(kpi: Pick<FKProfileKPI, "period_start" | "period_end">): number {
+  const start = new Date(`${kpi.period_start}T00:00:00Z`).getTime();
+  const end = new Date(`${kpi.period_end}T00:00:00Z`).getTime();
+
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+}
+
+function shouldReplaceLatestKpi(candidate: FKProfileKPI, existing: FKProfileKPI) {
+  const candidateEnd = new Date(`${candidate.period_end}T00:00:00Z`).getTime();
+  const existingEnd = new Date(`${existing.period_end}T00:00:00Z`).getTime();
+
+  if (candidateEnd !== existingEnd) {
+    return candidateEnd > existingEnd;
+  }
+
+  const candidateRangeDays = getKpiRangeDays(candidate);
+  const existingRangeDays = getKpiRangeDays(existing);
+
+  if (candidateRangeDays !== existingRangeDays) {
+    return candidateRangeDays < existingRangeDays;
+  }
+
+  return new Date(candidate.fetched_at).getTime() > new Date(existing.fetched_at).getTime();
+}
+
+function selectLatestKpisByProfile(rows: FKProfileKPI[]) {
+  const latestByProfile = new Map<string, FKProfileKPI>();
+
+  rows.forEach((row) => {
+    const existing = latestByProfile.get(row.fk_profile_id);
+    if (!existing || shouldReplaceLatestKpi(row, existing)) {
+      latestByProfile.set(row.fk_profile_id, row);
+    }
+  });
+
+  return latestByProfile;
+}
+
 export interface FKPost {
   id?: string;
   url?: string;
@@ -120,45 +162,62 @@ export function useFKProfileKPIs(profileIds: string[], periodStart?: string, per
     queryFn: async () => {
       if (profileIds.length === 0) return [];
 
-      let query = supabase
+      if (!periodStart || !periodEnd) {
+        const { data, error } = await supabase
+          .from("fk_profile_kpis")
+          .select("*")
+          .in("fk_profile_id", profileIds)
+          .order("period_end", { ascending: false })
+          .order("fetched_at", { ascending: false });
+
+        if (error) throw error;
+
+        return Array.from(selectLatestKpisByProfile((data as FKProfileKPI[]) || []).values());
+      }
+
+      const { data: exactData, error: exactError } = await supabase
         .from("fk_profile_kpis")
         .select("*")
         .in("fk_profile_id", profileIds)
+        .eq("period_start", periodStart)
+        .eq("period_end", periodEnd)
         .order("fetched_at", { ascending: false });
 
-      // If period is specified, filter for KPIs that overlap with the requested period
-      if (periodStart && periodEnd) {
-        query = query
-          .lte("period_start", periodEnd)
-          .gte("period_end", periodStart);
-      }
+      if (exactError) throw exactError;
 
-      const { data, error } = await query;
-      if (error) throw error;
-      let result = (data as FKProfileKPI[]) || [];
+      const exactByProfile = new Map<string, FKProfileKPI>();
+      ((exactData as FKProfileKPI[]) || []).forEach((row) => {
+        if (!exactByProfile.has(row.fk_profile_id)) {
+          exactByProfile.set(row.fk_profile_id, { ...row, isFallback: false });
+        }
+      });
 
-      // Fallback: si el filtro no cubre algunos perfiles, devolvemos su snapshot
-      // más reciente disponible. Evita que la tabla de Ranking aparezca vacía
-      // cuando los Excels importados son semanales/mensuales y el usuario filtró
-      // por un día puntual fuera del rango exacto del snapshot.
-      const coveredIds = new Set(result.map((k) => k.fk_profile_id));
-      const missingIds = profileIds.filter((id) => !coveredIds.has(id));
-      if (missingIds.length > 0) {
-        const { data: latest } = await supabase
-          .from("fk_profile_kpis")
-          .select("*")
-          .in("fk_profile_id", missingIds)
-          .order("period_end", { ascending: false })
-          .order("fetched_at", { ascending: false });
-        const latestByProfile = new Map<string, FKProfileKPI>();
-        (latest || []).forEach((k: any) => {
-          if (!latestByProfile.has(k.fk_profile_id)) {
-            latestByProfile.set(k.fk_profile_id, { ...k, isFallback: true });
-          }
+      const missingIds = profileIds.filter((id) => !exactByProfile.has(id));
+      if (missingIds.length === 0) {
+        return profileIds.flatMap((id) => {
+          const row = exactByProfile.get(id);
+          return row ? [row] : [];
         });
-        result = [...result, ...Array.from(latestByProfile.values())];
       }
-      return result;
+
+      const { data: latestData, error: latestError } = await supabase
+        .from("fk_profile_kpis")
+        .select("*")
+        .in("fk_profile_id", missingIds)
+        .order("period_end", { ascending: false })
+        .order("fetched_at", { ascending: false });
+
+      if (latestError) throw latestError;
+
+      const latestByProfile = selectLatestKpisByProfile((latestData as FKProfileKPI[]) || []);
+
+      return profileIds.flatMap((id) => {
+        const exact = exactByProfile.get(id);
+        if (exact) return [exact];
+
+        const fallback = latestByProfile.get(id);
+        return fallback ? [{ ...fallback, isFallback: true }] : [];
+      });
     },
     enabled: profileIds.length > 0,
   });

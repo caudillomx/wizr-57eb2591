@@ -41,6 +41,16 @@ function getProfileInfo(profiles: FKProfile[], profileId: string): { name: strin
   };
 }
 
+function shouldReplaceKpi(candidate: FKProfileKPI, existing: FKProfileKPI) {
+  const candidateEnd = new Date(`${candidate.period_end}T00:00:00Z`).getTime();
+  const existingEnd = new Date(`${existing.period_end}T00:00:00Z`).getTime();
+
+  if (candidateEnd !== existingEnd) return candidateEnd > existingEnd;
+  if (!!candidate.isFallback !== !!existing.isFallback) return !candidate.isFallback;
+
+  return new Date(candidate.fetched_at).getTime() > new Date(existing.fetched_at).getTime();
+}
+
 // Insights automáticos: Top performers y alertas críticas
 // NO duplica las preguntas del RankingQuestionsPanel
 function generateInsights(profiles: FKProfile[], kpis: FKProfileKPI[], filterNetwork: FKNetwork | "all"): InsightCard[] {
@@ -60,7 +70,7 @@ function generateInsights(profiles: FKProfile[], kpis: FKProfileKPI[], filterNet
   kpis.forEach(kpi => {
     if (!filteredProfileIds.includes(kpi.fk_profile_id)) return;
     const existing = latestKpiByProfile.get(kpi.fk_profile_id);
-    if (!existing || new Date(kpi.period_end) > new Date(existing.period_end)) {
+    if (!existing || shouldReplaceKpi(kpi, existing)) {
       latestKpiByProfile.set(kpi.fk_profile_id, kpi);
     }
   });
