@@ -65,8 +65,22 @@ function networkLabel(n: string): string {
   return m[n.toLowerCase()] || n;
 }
 
+// Color por red social (paridad con vista web)
+const NETWORK_COLOR: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "#E1306C",
+  youtube: "#FF0000",
+  twitter: "#1DA1F2",
+  x: "#1DA1F2",
+  tiktok: "#000000",
+  linkedin: "#0A66C2",
+};
+function colorForNetwork(network: string): string {
+  return NETWORK_COLOR[network.toLowerCase()] || C.violet;
+}
+
 function chartHorizontalBars(
-  data: { label: string; value: number; isOwn?: boolean; sub?: string }[],
+  data: { label: string; value: number; isOwn?: boolean; sub?: string; color?: string }[],
   unit = "%",
   formatValue?: (v: number) => string,
 ): string {
@@ -75,10 +89,12 @@ function chartHorizontalBars(
   return `<div style="display:flex;flex-direction:column;gap:6px;">${data
     .map((d) => {
       const w = (Math.abs(d.value) / max) * 100;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
       return `<div style="display:flex;align-items:center;gap:8px;font-size:9px;">
-      <span style="min-width:130px;color:${C.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(d.label)}${d.sub ? ` <span style="color:${C.textMuted};">· ${esc(d.sub)}</span>` : ""}</span>
+      <span style="min-width:130px;color:${C.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <strong style="color:${C.text};">${esc(d.label)}</strong>${d.sub ? `<br/><span style="color:${C.textMuted};font-size:8px;">${esc(d.sub)}</span>` : ""}
+      </span>
       <div style="flex:1;background:${C.borderLight};border-radius:3px;height:12px;overflow:hidden;">
         <div style="width:${w}%;background:${color};height:100%;border-radius:3px;min-width:2px;"></div>
       </div>
@@ -129,7 +145,7 @@ function donutChartSVG(
 }
 
 function chartVerticalBars(
-  data: { label: string; value: number; isOwn?: boolean }[],
+  data: { label: string; value: number; isOwn?: boolean; color?: string }[],
   unit = "%",
   formatValue?: (v: number) => string,
 ): string {
@@ -139,7 +155,7 @@ function chartVerticalBars(
   return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;border-bottom:1px solid ${C.border};padding:0 4px 4px 4px;">${data
     .map((d) => {
       const h = (Math.abs(d.value) / max) * 130;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color ?? (d.isOwn ? C.violet : C.textMuted);
       const valStr = formatValue ? formatValue(d.value) : `${d.value.toFixed(1)}${unit}`;
       return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:${barW}px;">
         <span style="font-size:8px;font-weight:700;color:${C.text};">${valStr}</span>
@@ -357,7 +373,7 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Ranking chart (top 10 perfiles) ----------
+  // ---------- Ranking chart (top 10 perfiles, color por red) ----------
   const rankingChart = report.analytics.rankingByEngagement.length
     ? section(
         "Top 10 perfiles por engagement",
@@ -367,22 +383,24 @@ export function buildPerformanceReportHTML(
             value: r.engagement,
             isOwn: r.isOwn,
             sub: networkLabel(r.network),
+            color: r.isOwn ? C.violet : colorForNetwork(r.network),
           })),
         ) + (report.rankingInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.rankingInsight)}</div>` : ""),
         { eyebrow: "Sección 05 · Ranking de perfiles" },
       )
     : "";
 
-  // ---------- Share of voice (benchmark) por marca ----------
+  // ---------- Share of voice (benchmark) por marca · usa interacciones absolutas ----------
   const sovBlock = !isBrand && report.analytics.brandEngagement?.length
     ? (() => {
-        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const totalInter = report.analytics.brandEngagement.reduce((s, b) => s + b.totalInteractions, 0) || 1;
         const data = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
+          .filter((b) => b.totalInteractions > 0)
           .map((b) => ({
             label: b.brand,
-            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            value: Math.round((b.totalInteractions / totalInter) * 1000) / 10,
             isOwn: b.isOwn,
+            sub: `${fmtNum(b.totalInteractions)} interacciones`,
           }));
         return section(
           "Share of voice por marca",
@@ -432,33 +450,51 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Engagement por red social ----------
-  const networkEngBlock = report.analytics.networkEngagement?.length > 1
+  // ---------- Engagement por red social (BENCHMARK only) ----------
+  const networkEngBlock = !isBrand && (report.analytics.networkEngagement?.length ?? 0) > 1
     ? section(
         "Engagement promedio por red social",
         chartVerticalBars(
           report.analytics.networkEngagement.map((n) => ({
-            label: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+            label: networkLabel(n.network),
             value: n.avgEngagement,
+            color: colorForNetwork(n.network),
           })),
-        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">${isBrand ? `Lectura: tasa de interacción promedio (likes + comentarios + shares ÷ seguidores) en cada red donde ${esc(clientName)} tiene presencia. Indica qué canal está activando mejor a la audiencia propia.` : "Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal."}</p>`,
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra es el engagement promedio de todos los perfiles del set en esa red. Si el promedio es muy bajo, ninguna marca está logrando movilizar bien a su audiencia en ese canal.</p>`,
         { eyebrow: "Sección · Engagement por red" },
       )
     : "";
 
-  // ---------- Cuota de interacciones (donut) ----------
+  // ---------- Cuota de interacciones (donut) · interacciones absolutas ----------
   const sovDonutBlock = !isBrand && report.analytics.brandEngagement?.length
     ? (() => {
         const data = report.analytics.brandEngagement
-          .filter((b) => b.avgEngagement > 0)
-          .map((b) => ({ label: b.brand, value: b.avgEngagement, isOwn: b.isOwn }));
+          .filter((b) => b.totalInteractions > 0)
+          .map((b) => ({ label: b.brand, value: b.totalInteractions, isOwn: b.isOwn }));
         if (data.length === 0) return "";
         return section(
           "Cuota de interacciones por marca",
-          donutChartSVG(data),
+          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Para ${esc(clientName)}, este es el termómetro real de presencia frente a competencia.</p>`,
           { eyebrow: "Sección · Cuota de mercado" },
         );
       })()
+    : "";
+
+  // ---------- Interacciones por red social (modo MARCA) ----------
+  const networkInterBlock = isBrand && (report.analytics.networkInteractions?.length ?? 0) > 0
+    ? section(
+        "Interacciones por red social",
+        chartVerticalBars(
+          report.analytics.networkInteractions.map((n) => ({
+            label: networkLabel(n.network),
+            value: n.totalInteractions,
+            color: colorForNetwork(n.network),
+          })),
+          "",
+          (v) => fmtNum(v),
+        ) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada barra suma las interacciones absolutas (likes + comentarios + compartidos) del contenido top de ${esc(clientName)} en cada red. Es el volumen real de conversación generado por canal — más informativo que la tasa de engagement cuando las cuentas son grandes.</p>`,
+        { eyebrow: "Sección · Interacciones por red" },
+      )
     : "";
 
   // ---------- Findings ----------
@@ -498,6 +534,7 @@ export function buildPerformanceReportHTML(
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
+    ${networkInterBlock}
     ${followersBlock}
     ${brandEngBlock}
     ${networkEngBlock}

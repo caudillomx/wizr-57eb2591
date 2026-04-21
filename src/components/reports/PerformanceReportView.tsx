@@ -536,8 +536,61 @@ export function PerformanceReportView({
         </Card>
       )}
 
-      {/* ── Engagement promedio por red social ── */}
-      {report.analytics.networkEngagement?.length > 1 && (
+      {/* ── Interacciones por red social (modo MARCA usa absolutas; benchmark usa tasa) ── */}
+      {isBrand && (report.analytics.networkInteractions?.length ?? 0) > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-primary" />
+              Interacciones por red social
+            </CardTitle>
+            <CardDescription className="text-xs">
+              ¿En qué red está logrando {report.clientName} más interacciones absolutas (likes + comentarios + compartidos) sobre el contenido top del período?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={report.analytics.networkInteractions.map((n) => ({
+                  name: networkLabel(n.network),
+                  network: n.network,
+                  value: n.totalInteractions,
+                  profiles: n.profiles,
+                }))} margin={{ top: 24, right: 16, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 600 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.name}</div>
+                          <div className="text-muted-foreground">{formatNumber(p.value)} interacciones · {p.profiles} perfil(es)</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {report.analytics.networkInteractions.map((n, i) => (
+                      <Cell key={i} fill={colorForNetwork(n.network)} />
+                    ))}
+                    <LabelList dataKey="value" position="top" formatter={(v: number) => formatNumber(v)} fontSize={10} fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Lectura: cada barra suma las interacciones absolutas (likes + comentarios + compartidos) que el contenido top de {report.clientName} obtuvo en cada red. A diferencia de la tasa de engagement —que tiende a ser muy baja en cuentas grandes— este indicador muestra el volumen real de conversación que la marca está generando por canal.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Engagement promedio por red social (BENCHMARK only) ── */}
+      {!isBrand && (report.analytics.networkEngagement?.length ?? 0) > 1 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -545,9 +598,7 @@ export function PerformanceReportView({
               Engagement promedio por red social
             </CardTitle>
             <CardDescription className="text-xs">
-              {isBrand
-                ? `¿En qué red está logrando ${report.clientName} mayor tasa de interacción?`
-                : "¿Qué plataforma genera más interacción en el sector?"}
+              ¿Qué plataforma genera más interacción en el sector?
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -585,9 +636,7 @@ export function PerformanceReportView({
               </ResponsiveContainer>
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              {isBrand
-                ? `Lectura: cada barra muestra la tasa de interacción promedio (interacciones ÷ seguidores) que ${report.clientName} consigue en cada red donde está presente. Sirve para identificar qué canal está activando mejor a la audiencia propia y dónde hay que ajustar contenido o cadencia.`
-                : `Lectura: cada barra es la tasa de engagement promedio de todos los perfiles del sector en esa red, no solo los de ${report.clientName}. Una tasa muy baja indica que el canal está saturado para todas las marcas; una tasa alta señala dónde la audiencia sí está reaccionando y vale la pena invertir contenido.`}
+              Lectura: cada barra es la tasa de engagement promedio de todos los perfiles del sector en esa red, no solo los de {report.clientName}. Una tasa muy baja indica que el canal está saturado para todas las marcas; una tasa alta señala dónde la audiencia sí está reaccionando y vale la pena invertir contenido.
             </p>
           </CardContent>
         </Card>

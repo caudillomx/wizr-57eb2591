@@ -29,6 +29,8 @@ export interface PerformanceReportAnalytics {
   networkGrowth: Array<{ network: string; avgGrowth: number; profiles: number }>;
   /** Engagement promedio agregado por red social */
   networkEngagement: Array<{ network: string; avgEngagement: number; profiles: number }>;
+  /** Interacciones absolutas (likes+comments+shares de top posts) sumadas por red social */
+  networkInteractions: Array<{ network: string; totalInteractions: number; profiles: number }>;
   /** Followers ordenados por perfil (top N) */
   followersByProfile: Array<{ name: string; network: string; followers: number; isOwn: boolean }>;
   /** Brecha vs líder para la marca propia (en engagement) */
@@ -251,6 +253,25 @@ function computeAnalytics(
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement);
 
+  // ── Interacciones absolutas por red social (suma desde top posts) ──
+  const netInterMap = new Map<string, { total: number; profiles: Set<string> }>();
+  for (const tp of topPosts) {
+    const eng = Number(tp.engagement);
+    if (!Number.isFinite(eng) || eng <= 0) continue;
+    const net = tp.network;
+    if (!netInterMap.has(net)) netInterMap.set(net, { total: 0, profiles: new Set() });
+    const slot = netInterMap.get(net)!;
+    slot.total += eng;
+    slot.profiles.add(tp.fk_profile_id);
+  }
+  const networkInteractions = Array.from(netInterMap.entries())
+    .map(([network, v]) => ({
+      network,
+      totalInteractions: Math.round(v.total),
+      profiles: v.profiles.size,
+    }))
+    .sort((a, b) => b.totalInteractions - a.totalInteractions);
+
   // ── Followers por perfil (top followers) ──
   const followersByProfile = profiles
     .map((p) => {
@@ -291,6 +312,7 @@ function computeAnalytics(
     brandEngagement,
     networkGrowth,
     networkEngagement,
+    networkInteractions,
     followersByProfile,
     ownBrandGap,
   };
