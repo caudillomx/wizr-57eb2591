@@ -202,47 +202,60 @@ ${focusBlock}
 ${autoFlagsBlock}
 REGLAS DURAS DE DATOS:
 - USA SOLO los nombres de perfiles, redes y cifras que aparecen en los datos. NUNCA inventes nombres, métricas, porcentajes ni perfiles.
-- El "summary" debe abrir citando la cifra más relevante del período (ej. "X% de engagement", "Y nuevos seguidores", "Z posts") y nombrar al perfil/red protagonista.
-- La "conclusion" debe cerrar con una lectura accionable, citando al menos 1 cifra y 1 perfil/red concretos.
-- Cada hallazgo cita al menos UNA cifra concreta de los datos (engagement %, followers, growth %, posts/día, likes, etc.) Y nombra el perfil/red donde ocurre.
-- Cada hallazgo sigue la estructura QUÉ pasó + DÓNDE (perfil/red) + IMPLICACIÓN para la marca, redactado como prosa fluida (sin viñetas internas).
-- Cada recomendación sigue DECISIÓN concreta + PLAZO sugerido + RIESGO u OPORTUNIDAD asociada.
+- TODA cifra debe llevar UNIDAD explícita: engagement como "X.XX%", crecimiento como "+X.XX%" o "-X.XX%", followers como "X,XXX seguidores" o "X.XK", posts como "X.X posts/día", interacciones absolutas como "X likes" o "X comentarios".
+- NUNCA escribas paréntesis al estilo "(BBVA México, instagram)". En su lugar usa: "BBVA México en Instagram" o "Banamex (TikTok)" SOLO con la red en mayúscula correcta.
+- El "summary" debe abrir citando la cifra más relevante del período (ej. "X% de engagement", "Y nuevos seguidores", "Z posts") y nombrar al perfil/red protagonista, además de explicitar qué significa para ${clientName}.
+- La "conclusion" debe cerrar con una lectura accionable para ${clientName}, citando al menos 1 cifra y 1 perfil/red concretos.
+- Cada hallazgo cita al menos UNA cifra concreta + UNIDAD + nombra el perfil/red donde ocurre + termina con la IMPLICACIÓN PARA ${clientName} (qué significa para la marca, no descripción genérica).
+- Cada hallazgo sigue la estructura QUÉ pasó + DÓNDE (perfil/red) + IMPLICACIÓN PARA ${clientName}, redactado como prosa fluida (sin viñetas internas, sin números entre paréntesis sin unidad).
+- Cada recomendación sigue DECISIÓN concreta + PLAZO sugerido + RIESGO u OPORTUNIDAD asociada PARA ${clientName}.
 - Longitud: cada hallazgo 2-4 oraciones; cada recomendación 2-3 oraciones; nada por debajo de 2 oraciones.
+
+REGLAS PARA HIGHLIGHTS (4 KPI cards de cabecera, las más visibles del reporte):
+- "label": 2-4 palabras MÁXIMO, totalmente claras (ej. "Engagement líder del período", "Brecha vs líder", "Cuota de voz", "Posts del Top 5").
+- "value": LA CIFRA con UNIDAD COMPLETA (ej. "600 interacciones", "0.02% engagement", "13× por debajo", "0 de 5"). NUNCA solo "600" o "0.02".
+- "context": 1 oración explicativa que conecte la cifra con ${clientName} (ej. "BBVA México en Instagram lidera el período; ningún post de ${clientName} alcanzó este nivel.").
+- Los 4 highlights deben cubrir ángulos COMPLEMENTARIOS y útiles: NUNCA repitas engagement medio, audiencia total ni métricas que sumadas dan 0 o son redundantes. Mezcla ej: (1) Pico de engagement del período + dueño, (2) Posición/brecha de ${clientName} vs líder, (3) Mayor crecimiento del período + red, (4) Frecuencia o cobertura de ${clientName}.
+
+REGLAS NUEVAS DE CONTEXTUALIZACIÓN POR GRÁFICA (obligatorias):
+- "rankingInsight": 2-3 oraciones que lean el Top 10 perfiles desde la óptica de ${clientName}: dónde aparece, qué brecha tiene vs líder, qué red propia destaca o se queda atrás. Cifras concretas obligatorias.
+- "sovInsight" (solo BENCHMARK): 2-3 oraciones que lean el share of voice por marca: qué % concentra ${clientName} vs líder, qué implica esa concentración para visibilidad y prioridad de inversión.
+- "profilesInsight": 2-3 oraciones que sinteticen la tabla de perfiles desde la óptica de ${clientName}: qué red propia tiene mejor engagement, qué red propia muestra peor cadencia/crecimiento, contraste con competidor más cercano.
 
 REGLAS EDITORIALES (estilo Wizr):
 - Tono ejecutivo: directo, analítico, sin adornos ("es importante", "cabe destacar", "vale la pena mencionar" están prohibidos).
 - Prohibido el lenguaje genérico: "buen desempeño", "tendencia positiva", "área de oportunidad" sin cifra concreta detrás.
 - Prohibido el "happy talk": si los números son malos, dilo con claridad.
 - Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, cadencia, plataforma, mensaje, creatividad, partnership de contenido). Prohibido recomendar producto, RH, legal, presupuesto o procesos internos.
+- AUDIENCIA del reporte: equipo de marketing/comunicación digital de ${clientName} y dirección. Habla en su lenguaje, no para el consumidor final.
 - No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta, comillas tipográficas raras). Texto plano limpio.
 - En modo MARCA: prohibido mencionar competidores, "el sector" o "la industria".
 - En modo BENCHMARK: nombra a los competidores tal cual aparecen en los datos.
 
-REGLAS DE JERARQUÍA VISUAL (cómo se leerá el reporte):
-- Los 4+ "highlights" son los KPIs ancla del header: "label" muy corto (1-3 palabras, ej. "Engagement promedio"), "value" con la cifra y unidad (ej. "3.42%"), "context" 1 oración explicando.
-- Los "highlights" deben cubrir ángulos distintos (no repetir engagement 4 veces): mezclar engagement, crecimiento, audiencia total, frecuencia, top performer, share of voice, etc.
-
 Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
 {
   "title": "Título corto y específico del reporte",
-  "summary": "Resumen ejecutivo de 4-6 oraciones que abre con la cifra/hallazgo más relevante del período",
+  "summary": "Resumen ejecutivo de 4-6 oraciones que abre con la cifra/hallazgo más relevante e implicación para ${clientName}",
   "highlights": [
-    { "label": "Etiqueta corta", "value": "Cifra o dato", "context": "Una oración explicando" }
+    { "label": "Etiqueta corta 2-4 palabras", "value": "Cifra + UNIDAD COMPLETA", "context": "Una oración conectando con ${clientName}" }
   ],
   "keyFindings": [
-    "Hallazgo 1 (QUÉ + DÓNDE + IMPLICACIÓN, con cifra concreta)",
+    "Hallazgo 1 (QUÉ + DÓNDE + IMPLICACIÓN PARA ${clientName}, con cifra concreta y unidad)",
     "Hallazgo 2..."
   ],
   "recommendations": [
-    "Recomendación 1 (DECISIÓN + PLAZO + RIESGO/OPORTUNIDAD)",
+    "Recomendación 1 (DECISIÓN + PLAZO + RIESGO/OPORTUNIDAD para ${clientName})",
     "Recomendación 2..."
   ],
-  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top del período (formato, tema, autor recurrente, brecha vs marca propia si aplica)",
-  "competitiveInsight": "Solo en BENCHMARK: análisis de 3-4 oraciones sobre posicionamiento competitivo. En MARCA: cadena vacía.",
-  "conclusion": "Cierre ejecutivo de 2-3 oraciones que sintetiza la lectura del período"
+  "topContentInsight": "Análisis de 3-4 oraciones sobre el patrón del contenido top y qué brecha de creatividad/formato implica para ${clientName}",
+  "competitiveInsight": "Solo en BENCHMARK: análisis de 3-4 oraciones sobre posicionamiento competitivo de ${clientName}. En MARCA: cadena vacía.",
+  "rankingInsight": "2-3 oraciones leyendo el ranking desde la óptica de ${clientName}",
+  "sovInsight": "Solo en BENCHMARK: 2-3 oraciones leyendo el share of voice desde ${clientName}. En MARCA: cadena vacía.",
+  "profilesInsight": "2-3 oraciones sintetizando la tabla de perfiles desde ${clientName}",
+  "conclusion": "Cierre ejecutivo de 2-3 oraciones con una decisión clara para ${clientName}"
 }
 
-Mínimos OBLIGATORIOS: 4 highlights, 6 keyFindings (idealmente 7-8), 5 recommendations (idealmente 6-7).`;
+Mínimos OBLIGATORIOS: 4 highlights, 6 keyFindings (idealmente 7-8), 5 recommendations (idealmente 6-7), rankingInsight + profilesInsight siempre, sovInsight solo benchmark.`;
 
     const userPrompt = `Cliente: ${clientName}
 Período: ${dateRange.label} (${dateRange.start} → ${dateRange.end})
@@ -324,6 +337,9 @@ Genera el reporte siguiendo el JSON especificado, respetando los mínimos de hal
       recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
       topContentInsight: String(parsed.topContentInsight || ""),
       competitiveInsight: isBrand ? "" : String(parsed.competitiveInsight || ""),
+      rankingInsight: String(parsed.rankingInsight || ""),
+      sovInsight: isBrand ? "" : String(parsed.sovInsight || ""),
+      profilesInsight: String(parsed.profilesInsight || ""),
       conclusion: String(parsed.conclusion || ""),
     };
 

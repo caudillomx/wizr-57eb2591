@@ -116,81 +116,76 @@ export function PerformanceReportView({
         />
       </div>
 
-      {/* Highlights */}
+      {/* ── KPI Cards (4, accionables, con unidad + contexto) ── */}
       {(report.highlights?.length ?? 0) > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {report.highlights!.map((h, i) => (
-            <Card key={i} className="bg-gradient-to-br from-primary/5 to-transparent">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {report.highlights!.slice(0, 4).map((h, i) => (
+            <Card key={i} className="border-l-4 border-l-primary/60 bg-gradient-to-br from-primary/5 via-transparent to-transparent">
+              <CardContent className="p-4 space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">
                   {h.label}
                 </div>
-                <div className="text-2xl font-bold text-primary">{h.value}</div>
-                <div className="text-xs text-muted-foreground">{h.context}</div>
+                <div className="text-[22px] font-bold text-primary leading-tight break-words">
+                  {h.value}
+                </div>
+                <div className="text-xs text-muted-foreground leading-snug">{h.context}</div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* KPIs grid (always-visible computed numbers) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Perfiles analizados</div>
-            <div className="text-2xl font-bold">{report.profiles?.length ?? 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Engagement promedio</div>
-            <div className="text-2xl font-bold">{report.analytics.avgEngagement}%</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Crecimiento promedio</div>
-            <div className="text-2xl font-bold">{report.analytics.avgGrowth}%</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-xs text-muted-foreground">Total seguidores</div>
-            <div className="text-2xl font-bold">{formatNumber(report.analytics.totalFollowers)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Ranking chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
-            Ranking por engagement
-          </CardTitle>
-          <CardDescription className="text-xs">
-            {isBrand
-              ? "Engagement rate por perfil de la marca"
-              : "Marca propia (azul) vs competencia (gris)"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {rankingChartData.length === 0 ? (
-            <div className="h-[200px] flex flex-col items-center justify-center text-center px-4">
-              <Trophy className="h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-medium text-muted-foreground">Sin datos de engagement en este período</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Fanpage Karma aún no ha calculado el engagement rate para los perfiles del rango seleccionado.
-                Prueba con un período más amplio (ej. últimos 7 días).
-              </p>
+      {/* ── Brecha Actinver vs líder (benchmark only) ── */}
+      {!isBrand && report.analytics.ownBrandGap && (
+        <Card className="bg-gradient-to-r from-orange-500/5 to-transparent border-orange-500/30">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-orange-500/15 p-2"><TrendingUp className="h-4 w-4 text-orange-600" /></div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Brecha competitiva</div>
+                <div className="text-sm font-medium">
+                  {report.clientName} promedia <strong>{report.analytics.ownBrandGap.ownAvg.toFixed(2)}%</strong> de engagement
+                  · líder <strong>{report.analytics.ownBrandGap.leaderName}</strong> con <strong>{report.analytics.ownBrandGap.leaderAvg.toFixed(2)}%</strong>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="h-[320px]">
+            <div className="text-right">
+              <div className="text-3xl font-bold text-orange-600">{report.analytics.ownBrandGap.multiple}×</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Por debajo</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Engagement promedio por marca (agregado) ── */}
+      {report.analytics.brandEngagement.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-primary" />
+              Engagement promedio por marca
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Suma de los perfiles de cada marca · {report.clientName} resaltado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                <BarChart
+                  data={report.analytics.brandEngagement.slice(0, 12).map((b) => ({
+                    name: b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand,
+                    fullName: b.brand,
+                    value: b.avgEngagement,
+                    profiles: b.profiles,
+                    fill: b.isOwn ? "hsl(var(--primary))" : "#94a3b8",
+                  }))}
+                  layout="vertical"
+                  margin={{ top: 8, right: 30, left: 0, bottom: 8 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
                     content={({ active, payload }) => {
@@ -199,67 +194,229 @@ export function PerformanceReportView({
                       return (
                         <div className="rounded-md border bg-background p-2 shadow-md text-xs">
                           <div className="font-semibold">{p.fullName}</div>
-                          <div className="text-muted-foreground">{p.network} · {p.value}%</div>
-                          {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                          <div className="text-muted-foreground">{p.value.toFixed(2)}% engagement · {p.profiles} perfil(es)</div>
                         </div>
                       );
                     }}
                   />
                   <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                    {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                    <LabelList dataKey="value" position="right" formatter={(v: number) => `${v}%`} fontSize={10} />
+                    {report.analytics.brandEngagement.slice(0, 12).map((b, i) => (
+                      <Cell key={i} fill={b.isOwn ? "hsl(var(--primary))" : "#94a3b8"} />
+                    ))}
+                    <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm bg-primary" />
+                {report.clientName}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm bg-slate-400" />
+                Competencia
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Ranking por engagement (perfiles individuales, top 10) ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-primary" />
+            Top perfiles por engagement (Top 10)
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Engagement rate por perfil individual · vista detallada por red
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {rankingChartData.length === 0 ? (
+            <div className="h-[200px] flex flex-col items-center justify-center text-center px-4">
+              <Trophy className="h-8 w-8 text-muted-foreground/40 mb-2" />
+              <p className="text-sm font-medium text-muted-foreground">Sin datos de engagement en este período</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Fanpage Karma aún no ha calculado el engagement rate. Prueba un período más amplio.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={rankingChartData} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={150} />
+                    <Tooltip
+                      cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const p = payload[0].payload;
+                        return (
+                          <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                            <div className="font-semibold">{p.fullName}</div>
+                            <div className="text-muted-foreground">{p.network} · {p.value.toFixed(2)}%</div>
+                            {p.isOwn && <div className="text-primary text-[10px] uppercase mt-0.5">Marca propia</div>}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                      {rankingChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                      <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {report.rankingInsight && (
+                <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
+                  <EditableText
+                    editing={editing}
+                    value={report.rankingInsight}
+                    onChange={(v) => update({ rankingInsight: v })}
+                    multiline
+                    minRows={2}
+                    className="block"
+                    placeholder="Lectura del ranking…"
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
-      {/* Share of voice (benchmark only) */}
-      {!isBrand && sovChartData.length > 0 && (
+      {/* ── Crecimiento por red social (agregado) ── */}
+      {report.analytics.networkGrowth.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Users2 className="h-4 w-4 text-primary" />
-              Share of voice (engagement)
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Crecimiento promedio por red social
             </CardTitle>
             <CardDescription className="text-xs">
-              Participación de cada perfil en el engagement total del período
+              Promedio de growth % de seguidores por plataforma en el período
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[280px]">
+            <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sovChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    label={({ name, value }) => `${name}: ${value}%`}
-                    labelLine={false}
-                    fontSize={10}
-                  >
-                    {sovChartData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
+                <BarChart data={report.analytics.networkGrowth.map((n) => ({
+                  name: n.network.charAt(0).toUpperCase() + n.network.slice(1),
+                  value: n.avgGrowth,
+                  profiles: n.profiles,
+                  fill: n.avgGrowth >= 0 ? "#22c55e" : "#ef4444",
+                }))} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload;
+                      return (
+                        <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                          <div className="font-semibold">{p.name}</div>
+                          <div className="text-muted-foreground">{p.value.toFixed(2)}% · {p.profiles} perfil(es)</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {report.analytics.networkGrowth.map((n, i) => (
+                      <Cell key={i} fill={n.avgGrowth >= 0 ? "#22c55e" : "#ef4444"} />
+                    ))}
+                    <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(2)}%`} fontSize={10} />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Profiles table */}
+      {/* ── Share of voice agrupado por marca (benchmark only) ── */}
+      {!isBrand && report.analytics.brandEngagement.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users2 className="h-4 w-4 text-primary" />
+              Share of voice por marca (engagement)
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Participación de cada marca en el engagement total · agregando todas sus redes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+              const data = report.analytics.brandEngagement
+                .filter((b) => b.avgEngagement > 0)
+                .map((b) => ({
+                  name: b.brand.length > 18 ? `${b.brand.substring(0, 16)}…` : b.brand,
+                  fullName: b.brand,
+                  value: Math.round((b.avgEngagement / total) * 1000) / 10,
+                  isOwn: b.isOwn,
+                  fill: b.isOwn ? "hsl(var(--primary))" : "#94a3b8",
+                }));
+              return (
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data} layout="vertical" margin={{ top: 8, right: 30, left: 0, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={130} />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0].payload;
+                          return (
+                            <div className="rounded-md border bg-background p-2 shadow-md text-xs">
+                              <div className="font-semibold">{p.fullName}</div>
+                              <div className="text-muted-foreground">{p.value.toFixed(1)}% del engagement total</div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                        {data.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                        <LabelList dataKey="value" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} fontSize={10} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              );
+            })()}
+            {report.sovInsight && (
+              <div className="mt-3 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
+                <EditableText
+                  editing={editing}
+                  value={report.sovInsight}
+                  onChange={(v) => update({ sovInsight: v })}
+                  multiline
+                  minRows={2}
+                  className="block"
+                  placeholder="Lectura del share of voice…"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Tabla compacta: Top 10 perfiles ── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3Icon /> Métricas por perfil
+            <BarChart3Icon /> Top 10 perfiles por engagement
           </CardTitle>
+          <CardDescription className="text-xs">
+            Tabla resumen · ordenada por engagement rate
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -276,28 +433,49 @@ export function PerformanceReportView({
                 </tr>
               </thead>
               <tbody>
-                {(report.profiles ?? []).map((p) => (
-                  <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-2 font-medium">{p.name}</td>
-                    <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
-                    {!isBrand && (
-                      <td className="px-4 py-2">
-                        <Badge variant={p.isCompetitor ? "outline" : "default"} className="text-[10px]">
-                          {p.isCompetitor ? "Competencia" : "Marca"}
-                        </Badge>
+                {[...(report.profiles ?? [])]
+                  .sort((a, b) => (b.engagementRate ?? 0) - (a.engagementRate ?? 0))
+                  .slice(0, 10)
+                  .map((p) => (
+                    <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
+                      <td className="px-4 py-2 font-medium">{p.name}</td>
+                      <td className="px-4 py-2"><NetworkBadge network={p.network} size="xs" /></td>
+                      {!isBrand && (
+                        <td className="px-4 py-2">
+                          <Badge variant={p.isCompetitor ? "outline" : "default"} className="text-[10px]">
+                            {p.isCompetitor ? "Competencia" : "Marca"}
+                          </Badge>
+                        </td>
+                      )}
+                      <td className="px-4 py-2 text-right">{p.followers != null ? formatNumber(p.followers) : "—"}</td>
+                      <td className={`px-4 py-2 text-right ${p.growthPercent != null && p.growthPercent < 0 ? "text-destructive" : p.growthPercent != null && p.growthPercent > 0 ? "text-green-600" : ""}`}>
+                        {p.growthPercent != null ? `${p.growthPercent > 0 ? "+" : ""}${p.growthPercent.toFixed(2)}%` : "—"}
                       </td>
-                    )}
-                    <td className="px-4 py-2 text-right">{p.followers != null ? formatNumber(p.followers) : "—"}</td>
-                    <td className={`px-4 py-2 text-right ${p.growthPercent != null && p.growthPercent < 0 ? "text-destructive" : p.growthPercent != null && p.growthPercent > 0 ? "text-green-600" : ""}`}>
-                      {p.growthPercent != null ? `${p.growthPercent > 0 ? "+" : ""}${p.growthPercent.toFixed(2)}%` : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-right font-medium">{p.engagementRate != null ? `${p.engagementRate.toFixed(2)}%` : "—"}</td>
-                    <td className="px-4 py-2 text-right">{p.postsPerDay != null ? p.postsPerDay.toFixed(2) : "—"}</td>
-                  </tr>
-                ))}
+                      <td className="px-4 py-2 text-right font-medium">{p.engagementRate != null ? `${p.engagementRate.toFixed(2)}%` : "—"}</td>
+                      <td className="px-4 py-2 text-right">{p.postsPerDay != null ? p.postsPerDay.toFixed(2) : "—"}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
+          {(report.profiles?.length ?? 0) > 10 && (
+            <div className="p-3 text-xs text-muted-foreground text-center border-t bg-muted/20">
+              Mostrando 10 de {report.profiles.length} perfiles. El detalle completo está en el PDF descargable.
+            </div>
+          )}
+          {report.profilesInsight && (
+            <div className="m-4 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground border-l-2 border-primary/40">
+              <EditableText
+                editing={editing}
+                value={report.profilesInsight}
+                onChange={(v) => update({ profilesInsight: v })}
+                multiline
+                minRows={2}
+                className="block"
+                placeholder="Lectura de los perfiles…"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

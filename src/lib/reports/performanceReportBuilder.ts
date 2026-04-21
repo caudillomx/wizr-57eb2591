@@ -277,10 +277,26 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Ranking chart ----------
+  // ---------- Brand-level engagement chart ----------
+  const brandEngBlock = report.analytics.brandEngagement?.length
+    ? section(
+        "Engagement promedio por marca",
+        chartHorizontalBars(
+          report.analytics.brandEngagement.slice(0, 12).map((b) => ({
+            label: b.brand,
+            value: b.avgEngagement,
+            isOwn: b.isOwn,
+            sub: `${b.profiles} perfil(es)`,
+          })),
+        ),
+        { eyebrow: "Sección 04 · Engagement por marca" },
+      )
+    : "";
+
+  // ---------- Ranking chart (top 10 perfiles) ----------
   const rankingChart = report.analytics.rankingByEngagement.length
     ? section(
-        "Ranking por engagement",
+        "Top 10 perfiles por engagement",
         chartHorizontalBars(
           report.analytics.rankingByEngagement.slice(0, 10).map((r) => ({
             label: r.name,
@@ -288,30 +304,39 @@ export function buildPerformanceReportHTML(
             isOwn: r.isOwn,
             sub: networkLabel(r.network),
           })),
-        ),
-        { eyebrow: "Sección 04 · Ranking" },
+        ) + (report.rankingInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.rankingInsight)}</div>` : ""),
+        { eyebrow: "Sección 05 · Ranking de perfiles" },
       )
     : "";
 
-  // ---------- Share of voice (benchmark) ----------
-  const sovBlock = !isBrand && report.analytics.shareOfVoice.length
-    ? section(
-        "Share of voice (engagement)",
-        chartHorizontalBars(
-          report.analytics.shareOfVoice
-            .filter((s) => s.engagementShare > 0)
-            .slice(0, 8)
-            .map((s) => ({ label: s.name, value: s.engagementShare, isOwn: s.isOwn })),
-        ),
-        { eyebrow: "Sección 05 · Participación" },
-      )
+  // ---------- Share of voice (benchmark) por marca ----------
+  const sovBlock = !isBrand && report.analytics.brandEngagement?.length
+    ? (() => {
+        const total = report.analytics.brandEngagement.reduce((s, b) => s + b.avgEngagement, 0) || 1;
+        const data = report.analytics.brandEngagement
+          .filter((b) => b.avgEngagement > 0)
+          .map((b) => ({
+            label: b.brand,
+            value: Math.round((b.avgEngagement / total) * 1000) / 10,
+            isOwn: b.isOwn,
+          }));
+        return section(
+          "Share of voice por marca",
+          chartHorizontalBars(data) + (report.sovInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.sovInsight)}</div>` : ""),
+          { eyebrow: "Sección 06 · Participación" },
+        );
+      })()
     : "";
 
-  // ---------- Comparative profiles table ----------
+  // ---------- Top 10 perfiles table ----------
+  const top10ProfilesReport = {
+    ...report,
+    profiles: [...report.profiles].sort((a, b) => (b.engagementRate ?? 0) - (a.engagementRate ?? 0)).slice(0, 10),
+  };
   const profilesBlock = section(
-    isBrand ? "Métricas por perfil" : "Tabla comparativa de perfiles",
-    profilesTable(report, isBrand),
-    { eyebrow: "Sección 06 · Detalle" },
+    isBrand ? "Top 10 perfiles" : "Top 10 perfiles · marca vs competencia",
+    profilesTable(top10ProfilesReport, isBrand) + (report.profilesInsight ? `<div style="margin-top:10px;padding:10px 12px;background:${C.indigoSoft};border-left:3px solid ${C.indigoBright};border-radius:0 4px 4px 0;font-size:9.5px;line-height:1.6;color:${C.text};">${esc(report.profilesInsight)}</div>` : ""),
+    { eyebrow: "Sección 07 · Detalle" },
   );
 
   // ---------- Top content ----------
@@ -360,6 +385,7 @@ export function buildPerformanceReportHTML(
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
+    ${brandEngBlock}
     ${rankingChart}
     ${sovBlock}
     ${profilesBlock}
