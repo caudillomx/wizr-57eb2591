@@ -222,15 +222,21 @@ REGLAS NUEVAS DE CONTEXTUALIZACIÓN POR GRÁFICA (obligatorias):
 - "sovInsight" (solo BENCHMARK): 2-3 oraciones que lean el share of voice por marca: qué % concentra ${clientName} vs líder, qué implica esa concentración para visibilidad y prioridad de inversión.
 - "profilesInsight": 2-3 oraciones que sinteticen la tabla de perfiles desde la óptica de ${clientName}: qué red propia tiene mejor engagement, qué red propia muestra peor cadencia/crecimiento, contraste con competidor más cercano.
 
-REGLAS EDITORIALES (estilo Wizr):
-- Tono ejecutivo: directo, analítico, sin adornos ("es importante", "cabe destacar", "vale la pena mencionar" están prohibidos).
+REGLAS EDITORIALES (estilo Wizr · CRÍTICAS):
+- Tono ejecutivo pero LEGIBLE: directo, analítico. Prohibido "es importante", "cabe destacar", "vale la pena mencionar".
+- PROHIBIDO usar nombres técnicos crudos de variables: NUNCA escribas "engagement_rate", "posts_per_day", "follower_growth_percent", "page_performance_index". Tradúcelos siempre a lenguaje natural: "tasa de engagement", "frecuencia de publicación", "crecimiento de seguidores", "índice de desempeño".
+- PROHIBIDO escribir cifras decimales crudas sin contexto humano: "0.0016 de engagement_rate" → "una tasa de engagement de 0.16% (extremadamente baja)". "21,700 seguidores y 21" → reescribe sin números colgando.
+- Cifras pequeñas siempre en porcentaje legible (ej. 0.0016 → 0.16%). Cifras grandes con separador de miles (21,700) o abreviadas (21.7K).
+- Cuando una cifra es atípicamente baja o alta, califícala con UNA palabra ("muy baja", "marginal", "líder", "atípica") en lugar de dejar el número solo.
+- Cada hallazgo debe leerse como una frase de analista a director, no como dump de variables. Si necesitas decir "0.6 posts por día" agrega "(menos de un post cada dos días)" o "(cadencia muy baja)".
 - Prohibido el lenguaje genérico: "buen desempeño", "tendencia positiva", "área de oportunidad" sin cifra concreta detrás.
-- Prohibido el "happy talk": si los números son malos, dilo con claridad.
+- Prohibido el "happy talk": si los números son malos, dilo con claridad y proponer qué hacer.
 - Cada recomendación es ESTRICTAMENTE de comunicación digital (publicar, ajustar formato, cadencia, plataforma, mensaje, creatividad, partnership de contenido). Prohibido recomendar producto, RH, legal, presupuesto o procesos internos.
-- AUDIENCIA del reporte: equipo de marketing/comunicación digital de ${clientName} y dirección. Habla en su lenguaje, no para el consumidor final.
-- No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta, comillas tipográficas raras). Texto plano limpio.
-- En modo MARCA: prohibido mencionar competidores, "el sector" o "la industria".
+- AUDIENCIA del reporte: equipo de marketing/comunicación digital de ${clientName} y dirección. Habla en su lenguaje, no para el consumidor final ni para un data scientist.
+- No uses símbolos de markdown (asteriscos, almohadillas, guiones de viñeta). Texto plano limpio.
+- En modo MARCA: PROHIBIDO mencionar competidores, "el sector", "la industria", "frente a otras marcas", "líder del set". Tampoco hagas observaciones obvias del tipo "los 5 contenidos top son de la marca propia" cuando es la única marca analizada.
 - En modo BENCHMARK: nombra a los competidores tal cual aparecen en los datos.
+- Cuando referas a una pieza de contenido específica, NO digas "el adelanto del webinar" sin explicar de qué webinar; si no tienes el dato, di "una pieza de adelanto de evento" o describe el formato sin inventar el tema.
 
 Devuelve EXCLUSIVAMENTE un JSON válido con esta forma:
 {
