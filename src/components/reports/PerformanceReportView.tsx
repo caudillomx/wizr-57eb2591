@@ -181,17 +181,17 @@ export function PerformanceReportView({
         </div>
       )}
 
-      {/* ── Brecha Actinver vs líder (benchmark only) ── */}
+      {/* ── Brecha vs líder (benchmark only) — interacciones promedio por post ── */}
       {!isBrand && report.analytics.ownBrandGap && (
         <Card className="bg-gradient-to-r from-orange-500/5 to-transparent border-orange-500/30">
           <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-orange-500/15 p-2"><TrendingUp className="h-4 w-4 text-orange-600" /></div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Brecha competitiva</div>
+                <div className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Brecha competitiva · interacciones por publicación</div>
                 <div className="text-sm font-medium">
-                  {report.clientName} promedia <strong>{report.analytics.ownBrandGap.ownAvg.toFixed(2)}%</strong> de engagement
-                  · líder <strong>{report.analytics.ownBrandGap.leaderName}</strong> con <strong>{report.analytics.ownBrandGap.leaderAvg.toFixed(2)}%</strong>
+                  {report.clientName} promedia <strong>{formatNumber(report.analytics.ownBrandGap.ownAvg)}</strong> interacciones por publicación
+                  · líder <strong>{report.analytics.ownBrandGap.leaderName}</strong> con <strong>{formatNumber(report.analytics.ownBrandGap.leaderAvg)}</strong>
                 </div>
               </div>
             </div>
