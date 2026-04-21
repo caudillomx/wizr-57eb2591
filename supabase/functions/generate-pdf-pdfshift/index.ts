@@ -37,14 +37,14 @@ Deno.serve(async (req) => {
         left: "0mm",
       },
     };
-    if (header) {
+    if (header && header.source && header.height) {
       payload.header = {
         source: header.source,
         height: header.height,
         start_at: header.start_at ?? 1,
       };
     }
-    if (footer) {
+    if (footer && footer.source && footer.height) {
       payload.footer = {
         source: footer.source,
         height: footer.height,
