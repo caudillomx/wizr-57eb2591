@@ -22,7 +22,7 @@ export interface PerformanceReportAnalytics {
   bestPerformer: { name: string; network: string; engagement: number } | null;
   fastestGrower: { name: string; network: string; growth: number } | null;
   shareOfVoice: Array<{ name: string; isOwn: boolean; engagementShare: number; followersShare: number }>;
-  rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean }>;
+  rankingByEngagement: Array<{ name: string; network: string; engagement: number; isOwn: boolean; hasData: boolean }>;
 }
 
 export interface PerformanceTopPostSnapshot {
@@ -151,14 +151,21 @@ function computeAnalytics(
     .map((p) => {
       const k = kpis.find((kp) => kp.fk_profile_id === p.id);
       const eng = Number(k?.engagement_rate);
+      const hasData = Number.isFinite(eng) && eng > 0;
       return {
         name: getFKProfileDisplayName(p),
         network: p.network,
-        engagement: Number.isFinite(eng) ? pct(eng) : 0,
+        engagement: hasData ? pct(eng) : 0,
         isOwn: !p.is_competitor,
+        hasData,
       };
     })
-    .sort((a, b) => b.engagement - a.engagement);
+    .sort((a, b) => {
+      // Profiles with data always come first
+      if (a.hasData && !b.hasData) return -1;
+      if (!a.hasData && b.hasData) return 1;
+      return b.engagement - a.engagement;
+    });
 
   return {
     networks,
