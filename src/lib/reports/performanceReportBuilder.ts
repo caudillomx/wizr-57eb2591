@@ -507,11 +507,9 @@ export function buildPerformanceReportHTML(
     ? (() => {
         const all = (report.analytics.shareOfVoice || []).filter((s) => s.interactionsShare > 0);
         if (all.length === 0) return "";
-        const own = all.filter((s) => s.isOwn);
-        const comp = all.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
-        const TARGET = 10;
-        const selected = [...own, ...comp.slice(0, Math.max(TARGET - own.length, 4))]
-          .sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const selected = [...all]
+          .sort((a, b) => b.interactionsShare - a.interactionsShare)
+          .slice(0, 10);
         const data = selected.map((s) => ({
           label: `${s.name} · ${networkLabel(s.network)}`,
           value: s.interactionsShare,
@@ -520,7 +518,7 @@ export function buildPerformanceReportHTML(
         if (data.length === 0) return "";
         return section(
           "Cuota de interacciones por perfil · marca + red",
-          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: granularidad por canal. Identifica qué perfil específico (marca + red) lidera la conversación, permitiendo ver si una marca concentra su engagement en Facebook, TikTok o cualquier otra red.</p>`,
+          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: granularidad por canal. Identifica qué perfil específico (marca + red) lidera la conversación en términos absolutos. Solo aparecen los perfiles que se ganaron el espacio por volumen real de interacciones.</p>`,
           { eyebrow: "Sección · Cuota por perfil" },
         );
       })()
