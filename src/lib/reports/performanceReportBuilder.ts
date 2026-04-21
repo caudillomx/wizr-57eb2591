@@ -578,23 +578,27 @@ export function buildPerformanceReportHTML(
       </div>`
     : "";
 
-  const body = `<div style="background:${C.paper};font-family:'Inter','Segoe UI',sans-serif;color:${C.text};padding:18px 16px;">
+  // Bloques que conviene iniciar en página nueva para evitar huecos grandes
+  const pb = (block: string) =>
+    block ? `<div style="page-break-before:always;break-before:page;">${block}</div>` : "";
+
+  const body = `<div style="background:${C.paper};font-family:'Inter','Segoe UI',sans-serif;color:${C.text};padding:6px 4px;">
     ${highlightsBlock}
     ${kpisBlock}
     ${summaryBlock}
     ${networkInterBlock}
     ${followersBlock}
-    ${brandEngBlock}
+    ${pb(brandEngBlock)}
     ${networkEngBlock}
-    ${rankingChart}
+    ${pb(rankingChart)}
     ${sovDonutBlock}
-    ${sovProfileDonutBlock}
+    ${pb(sovProfileDonutBlock)}
     ${sovBlock}
-    ${profilesBlock}
-    ${topContentBlock}
-    ${findingsBlock}
+    ${pb(profilesBlock)}
+    ${pb(topContentBlock)}
+    ${pb(findingsBlock)}
     ${competitiveBlock}
-    ${recommendationsBlock}
+    ${pb(recommendationsBlock)}
     ${conclusionBlock}
   </div>`;
 
@@ -605,8 +609,11 @@ export function buildPerformanceReportHTML(
 <title>${esc(report.title || clientName)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 0; background: ${C.paper}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  @page { size: A4; margin: 14mm 12mm 18mm 12mm; }
+  html, body { margin: 0; padding: 0; background: ${C.paper}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* La portada usa su propia altura completa: sin margen alrededor */
+  @page { size: A4; margin: 0; }
+  /* Páginas internas: dejar espacio para header (14mm) y footer (12mm) globales */
+  @page :not(:first) { margin: 18mm 12mm 16mm 12mm; }
   ol, ul { margin: 0; padding: 0; }
 </style>
 </head>
@@ -616,15 +623,23 @@ ${body}
 </body>
 </html>`;
 
-  const header = `<div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:6px 12mm 0 12mm;display:flex;justify-content:space-between;width:100%;">
-    <span style="font-weight:700;text-transform:uppercase;letter-spacing:0.15em;">${esc(clientName)} · ${esc(modeLabel)}</span>
-    <span>${esc(periodPretty)}</span>
-  </div>`;
+  const headerHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;">
+    <div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:6mm 12mm 0 12mm;display:flex;justify-content:space-between;align-items:center;width:100%;border-bottom:1px solid ${C.borderLight};">
+      <span style="font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:${C.indigoBright};">Wizr · ${esc(modeLabel)}</span>
+      <span style="color:${C.textMid};">${esc(clientName)} · ${esc(periodPretty)}</span>
+    </div>
+  </body></html>`;
 
-  const footer = `<div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:0 12mm 6px 12mm;display:flex;justify-content:space-between;width:100%;">
-    <span>Wizr · Performance Intelligence</span>
-    <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
-  </div>`;
+  const footerHtml = `<!DOCTYPE html><html><body style="margin:0;padding:0;">
+    <div style="font-family:'Inter',sans-serif;font-size:8px;color:${C.textMuted};padding:0 12mm 6mm 12mm;display:flex;justify-content:space-between;align-items:center;width:100%;border-top:1px solid ${C.borderLight};padding-top:4mm;">
+      <span style="text-transform:uppercase;letter-spacing:0.15em;">Wizr · Performance Intelligence</span>
+      <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+    </div>
+  </body></html>`;
 
-  return { html: fullHtml, header, footer };
+  return {
+    html: fullHtml,
+    header: { source: headerHtml, height: "14mm", start_at: 2 },
+    footer: { source: footerHtml, height: "12mm", start_at: 2 },
+  };
 }
