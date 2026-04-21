@@ -151,26 +151,27 @@ function slideShell(opts: {
 // ---------- SVG charts ----------
 
 function svgRankingBars(
-  data: { label: string; value: number; isOwn: boolean }[],
+  data: { label: string; value: number; isOwn: boolean; color?: string; valueLabel?: string }[],
   width = 1620,
   rowH = 70,
 ): string {
   if (!data.length) return "";
   const max = Math.max(...data.map((d) => d.value), 0.01);
   const labelW = 380;
-  const valueW = 160;
+  const valueW = 200;
   const barW = width - labelW - valueW - 60;
   const height = data.length * rowH + 20;
   const rows = data
     .map((d, i) => {
       const y = i * rowH + 10;
       const w = (d.value / max) * barW;
-      const color = d.isOwn ? C.violet : C.textMuted;
+      const color = d.color || (d.isOwn ? C.violet : C.textMuted);
+      const vLabel = d.valueLabel ?? fmtInt(d.value);
       return `
         <text x="${labelW - 24}" y="${y + rowH / 2 + 7}" text-anchor="end" font-size="22" font-weight="${d.isOwn ? 800 : 600}" fill="${C.text}">${esc(truncate(d.label, 30))}</text>
         <rect x="${labelW}" y="${y + 16}" width="${barW}" height="${rowH - 32}" rx="6" fill="${C.paperAlt}"/>
-        <rect x="${labelW}" y="${y + 16}" width="${w}" height="${rowH - 32}" rx="6" fill="${color}"/>
-        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 7}" font-size="22" font-weight="800" fill="${C.text}">${d.value.toFixed(2)}%</text>
+        <rect x="${labelW}" y="${y + 16}" width="${w}" height="${rowH - 32}" rx="6" fill="${color}"${d.isOwn ? ` stroke="${C.violet}" stroke-width="2"` : ""}/>
+        <text x="${labelW + barW + 24}" y="${y + rowH / 2 + 7}" font-size="22" font-weight="800" fill="${C.text}">${esc(vLabel)}</text>
       `;
     })
     .join("");
