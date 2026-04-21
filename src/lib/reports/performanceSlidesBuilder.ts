@@ -795,7 +795,7 @@ export function buildPerformanceSlidesReport(
   slides.push(slideExecutiveSummary(report, clientName, modeLabel, p++, total));
   slides.push(slideKpis(report, clientName, modeLabel, p++, total));
   slides.push(slideRanking(report, clientName, modeLabel, p++, total));
-  if (hasSov) slides.push(slideShareOfVoice(report, clientName, modeLabel, p++, total));
+  if (hasSov) slides.push(slideShareOfInteractions(report, clientName, modeLabel, p++, total));
   if (hasNetworkBreakdown) slides.push(slideNetworkBreakdown(report, clientName, modeLabel, p++, total));
   if (hasTopPosts) slides.push(slideTopContent(report, clientName, modeLabel, p++, total));
 
