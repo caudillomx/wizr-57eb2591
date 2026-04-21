@@ -161,8 +161,19 @@ export function ClientList({ clients, isLoading, onSelect }: Props) {
                 {c.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{c.description}</p>
                 )}
-                <div className="flex items-center justify-end text-xs text-primary font-medium">
-                  Abrir <ChevronRight className="h-3 w-3 ml-1" />
+                <div className="flex items-center justify-between text-xs">
+                  {c.client_type === "benchmark" ? (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Users2 className="h-3 w-3" /> Benchmark
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Building2 className="h-3 w-3" /> Marca propia
+                    </span>
+                  )}
+                  <span className="text-primary font-medium inline-flex items-center">
+                    Abrir <ChevronRight className="h-3 w-3 ml-1" />
+                  </span>
                 </div>
               </CardContent>
             </Card>
