@@ -486,17 +486,42 @@ export function buildPerformanceReportHTML(
       )
     : "";
 
-  // ---------- Cuota de interacciones (donut) · interacciones absolutas ----------
+  // ---------- Donut A: Cuota agregada por marca (suma de todas las redes) ----------
   const sovDonutBlock = !isBrand && report.analytics.brandEngagement?.length
     ? (() => {
         const data = report.analytics.brandEngagement
           .filter((b) => b.totalInteractions > 0)
+          .sort((a, b) => b.totalInteractions - a.totalInteractions)
           .map((b) => ({ label: b.brand, value: b.totalInteractions, isOwn: b.isOwn }));
         if (data.length === 0) return "";
         return section(
-          "Cuota de interacciones por marca",
-          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada porción representa el porcentaje de interacciones absolutas (likes + comentarios + compartidos) que cada marca capturó del total del sector. Para ${esc(clientName)}, este es el termómetro real de presencia frente a competencia.</p>`,
-          { eyebrow: "Sección · Cuota de mercado" },
+          "Cuota de interacciones por marca · agregado",
+          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: cada porción agrega las interacciones de TODAS las redes sociales por marca. Útil para ver qué marca concentra mayor presencia conversacional global, sin importar el canal. Para ${esc(clientName)}, este es el termómetro real de presencia frente a competencia.</p>`,
+          { eyebrow: "Sección · Cuota por marca" },
+        );
+      })()
+    : "";
+
+  // ---------- Donut B: Cuota por perfil (marca + red específica) ----------
+  const sovProfileDonutBlock = !isBrand && (report.analytics.shareOfVoice?.length ?? 0) > 0
+    ? (() => {
+        const all = (report.analytics.shareOfVoice || []).filter((s) => s.interactionsShare > 0);
+        if (all.length === 0) return "";
+        const own = all.filter((s) => s.isOwn);
+        const comp = all.filter((s) => !s.isOwn).sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const TARGET = 10;
+        const selected = [...own, ...comp.slice(0, Math.max(TARGET - own.length, 4))]
+          .sort((a, b) => b.interactionsShare - a.interactionsShare);
+        const data = selected.map((s) => ({
+          label: `${s.name} · ${networkLabel(s.network)}`,
+          value: s.interactionsShare,
+          isOwn: s.isOwn,
+        }));
+        if (data.length === 0) return "";
+        return section(
+          "Cuota de interacciones por perfil · marca + red",
+          donutChartSVG(data) + `<p style="margin:10px 0 0 0;font-size:9.5px;line-height:1.6;color:${C.textMid};">Lectura: granularidad por canal. Identifica qué perfil específico (marca + red) lidera la conversación, permitiendo ver si una marca concentra su engagement en Facebook, TikTok o cualquier otra red.</p>`,
+          { eyebrow: "Sección · Cuota por perfil" },
         );
       })()
     : "";
