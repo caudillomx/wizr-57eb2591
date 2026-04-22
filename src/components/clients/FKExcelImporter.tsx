@@ -76,7 +76,7 @@ function normalizeKey(s: string): string {
   return normalizeFKText(s);
 }
 
-function buildCandidateKeys(network: FKNetwork, displayName: string, profileId?: string | null): string[] {
+function buildCandidateKeys(network: FKNetwork | string, displayName: string, profileId?: string | null): string[] {
   const candidates = [displayName, profileId || "", prettifyFKIdentifier(displayName), prettifyFKIdentifier(profileId || "")]
     .map((value) => value.trim())
     .filter(Boolean);
