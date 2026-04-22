@@ -197,7 +197,9 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
             Top Post por Red Social
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Mejor publicación por red dentro del período seleccionado.
+            {usingFallback
+              ? "Sin snapshot diario para el período: mostramos los 20 posts con mayor engagement importados."
+              : "Mejor publicación por red dentro del período seleccionado."}
           </p>
         </div>
       </CardHeader>
