@@ -509,14 +509,31 @@ export function FKExcelImporter({ clientId }: Props) {
   const runImport = async (replaceOverlaps: boolean) => {
     setOverlapInfo(null);
     setImporting(true);
+    setImportLog(null);
     let totalProfiles = 0;
     let totalKpis = 0;
     let totalPosts = 0;
     let deletedOverlaps = 0;
+    const reports: ImportFileReport[] = [];
 
     try {
       for (const f of files) {
         if (f.kind === "unknown") continue;
+        const report: ImportFileReport = {
+          fileName: f.file.name,
+          kind: f.kind,
+          rowsRead: 0,
+          resolvedProfiles: 0,
+          unresolvedProfiles: [],
+          unknownNetworkProfiles: [],
+          kpisInserted: 0,
+          kpisDiscarded: 0,
+          postsInserted: 0,
+          postsDiscarded: 0,
+          topPostsUpserted: 0,
+          profilesWithoutKpis: [],
+          errors: [],
+        };
         const buf = await f.file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: true });
 
@@ -525,12 +542,22 @@ export function FKExcelImporter({ clientId }: Props) {
           for (const sheetName of wb.SheetNames) {
             const { rows, kind } = readSheetWithHeaderDetection(wb.Sheets[sheetName]);
             if (kind !== "kpis") continue;
+            report.rowsRead += rows.length;
             for (const r of rows) {
               const m = mapKpiRow(r);
-              if (m) kpiRows.push(m);
+              if (!m) continue;
+              if (m.network === "unknown") {
+                report.unknownNetworkProfiles.push(m.displayName || m.profileId);
+                report.kpisDiscarded += 1;
+                continue;
+              }
+              kpiRows.push(m);
             }
           }
-          if (kpiRows.length === 0) continue;
+          if (kpiRows.length === 0) {
+            reports.push(report);
+            continue;
+          }
 
           // Resolve profiles by (client_id, network, normalized display_name)
           // so that re-imports with different profile_id formats (handle vs numeric ID)
