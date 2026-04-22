@@ -227,7 +227,7 @@ function pickField(row: Record<string, any>, candidates: string[]): any {
 interface KpiRow {
   profileId: string;
   displayName: string;
-  network: FKNetwork;
+  network: FKNetwork | "unknown";
   followers: number | null;
   engagementRate: number | null;
   postsPerDay: number | null;
@@ -240,7 +240,7 @@ interface KpiRow {
 interface PostRow {
   profileId: string;
   displayName: string;
-  network: FKNetwork;
+  network: FKNetwork | "unknown";
   externalId: string | null;
   publishedAt: string;
   message: string | null;
