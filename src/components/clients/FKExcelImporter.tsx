@@ -638,6 +638,15 @@ export function FKExcelImporter({ clientId }: Props) {
             })
             .filter(Boolean) as any[];
 
+          // IDs de perfiles que tocó este archivo (para validación post-import)
+          const touchedProfileIds = Array.from(new Set(
+            kpiRows
+              .map((k) => buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
+                .map((key) => existingByName.get(key))
+                .find(Boolean))
+              .filter(Boolean) as string[]
+          ));
+
           if (kpiPayload.length > 0) {
             // Si el usuario eligió reemplazar solapamientos, borramos los snapshots
             // que intersectan con el rango entrante (sin ser idénticos — el mismo
