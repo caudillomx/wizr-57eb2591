@@ -638,6 +638,16 @@ export function FKExcelImporter({ clientId }: Props) {
             })
             .filter(Boolean) as any[];
 
+          // IDs de perfiles que tocó este archivo (para validación post-import)
+          const touchedProfileIds = Array.from(new Set(
+            kpiRows
+              .map((k) => buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
+                .map((key) => existingByName.get(key))
+                .find(Boolean))
+              .filter(Boolean) as string[]
+          ));
+          (f as any).__touchedProfileIds = touchedProfileIds;
+
           if (kpiPayload.length > 0) {
             // Si el usuario eligió reemplazar solapamientos, borramos los snapshots
             // que intersectan con el rango entrante (sin ser idénticos — el mismo
@@ -868,9 +878,30 @@ export function FKExcelImporter({ clientId }: Props) {
         if (f.kind === "kpis") {
           report.kpisInserted = report.kpisInserted; // se ajusta abajo en validación
         }
+
+        // Validación post-import: confirmar que los perfiles tocados tienen KPIs en BD
+        const touchedIds = (f as any).__touchedProfileIds as string[] | undefined;
+        if (f.kind === "kpis" && touchedIds && touchedIds.length > 0) {
+          const { data: kpiCheck } = await supabase
+            .from("fk_profile_kpis")
+            .select("fk_profile_id")
+            .in("fk_profile_id", touchedIds);
+          const withKpis = new Set((kpiCheck || []).map((k: any) => k.fk_profile_id));
+          const missing = touchedIds.filter((id) => !withKpis.has(id));
+          if (missing.length > 0) {
+            const { data: missingProfiles } = await supabase
+              .from("fk_profiles")
+              .select("id, display_name, profile_id")
+              .in("id", missing);
+            (missingProfiles || []).forEach((p: any) => {
+              report.profilesWithoutKpis.push(p.display_name || p.profile_id);
+            });
+          }
+        }
         reports.push(report);
       }
 
+      setImportLog(reports);
       toast({
         title: "Importación completada",
         description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts${
@@ -1026,6 +1057,130 @@ export function FKExcelImporter({ clientId }: Props) {
                 Importar {files.filter((f) => f.kind !== "unknown").length} archivo(s)
               </Button>
             </div>
+          </div>
+        )}
+
+        {importLog && importLog.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold">Resumen de importación</h4>
+              <Button variant="ghost" size="sm" onClick={() => setImportLog(null)}>
+                <X className="h-3 w-3 mr-1" /> Cerrar
+              </Button>
+            </div>
+            <Accordion type="multiple" className="border rounded-lg">
+              {importLog.map((r, i) => {
+                const hasUnknown = r.unknownNetworkProfiles.length > 0;
+                const hasUnresolved = r.unresolvedProfiles.length > 0 || r.profilesWithoutKpis.length > 0;
+                const hasErrors = r.errors.length > 0;
+                const status = hasUnknown || hasErrors ? "error" : hasUnresolved ? "warning" : "ok";
+                return (
+                  <AccordionItem key={i} value={`f-${i}`} className="border-b last:border-0 px-3">
+                    <AccordionTrigger className="py-3 hover:no-underline">
+                      <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                        {status === "ok" && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
+                        {status === "warning" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
+                        {status === "error" && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
+                        <span className="text-sm font-medium truncate">{r.fileName}</span>
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {r.kind === "kpis" ? "KPIs" : r.kind === "posts" ? "Posts" : "?"}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-3">
+                      <div className="text-xs space-y-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="bg-muted/40 rounded p-2">
+                            <div className="text-muted-foreground">Filas leídas</div>
+                            <div className="font-semibold">{r.rowsRead}</div>
+                          </div>
+                          <div className="bg-muted/40 rounded p-2">
+                            <div className="text-muted-foreground">Perfiles resueltos</div>
+                            <div className="font-semibold">{r.resolvedProfiles}</div>
+                          </div>
+                          {r.kind === "kpis" && (
+                            <div className="bg-muted/40 rounded p-2">
+                              <div className="text-muted-foreground">KPIs insertados</div>
+                              <div className="font-semibold">
+                                {r.kpisInserted}
+                                {r.kpisDiscarded > 0 && (
+                                  <span className="text-muted-foreground"> / -{r.kpisDiscarded}</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {r.kind === "posts" && (
+                            <>
+                              <div className="bg-muted/40 rounded p-2">
+                                <div className="text-muted-foreground">Posts insertados</div>
+                                <div className="font-semibold">
+                                  {r.postsInserted}
+                                  {r.postsDiscarded > 0 && (
+                                    <span className="text-muted-foreground"> / -{r.postsDiscarded}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="bg-muted/40 rounded p-2">
+                                <div className="text-muted-foreground">Top posts diarios</div>
+                                <div className="font-semibold">{r.topPostsUpserted}</div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {r.unknownNetworkProfiles.length > 0 && (
+                          <div className="rounded border border-destructive/40 bg-destructive/5 p-2">
+                            <div className="font-semibold text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Red desconocida ({r.unknownNetworkProfiles.length})
+                            </div>
+                            <div className="text-muted-foreground mt-1 break-words">
+                              {Array.from(new Set(r.unknownNetworkProfiles)).join(", ")}
+                            </div>
+                            <div className="text-muted-foreground mt-1 italic">
+                              Estos perfiles no se importaron. Verifica que el Excel incluya la columna Network/Platform.
+                            </div>
+                          </div>
+                        )}
+
+                        {r.unresolvedProfiles.length > 0 && (
+                          <div className="rounded border border-amber-500/40 bg-amber-500/5 p-2">
+                            <div className="font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Perfiles no resueltos ({r.unresolvedProfiles.length})
+                            </div>
+                            <div className="text-muted-foreground mt-1 break-words">
+                              {Array.from(new Set(r.unresolvedProfiles)).join(", ")}
+                            </div>
+                          </div>
+                        )}
+
+                        {r.profilesWithoutKpis.length > 0 && (
+                          <div className="rounded border border-amber-500/40 bg-amber-500/5 p-2">
+                            <div className="font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Perfiles sin KPIs en BD ({r.profilesWithoutKpis.length})
+                            </div>
+                            <div className="text-muted-foreground mt-1 break-words">
+                              {Array.from(new Set(r.profilesWithoutKpis)).join(", ")}
+                            </div>
+                            <div className="text-muted-foreground mt-1 italic">
+                              Este perfil se guardó pero no tiene KPIs — revisa que el archivo de KPIs corresponda al mismo período.
+                            </div>
+                          </div>
+                        )}
+
+                        {r.errors.length > 0 && (
+                          <div className="rounded border border-destructive/40 bg-destructive/5 p-2">
+                            <div className="font-semibold text-destructive">Errores</div>
+                            <ul className="list-disc pl-4 mt-1 text-muted-foreground space-y-0.5">
+                              {r.errors.map((e, idx) => <li key={idx}>{e}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           </div>
         )}
 
