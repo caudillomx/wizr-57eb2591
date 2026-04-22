@@ -169,9 +169,13 @@ export function RankingDateFilter({
         size="sm"
         className="ml-auto"
         disabled={!canApply}
+        variant={canApply ? "default" : "outline"}
       >
         <Check className="h-4 w-4 mr-1" />
-        Aplicar
+        {canApply ? "Aplicar cambios" : "Aplicar"}
+        {canApply && (
+          <span className="ml-2 inline-flex h-2 w-2 rounded-full bg-primary-foreground animate-pulse" aria-hidden />
+        )}
       </Button>
     </div>
   );
