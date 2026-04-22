@@ -584,6 +584,9 @@ export function FKExcelImporter({ clientId }: Props) {
           .update({ canonical_name: r.canonicalName.trim() })
           .eq("id", r.matchedProfileId!);
         if (error) console.error("update canonical_name", error);
+        // Indexamos por displayName detectado (lo que viene en el archivo)
+        // para que el resolutor de runImport encuentre match directo.
+        map.set(`${r.network}::detected::${normalizeKey(r.detectedDisplayName)}`, r.matchedProfileId!);
         map.set(`${r.network}::canonical_anchor::${normalizeKey(r.canonicalName)}`, r.matchedProfileId!);
       }
 
@@ -602,10 +605,21 @@ export function FKExcelImporter({ clientId }: Props) {
         const { data: inserted, error } = await supabase
           .from("fk_profiles")
           .insert(payload)
-          .select("id, network, canonical_name");
+          .select("id, network, canonical_name, display_name");
         if (error) throw error;
         (inserted || []).forEach((row: any) => {
           map.set(`${row.network}::canonical_anchor::${normalizeKey(row.canonical_name)}`, row.id);
+          map.set(`${row.network}::detected::${normalizeKey(row.display_name)}`, row.id);
+        });
+        // También mapear los displayNames detectados originalmente (por si insert
+        // normalizó de forma distinta).
+        toInsert.forEach((r) => {
+          const k = `${r.network}::detected::${normalizeKey(r.detectedDisplayName)}`;
+          if (!map.has(k)) {
+            // buscar el id recién creado por canonical
+            const id = map.get(`${r.network}::canonical_anchor::${normalizeKey(r.canonicalName)}`);
+            if (id) map.set(k, id);
+          }
         });
       }
 
