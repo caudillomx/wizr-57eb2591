@@ -1078,7 +1078,7 @@ export function FKExcelImporter({ clientId }: Props) {
                   <AccordionItem key={i} value={`f-${i}`} className="border-b last:border-0 px-3">
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
-                        {status === "ok" && <CheckCircle2 className="h-4 w-4 text-[hsl(142,71%,45%)] shrink-0" />}
+                        {status === "ok" && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
                         {status === "warning" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
                         {status === "error" && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
                         <span className="text-sm font-medium truncate">{r.fileName}</span>
