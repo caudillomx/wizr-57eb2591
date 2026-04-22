@@ -834,9 +834,23 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           const topArr = Array.from(topByDay.values());
           for (let i = 0; i < topArr.length; i += CHUNK) {
-            await supabase.from("fk_daily_top_posts").insert(topArr.slice(i, i + CHUNK));
+            const slice = topArr.slice(i, i + CHUNK);
+            const { error: tpErr } = await supabase
+              .from("fk_daily_top_posts")
+              .upsert(slice, { onConflict: "fk_profile_id,network,post_date", ignoreDuplicates: false });
+            if (tpErr) {
+              console.error("upsert daily top posts", tpErr);
+              report.errors.push(`Top posts: ${tpErr.message}`);
+            } else {
+              report.topPostsUpserted += slice.length;
+            }
           }
         }
+        // Acumula contadores generales en el report del archivo
+        if (f.kind === "kpis") {
+          report.kpisInserted = report.kpisInserted; // se ajusta abajo en validación
+        }
+        reports.push(report);
       }
 
       toast({
