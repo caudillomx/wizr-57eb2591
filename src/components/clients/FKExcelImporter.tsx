@@ -76,18 +76,39 @@ function normalizeKey(s: string): string {
   return normalizeFKText(s);
 }
 
-function buildCandidateKeys(network: FKNetwork | string, displayName: string, profileId?: string | null): string[] {
+/**
+ * Genera claves de búsqueda para resolver un perfil. Si `canonicalName` está
+ * presente, se emite como **primera** clave con prefijo `canonical_anchor::`,
+ * que tiene prioridad absoluta sobre cualquier otra heurística.
+ */
+function buildCandidateKeys(
+  network: FKNetwork | string,
+  displayName: string,
+  profileId?: string | null,
+  canonicalName?: string | null,
+): string[] {
+  const keys: string[] = [];
+
+  // 1. Ancla canónica (prioridad máxima)
+  const canon = (canonicalName || "").trim();
+  if (canon) {
+    keys.push(`${network}::canonical_anchor::${normalizeKey(canon)}`);
+  }
+
+  // 2. Heurísticas previas
   const candidates = [displayName, profileId || "", prettifyFKIdentifier(displayName), prettifyFKIdentifier(profileId || "")]
     .map((value) => value.trim())
     .filter(Boolean);
 
-  const keys = new Set<string>();
+  const seen = new Set(keys);
   candidates.forEach((value) => {
-    keys.add(`${network}::name::${normalizeKey(value)}`);
-    keys.add(`${network}::canonical::${canonicalizeFKProfileIdentity(value)}`);
+    const k1 = `${network}::name::${normalizeKey(value)}`;
+    const k2 = `${network}::canonical::${canonicalizeFKProfileIdentity(value)}`;
+    if (!seen.has(k1)) { keys.push(k1); seen.add(k1); }
+    if (!seen.has(k2)) { keys.push(k2); seen.add(k2); }
   });
 
-  return Array.from(keys);
+  return keys;
 }
 
 /** Devuelve "unknown" cuando no podemos identificar la red (en lugar de
