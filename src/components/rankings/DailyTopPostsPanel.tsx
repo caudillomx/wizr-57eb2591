@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +76,44 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
     return Array.from(networks);
   }, [profiles]);
 
+  // Fallback: si no hay daily top posts, traemos los mejores 20 desde fk_posts.
+  const profileIds = useMemo(() => profiles.map((p) => p.id), [profiles]);
+  const needsFallback = !isLoading && topPosts.length === 0 && profileIds.length > 0;
+
+  const { data: fallbackPosts = [] } = useQuery({
+    queryKey: ["fk-daily-top-posts-fallback", profileIds],
+    enabled: needsFallback,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fk_posts")
+        .select("id, fk_profile_id, network, published_at, message, link, post_image_url, engagement, likes, comments, shares, raw_data")
+        .in("fk_profile_id", profileIds)
+        .order("engagement", { ascending: false, nullsFirst: false })
+        .limit(20);
+      if (error) throw error;
+      return (data || []).map((p: any) => ({
+        id: p.id,
+        fk_profile_id: p.fk_profile_id,
+        network: p.network,
+        post_date: (p.published_at || "").slice(0, 10),
+        post_url: p.link || null,
+        post_content: p.message || null,
+        post_image_url: p.post_image_url || null,
+        engagement: p.engagement || 0,
+        likes: p.likes || 0,
+        comments: p.comments || 0,
+        shares: p.shares || 0,
+        views: 0,
+        raw_data: p.raw_data || {},
+        fetched_at: p.published_at || new Date().toISOString(),
+      })) as FKDailyTopPost[];
+    },
+  });
+
+  const effectiveTopPosts = topPosts.length > 0 ? topPosts : fallbackPosts;
+  const usingFallback = topPosts.length === 0 && fallbackPosts.length > 0;
+
   // Get the top post per network within the already-filtered period
   const topPostsByNetwork = useMemo(() => {
     const result = new Map<FKNetwork, FKDailyTopPost | null>();
@@ -85,7 +125,7 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
 
     // Group posts by network
     const postsByNetwork = new Map<string, FKDailyTopPost[]>();
-    topPosts.forEach(post => {
+    effectiveTopPosts.forEach(post => {
       const existing = postsByNetwork.get(post.network) || [];
       existing.push(post);
       postsByNetwork.set(post.network, existing);
@@ -105,7 +145,7 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
     });
 
     return result;
-  }, [topPosts, networksInRanking]);
+  }, [effectiveTopPosts, networksInRanking]);
 
   if (isLoading) {
     return (
@@ -157,7 +197,9 @@ export function DailyTopPostsPanel({ profiles, topPosts, isLoading, onRefresh }:
             Top Post por Red Social
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Mejor publicación por red dentro del período seleccionado.
+            {usingFallback
+              ? "Sin snapshot diario para el período: mostramos los 20 posts con mayor engagement importados."
+              : "Mejor publicación por red dentro del período seleccionado."}
           </p>
         </div>
       </CardHeader>

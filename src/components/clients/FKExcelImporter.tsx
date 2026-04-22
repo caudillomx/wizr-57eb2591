@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Upload, FileSpreadsheet, Loader2, X, Info, CheckCircle2, AlertTriangle, CalendarIcon } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +76,7 @@ function normalizeKey(s: string): string {
   return normalizeFKText(s);
 }
 
-function buildCandidateKeys(network: FKNetwork, displayName: string, profileId?: string | null): string[] {
+function buildCandidateKeys(network: FKNetwork | string, displayName: string, profileId?: string | null): string[] {
   const candidates = [displayName, profileId || "", prettifyFKIdentifier(displayName), prettifyFKIdentifier(profileId || "")]
     .map((value) => value.trim())
     .filter(Boolean);
@@ -89,12 +90,15 @@ function buildCandidateKeys(network: FKNetwork, displayName: string, profileId?:
   return Array.from(keys);
 }
 
-function detectNetwork(value: any): FKNetwork {
-  const raw = normalizeKey(String(value || ""));
+/** Devuelve "unknown" cuando no podemos identificar la red (en lugar de
+ * marcar silenciosamente como Facebook, lo que contamina el análisis). */
+function detectNetwork(value: any): FKNetwork | "unknown" {
+  const raw = normalizeKey(String(value || "")).trim();
+  if (!raw) return "unknown";
   for (const [k, v] of Object.entries(NETWORK_DETECT)) {
     if (raw.includes(k)) return v;
   }
-  return "facebook";
+  return "unknown";
 }
 
 function parseNumeric(val: any): number | null {
@@ -223,7 +227,7 @@ function pickField(row: Record<string, any>, candidates: string[]): any {
 interface KpiRow {
   profileId: string;
   displayName: string;
-  network: FKNetwork;
+  network: FKNetwork | "unknown";
   followers: number | null;
   engagementRate: number | null;
   postsPerDay: number | null;
@@ -236,7 +240,7 @@ interface KpiRow {
 interface PostRow {
   profileId: string;
   displayName: string;
-  network: FKNetwork;
+  network: FKNetwork | "unknown";
   externalId: string | null;
   publishedAt: string;
   message: string | null;
@@ -345,6 +349,24 @@ async function detectFile(file: File): Promise<DetectedFile> {
   };
 }
 
+/** Resumen post-import por archivo procesado. Se muestra en un accordion para
+ * que el usuario vea exactamente qué llegó a base de datos y qué se descartó. */
+interface ImportFileReport {
+  fileName: string;
+  kind: FileKind;
+  rowsRead: number;
+  resolvedProfiles: number;
+  unresolvedProfiles: string[];
+  unknownNetworkProfiles: string[];
+  kpisInserted: number;
+  kpisDiscarded: number;
+  postsInserted: number;
+  postsDiscarded: number;
+  topPostsUpserted: number;
+  profilesWithoutKpis: string[];
+  errors: string[];
+}
+
 export function FKExcelImporter({ clientId }: Props) {
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
@@ -352,6 +374,7 @@ export function FKExcelImporter({ clientId }: Props) {
   const [overlapInfo, setOverlapInfo] = useState<{
     overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }>;
   } | null>(null);
+  const [importLog, setImportLog] = useState<ImportFileReport[] | null>(null);
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
@@ -419,7 +442,9 @@ export function FKExcelImporter({ clientId }: Props) {
         if (kind !== "kpis") continue;
         for (const r of rows) {
           const m = mapKpiRow(r);
-          if (m) incoming.push({ network: m.network, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+          if (m && m.network !== "unknown") {
+            incoming.push({ network: m.network as FKNetwork, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+          }
         }
       }
     }
@@ -484,14 +509,31 @@ export function FKExcelImporter({ clientId }: Props) {
   const runImport = async (replaceOverlaps: boolean) => {
     setOverlapInfo(null);
     setImporting(true);
+    setImportLog(null);
     let totalProfiles = 0;
     let totalKpis = 0;
     let totalPosts = 0;
     let deletedOverlaps = 0;
+    const reports: ImportFileReport[] = [];
 
     try {
       for (const f of files) {
         if (f.kind === "unknown") continue;
+        const report: ImportFileReport = {
+          fileName: f.file.name,
+          kind: f.kind,
+          rowsRead: 0,
+          resolvedProfiles: 0,
+          unresolvedProfiles: [],
+          unknownNetworkProfiles: [],
+          kpisInserted: 0,
+          kpisDiscarded: 0,
+          postsInserted: 0,
+          postsDiscarded: 0,
+          topPostsUpserted: 0,
+          profilesWithoutKpis: [],
+          errors: [],
+        };
         const buf = await f.file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: true });
 
@@ -500,12 +542,22 @@ export function FKExcelImporter({ clientId }: Props) {
           for (const sheetName of wb.SheetNames) {
             const { rows, kind } = readSheetWithHeaderDetection(wb.Sheets[sheetName]);
             if (kind !== "kpis") continue;
+            report.rowsRead += rows.length;
             for (const r of rows) {
               const m = mapKpiRow(r);
-              if (m) kpiRows.push(m);
+              if (!m) continue;
+              if (m.network === "unknown") {
+                report.unknownNetworkProfiles.push(m.displayName || m.profileId);
+                report.kpisDiscarded += 1;
+                continue;
+              }
+              kpiRows.push(m);
             }
           }
-          if (kpiRows.length === 0) continue;
+          if (kpiRows.length === 0) {
+            reports.push(report);
+            continue;
+          }
 
           // Resolve profiles by (client_id, network, normalized display_name)
           // so that re-imports with different profile_id formats (handle vs numeric ID)
@@ -617,8 +669,26 @@ export function FKExcelImporter({ clientId }: Props) {
             const { error } = await supabase
               .from("fk_profile_kpis")
               .upsert(kpiPayload, { onConflict: "fk_profile_id,period_start,period_end", ignoreDuplicates: false });
-            if (error) console.error("KPI upsert", error);
-            else totalKpis += kpiPayload.length;
+            if (error) {
+              console.error("KPI upsert", error);
+              report.errors.push(`KPIs: ${error.message}`);
+              report.kpisDiscarded += kpiPayload.length;
+            } else {
+              totalKpis += kpiPayload.length;
+              report.kpisInserted += kpiPayload.length;
+              report.resolvedProfiles = kpiPayload.length;
+              // Perfiles del Excel que no resolvieron a un fk_profile_id
+              const resolvedCount = kpiPayload.length;
+              const unresolvedCount = kpiRows.length - resolvedCount;
+              if (unresolvedCount > 0) {
+                kpiRows.forEach((k) => {
+                  const id = buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
+                    .map((key) => existingByName.get(key))
+                    .find(Boolean);
+                  if (!id) report.unresolvedProfiles.push(k.displayName || k.profileId);
+                });
+              }
+            }
           }
         } else if (f.kind === "posts") {
           const postRows: PostRow[] = [];
@@ -648,7 +718,7 @@ export function FKExcelImporter({ clientId }: Props) {
             });
           });
 
-          const resolveProfileId = (network: FKNetwork, displayName: string): string | undefined => {
+          const resolveProfileId = (network: FKNetwork | string, displayName: string): string | undefined => {
             return buildCandidateKeys(network, displayName, displayName)
               .map((key) => {
                 if (key.includes("::name::")) return byName.get(key);
@@ -660,8 +730,13 @@ export function FKExcelImporter({ clientId }: Props) {
           };
 
           // Create profiles for posts whose profile doesn't exist yet (rare: posts before KPIs)
-          const uniqueNew = new Map<string, { network: FKNetwork; displayName: string }>();
+          const uniqueNew = new Map<string, { network: FKNetwork | string; displayName: string }>();
           for (const p of postRows) {
+            if (p.network === "unknown") {
+              report.unknownNetworkProfiles.push(p.displayName);
+              report.postsDiscarded += 1;
+              continue;
+            }
             if (resolveProfileId(p.network, p.displayName)) continue;
             const k = `${p.network}::canonical::${canonicalizeFKProfileIdentity(p.displayName)}`;
             if (!uniqueNew.has(k)) uniqueNew.set(k, { network: p.network, displayName: p.displayName });
@@ -709,6 +784,7 @@ export function FKExcelImporter({ clientId }: Props) {
             });
           }
           for (const p of postRows) {
+            if (p.network === "unknown") continue;
             const id = resolveProfileId(p.network, p.displayName);
             if (!id) continue;
             // Synthesize a stable external_id when missing to avoid null collisions
@@ -776,9 +852,23 @@ export function FKExcelImporter({ clientId }: Props) {
           }
           const topArr = Array.from(topByDay.values());
           for (let i = 0; i < topArr.length; i += CHUNK) {
-            await supabase.from("fk_daily_top_posts").insert(topArr.slice(i, i + CHUNK));
+            const slice = topArr.slice(i, i + CHUNK);
+            const { error: tpErr } = await supabase
+              .from("fk_daily_top_posts")
+              .upsert(slice, { onConflict: "fk_profile_id,network,post_date", ignoreDuplicates: false });
+            if (tpErr) {
+              console.error("upsert daily top posts", tpErr);
+              report.errors.push(`Top posts: ${tpErr.message}`);
+            } else {
+              report.topPostsUpserted += slice.length;
+            }
           }
         }
+        // Acumula contadores generales en el report del archivo
+        if (f.kind === "kpis") {
+          report.kpisInserted = report.kpisInserted; // se ajusta abajo en validación
+        }
+        reports.push(report);
       }
 
       toast({

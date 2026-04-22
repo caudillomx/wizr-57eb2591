@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
-import { format as formatDate } from "date-fns";
+import { format as formatDate, parseISO, differenceInDays } from "date-fns";
+import { es as esLocale } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ArrowLeft, BarChart3, Settings, Building2, TrendingUp, FileText,
-  Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target, History,
+  Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target, History, Info,
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
@@ -43,9 +45,9 @@ export function ClientDetail({ client, onBack }: Props) {
   const [activeTab, setActiveTab] = useState<
     "ranking" | "insights" | "evolution" | "narratives" | "trends" | "content" | "reports" | "ai" | "config"
   >("ranking");
-  const [datePreset, setDatePreset] = useState<DateRangePreset>("7d");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("28d");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
-  const [appliedPreset, setAppliedPreset] = useState<DateRangePreset>("7d");
+  const [appliedPreset, setAppliedPreset] = useState<DateRangePreset>("28d");
   const [appliedCustomRange, setAppliedCustomRange] = useState<DateRange | undefined>();
   const [aiInitialQuestion, setAiInitialQuestion] = useState("");
   const [filterNet, setFilterNet] = useState<FKNetwork | "all">("all");
@@ -88,6 +90,37 @@ export function ClientDetail({ client, onBack }: Props) {
     qc.invalidateQueries({ queryKey: ["fk-daily-top-posts"] });
     qc.invalidateQueries({ queryKey: ["fk-kpis"] });
     qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
+  };
+
+  // Banner: detecta si TODOS los KPIs vienen como fallback (ningún snapshot exacto).
+  const fallbackInfo = useMemo(() => {
+    if (!kpis || kpis.length === 0) return null;
+    const allFallback = kpis.every((k) => k.isFallback);
+    if (!allFallback) return null;
+    // Snapshot dominante: el más reciente entre los disponibles
+    const sorted = [...kpis].sort((a, b) =>
+      (b.period_end || "").localeCompare(a.period_end || "")
+    );
+    const top = sorted[0];
+    if (!top?.period_start || !top?.period_end) return null;
+    const start = parseISO(top.period_start);
+    const end = parseISO(top.period_end);
+    const ageDays = differenceInDays(new Date(), end);
+    return {
+      label: `${formatDate(start, "d MMM yyyy", { locale: esLocale })} – ${formatDate(end, "d MMM yyyy", { locale: esLocale })}`,
+      from: start,
+      to: end,
+      stale: ageDays > 90,
+    };
+  }, [kpis]);
+
+  const applySnapshotPeriod = () => {
+    if (!fallbackInfo) return;
+    const range: DateRange = { from: fallbackInfo.from, to: fallbackInfo.to };
+    setDatePreset("custom");
+    setCustomDateRange(range);
+    setAppliedPreset("custom");
+    setAppliedCustomRange(range);
   };
 
   return (
@@ -139,13 +172,29 @@ export function ClientDetail({ client, onBack }: Props) {
       )}
 
       {activeTab !== "config" && activeTab !== "evolution" && profiles.length > 0 && (
-        <RankingDateFilter
-          preset={datePreset}
-          customRange={customDateRange}
-          onPresetChange={setDatePreset}
-          onCustomRangeChange={setCustomDateRange}
-          onApply={handleApplyDateRange}
-        />
+        <>
+          <RankingDateFilter
+            preset={datePreset}
+            customRange={customDateRange}
+            onPresetChange={setDatePreset}
+            onCustomRangeChange={setCustomDateRange}
+            onApply={handleApplyDateRange}
+          />
+          {fallbackInfo && (
+            <Alert variant={fallbackInfo.stale ? "destructive" : "default"}>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Mostrando el snapshot más reciente disponible</AlertTitle>
+              <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  Los datos importados cubren <strong>{fallbackInfo.label}</strong>. Ajusta el filtro para ver ese período exacto.
+                </span>
+                <Button size="sm" variant="outline" onClick={applySnapshotPeriod}>
+                  Usar período del snapshot
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </>
       )}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
