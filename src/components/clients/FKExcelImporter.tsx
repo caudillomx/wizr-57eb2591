@@ -1490,6 +1490,102 @@ export function FKExcelImporter({ clientId }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!anchorRows} onOpenChange={(open) => !open && setAnchorRows(null)}>
+        <AlertDialogContent className="max-w-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Anclaje de perfiles
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Confirma el <strong>nombre canónico</strong> de cada perfil detectado. Este nombre se usará como ancla
+                  para reconocer al mismo perfil en importaciones futuras y evitar duplicados.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Perfiles marcados como <Badge variant="outline" className="text-[10px]">Nuevo</Badge> no se reconocieron — edita el nombre canónico o descarta la fila.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-[50vh] overflow-y-auto border rounded-md">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 sticky top-0">
+                <tr>
+                  <th className="text-left p-2 font-medium">Detectado</th>
+                  <th className="text-left p-2 font-medium">Red</th>
+                  <th className="text-left p-2 font-medium">Estado</th>
+                  <th className="text-left p-2 font-medium">Nombre canónico</th>
+                  <th className="text-left p-2 font-medium w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(anchorRows || []).map((row, idx) => (
+                  <tr key={row.key} className={cn("border-t", row.discarded && "opacity-40")}>
+                    <td className="p-2">
+                      <div className="font-medium truncate max-w-[180px]">{row.detectedDisplayName}</div>
+                      {row.detectedProfileId && row.detectedProfileId !== row.detectedDisplayName && (
+                        <div className="text-[10px] text-muted-foreground truncate max-w-[180px]">{row.detectedProfileId}</div>
+                      )}
+                    </td>
+                    <td className="p-2"><Badge variant="outline" className="text-[10px]">{row.network}</Badge></td>
+                    <td className="p-2">
+                      {row.matchedBy === "anchor" && (
+                        <Badge variant="default" className="text-[10px] gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Anclado
+                        </Badge>
+                      )}
+                      {row.matchedBy === "heuristic" && (
+                        <Badge variant="secondary" className="text-[10px]">Match heurístico</Badge>
+                      )}
+                      {row.isNew && (
+                        <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400">
+                          Nuevo
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="text"
+                        value={row.canonicalName}
+                        disabled={row.discarded}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setAnchorRows((prev) => prev?.map((r, i) => i === idx ? { ...r, canonicalName: v } : r) || null);
+                        }}
+                        className="w-full bg-background border rounded px-2 py-1 text-xs"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setAnchorRows((prev) => prev?.map((r, i) => i === idx ? { ...r, discarded: !r.discarded } : r) || null)}
+                        title={row.discarded ? "Recuperar" : "Descartar"}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={anchoring}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAnchoring} disabled={anchoring}>
+              {anchoring && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirmar y continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
