@@ -452,6 +452,176 @@ export function FKExcelImporter({ clientId }: Props) {
   );
 
   /**
+   * Extrae todos los perfiles únicos detectados en los archivos cargados,
+   * agrupados por (network, normalizedDisplayName).
+   */
+  const extractDetectedProfiles = async (): Promise<Array<{ network: FKNetwork; displayName: string; profileId: string }>> => {
+    const seen = new Map<string, { network: FKNetwork; displayName: string; profileId: string }>();
+    for (const f of files) {
+      if (f.kind === "unknown") continue;
+      const buf = await f.file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      for (const sheetName of wb.SheetNames) {
+        const { rows, kind } = readSheetWithHeaderDetection(wb.Sheets[sheetName]);
+        if (kind === "unknown") continue;
+        for (const r of rows) {
+          const m = kind === "kpis" ? mapKpiRow(r) : mapPostRow(r);
+          if (!m || m.network === "unknown") continue;
+          const key = `${m.network}::${normalizeKey(m.displayName || m.profileId)}`;
+          if (!seen.has(key)) {
+            seen.set(key, {
+              network: m.network as FKNetwork,
+              displayName: m.displayName || m.profileId,
+              profileId: m.profileId,
+            });
+          }
+        }
+      }
+    }
+    return Array.from(seen.values());
+  };
+
+  /**
+   * Paso de anclaje: detecta perfiles, los confronta con BD usando
+   * canonical_name primero, y muestra la tabla editable de confirmación.
+   */
+  const openAnchoring = async () => {
+    setAnchoring(true);
+    try {
+      const detected = await extractDetectedProfiles();
+      if (detected.length === 0) {
+        // Sin perfiles detectables → continuar sin anclaje
+        return proceedAfterAnchoring();
+      }
+      const { data: existing } = await supabase
+        .from("fk_profiles")
+        .select("id, network, profile_id, display_name, canonical_name")
+        .eq("client_id", clientId);
+
+      // Indexamos por anchor (prioridad) y por heurísticas (fallback)
+      const byAnchor = new Map<string, { id: string; canonical: string }>();
+      const byHeuristic = new Map<string, { id: string; canonical: string }>();
+      (existing || []).forEach((e: any) => {
+        const canon = e.canonical_name || e.display_name || e.profile_id;
+        if (e.canonical_name) {
+          byAnchor.set(`${e.network}::canonical_anchor::${normalizeKey(e.canonical_name)}`, { id: e.id, canonical: canon });
+        }
+        buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((k) => {
+          if (!byHeuristic.has(k)) byHeuristic.set(k, { id: e.id, canonical: canon });
+        });
+      });
+
+      const rows: AnchorRow[] = detected.map((d) => {
+        const anchorKey = `${d.network}::canonical_anchor::${normalizeKey(d.displayName)}`;
+        const hit = byAnchor.get(anchorKey);
+        if (hit) {
+          return {
+            key: `${d.network}::${normalizeKey(d.displayName)}`,
+            network: d.network,
+            detectedDisplayName: d.displayName,
+            detectedProfileId: d.profileId,
+            canonicalName: hit.canonical,
+            matchedProfileId: hit.id,
+            isNew: false,
+            matchedBy: "anchor",
+            discarded: false,
+          };
+        }
+        const heur = buildCandidateKeys(d.network, d.displayName, d.profileId)
+          .map((k) => byHeuristic.get(k))
+          .find(Boolean);
+        if (heur) {
+          return {
+            key: `${d.network}::${normalizeKey(d.displayName)}`,
+            network: d.network,
+            detectedDisplayName: d.displayName,
+            detectedProfileId: d.profileId,
+            canonicalName: heur.canonical,
+            matchedProfileId: heur.id,
+            isNew: false,
+            matchedBy: "heuristic",
+            discarded: false,
+          };
+        }
+        return {
+          key: `${d.network}::${normalizeKey(d.displayName)}`,
+          network: d.network,
+          detectedDisplayName: d.displayName,
+          detectedProfileId: d.profileId,
+          canonicalName: prettifyFKIdentifier(d.displayName) || d.displayName,
+          matchedProfileId: null,
+          isNew: true,
+          matchedBy: null,
+          discarded: false,
+        };
+      });
+      setAnchorRows(rows);
+    } catch (err: any) {
+      console.error("Anchoring detection error", err);
+      toast({ title: "Error preparando anclaje de perfiles", description: err.message || String(err), variant: "destructive" });
+    } finally {
+      setAnchoring(false);
+    }
+  };
+
+  /**
+   * Confirma la tabla de anclaje: persiste `canonical_name` en perfiles
+   * existentes y crea perfiles nuevos con su ancla. Construye un mapa
+   * pre-resuelto que `runImport` consume para no duplicar.
+   */
+  const confirmAnchoring = async () => {
+    if (!anchorRows) return;
+    setAnchoring(true);
+    try {
+      const map = new Map<string, string>();
+      const active = anchorRows.filter((r) => !r.discarded && r.canonicalName.trim());
+
+      // 1) Update canonical_name en perfiles ya existentes
+      const toUpdate = active.filter((r) => r.matchedProfileId);
+      for (const r of toUpdate) {
+        const { error } = await supabase
+          .from("fk_profiles")
+          .update({ canonical_name: r.canonicalName.trim() })
+          .eq("id", r.matchedProfileId!);
+        if (error) console.error("update canonical_name", error);
+        map.set(`${r.network}::canonical_anchor::${normalizeKey(r.canonicalName)}`, r.matchedProfileId!);
+      }
+
+      // 2) Crear perfiles nuevos
+      const toInsert = active.filter((r) => !r.matchedProfileId);
+      if (toInsert.length > 0) {
+        const payload = toInsert.map((r) => ({
+          client_id: clientId,
+          network: r.network,
+          profile_id: r.detectedProfileId || r.canonicalName,
+          display_name: r.detectedDisplayName,
+          canonical_name: r.canonicalName.trim(),
+          is_active: true,
+          is_competitor: false,
+        }));
+        const { data: inserted, error } = await supabase
+          .from("fk_profiles")
+          .insert(payload)
+          .select("id, network, canonical_name");
+        if (error) throw error;
+        (inserted || []).forEach((row: any) => {
+          map.set(`${row.network}::canonical_anchor::${normalizeKey(row.canonical_name)}`, row.id);
+        });
+      }
+
+      resolvedAnchorMapRef.current = map;
+      setAnchorRows(null);
+      // Continuar al flujo normal (overlap check + import)
+      await proceedAfterAnchoring();
+    } catch (err: any) {
+      console.error("Anchoring confirm error", err);
+      toast({ title: "Error guardando anclaje", description: err.message || String(err), variant: "destructive" });
+    } finally {
+      setAnchoring(false);
+    }
+  };
+
+  /**
    * Pre-check: detecta periodos de KPIs que se solapan con snapshots existentes
    * (sin ser idénticos). Si hay solapamiento, muestra un aviso global y deja que
    * el usuario decida reemplazar (borrar existentes solapados) o cancelar.
@@ -466,6 +636,11 @@ export function FKExcelImporter({ clientId }: Props) {
       });
       return;
     }
+    // Anclaje primero
+    await openAnchoring();
+  };
+
+  const proceedAfterAnchoring = async () => {
 
     const kpiFiles = files.filter((f) => f.kind === "kpis" && f.periodStart && f.periodEnd);
     if (kpiFiles.length === 0) {
