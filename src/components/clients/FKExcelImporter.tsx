@@ -746,6 +746,18 @@ export function FKExcelImporter({ clientId }: Props) {
     let deletedOverlaps = 0;
     const reports: ImportFileReport[] = [];
 
+    /** Resuelve un perfil priorizando el ancla del paso de anclaje. */
+    const resolveWithAnchor = (
+      network: FKNetwork | string,
+      displayName: string,
+      profileId: string | null | undefined,
+      lookupMap: Map<string, string>,
+    ): string | undefined => {
+      const anchor = resolvedAnchorMapRef.current?.get(`${network}::detected::${normalizeKey(displayName)}`);
+      if (anchor) return anchor;
+      return buildCandidateKeys(network, displayName, profileId).map((k) => lookupMap.get(k)).find(Boolean);
+    };
+
     try {
       for (const f of files) {
         if (f.kind === "unknown") continue;
