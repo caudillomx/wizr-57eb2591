@@ -669,8 +669,26 @@ export function FKExcelImporter({ clientId }: Props) {
             const { error } = await supabase
               .from("fk_profile_kpis")
               .upsert(kpiPayload, { onConflict: "fk_profile_id,period_start,period_end", ignoreDuplicates: false });
-            if (error) console.error("KPI upsert", error);
-            else totalKpis += kpiPayload.length;
+            if (error) {
+              console.error("KPI upsert", error);
+              report.errors.push(`KPIs: ${error.message}`);
+              report.kpisDiscarded += kpiPayload.length;
+            } else {
+              totalKpis += kpiPayload.length;
+              report.kpisInserted += kpiPayload.length;
+              report.resolvedProfiles = kpiPayload.length;
+              // Perfiles del Excel que no resolvieron a un fk_profile_id
+              const resolvedCount = kpiPayload.length;
+              const unresolvedCount = kpiRows.length - resolvedCount;
+              if (unresolvedCount > 0) {
+                kpiRows.forEach((k) => {
+                  const id = buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
+                    .map((key) => existingByName.get(key))
+                    .find(Boolean);
+                  if (!id) report.unresolvedProfiles.push(k.displayName || k.profileId);
+                });
+              }
+            }
           }
         } else if (f.kind === "posts") {
           const postRows: PostRow[] = [];
