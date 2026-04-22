@@ -766,6 +766,7 @@ export function FKExcelImporter({ clientId }: Props) {
             });
           }
           for (const p of postRows) {
+            if (p.network === "unknown") continue;
             const id = resolveProfileId(p.network, p.displayName);
             if (!id) continue;
             // Synthesize a stable external_id when missing to avoid null collisions
