@@ -851,8 +851,7 @@ export function FKExcelImporter({ clientId }: Props) {
 
           if (f.asCompetitor) {
             const ids = kpiRows
-              .map((k) => existingByName.get(`${k.network}::${normalizeKey(k.displayName || k.profileId)}`))
-              .map((id, idx) => id || buildCandidateKeys(kpiRows[idx].network, kpiRows[idx].displayName || kpiRows[idx].profileId, kpiRows[idx].profileId).map((key) => existingByName.get(key)).find(Boolean))
+              .map((k) => resolveWithAnchor(k.network, k.displayName || k.profileId, k.profileId, existingByName))
               .filter(Boolean) as string[];
             if (ids.length > 0) {
               await supabase.from("fk_profiles").update({ is_competitor: true }).in("id", ids);
@@ -865,9 +864,7 @@ export function FKExcelImporter({ clientId }: Props) {
 
           const kpiPayload = kpiRows
             .map((k) => {
-              const id = buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
-                .map((key) => existingByName.get(key))
-                .find(Boolean);
+              const id = resolveWithAnchor(k.network, k.displayName || k.profileId, k.profileId, existingByName);
               if (!id) return null;
               return {
                 fk_profile_id: id,
@@ -887,9 +884,7 @@ export function FKExcelImporter({ clientId }: Props) {
           // IDs de perfiles que tocó este archivo (para validación post-import)
           const touchedProfileIds = Array.from(new Set(
             kpiRows
-              .map((k) => buildCandidateKeys(k.network, k.displayName || k.profileId, k.profileId)
-                .map((key) => existingByName.get(key))
-                .find(Boolean))
+              .map((k) => resolveWithAnchor(k.network, k.displayName || k.profileId, k.profileId, existingByName))
               .filter(Boolean) as string[]
           ));
           (f as any).__touchedProfileIds = touchedProfileIds;
