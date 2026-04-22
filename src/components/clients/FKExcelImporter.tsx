@@ -423,7 +423,9 @@ export function FKExcelImporter({ clientId }: Props) {
         if (kind !== "kpis") continue;
         for (const r of rows) {
           const m = mapKpiRow(r);
-          if (m) incoming.push({ network: m.network, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+          if (m && m.network !== "unknown") {
+            incoming.push({ network: m.network as FKNetwork, displayName: m.displayName, profileId: m.profileId, periodStart: ps, periodEnd: pe });
+          }
         }
       }
     }
