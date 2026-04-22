@@ -877,9 +877,30 @@ export function FKExcelImporter({ clientId }: Props) {
         if (f.kind === "kpis") {
           report.kpisInserted = report.kpisInserted; // se ajusta abajo en validación
         }
+
+        // Validación post-import: confirmar que los perfiles tocados tienen KPIs en BD
+        const touchedIds = (f as any).__touchedProfileIds as string[] | undefined;
+        if (f.kind === "kpis" && touchedIds && touchedIds.length > 0) {
+          const { data: kpiCheck } = await supabase
+            .from("fk_profile_kpis")
+            .select("fk_profile_id")
+            .in("fk_profile_id", touchedIds);
+          const withKpis = new Set((kpiCheck || []).map((k: any) => k.fk_profile_id));
+          const missing = touchedIds.filter((id) => !withKpis.has(id));
+          if (missing.length > 0) {
+            const { data: missingProfiles } = await supabase
+              .from("fk_profiles")
+              .select("id, display_name, profile_id")
+              .in("id", missing);
+            (missingProfiles || []).forEach((p: any) => {
+              report.profilesWithoutKpis.push(p.display_name || p.profile_id);
+            });
+          }
+        }
         reports.push(report);
       }
 
+      setImportLog(reports);
       toast({
         title: "Importación completada",
         description: `${totalProfiles} perfiles nuevos · ${totalKpis} KPIs · ${totalPosts} posts${
