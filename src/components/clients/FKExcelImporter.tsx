@@ -646,6 +646,7 @@ export function FKExcelImporter({ clientId }: Props) {
                 .find(Boolean))
               .filter(Boolean) as string[]
           ));
+          (f as any).__touchedProfileIds = touchedProfileIds;
 
           if (kpiPayload.length > 0) {
             // Si el usuario eligió reemplazar solapamientos, borramos los snapshots
