@@ -781,14 +781,18 @@ export function FKExcelImporter({ clientId }: Props) {
           // (e.g. Banorte + Actinver in Facebook) remain distinct via display_name.
           const { data: existing } = await supabase
             .from("fk_profiles")
-            .select("id, network, profile_id, display_name")
+            .select("id, network, profile_id, display_name, canonical_name")
             .eq("client_id", clientId);
           const existingByName = new Map<string, string>();
           (existing || []).forEach((e: any) => {
-            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id, e.canonical_name).forEach((key) => {
               existingByName.set(key, e.id);
             });
           });
+          // Inyecta el mapa de anclaje (prioridad absoluta)
+          if (resolvedAnchorMapRef.current) {
+            resolvedAnchorMapRef.current.forEach((id, key) => existingByName.set(key, id));
+          }
 
           const profilePayload = kpiRows.map((k) => ({
             client_id: clientId,
