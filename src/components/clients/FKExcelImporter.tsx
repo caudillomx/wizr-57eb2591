@@ -1159,6 +1159,7 @@ export function FKExcelImporter({ clientId }: Props) {
         }.`,
       });
       setFiles([]);
+      resolvedAnchorMapRef.current = null;
       qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
       qc.invalidateQueries({ queryKey: ["fk-kpis"] });
       qc.invalidateQueries({ queryKey: ["fk-all-kpis"] });
