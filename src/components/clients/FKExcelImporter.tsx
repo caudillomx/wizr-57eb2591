@@ -356,6 +356,7 @@ export function FKExcelImporter({ clientId }: Props) {
   const [overlapInfo, setOverlapInfo] = useState<{
     overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }>;
   } | null>(null);
+  const [importLog, setImportLog] = useState<ImportFileReport[] | null>(null);
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
