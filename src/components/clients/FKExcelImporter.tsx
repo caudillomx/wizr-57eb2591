@@ -415,7 +415,7 @@ export function FKExcelImporter({ clientId }: Props) {
   const [anchorRows, setAnchorRows] = useState<AnchorRow[] | null>(null);
   const [anchoring, setAnchoring] = useState(false);
   /** Mapa pre-resuelto tras el anclaje: `${network}::canonical_anchor::${normalize(canonical_name)}` → fk_profile_id */
-  const resolvedAnchorMapRef = (FKExcelImporter as any)._anchorMapRef ||= { current: null as Map<string, string> | null };
+  const resolvedAnchorMapRef = useRef<Map<string, string> | null>(null);
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
