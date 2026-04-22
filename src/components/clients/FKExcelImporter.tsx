@@ -90,12 +90,15 @@ function buildCandidateKeys(network: FKNetwork, displayName: string, profileId?:
   return Array.from(keys);
 }
 
-function detectNetwork(value: any): FKNetwork {
-  const raw = normalizeKey(String(value || ""));
+/** Devuelve "unknown" cuando no podemos identificar la red (en lugar de
+ * marcar silenciosamente como Facebook, lo que contamina el análisis). */
+function detectNetwork(value: any): FKNetwork | "unknown" {
+  const raw = normalizeKey(String(value || "")).trim();
+  if (!raw) return "unknown";
   for (const [k, v] of Object.entries(NETWORK_DETECT)) {
     if (raw.includes(k)) return v;
   }
-  return "facebook";
+  return "unknown";
 }
 
 function parseNumeric(val: any): number | null {
