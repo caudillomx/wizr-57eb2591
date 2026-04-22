@@ -388,6 +388,22 @@ interface ImportFileReport {
   errors: string[];
 }
 
+/**
+ * Fila de la tabla de anclaje. Una por (network, displayName) detectado en
+ * los archivos. El usuario puede editar `canonicalName` antes de confirmar.
+ */
+interface AnchorRow {
+  key: string; // network::normalizedDisplayName
+  network: FKNetwork;
+  detectedDisplayName: string;
+  detectedProfileId: string;
+  canonicalName: string;
+  matchedProfileId: string | null; // ID de fk_profiles si ya existe
+  isNew: boolean; // true si no se encontró match (perfil nuevo no reconocido)
+  matchedBy: "anchor" | "heuristic" | null;
+  discarded: boolean;
+}
+
 export function FKExcelImporter({ clientId }: Props) {
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
@@ -396,6 +412,10 @@ export function FKExcelImporter({ clientId }: Props) {
     overlaps: Array<{ profileName: string; network: string; existing: string; incoming: string }>;
   } | null>(null);
   const [importLog, setImportLog] = useState<ImportFileReport[] | null>(null);
+  const [anchorRows, setAnchorRows] = useState<AnchorRow[] | null>(null);
+  const [anchoring, setAnchoring] = useState(false);
+  /** Mapa pre-resuelto tras el anclaje: `${network}::canonical_anchor::${normalize(canonical_name)}` → fk_profile_id */
+  const resolvedAnchorMapRef = (FKExcelImporter as any)._anchorMapRef ||= { current: null as Map<string, string> | null };
   const qc = useQueryClient();
 
   const handleFiles = useCallback(async (fileList: FileList | File[]) => {
