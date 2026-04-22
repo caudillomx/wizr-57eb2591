@@ -494,6 +494,8 @@ export type Database = {
       fk_profiles: {
         Row: {
           avatar_url: string | null
+          canonical_name: string | null
+          canonical_name_normalized: string | null
           client_id: string | null
           created_at: string
           display_name: string | null
@@ -511,6 +513,8 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          canonical_name?: string | null
+          canonical_name_normalized?: string | null
           client_id?: string | null
           created_at?: string
           display_name?: string | null
@@ -528,6 +532,8 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          canonical_name?: string | null
+          canonical_name_normalized?: string | null
           client_id?: string | null
           created_at?: string
           display_name?: string | null
