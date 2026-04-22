@@ -349,6 +349,24 @@ async function detectFile(file: File): Promise<DetectedFile> {
   };
 }
 
+/** Resumen post-import por archivo procesado. Se muestra en un accordion para
+ * que el usuario vea exactamente qué llegó a base de datos y qué se descartó. */
+interface ImportFileReport {
+  fileName: string;
+  kind: FileKind;
+  rowsRead: number;
+  resolvedProfiles: number;
+  unresolvedProfiles: string[];
+  unknownNetworkProfiles: string[];
+  kpisInserted: number;
+  kpisDiscarded: number;
+  postsInserted: number;
+  postsDiscarded: number;
+  topPostsUpserted: number;
+  profilesWithoutKpis: string[];
+  errors: string[];
+}
+
 export function FKExcelImporter({ clientId }: Props) {
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
