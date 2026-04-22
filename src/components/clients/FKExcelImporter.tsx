@@ -956,24 +956,33 @@ export function FKExcelImporter({ clientId }: Props) {
           // Load existing profiles by both profile_id AND display_name (posts don't carry Profile-ID)
           const { data: existing } = await supabase
             .from("fk_profiles")
-            .select("id, network, profile_id, display_name")
+            .select("id, network, profile_id, display_name, canonical_name")
             .eq("client_id", clientId);
           const byId = new Map<string, string>();
           const byName = new Map<string, string>();
           const byCanonical = new Map<string, string>();
+          const byAnchor = new Map<string, string>();
           (existing || []).forEach((e: any) => {
             byId.set(`${e.network}::${e.profile_id}`, e.id);
-            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id).forEach((key) => {
+            buildCandidateKeys(e.network, e.display_name || e.profile_id, e.profile_id, e.canonical_name).forEach((key) => {
               if (key.includes("::name::")) byName.set(key, e.id);
-              if (key.includes("::canonical::")) byCanonical.set(key, e.id);
+              if (key.includes("::canonical::") && !key.includes("::canonical_anchor::")) byCanonical.set(key, e.id);
+              if (key.includes("::canonical_anchor::")) byAnchor.set(key, e.id);
             });
           });
 
           const resolveProfileId = (network: FKNetwork | string, displayName: string): string | undefined => {
+            // 1) Anchor map del paso de anclaje (clave por displayName detectado)
+            const anchorHit = resolvedAnchorMapRef.current?.get(`${network}::detected::${normalizeKey(displayName)}`);
+            if (anchorHit) return anchorHit;
+            // 2) canonical_name persistido en BD
+            const dbAnchor = byAnchor.get(`${network}::canonical_anchor::${normalizeKey(displayName)}`);
+            if (dbAnchor) return dbAnchor;
+            // 3) Heurísticas (nombre normalizado / canónico)
             return buildCandidateKeys(network, displayName, displayName)
               .map((key) => {
                 if (key.includes("::name::")) return byName.get(key);
-                if (key.includes("::canonical::")) return byCanonical.get(key);
+                if (key.includes("::canonical::") && !key.includes("::canonical_anchor::")) return byCanonical.get(key);
                 return undefined;
               })
               .find(Boolean)
