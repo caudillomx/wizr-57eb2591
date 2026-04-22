@@ -700,7 +700,7 @@ export function FKExcelImporter({ clientId }: Props) {
             });
           });
 
-          const resolveProfileId = (network: FKNetwork, displayName: string): string | undefined => {
+          const resolveProfileId = (network: FKNetwork | string, displayName: string): string | undefined => {
             return buildCandidateKeys(network, displayName, displayName)
               .map((key) => {
                 if (key.includes("::name::")) return byName.get(key);
@@ -712,8 +712,13 @@ export function FKExcelImporter({ clientId }: Props) {
           };
 
           // Create profiles for posts whose profile doesn't exist yet (rare: posts before KPIs)
-          const uniqueNew = new Map<string, { network: FKNetwork; displayName: string }>();
+          const uniqueNew = new Map<string, { network: FKNetwork | string; displayName: string }>();
           for (const p of postRows) {
+            if (p.network === "unknown") {
+              report.unknownNetworkProfiles.push(p.displayName);
+              report.postsDiscarded += 1;
+              continue;
+            }
             if (resolveProfileId(p.network, p.displayName)) continue;
             const k = `${p.network}::canonical::${canonicalizeFKProfileIdentity(p.displayName)}`;
             if (!uniqueNew.has(k)) uniqueNew.set(k, { network: p.network, displayName: p.displayName });
