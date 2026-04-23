@@ -172,10 +172,30 @@ export function ClientDetail({ client, onBack }: Props) {
             <>
               <Badge variant="secondary">{brandCount} marca</Badge>
               <Badge variant="outline">{compCount} competencia</Badge>
+              {unclassifiedCount > 0 && (
+                <Badge variant="outline" className="border-wizr-orange text-wizr-orange gap-1">
+                  <AlertTriangle className="h-3 w-3" /> {unclassifiedCount} sin clasificar
+                </Badge>
+              )}
             </>
           )}
         </div>
       </div>
+
+      {showUnclassifiedBanner && (
+        <Alert className="border-wizr-orange/50 bg-wizr-orange/5">
+          <AlertTriangle className="h-4 w-4 text-wizr-orange" />
+          <AlertTitle>{unclassifiedCount} {unclassifiedCount === 1 ? "perfil sin clasificar" : "perfiles sin clasificar"}</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              El toggle <strong>Marca / Benchmark</strong> no funcionará correctamente hasta que clasifiques estos perfiles como Mi marca o Competencia.
+            </span>
+            <Button size="sm" variant="outline" className="border-wizr-orange text-wizr-orange hover:bg-wizr-orange/10" onClick={openClassifyPending}>
+              Clasificar ahora
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!isBenchmarkOnly && (
         <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
