@@ -327,7 +327,6 @@ export function ClientDetail({ client, onBack }: Props) {
                 isLoading={loadingProfiles || loadingTop}
               />
             </div>
-            </div>
           )}
         </TabsContent>
 
