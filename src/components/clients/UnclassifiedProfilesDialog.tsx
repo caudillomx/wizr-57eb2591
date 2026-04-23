@@ -93,9 +93,9 @@ export function UnclassifiedProfilesDialog({ open, onOpenChange, profiles, showA
           <div className="text-xs text-muted-foreground">
             {targets.length} {targets.length === 1 ? "perfil" : "perfiles"} ·{" "}
             {pendingCount > 0 ? (
-              <span className="text-warning font-medium">{pendingCount} sin clasificar</span>
+              <span className="text-wizr-orange font-medium">{pendingCount} sin clasificar</span>
             ) : (
-              <span className="text-success font-medium">Todos clasificados</span>
+              <span className="text-primary font-medium">Todos clasificados</span>
             )}
           </div>
           <div className="flex items-center gap-2">
