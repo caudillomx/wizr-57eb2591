@@ -10,11 +10,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ArrowLeft, BarChart3, Settings, Building2, TrendingUp, FileText,
   Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target, History, Info,
+  AlertTriangle,
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
 import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
 import { FKExcelImporter } from "./FKExcelImporter";
+import { UnclassifiedProfilesDialog } from "./UnclassifiedProfilesDialog";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
 import { RankingTable } from "@/components/rankings/RankingTable";
 import { RankingChart } from "@/components/rankings/RankingChart";
@@ -51,6 +53,8 @@ export function ClientDetail({ client, onBack }: Props) {
   const [appliedCustomRange, setAppliedCustomRange] = useState<DateRange | undefined>();
   const [aiInitialQuestion, setAiInitialQuestion] = useState("");
   const [filterNet, setFilterNet] = useState<FKNetwork | "all">("all");
+  const [classifyDialogOpen, setClassifyDialogOpen] = useState(false);
+  const [classifyShowAll, setClassifyShowAll] = useState(false);
 
   const dateRange = getDateRangeFromPreset(appliedPreset, appliedCustomRange);
   const periodStart = formatDate(dateRange.from, "yyyy-MM-dd");
@@ -61,14 +65,21 @@ export function ClientDetail({ client, onBack }: Props) {
 
   const { data: rawProfiles = [], isLoading: loadingProfiles } = useFKProfilesByClient(client.id, "all");
 
+  // Para clientes "branded": vista marca = solo classification_status === "brand".
+  // Para clientes "benchmark puro": todos los clasificados son pares.
   const profiles = useMemo<FKProfile[]>(() => {
     return rawProfiles
-      .filter((p) => (isBenchmarkOnly ? true : view === "brand" ? !p.is_competitor : true))
+      .filter((p) => {
+        if (isBenchmarkOnly) return p.classification_status !== "unclassified";
+        if (view === "brand") return p.classification_status === "brand";
+        // view === "benchmark": brand + competitor (excluye unclassified)
+        return p.classification_status === "brand" || p.classification_status === "competitor";
+      })
       .map((p) => ({
         ...p,
         project_id: null,
         ranking_id: null,
-        is_own_profile: isBenchmarkOnly ? false : !p.is_competitor,
+        is_own_profile: p.classification_status === "brand",
         network: p.network as FKNetwork,
       })) as unknown as FKProfile[];
   }, [rawProfiles, view, isBenchmarkOnly]);
@@ -78,8 +89,11 @@ export function ClientDetail({ client, onBack }: Props) {
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
   const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKTopPosts(profileIds, periodStartTop, periodEndTop);
 
-  const brandCount = rawProfiles.filter((p) => !p.is_competitor).length;
-  const compCount = rawProfiles.filter((p) => p.is_competitor).length;
+  const brandCount = rawProfiles.filter((p) => p.classification_status === "brand").length;
+  const compCount = rawProfiles.filter((p) => p.classification_status === "competitor").length;
+  const unclassifiedCount = rawProfiles.filter((p) => p.classification_status === "unclassified").length;
+  // Banner solo aplica a clientes branded — en benchmark puro la distinción no existe.
+  const showUnclassifiedBanner = !isBenchmarkOnly && unclassifiedCount > 0;
 
   const handleApplyDateRange = (preset?: DateRangePreset, custom?: DateRange) => {
     setAppliedPreset(preset ?? datePreset);
@@ -90,6 +104,15 @@ export function ClientDetail({ client, onBack }: Props) {
     qc.invalidateQueries({ queryKey: ["fk-daily-top-posts"] });
     qc.invalidateQueries({ queryKey: ["fk-kpis"] });
     qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
+  };
+
+  const openClassifyPending = () => {
+    setClassifyShowAll(false);
+    setClassifyDialogOpen(true);
+  };
+  const openClassifyAll = () => {
+    setClassifyShowAll(true);
+    setClassifyDialogOpen(true);
   };
 
   // Banner: detecta si TODOS los KPIs vienen como fallback (ningún snapshot exacto).
@@ -149,10 +172,30 @@ export function ClientDetail({ client, onBack }: Props) {
             <>
               <Badge variant="secondary">{brandCount} marca</Badge>
               <Badge variant="outline">{compCount} competencia</Badge>
+              {unclassifiedCount > 0 && (
+                <Badge variant="outline" className="border-wizr-orange text-wizr-orange gap-1">
+                  <AlertTriangle className="h-3 w-3" /> {unclassifiedCount} sin clasificar
+                </Badge>
+              )}
             </>
           )}
         </div>
       </div>
+
+      {showUnclassifiedBanner && (
+        <Alert className="border-wizr-orange/50 bg-wizr-orange/5">
+          <AlertTriangle className="h-4 w-4 text-wizr-orange" />
+          <AlertTitle>{unclassifiedCount} {unclassifiedCount === 1 ? "perfil sin clasificar" : "perfiles sin clasificar"}</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              El toggle <strong>Marca / Benchmark</strong> no funcionará correctamente hasta que clasifiques estos perfiles como Mi marca o Competencia.
+            </span>
+            <Button size="sm" variant="outline" className="border-wizr-orange text-wizr-orange hover:bg-wizr-orange/10" onClick={openClassifyPending}>
+              Clasificar ahora
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!isBenchmarkOnly && (
         <div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-3">
@@ -310,6 +353,19 @@ export function ClientDetail({ client, onBack }: Props) {
         <TabsContent value="config" className="mt-6">
           <div className="space-y-6">
             <FKExcelImporter clientId={client.id} />
+            {!isBenchmarkOnly && rawProfiles.length > 0 && (
+              <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+                <div className="text-sm">
+                  <div className="font-medium">Clasificación de perfiles</div>
+                  <div className="text-xs text-muted-foreground">
+                    {brandCount} marca · {compCount} competencia{unclassifiedCount > 0 ? ` · ${unclassifiedCount} sin clasificar` : ""}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={openClassifyAll}>
+                  Re-clasificar perfiles
+                </Button>
+              </div>
+            )}
             <ProfilesList
               profiles={rawProfiles as unknown as FKProfile[]}
               isLoading={loadingProfiles}
@@ -318,6 +374,14 @@ export function ClientDetail({ client, onBack }: Props) {
           </div>
         </TabsContent>
       </Tabs>
+
+      <UnclassifiedProfilesDialog
+        open={classifyDialogOpen}
+        onOpenChange={setClassifyDialogOpen}
+        profiles={rawProfiles}
+        showAll={classifyShowAll}
+      />
     </div>
   );
+}
 }
