@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { Activity } from "lucide-react";
 import { FKProfile, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
-import { getFKProfileDisplayName } from "@/lib/fkProfileUtils";
+import { getFKProfileDisplayName, canonicalizeFKProfileIdentity } from "@/lib/fkProfileUtils";
 
 interface PostLike {
   fk_profile_id: string;
