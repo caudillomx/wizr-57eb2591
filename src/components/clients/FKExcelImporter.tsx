@@ -41,10 +41,20 @@ interface DetectedFile {
   /** Auto-detected from Excel metadata, if found */
   detectedPeriodStart?: Date;
   detectedPeriodEnd?: Date;
+  /** Min/Max published_at extraído si el archivo es de Posts. Se usa para auto-rellenar
+   *  el período de KPIs del mismo lote cuando éstos no traen metadata. */
+  postsMinDate?: Date;
+  postsMaxDate?: Date;
   /** User overrides (only relevant for KPIs). Default: últimos 28 días si no hay metadata. */
   periodStart?: Date;
   periodEnd?: Date;
-  /** true cuando el período viene del default automático (no del archivo ni del usuario) */
+  /** Origen del período actualmente aplicado al archivo de KPIs.
+   *  - "metadata": detectado del propio Excel de KPIs
+   *  - "posts": auto-rellenado desde el min/max de un archivo de Posts del mismo lote
+   *  - "manual": el usuario lo ajustó
+   *  - "default": fallback "últimos 28 días" */
+  periodSource?: "metadata" | "posts" | "manual" | "default";
+  /** @deprecated mantener por compatibilidad; equivalente a periodSource === "default" */
   periodIsDefault?: boolean;
 }
 
@@ -345,6 +355,8 @@ async function detectFile(file: File): Promise<DetectedFile> {
   let rowCount = 0;
   let detectedStart: Date | undefined;
   let detectedEnd: Date | undefined;
+  let postsMin: Date | undefined;
+  let postsMax: Date | undefined;
 
   for (const name of wb.SheetNames) {
     const { rows, kind: k, headerRows } = readSheetWithHeaderDetection(wb.Sheets[name]);
@@ -357,23 +369,40 @@ async function detectFile(file: File): Promise<DetectedFile> {
         detectedStart = period.start;
         detectedEnd = period.end;
       }
+      // Para archivos de Posts, calculamos min/max de las fechas reales de publicación
+      // — esto se usará para auto-rellenar el período de KPIs del mismo lote.
+      if (k === "posts") {
+        for (const r of rows) {
+          const dateVal = pickField(r, ["date", "fecha", "published"]);
+          const iso = parseDate(dateVal);
+          if (!iso) continue;
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) continue;
+          if (!postsMin || d < postsMin) postsMin = d;
+          if (!postsMax || d > postsMax) postsMax = d;
+        }
+      }
     }
   }
 
-  // Default inteligente: si no detectamos período en KPIs, asumimos los
-  // últimos 28 días desde hoy. El usuario puede editarlo. Esto evita el
-  // bloqueo previo "Falta el período" y habilita cadencia diaria sin fricción.
+  // Período inicial para KPIs según prioridad: metadata del archivo > default 28 días.
+  // El "auto desde Posts" se aplica después en un segundo pase, cuando ya conocemos
+  // todos los archivos del lote (ver `applyBatchPeriodInference`).
   let periodStart = detectedStart;
   let periodEnd = detectedEnd;
-  let periodIsDefault = false;
-  if (kind === "kpis" && (!periodStart || !periodEnd)) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(today);
-    start.setDate(today.getDate() - 27); // 28 días incluyendo hoy
-    periodStart = start;
-    periodEnd = today;
-    periodIsDefault = true;
+  let periodSource: DetectedFile["periodSource"] | undefined;
+  if (kind === "kpis") {
+    if (periodStart && periodEnd) {
+      periodSource = "metadata";
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(today);
+      start.setDate(today.getDate() - 27); // 28 días incluyendo hoy
+      periodStart = start;
+      periodEnd = today;
+      periodSource = "default";
+    }
   }
 
   return {
@@ -382,10 +411,46 @@ async function detectFile(file: File): Promise<DetectedFile> {
     rowCount,
     detectedPeriodStart: detectedStart,
     detectedPeriodEnd: detectedEnd,
+    postsMinDate: postsMin,
+    postsMaxDate: postsMax,
     periodStart,
     periodEnd,
-    periodIsDefault,
+    periodSource,
+    periodIsDefault: periodSource === "default",
   };
+}
+
+/**
+ * Auto-rellena el período de los archivos de KPIs del lote usando los archivos
+ * de Posts presentes. Prioridad por archivo de KPIs:
+ *   1) "manual"   → respeta lo que el usuario tocó
+ *   2) "metadata" → respeta lo detectado del propio Excel
+ *   3) min/max de Posts del lote (si hay al menos un archivo de Posts con fechas)
+ *   4) "default"  → últimos 28 días (fallback ya aplicado por detectFile)
+ */
+function applyBatchPeriodInference(list: DetectedFile[]): DetectedFile[] {
+  // Unificamos el rango de TODOS los Posts del lote (min de mins, max de maxes)
+  let batchMin: Date | undefined;
+  let batchMax: Date | undefined;
+  for (const f of list) {
+    if (f.kind !== "posts") continue;
+    if (f.postsMinDate && (!batchMin || f.postsMinDate < batchMin)) batchMin = f.postsMinDate;
+    if (f.postsMaxDate && (!batchMax || f.postsMaxDate > batchMax)) batchMax = f.postsMaxDate;
+  }
+  if (!batchMin || !batchMax) return list;
+
+  return list.map((f) => {
+    if (f.kind !== "kpis") return f;
+    // No pisamos manual ni metadata
+    if (f.periodSource === "manual" || f.periodSource === "metadata") return f;
+    return {
+      ...f,
+      periodStart: batchMin,
+      periodEnd: batchMax,
+      periodSource: "posts",
+      periodIsDefault: false,
+    };
+  });
 }
 
 /** Resumen post-import por archivo procesado. Se muestra en un accordion para
@@ -447,7 +512,7 @@ export function FKExcelImporter({ clientId }: Props) {
         variant: "destructive",
       });
     }
-    setFiles((prev) => [...prev, ...detected]);
+    setFiles((prev) => applyBatchPeriodInference([...prev, ...detected]));
   }, []);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -456,11 +521,12 @@ export function FKExcelImporter({ clientId }: Props) {
     handleFiles(e.dataTransfer.files);
   };
 
-  const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
+  const removeFile = (i: number) =>
+    setFiles((prev) => applyBatchPeriodInference(prev.filter((_, idx) => idx !== i)));
   const setPeriodStart = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d, periodIsDefault: false } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d, periodSource: "manual", periodIsDefault: false } : f)));
   const setPeriodEnd = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d, periodIsDefault: false } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d, periodSource: "manual", periodIsDefault: false } : f)));
 
   // Con default automático (28d) ya nunca debería faltar período, pero conservamos
   // el guard por si el usuario borra manualmente las fechas.
@@ -1227,8 +1293,8 @@ export function FKExcelImporter({ clientId }: Props) {
         {files.length > 0 && (
           <div className="mt-4 space-y-2">
             {files.map((f, i) => {
-              const periodAuto = f.kind === "kpis" && f.detectedPeriodStart && f.detectedPeriodEnd;
               const periodMissing = f.kind === "kpis" && (!f.periodStart || !f.periodEnd);
+              const src = f.periodSource;
               return (
                 <div key={i} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-center gap-3">
@@ -1239,13 +1305,30 @@ export function FKExcelImporter({ clientId }: Props) {
                         {f.kind === "kpis" && <Badge variant="default">KPIs · {f.rowCount} perfiles</Badge>}
                         {f.kind === "posts" && <Badge variant="secondary">Posts · {f.rowCount} filas</Badge>}
                         {f.kind === "unknown" && <Badge variant="destructive">No reconocido</Badge>}
-                        {periodAuto && (
+                        {f.kind === "kpis" && src === "metadata" && (
                           <Badge variant="outline" className="text-xs gap-1">
                             <CheckCircle2 className="h-3 w-3 text-primary" />
-                            Período detectado
+                            Período detectado del archivo
                           </Badge>
                         )}
-                        {periodMissing && !periodAuto && (
+                        {f.kind === "kpis" && src === "posts" && (
+                          <Badge variant="outline" className="text-xs gap-1 border-primary/40 text-primary">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Auto-detectado desde Posts
+                          </Badge>
+                        )}
+                        {f.kind === "kpis" && src === "default" && (
+                          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+                            <Info className="h-3 w-3" />
+                            Período por defecto (28 días)
+                          </Badge>
+                        )}
+                        {f.kind === "kpis" && src === "manual" && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            Período ajustado manualmente
+                          </Badge>
+                        )}
+                        {periodMissing && (
                           <Badge variant="outline" className="text-xs gap-1 text-destructive border-destructive/40">
                             <AlertTriangle className="h-3 w-3" />
                             Selecciona el período
