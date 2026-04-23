@@ -88,6 +88,7 @@ export function ClientDetail({ client, onBack }: Props) {
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
   const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKTopPosts(profileIds, periodStartTop, periodEndTop);
+  const { data: periodMetrics, isLoading: loadingPeriodMetrics } = useFKPeriodPostMetrics(profileIds, periodStart, periodEnd);
 
   const brandCount = rawProfiles.filter((p) => p.classification_status === "brand").length;
   const compCount = rawProfiles.filter((p) => p.classification_status === "competitor").length;
