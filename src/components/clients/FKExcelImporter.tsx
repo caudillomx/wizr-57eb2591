@@ -41,10 +41,20 @@ interface DetectedFile {
   /** Auto-detected from Excel metadata, if found */
   detectedPeriodStart?: Date;
   detectedPeriodEnd?: Date;
+  /** Min/Max published_at extraído si el archivo es de Posts. Se usa para auto-rellenar
+   *  el período de KPIs del mismo lote cuando éstos no traen metadata. */
+  postsMinDate?: Date;
+  postsMaxDate?: Date;
   /** User overrides (only relevant for KPIs). Default: últimos 28 días si no hay metadata. */
   periodStart?: Date;
   periodEnd?: Date;
-  /** true cuando el período viene del default automático (no del archivo ni del usuario) */
+  /** Origen del período actualmente aplicado al archivo de KPIs.
+   *  - "metadata": detectado del propio Excel de KPIs
+   *  - "posts": auto-rellenado desde el min/max de un archivo de Posts del mismo lote
+   *  - "manual": el usuario lo ajustó
+   *  - "default": fallback "últimos 28 días" */
+  periodSource?: "metadata" | "posts" | "manual" | "default";
+  /** @deprecated mantener por compatibilidad; equivalente a periodSource === "default" */
   periodIsDefault?: boolean;
 }
 
