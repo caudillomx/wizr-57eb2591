@@ -116,6 +116,8 @@ export function ClientDetail({ client, onBack }: Props) {
   };
 
   // Banner: detecta si TODOS los KPIs vienen como fallback (ningún snapshot exacto).
+  // También determina si el período seleccionado cae *dentro* del único snapshot disponible,
+  // caso en el que cambiar el filtro no afectará los datos mostrados.
   const fallbackInfo = useMemo(() => {
     if (!kpis || kpis.length === 0) return null;
     const allFallback = kpis.every((k) => k.isFallback);
@@ -129,13 +131,25 @@ export function ClientDetail({ client, onBack }: Props) {
     const start = parseISO(top.period_start);
     const end = parseISO(top.period_end);
     const ageDays = differenceInDays(new Date(), end);
+
+    // ¿Hay un único snapshot cubriendo a todos los perfiles? Y ¿el filtro está dentro de él?
+    const uniquePeriods = new Set(
+      kpis.map((k) => `${k.period_start}|${k.period_end}`)
+    );
+    const singleSnapshot = uniquePeriods.size === 1;
+    const filterInsideSnapshot =
+      singleSnapshot &&
+      dateRange.from >= start &&
+      dateRange.to <= end;
+
     return {
       label: `${formatDate(start, "d MMM yyyy", { locale: esLocale })} – ${formatDate(end, "d MMM yyyy", { locale: esLocale })}`,
       from: start,
       to: end,
       stale: ageDays > 90,
+      filterInsideSnapshot,
     };
-  }, [kpis]);
+  }, [kpis, dateRange]);
 
   const applySnapshotPeriod = () => {
     if (!fallbackInfo) return;
