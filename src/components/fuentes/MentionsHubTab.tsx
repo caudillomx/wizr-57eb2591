@@ -146,8 +146,8 @@ export function MentionsHubTab({
   isAnalyzing,
 }: MentionsHubTabProps) {
   const navigate = useNavigate();
+  const { selectedProject } = useProject();
   
-  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("__all__");
   const [selectedSentiment, setSelectedSentiment] = useState<string>("__all__");
