@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
-import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
+import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, useFKPeriodPostMetrics, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
 import { FKExcelImporter } from "./FKExcelImporter";
 import { UnclassifiedProfilesDialog } from "./UnclassifiedProfilesDialog";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
