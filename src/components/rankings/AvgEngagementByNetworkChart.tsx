@@ -62,22 +62,37 @@ export function AvgEngagementByNetworkChart({
       byProfile.set(p.fk_profile_id, existing);
     });
 
-    // Group profiles by brand (display_name without network suffix)
+    // Group profiles by canonical brand key (handles "Santander Mex/Mexico/México" → same brand)
     type BrandRow = { brand: string; [network: string]: number | string };
     const brandMap = new Map<string, BrandRow>();
+    // Track best display label per canonical key (prefer longest / most descriptive name)
+    const brandLabel = new Map<string, string>();
     const networksUsed = new Set<string>();
 
     profiles.forEach((profile) => {
-      const brand = getFKProfileDisplayName(profile);
+      const displayName = getFKProfileDisplayName(profile);
+      const key = canonicalizeFKProfileIdentity(displayName) || displayName.toLowerCase();
       const stats = byProfile.get(profile.id);
       if (!stats || stats.count === 0) return;
       const avg = stats.sum / stats.count;
       const net = profile.network as FKNetwork;
       networksUsed.add(net);
 
-      const row = brandMap.get(brand) ?? { brand };
-      row[net] = avg;
-      brandMap.set(brand, row);
+      // Pick the cleanest label: prefer the longest variant (usually most complete)
+      const existingLabel = brandLabel.get(key);
+      if (!existingLabel || displayName.length > existingLabel.length) {
+        brandLabel.set(key, displayName);
+      }
+
+      const row = brandMap.get(key) ?? { brand: brandLabel.get(key) ?? displayName };
+      row.brand = brandLabel.get(key) ?? displayName;
+      // If the same brand has multiple profiles on the same network, average them
+      const prev = Number(row[net] ?? 0);
+      const prevCount = Number(row[`__${net}_count`] ?? 0);
+      const newCount = prevCount + 1;
+      row[net] = (prev * prevCount + avg) / newCount;
+      row[`__${net}_count`] = newCount;
+      brandMap.set(key, row);
     });
 
     const rows = Array.from(brandMap.values());
