@@ -51,6 +51,8 @@ import {
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
+import { ExecutiveSummaryCard } from "@/components/fuentes/ExecutiveSummaryCard";
+import { useProject } from "@/contexts/ProjectContext";
 
 // Platform icons mapping
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
@@ -144,8 +146,8 @@ export function MentionsHubTab({
   isAnalyzing,
 }: MentionsHubTabProps) {
   const navigate = useNavigate();
+  const { selectedProject } = useProject();
   
-  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("__all__");
   const [selectedSentiment, setSelectedSentiment] = useState<string>("__all__");
@@ -446,6 +448,15 @@ export function MentionsHubTab({
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Executive Summary */}
+      <ExecutiveSummaryCard
+        mentions={filteredMentions}
+        projectName={selectedProject?.nombre}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        activeFiltersLabel={activeFiltersCount > 0 ? `${activeFiltersCount} filtro${activeFiltersCount > 1 ? "s" : ""} activo${activeFiltersCount > 1 ? "s" : ""}` : undefined}
+      />
 
       {/* Sentiment Summary */}
       <Card>
