@@ -111,16 +111,20 @@ export function useDeleteClient() {
   });
 }
 
-// FK profiles for a client (with brand/competitor filter)
+// FK profiles for a client (with brand/benchmark/unclassified filter)
+export type ProfileClassification = "unclassified" | "brand" | "competitor";
+
 export interface ClientFKProfile {
   id: string;
   client_id: string | null;
   network: string;
   profile_id: string;
   display_name: string | null;
+  canonical_name: string | null;
   avatar_url: string | null;
   is_active: boolean;
   is_competitor: boolean;
+  classification_status: ProfileClassification;
   last_synced_at: string | null;
   created_at: string;
   updated_at: string;
@@ -136,20 +140,28 @@ export function useFKProfilesByClient(clientId: string | undefined, mode: "all" 
         .select("*")
         .eq("client_id", clientId)
         .eq("is_active", true);
-      if (mode === "brand") q = q.eq("is_competitor", false);
-      // benchmark = all profiles (brand + competitors)
+      // brand mode: solo perfiles clasificados como "brand"
+      // benchmark mode: todos los clasificados (brand + competitor) — ignora unclassified
+      // all: incluye también unclassified (lo usa la tabla de configuración / banner)
+      if (mode === "brand") q = q.eq("classification_status", "brand");
+      if (mode === "benchmark") q = q.in("classification_status", ["brand", "competitor"]);
       const { data, error } = await q
-        .order("is_competitor", { ascending: true })
+        .order("classification_status", { ascending: true })
         .order("network", { ascending: true })
         .order("display_name", { ascending: true });
       if (error) throw error;
 
       const deduped = new Map<string, ClientFKProfile>();
 
-      for (const profile of (data || []) as ClientFKProfile[]) {
+      for (const raw of (data || []) as any[]) {
+        const profile: ClientFKProfile = {
+          ...raw,
+          classification_status: (raw.classification_status as ProfileClassification) || "unclassified",
+          canonical_name: raw.canonical_name ?? null,
+        };
         const dedupKey = [
           profile.network,
-          profile.is_competitor ? "competitor" : "brand",
+          profile.classification_status,
           canonicalizeFKProfileIdentity(profile.display_name || profile.profile_id),
         ].join("::");
 
@@ -174,5 +186,41 @@ export function useFKProfilesByClient(clientId: string | undefined, mode: "all" 
       return Array.from(deduped.values());
     },
     enabled: !!clientId,
+  });
+}
+
+/**
+ * Bulk update de clasificación marca/competencia para una lista de perfiles.
+ * Sincroniza también `is_competitor` por compatibilidad con código legacy.
+ */
+export function useUpdateProfileClassifications() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (updates: Array<{ id: string; classification: ProfileClassification }>) => {
+      // Agrupamos por valor para minimizar requests
+      const byClass = new Map<ProfileClassification, string[]>();
+      for (const u of updates) {
+        if (!byClass.has(u.classification)) byClass.set(u.classification, []);
+        byClass.get(u.classification)!.push(u.id);
+      }
+      for (const [classification, ids] of byClass.entries()) {
+        if (ids.length === 0) continue;
+        const { error } = await supabase
+          .from("fk_profiles")
+          .update({
+            classification_status: classification,
+            is_competitor: classification === "competitor",
+            is_own_profile: classification === "brand",
+          } as any)
+          .in("id", ids);
+        if (error) throw error;
+      }
+      return updates.length;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
+      toast.success("Clasificación actualizada");
+    },
+    onError: (e: Error) => toast.error(`Error: ${e.message}`),
   });
 }
