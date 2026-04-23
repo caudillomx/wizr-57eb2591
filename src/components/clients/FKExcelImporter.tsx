@@ -355,6 +355,8 @@ async function detectFile(file: File): Promise<DetectedFile> {
   let rowCount = 0;
   let detectedStart: Date | undefined;
   let detectedEnd: Date | undefined;
+  let postsMin: Date | undefined;
+  let postsMax: Date | undefined;
 
   for (const name of wb.SheetNames) {
     const { rows, kind: k, headerRows } = readSheetWithHeaderDetection(wb.Sheets[name]);
@@ -367,23 +369,40 @@ async function detectFile(file: File): Promise<DetectedFile> {
         detectedStart = period.start;
         detectedEnd = period.end;
       }
+      // Para archivos de Posts, calculamos min/max de las fechas reales de publicación
+      // — esto se usará para auto-rellenar el período de KPIs del mismo lote.
+      if (k === "posts") {
+        for (const r of rows) {
+          const dateVal = pickField(r, ["date", "fecha", "published"]);
+          const iso = parseDate(dateVal);
+          if (!iso) continue;
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) continue;
+          if (!postsMin || d < postsMin) postsMin = d;
+          if (!postsMax || d > postsMax) postsMax = d;
+        }
+      }
     }
   }
 
-  // Default inteligente: si no detectamos período en KPIs, asumimos los
-  // últimos 28 días desde hoy. El usuario puede editarlo. Esto evita el
-  // bloqueo previo "Falta el período" y habilita cadencia diaria sin fricción.
+  // Período inicial para KPIs según prioridad: metadata del archivo > default 28 días.
+  // El "auto desde Posts" se aplica después en un segundo pase, cuando ya conocemos
+  // todos los archivos del lote (ver `applyBatchPeriodInference`).
   let periodStart = detectedStart;
   let periodEnd = detectedEnd;
-  let periodIsDefault = false;
-  if (kind === "kpis" && (!periodStart || !periodEnd)) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(today);
-    start.setDate(today.getDate() - 27); // 28 días incluyendo hoy
-    periodStart = start;
-    periodEnd = today;
-    periodIsDefault = true;
+  let periodSource: DetectedFile["periodSource"] | undefined;
+  if (kind === "kpis") {
+    if (periodStart && periodEnd) {
+      periodSource = "metadata";
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(today);
+      start.setDate(today.getDate() - 27); // 28 días incluyendo hoy
+      periodStart = start;
+      periodEnd = today;
+      periodSource = "default";
+    }
   }
 
   return {
@@ -392,10 +411,46 @@ async function detectFile(file: File): Promise<DetectedFile> {
     rowCount,
     detectedPeriodStart: detectedStart,
     detectedPeriodEnd: detectedEnd,
+    postsMinDate: postsMin,
+    postsMaxDate: postsMax,
     periodStart,
     periodEnd,
-    periodIsDefault,
+    periodSource,
+    periodIsDefault: periodSource === "default",
   };
+}
+
+/**
+ * Auto-rellena el período de los archivos de KPIs del lote usando los archivos
+ * de Posts presentes. Prioridad por archivo de KPIs:
+ *   1) "manual"   → respeta lo que el usuario tocó
+ *   2) "metadata" → respeta lo detectado del propio Excel
+ *   3) min/max de Posts del lote (si hay al menos un archivo de Posts con fechas)
+ *   4) "default"  → últimos 28 días (fallback ya aplicado por detectFile)
+ */
+function applyBatchPeriodInference(list: DetectedFile[]): DetectedFile[] {
+  // Unificamos el rango de TODOS los Posts del lote (min de mins, max de maxes)
+  let batchMin: Date | undefined;
+  let batchMax: Date | undefined;
+  for (const f of list) {
+    if (f.kind !== "posts") continue;
+    if (f.postsMinDate && (!batchMin || f.postsMinDate < batchMin)) batchMin = f.postsMinDate;
+    if (f.postsMaxDate && (!batchMax || f.postsMaxDate > batchMax)) batchMax = f.postsMaxDate;
+  }
+  if (!batchMin || !batchMax) return list;
+
+  return list.map((f) => {
+    if (f.kind !== "kpis") return f;
+    // No pisamos manual ni metadata
+    if (f.periodSource === "manual" || f.periodSource === "metadata") return f;
+    return {
+      ...f,
+      periodStart: batchMin,
+      periodEnd: batchMax,
+      periodSource: "posts",
+      periodIsDefault: false,
+    };
+  });
 }
 
 /** Resumen post-import por archivo procesado. Se muestra en un accordion para
