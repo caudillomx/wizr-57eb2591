@@ -300,12 +300,17 @@ export function ClientDetail({ client, onBack }: Props) {
             </div>
           ) : (
             <div className="space-y-6">
-              <RankingInsightsPanel profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} />
+              <RankingInsightsPanel
+                profiles={profiles}
+                kpis={kpis}
+                isLoading={loadingProfiles || loadingKpis || loadingPeriodMetrics}
+                periodMetrics={periodMetrics}
+              />
               <RankingTable
                 profiles={profiles}
                 kpis={kpis}
                 isLoading={loadingProfiles || loadingKpis}
-                sortBy="engagement_rate"
+                sortBy="period_avg_engagement"
                 filterNetwork={filterNet}
                 onNetworkChange={setFilterNet}
                 periodMetrics={periodMetrics}
