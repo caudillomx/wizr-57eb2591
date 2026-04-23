@@ -53,7 +53,7 @@ export function ExecutiveSummaryCard({
 
     setIsLoading(true);
     try {
-      const payloadMentions = mentions.slice(0, 300).map((m) => {
+      const payloadMentions = mentions.map((m) => {
         const author = getMentionAuthorInfo(m);
         return {
           title: m.title,
