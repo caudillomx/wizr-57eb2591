@@ -95,6 +95,10 @@ interface RankingTableProps {
   sortBy?: SortMetric;
   filterNetwork?: FKNetwork | "all";
   onNetworkChange?: (network: FKNetwork | "all") => void;
+  /** Period-derived metrics computed from fk_posts.published_at within the active filter. */
+  periodMetrics?: Map<string, FKPeriodPostMetrics>;
+  /** Loading state for periodMetrics (shown as inline placeholder). */
+  isLoadingPeriodMetrics?: boolean;
 }
 
 const MEDAL_COLORS = ["🥇", "🥈", "🥉"];
