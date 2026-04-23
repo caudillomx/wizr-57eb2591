@@ -83,10 +83,14 @@ export function RankingChart({
           value = kpi?.follower_growth_percent || 0;
         }
         
+        const baseName = getFKProfileDisplayName(profile);
+        const net = profile.network as FKNetwork;
+        const short = NETWORK_SHORT[net] ?? net.slice(0, 2).toUpperCase();
         return {
-          name: getFKProfileDisplayName(profile),
+          name: `${baseName} · ${short}`,
+          fullName: baseName,
           value,
-          network: profile.network as FKNetwork,
+          network: net,
           displayValue: metric === "followers" 
             ? (value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value.toString())
             : `${value.toFixed(2)}%`,
