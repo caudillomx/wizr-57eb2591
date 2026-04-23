@@ -20,6 +20,7 @@ import { UnclassifiedProfilesDialog } from "./UnclassifiedProfilesDialog";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
 import { RankingTable } from "@/components/rankings/RankingTable";
 import { RankingChart } from "@/components/rankings/RankingChart";
+import { AvgEngagementByNetworkChart } from "@/components/rankings/AvgEngagementByNetworkChart";
 import { TrendsTab } from "@/components/rankings/TrendsTab";
 import { TopContentTab } from "@/components/rankings/TopContentTab";
 import { RankingInsightsPanel } from "@/components/rankings/RankingInsightsPanel";
