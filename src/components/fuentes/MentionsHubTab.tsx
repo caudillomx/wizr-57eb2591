@@ -51,6 +51,8 @@ import {
 } from "lucide-react";
 import type { Mention, SentimentType } from "@/hooks/useMentions";
 import { getMentionAuthorInfo } from "@/lib/mentionAuthors";
+import { ExecutiveSummaryCard } from "@/components/fuentes/ExecutiveSummaryCard";
+import { useProject } from "@/contexts/ProjectContext";
 
 // Platform icons mapping
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
