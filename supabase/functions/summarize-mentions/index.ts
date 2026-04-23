@@ -130,9 +130,9 @@ serve(async (req) => {
           .join(" · ") || "ninguno"
       : "ninguno";
 
-    const systemPrompt = `Eres un analista senior de inteligencia mediática. Produces briefings ejecutivos en español, claros, sin markdown ni viñetas, sin emojis, sin frases vacías. Cada párrafo debe estar anclado en datos reales: cifras, nombres de medios, narrativas concretas extraídas de las menciones provistas. Nunca inventes cifras, nombres ni eventos que no aparezcan en el material.`;
+    const systemPrompt = `Eres un analista senior de inteligencia mediática. Produces descripciones ejecutivas en español del entorno de menciones y fuentes, claras, sin markdown ni viñetas, sin emojis, sin frases vacías. Cada párrafo debe estar anclado en datos reales: cifras, nombres de medios, narrativas concretas extraídas de las menciones provistas. Nunca inventes cifras, nombres ni eventos que no aparezcan en el material. NO incluyas recomendaciones, sugerencias ni llamados a la acción: solo describe el entorno observado.`;
 
-    const userPrompt = `Genera un brief ejecutivo de 3 a 5 párrafos sobre las menciones del proyecto${
+    const userPrompt = `Genera una descripción ejecutiva de 3 a 4 párrafos sobre el entorno de menciones del proyecto${
       body.projectName ? ` "${body.projectName}"` : ""
     } ${dateRangeStr}.
 
@@ -146,13 +146,12 @@ Muestra de hasta ${sample.length} menciones representativas:
 ${mentionsText}
 
 Estructura los párrafos así:
-1. Contexto y volumen: qué se está diciendo y dónde, magnitud del flujo.
+1. Contexto y volumen: qué se está diciendo y dónde, magnitud del flujo de menciones y fuentes activas.
 2. Narrativas dominantes: 2-3 hilos temáticos concretos con ejemplos breves de medios o autores reales que aparezcan en la muestra.
-3. Tono y riesgos: lectura del balance de sentimiento y señales de riesgo reputacional si las hay.
-4. Voces o medios destacados: quiénes están moviendo más conversación.
-5. Recomendación accionable: una recomendación de comunicación digital concreta para la marca/proyecto, en una frase contundente.
+3. Tono del entorno: lectura del balance de sentimiento y, si aparecen, señales de riesgo reputacional observadas (descriptivo, no prescriptivo).
+4. Voces o medios destacados: quiénes están moviendo más conversación dentro del periodo.
 
-Reglas estrictas: prosa fluida, sin listas, sin asteriscos, sin encabezados, sin "en conclusión". Máximo 380 palabras. No inventes nada que no esté en la muestra o el contexto.`;
+Reglas estrictas: prosa fluida, sin listas, sin asteriscos, sin encabezados, sin "en conclusión". PROHIBIDO incluir recomendaciones, sugerencias, "se recomienda", "convendría", "deberían", próximos pasos o cualquier llamado a la acción. Máximo 320 palabras. No inventes nada que no esté en la muestra o el contexto.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
