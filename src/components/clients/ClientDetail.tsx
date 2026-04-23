@@ -250,11 +250,11 @@ export function ClientDetail({ client, onBack }: Props) {
                 <span>
                   {fallbackInfo.filterInsideSnapshot ? (
                     <>
-                      Los KPIs importados son un único corte agregado del período <strong>{fallbackInfo.label}</strong>. Para ver el ranking cambiar con el filtro, importa snapshots adicionales con períodos distintos desde Fanpage Karma.
+                      Los <strong>seguidores y crecimiento</strong> vienen del snapshot importado <strong>{fallbackInfo.label}</strong> y no cambian con el filtro. El <strong>engagement y la actividad del período</strong> sí se recalculan desde los posts reales (columnas "Posts", "Eng. promedio" y "Top post").
                     </>
                   ) : (
                     <>
-                      Los datos importados cubren <strong>{fallbackInfo.label}</strong>. Ajusta el filtro para ver ese período exacto.
+                      Los datos KPI agregados cubren <strong>{fallbackInfo.label}</strong>. Las métricas del período (posts y engagement) se calculan desde los posts publicados en el rango activo.
                     </>
                   )}
                 </span>
