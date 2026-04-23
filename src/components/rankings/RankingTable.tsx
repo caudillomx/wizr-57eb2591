@@ -13,8 +13,8 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Clock, AlertTriangle } from "lucide-react";
-import { FKProfile, FKProfileKPI, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
+import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Clock, AlertTriangle, ExternalLink, FileText } from "lucide-react";
+import { FKProfile, FKProfileKPI, FKNetwork, FKPeriodPostMetrics, getNetworkLabel } from "@/hooks/useFanpageKarma";
 import { NetworkFilter } from "./NetworkFilter";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
