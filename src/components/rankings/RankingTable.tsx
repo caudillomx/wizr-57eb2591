@@ -356,6 +356,64 @@ export function RankingTable({
                   <TableCell className="text-right font-medium">
                     {formatPercent(kpi?.engagement_rate)}
                   </TableCell>
+                  {periodMetrics && (() => {
+                    const pm = periodMetrics.get(profile.id);
+                    if (isLoadingPeriodMetrics && !pm) {
+                      return (
+                        <>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        </>
+                      );
+                    }
+                    if (!pm || pm.postCount === 0) {
+                      return (
+                        <>
+                          <TableCell className="text-right text-muted-foreground">0</TableCell>
+                          <TableCell className="text-right text-muted-foreground">—</TableCell>
+                          <TableCell className="text-muted-foreground text-xs italic">Sin posts en el período</TableCell>
+                        </>
+                      );
+                    }
+                    const snippet = pm.topPost?.message
+                      ? pm.topPost.message.slice(0, 60) + (pm.topPost.message.length > 60 ? "…" : "")
+                      : "(sin texto)";
+                    return (
+                      <>
+                        <TableCell className="text-right font-medium">{pm.postCount}</TableCell>
+                        <TableCell className="text-right font-medium">{formatNumber(pm.avgEngagement)}</TableCell>
+                        <TableCell className="max-w-xs">
+                          {pm.topPost ? (
+                            <div className="flex items-start gap-1.5 text-xs">
+                              <FileText className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate" title={pm.topPost.message ?? ""}>
+                                  {snippet}
+                                </p>
+                                <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
+                                  <span>{formatNumber(pm.topPost.engagement)} eng.</span>
+                                  {pm.topPost.link && (
+                                    <a
+                                      href={pm.topPost.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center hover:text-primary"
+                                      aria-label="Abrir post"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                      </>
+                    );
+                  })()}
                   <TableCell>
                     <Progress value={engagementPercent} className="h-2" />
                   </TableCell>
