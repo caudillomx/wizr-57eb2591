@@ -38,10 +38,40 @@ export function prettifyFKIdentifier(value: string | null | undefined): string {
   return toTitleCase(base);
 }
 
+// Generic words that should be stripped when computing a brand identity key.
+// Order doesn't matter — they are removed wherever they appear.
+const BRAND_NOISE_WORDS = [
+  "grupo",
+  "financiero",
+  "financiera",
+  "banco",
+  "oficial",
+  "official",
+  "mexico",
+  "mex",
+  "mx",
+  "spanish",
+  "espanol",
+  "español",
+  "latam",
+  "latinoamerica",
+  "analisis",
+  "análisis",
+];
+
 export function canonicalizeFKProfileIdentity(value: string | null | undefined): string {
-  const normalized = normalizeFKText(prettifyFKIdentifier(value)).replace(/\s+/g, "");
-  const stripped = normalized.replace(/(mexico|mex|mx|analisis)$/g, "");
-  return stripped || normalized;
+  // Lowercase + strip accents + remove anything in parentheses/brackets
+  let normalized = normalizeFKText(prettifyFKIdentifier(value))
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]/g, " ");
+
+  // Remove generic noise words as whole words
+  const noisePattern = new RegExp(`\\b(${BRAND_NOISE_WORDS.join("|")})\\b`, "g");
+  normalized = normalized.replace(noisePattern, " ");
+
+  // Collapse non-alphanumeric to nothing (so "santander méxico" → "santander")
+  const stripped = normalized.replace(/[^a-z0-9]+/g, "");
+  return stripped || normalized.replace(/\s+/g, "");
 }
 
 export function getFKProfileDisplayName(profile: {
