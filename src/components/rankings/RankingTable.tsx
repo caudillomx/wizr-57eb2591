@@ -298,6 +298,19 @@ export function RankingTable({
               <TableHead className="text-right">
                 <SortableHeader metric="engagement_rate">Engagement</SortableHeader>
               </TableHead>
+              {periodMetrics && (
+                <>
+                  <TableHead className="text-right">
+                    <span className="text-xs">Posts <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <span className="text-xs">Eng. promedio <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                  <TableHead>
+                    <span className="text-xs">Top post <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                </>
+              )}
               <TableHead className="w-32">Relativo</TableHead>
             </TableRow>
           </TableHeader>
