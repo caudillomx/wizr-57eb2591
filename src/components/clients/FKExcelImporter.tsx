@@ -38,13 +38,14 @@ interface DetectedFile {
   file: File;
   kind: FileKind;
   rowCount: number;
-  asCompetitor: boolean;
   /** Auto-detected from Excel metadata, if found */
   detectedPeriodStart?: Date;
   detectedPeriodEnd?: Date;
-  /** User overrides (only relevant for KPIs) */
+  /** User overrides (only relevant for KPIs). Default: últimos 28 días si no hay metadata. */
   periodStart?: Date;
   periodEnd?: Date;
+  /** true cuando el período viene del default automático (no del archivo ni del usuario) */
+  periodIsDefault?: boolean;
 }
 
 const NETWORK_DETECT: Record<string, FKNetwork> = {

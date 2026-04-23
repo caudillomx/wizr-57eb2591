@@ -10,11 +10,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   ArrowLeft, BarChart3, Settings, Building2, TrendingUp, FileText,
   Sparkles, MessageCircle, BookOpen, FileBarChart, Users2, Target, History, Info,
+  AlertTriangle,
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
 import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
 import { FKExcelImporter } from "./FKExcelImporter";
+import { UnclassifiedProfilesDialog } from "./UnclassifiedProfilesDialog";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
 import { RankingTable } from "@/components/rankings/RankingTable";
 import { RankingChart } from "@/components/rankings/RankingChart";
@@ -51,6 +53,8 @@ export function ClientDetail({ client, onBack }: Props) {
   const [appliedCustomRange, setAppliedCustomRange] = useState<DateRange | undefined>();
   const [aiInitialQuestion, setAiInitialQuestion] = useState("");
   const [filterNet, setFilterNet] = useState<FKNetwork | "all">("all");
+  const [classifyDialogOpen, setClassifyDialogOpen] = useState(false);
+  const [classifyShowAll, setClassifyShowAll] = useState(false);
 
   const dateRange = getDateRangeFromPreset(appliedPreset, appliedCustomRange);
   const periodStart = formatDate(dateRange.from, "yyyy-MM-dd");
@@ -61,14 +65,21 @@ export function ClientDetail({ client, onBack }: Props) {
 
   const { data: rawProfiles = [], isLoading: loadingProfiles } = useFKProfilesByClient(client.id, "all");
 
+  // Para clientes "branded": vista marca = solo classification_status === "brand".
+  // Para clientes "benchmark puro": todos los clasificados son pares.
   const profiles = useMemo<FKProfile[]>(() => {
     return rawProfiles
-      .filter((p) => (isBenchmarkOnly ? true : view === "brand" ? !p.is_competitor : true))
+      .filter((p) => {
+        if (isBenchmarkOnly) return p.classification_status !== "unclassified";
+        if (view === "brand") return p.classification_status === "brand";
+        // view === "benchmark": brand + competitor (excluye unclassified)
+        return p.classification_status === "brand" || p.classification_status === "competitor";
+      })
       .map((p) => ({
         ...p,
         project_id: null,
         ranking_id: null,
-        is_own_profile: isBenchmarkOnly ? false : !p.is_competitor,
+        is_own_profile: p.classification_status === "brand",
         network: p.network as FKNetwork,
       })) as unknown as FKProfile[];
   }, [rawProfiles, view, isBenchmarkOnly]);
@@ -78,8 +89,11 @@ export function ClientDetail({ client, onBack }: Props) {
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
   const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKTopPosts(profileIds, periodStartTop, periodEndTop);
 
-  const brandCount = rawProfiles.filter((p) => !p.is_competitor).length;
-  const compCount = rawProfiles.filter((p) => p.is_competitor).length;
+  const brandCount = rawProfiles.filter((p) => p.classification_status === "brand").length;
+  const compCount = rawProfiles.filter((p) => p.classification_status === "competitor").length;
+  const unclassifiedCount = rawProfiles.filter((p) => p.classification_status === "unclassified").length;
+  // Banner solo aplica a clientes branded — en benchmark puro la distinción no existe.
+  const showUnclassifiedBanner = !isBenchmarkOnly && unclassifiedCount > 0;
 
   const handleApplyDateRange = (preset?: DateRangePreset, custom?: DateRange) => {
     setAppliedPreset(preset ?? datePreset);
@@ -90,6 +104,15 @@ export function ClientDetail({ client, onBack }: Props) {
     qc.invalidateQueries({ queryKey: ["fk-daily-top-posts"] });
     qc.invalidateQueries({ queryKey: ["fk-kpis"] });
     qc.invalidateQueries({ queryKey: ["fk-profiles-client"] });
+  };
+
+  const openClassifyPending = () => {
+    setClassifyShowAll(false);
+    setClassifyDialogOpen(true);
+  };
+  const openClassifyAll = () => {
+    setClassifyShowAll(true);
+    setClassifyDialogOpen(true);
   };
 
   // Banner: detecta si TODOS los KPIs vienen como fallback (ningún snapshot exacto).
