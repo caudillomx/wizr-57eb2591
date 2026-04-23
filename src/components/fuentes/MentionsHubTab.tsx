@@ -449,6 +449,15 @@ export function MentionsHubTab({
         </Card>
       </div>
 
+      {/* AI Executive Summary */}
+      <ExecutiveSummaryCard
+        mentions={filteredMentions}
+        projectName={selectedProject?.nombre}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        activeFiltersLabel={activeFiltersCount > 0 ? `${activeFiltersCount} filtro${activeFiltersCount > 1 ? "s" : ""} activo${activeFiltersCount > 1 ? "s" : ""}` : undefined}
+      />
+
       {/* Sentiment Summary */}
       <Card>
         <CardHeader className="pb-3">
