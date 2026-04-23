@@ -1293,8 +1293,8 @@ export function FKExcelImporter({ clientId }: Props) {
         {files.length > 0 && (
           <div className="mt-4 space-y-2">
             {files.map((f, i) => {
-              const periodAuto = f.kind === "kpis" && f.detectedPeriodStart && f.detectedPeriodEnd;
               const periodMissing = f.kind === "kpis" && (!f.periodStart || !f.periodEnd);
+              const src = f.periodSource;
               return (
                 <div key={i} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-center gap-3">
@@ -1305,13 +1305,30 @@ export function FKExcelImporter({ clientId }: Props) {
                         {f.kind === "kpis" && <Badge variant="default">KPIs · {f.rowCount} perfiles</Badge>}
                         {f.kind === "posts" && <Badge variant="secondary">Posts · {f.rowCount} filas</Badge>}
                         {f.kind === "unknown" && <Badge variant="destructive">No reconocido</Badge>}
-                        {periodAuto && (
+                        {f.kind === "kpis" && src === "metadata" && (
                           <Badge variant="outline" className="text-xs gap-1">
                             <CheckCircle2 className="h-3 w-3 text-primary" />
-                            Período detectado
+                            Período detectado del archivo
                           </Badge>
                         )}
-                        {periodMissing && !periodAuto && (
+                        {f.kind === "kpis" && src === "posts" && (
+                          <Badge variant="outline" className="text-xs gap-1 border-primary/40 text-primary">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Auto-detectado desde Posts
+                          </Badge>
+                        )}
+                        {f.kind === "kpis" && src === "default" && (
+                          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+                            <Info className="h-3 w-3" />
+                            Período por defecto (28 días)
+                          </Badge>
+                        )}
+                        {f.kind === "kpis" && src === "manual" && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            Período ajustado manualmente
+                          </Badge>
+                        )}
+                        {periodMissing && (
                           <Badge variant="outline" className="text-xs gap-1 text-destructive border-destructive/40">
                             <AlertTriangle className="h-3 w-3" />
                             Selecciona el período
