@@ -321,6 +321,12 @@ export function ClientDetail({ client, onBack }: Props) {
                 <RankingChart profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} filterNetwork={filterNet} metric="engagement_rate" />
                 <RankingChart profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} filterNetwork={filterNet} metric="followers" />
               </div>
+              <AvgEngagementByNetworkChart
+                profiles={profiles}
+                posts={dailyTopPosts}
+                isLoading={loadingProfiles || loadingTop}
+              />
+            </div>
             </div>
           )}
         </TabsContent>
