@@ -146,9 +146,15 @@ export function RankingChart({
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={55}
+              width={90}
               fontSize={10}
-              tickFormatter={(v) => v.length > 10 ? `${v.slice(0, 10)}...` : v}
+              tickFormatter={(v) => {
+                const parts = String(v).split(" · ");
+                const base = parts[0] ?? "";
+                const suffix = parts[1] ? ` · ${parts[1]}` : "";
+                const trimmed = base.length > 12 ? `${base.slice(0, 12)}…` : base;
+                return `${trimmed}${suffix}`;
+              }}
             />
             <Tooltip
               contentStyle={{
