@@ -1021,11 +1021,12 @@ export function FKExcelImporter({ clientId }: Props) {
               profile_id: p.displayName.replace(/^@/, ""),
               display_name: p.displayName,
               is_active: true,
-              is_competitor: f.asCompetitor,
+              classification_status: "unclassified",
+              is_competitor: false,
             }));
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
-              .insert(toInsert)
+              .insert(toInsert as any)
               .select("id, network, profile_id, display_name");
             if (error) throw error;
             (inserted || []).forEach((row: any) => {
@@ -1249,12 +1250,9 @@ export function FKExcelImporter({ clientId }: Props) {
                         )}
                       </div>
                     </div>
-                    {f.kind !== "unknown" && (
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`comp-${i}`} className="text-xs">Competencia</Label>
-                        <Switch id={`comp-${i}`} checked={f.asCompetitor} onCheckedChange={(v) => setCompetitor(i, v)} />
-                      </div>
-                    )}
+                    {/* Switch "Competencia" eliminado: la clasificación marca/competencia
+                        se realiza desde el banner ámbar en ClientDetail una vez que los
+                        perfiles existen en BD, no en el momento de importar. */}
                     <Button variant="ghost" size="icon" onClick={() => removeFile(i)}>
                       <X className="h-4 w-4" />
                     </Button>
