@@ -136,22 +136,27 @@ serve(async (req) => {
       body.projectName ? ` "${body.projectName}"` : ""
     } ${dateRangeStr}.
 
-Contexto cuantitativo (universo total filtrado: ${total} menciones):
-- Sentimiento: ${positivo} positivas (${pct(positivo)}%), ${neutral} neutras (${pct(neutral)}%), ${negativo} negativas (${pct(negativo)}%), ${sinAnalizar} sin analizar (${pct(sinAnalizar)}%).
-- Principales fuentes: ${topPlatforms || "n/d"}.
-- Filtros activos: ${filtersStr}.
+Universo total filtrado (esta es la única cifra de volumen que puedes citar): ${total} menciones.
+Distribución de sentimiento sobre ese universo: ${positivo} positivas (${pct(positivo)}%), ${neutral} neutras (${pct(neutral)}%), ${negativo} negativas (${pct(negativo)}%), ${sinAnalizar} sin analizar (${pct(sinAnalizar)}%).
+Principales fuentes en ese universo: ${topPlatforms || "n/d"}.
+Filtros activos: ${filtersStr}.
 
-Muestra de hasta ${sample.length} menciones representativas:
+Para identificar narrativas, voces y ejemplos concretos cuentas con una muestra interna de ${sample.length} menciones representativas (NO menciones esta muestra ni su tamaño en el texto, es solo tu material de lectura):
 
 ${mentionsText}
 
 Estructura los párrafos así:
-1. Contexto y volumen: qué se está diciendo y dónde, magnitud del flujo de menciones y fuentes activas.
-2. Narrativas dominantes: 2-3 hilos temáticos concretos con ejemplos breves de medios o autores reales que aparezcan en la muestra.
-3. Tono del entorno: lectura del balance de sentimiento y, si aparecen, señales de riesgo reputacional observadas (descriptivo, no prescriptivo).
+1. Contexto y volumen: describe magnitud del flujo usando exclusivamente la cifra del universo total (${total} menciones) y las fuentes donde se concentra.
+2. Narrativas dominantes: 2-3 hilos temáticos concretos con ejemplos breves de medios o autores reales que aparezcan en el material.
+3. Tono del entorno: lectura del balance de sentimiento sobre el universo total y, si aparecen, señales de riesgo reputacional observadas (descriptivo, no prescriptivo).
 4. Voces o medios destacados: quiénes están moviendo más conversación dentro del periodo.
 
-Reglas estrictas: prosa fluida, sin listas, sin asteriscos, sin encabezados, sin "en conclusión". PROHIBIDO incluir recomendaciones, sugerencias, "se recomienda", "convendría", "deberían", próximos pasos o cualquier llamado a la acción. Máximo 320 palabras. No inventes nada que no esté en la muestra o el contexto.`;
+Reglas estrictas:
+- Prosa fluida, sin listas, sin asteriscos, sin encabezados, sin "en conclusión".
+- PROHIBIDO mencionar la muestra, el tamaño de la muestra, "muestra analizada", "se analizaron X menciones", "de las menciones revisadas" o similares. La única cifra de volumen permitida es ${total}.
+- PROHIBIDO incluir recomendaciones, sugerencias, "se recomienda", "convendría", "deberían", próximos pasos o cualquier llamado a la acción.
+- Máximo 320 palabras.
+- No inventes nada que no esté en el material o el contexto.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
