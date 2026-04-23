@@ -59,27 +59,26 @@ function FallbackBadge({ periodStart, periodEnd }: FallbackBadgeProps) {
     }
   })();
   const isStale = ageDays > 90;
-  const Icon = isStale ? AlertTriangle : Clock;
+
+  // Only show the badge when the snapshot is actually stale (>90 days).
+  // For normal fallbacks within the selected range, the badge would just
+  // repeat the global period filter on every row, which is redundant noise.
+  if (!isStale) return null;
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge
             variant="outline"
-            className={
-              isStale
-                ? "ml-2 gap-1 border-destructive/40 bg-destructive/10 text-destructive text-[10px] px-1.5 py-0"
-                : "ml-2 gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0"
-            }
+            className="ml-2 gap-1 border-destructive/40 bg-destructive/10 text-destructive text-[10px] px-1.5 py-0"
           >
-            <Icon className="h-2.5 w-2.5" />
+            <AlertTriangle className="h-2.5 w-2.5" />
             {formatPeriod(periodStart, periodEnd)}
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
-          {isStale
-            ? `Dato desactualizado (${ageDays} días). Mostrando el snapshot importado ${formatPeriod(periodStart, periodEnd)} porque no hay un corte más reciente para el rango seleccionado.`
-            : `Período real del KPI: snapshot importado ${formatPeriod(periodStart, periodEnd)}. No existe un corte exacto para el rango seleccionado.`}
+          {`Dato desactualizado (${ageDays} días). Mostrando el snapshot importado ${formatPeriod(periodStart, periodEnd)} porque no hay un corte más reciente para el rango seleccionado.`}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
