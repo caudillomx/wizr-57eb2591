@@ -57,6 +57,25 @@ function stratifiedSample(mentions: MentionInput[], target: number): MentionInpu
   return result;
 }
 
+function sanitizeSummary(summary: string, total: number): string {
+  let clean = summary.trim();
+
+  clean = clean.replace(/\buniverso total de\b/gi, "volumen de");
+  clean = clean.replace(/\buniverso filtrado de\b/gi, "volumen de");
+
+  const volumePatterns = [
+    new RegExp(`\\b(?:registr[oó]|alcanz[oó]|sum[oó]|acumul[oó]|totaliz[oó]|reuni[oó])\\s+(?:un\\s+)?(?:volumen\\s+de\\s+)?${total}\\s+menciones\\b`, "gi"),
+    new RegExp(`\\b(?:registr[oó]|alcanz[oó]|sum[oó]|acumul[oó]|totaliz[oó]|reuni[oó])\\s+(?:un\\s+)?(?:total\\s+de\\s+)?${total}\\s+menciones\\b`, "gi"),
+  ];
+
+  for (const pattern of volumePatterns) {
+    clean = clean.replace(pattern, `se enmarca en un volumen de ${total} menciones`);
+  }
+
+  clean = clean.replace(/\s+([,.;:])/g, "$1");
+  return clean;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -136,7 +155,7 @@ serve(async (req) => {
       body.projectName ? ` "${body.projectName}"` : ""
     } ${dateRangeStr}.
 
-Universo total filtrado (esta es la única cifra de volumen que puedes citar): ${total} menciones.
+Marco cuantitativo del periodo (esta es la única cifra de volumen que puedes citar): ${total} menciones filtradas.
 Distribución de sentimiento sobre ese universo: ${positivo} positivas (${pct(positivo)}%), ${neutral} neutras (${pct(neutral)}%), ${negativo} negativas (${pct(negativo)}%), ${sinAnalizar} sin analizar (${pct(sinAnalizar)}%).
 Principales fuentes en ese universo: ${topPlatforms || "n/d"}.
 Filtros activos: ${filtersStr}.
@@ -154,6 +173,8 @@ Estructura los párrafos así:
 Reglas estrictas:
 - Prosa fluida, sin listas, sin asteriscos, sin encabezados, sin "en conclusión".
 - PROHIBIDO mencionar la muestra, el tamaño de la muestra, "muestra analizada", "se analizaron X menciones", "de las menciones revisadas" o similares. La única cifra de volumen permitida es ${total}.
+- Usa la cifra solo como marco cuantitativo del periodo. Prefiere formulaciones como "En un periodo con ${total} menciones filtradas...", "Dentro de ese volumen..." o "Sobre ese volumen de conversación...".
+- PROHIBIDO usar frases que sugieran lectura exhaustiva del universo completo, como "registró ${total} menciones", "acumuló ${total} menciones", "sumó ${total} menciones", "alcanzó ${total} menciones" o la expresión "universo total".
 - PROHIBIDO incluir recomendaciones, sugerencias, "se recomienda", "convendría", "deberían", próximos pasos o cualquier llamado a la acción.
 - Máximo 320 palabras.
 - No inventes nada que no esté en el material o el contexto.`;
@@ -195,7 +216,7 @@ Reglas estrictas:
     }
 
     const data = await aiResponse.json();
-    const summary: string = data?.choices?.[0]?.message?.content?.trim() || "";
+    const summary = sanitizeSummary(data?.choices?.[0]?.message?.content?.trim() || "", total);
 
     if (!summary) {
       return new Response(
