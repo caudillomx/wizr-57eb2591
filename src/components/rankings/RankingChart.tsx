@@ -24,6 +24,16 @@ interface RankingChartProps {
   metric?: "engagement_rate" | "followers" | "follower_growth_percent";
 }
 
+const NETWORK_SHORT: Record<FKNetwork, string> = {
+  facebook: "FB",
+  instagram: "IG",
+  youtube: "YT",
+  linkedin: "LI",
+  tiktok: "TT",
+  threads: "TH",
+  twitter: "X",
+};
+
 const NETWORK_COLORS: Record<FKNetwork, string> = {
   facebook: "#1877F2",
   instagram: "#E4405F",
