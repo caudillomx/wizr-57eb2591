@@ -80,11 +80,16 @@ function generateInsights(profiles: FKProfile[], kpis: FKProfileKPI[], filterNet
   if (latestKpis.length === 0) return [];
 
   // 1. TOP PERFORMER - Best overall (engagement + growth)
-  const withEngagement = latestKpis.filter(k => k.engagement_rate !== null);
-  const withGrowth = latestKpis.filter(k => k.follower_growth_percent !== null);
+  // Ordenar por la métrica correspondiente para que findIndex refleje el ranking real
+  const withEngagement = latestKpis
+    .filter(k => k.engagement_rate !== null)
+    .sort((a, b) => (b.engagement_rate || 0) - (a.engagement_rate || 0));
+  const withGrowth = latestKpis
+    .filter(k => k.follower_growth_percent !== null)
+    .sort((a, b) => (b.follower_growth_percent || 0) - (a.follower_growth_percent || 0));
   
   if (withEngagement.length > 0 && withGrowth.length > 0) {
-    // Calculate a combined score
+    // Calculate a combined score (rank 0 = mejor; sumamos puntos invertidos)
     const scores = latestKpis.map(kpi => {
       const engRank = withEngagement.findIndex(k => k.fk_profile_id === kpi.fk_profile_id);
       const growthRank = withGrowth.findIndex(k => k.fk_profile_id === kpi.fk_profile_id);
