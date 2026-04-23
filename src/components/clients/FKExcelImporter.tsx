@@ -359,15 +359,32 @@ async function detectFile(file: File): Promise<DetectedFile> {
       }
     }
   }
+
+  // Default inteligente: si no detectamos período en KPIs, asumimos los
+  // últimos 28 días desde hoy. El usuario puede editarlo. Esto evita el
+  // bloqueo previo "Falta el período" y habilita cadencia diaria sin fricción.
+  let periodStart = detectedStart;
+  let periodEnd = detectedEnd;
+  let periodIsDefault = false;
+  if (kind === "kpis" && (!periodStart || !periodEnd)) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(today.getDate() - 27); // 28 días incluyendo hoy
+    periodStart = start;
+    periodEnd = today;
+    periodIsDefault = true;
+  }
+
   return {
     file,
     kind,
     rowCount,
-    asCompetitor: false,
     detectedPeriodStart: detectedStart,
     detectedPeriodEnd: detectedEnd,
-    periodStart: detectedStart,
-    periodEnd: detectedEnd,
+    periodStart,
+    periodEnd,
+    periodIsDefault,
   };
 }
 
@@ -440,14 +457,13 @@ export function FKExcelImporter({ clientId }: Props) {
   };
 
   const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
-  const setCompetitor = (i: number, v: boolean) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, asCompetitor: v } : f)));
   const setPeriodStart = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d, periodIsDefault: false } : f)));
   const setPeriodEnd = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d, periodIsDefault: false } : f)));
 
-  // KPI files require both dates before importing
+  // Con default automático (28d) ya nunca debería faltar período, pero conservamos
+  // el guard por si el usuario borra manualmente las fechas.
   const missingPeriod = files.some(
     (f) => f.kind === "kpis" && (!f.periodStart || !f.periodEnd)
   );
@@ -827,7 +843,11 @@ export function FKExcelImporter({ clientId }: Props) {
             profile_id: k.profileId,
             display_name: k.displayName,
             is_active: true,
-            is_competitor: f.asCompetitor,
+            // Perfiles nuevos quedan SIN clasificar — la clasificación marca/competencia
+            // se realiza desde el banner ámbar / modal de ClientDetail. Esto desacopla
+            // la importación (operación técnica) de la decisión analítica.
+            classification_status: "unclassified",
+            is_competitor: false,
             _key: `${k.network}::canonical::${canonicalizeFKProfileIdentity(k.displayName || k.profileId)}`,
           }));
 
@@ -840,7 +860,7 @@ export function FKExcelImporter({ clientId }: Props) {
           if (toInsert.length > 0) {
             const { data: inserted, error } = await supabase
               .from("fk_profiles")
-              .insert(toInsert)
+              .insert(toInsert as any)
               .select("id, network, profile_id, display_name");
             if (error) throw error;
             (inserted || []).forEach((row: any) => {
@@ -850,14 +870,6 @@ export function FKExcelImporter({ clientId }: Props) {
             });
           }
 
-          if (f.asCompetitor) {
-            const ids = kpiRows
-              .map((k) => resolveWithAnchor(k.network, k.displayName || k.profileId, k.profileId, existingByName))
-              .filter(Boolean) as string[];
-            if (ids.length > 0) {
-              await supabase.from("fk_profiles").update({ is_competitor: true }).in("id", ids);
-            }
-          }
           totalProfiles += toInsert.length;
 
           const periodStart = formatDate(f.periodStart!, "yyyy-MM-dd");
