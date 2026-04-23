@@ -13,8 +13,8 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Clock, AlertTriangle } from "lucide-react";
-import { FKProfile, FKProfileKPI, FKNetwork, getNetworkLabel } from "@/hooks/useFanpageKarma";
+import { Trophy, TrendingUp, TrendingDown, Minus, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Clock, AlertTriangle, ExternalLink, FileText } from "lucide-react";
+import { FKProfile, FKProfileKPI, FKNetwork, FKPeriodPostMetrics, getNetworkLabel } from "@/hooks/useFanpageKarma";
 import { NetworkFilter } from "./NetworkFilter";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -95,6 +95,10 @@ interface RankingTableProps {
   sortBy?: SortMetric;
   filterNetwork?: FKNetwork | "all";
   onNetworkChange?: (network: FKNetwork | "all") => void;
+  /** Period-derived metrics computed from fk_posts.published_at within the active filter. */
+  periodMetrics?: Map<string, FKPeriodPostMetrics>;
+  /** Loading state for periodMetrics (shown as inline placeholder). */
+  isLoadingPeriodMetrics?: boolean;
 }
 
 const MEDAL_COLORS = ["🥇", "🥈", "🥉"];
@@ -124,7 +128,9 @@ export function RankingTable({
   isLoading, 
   sortBy: initialSortBy = "engagement_rate",
   filterNetwork: externalFilterNetwork = "all",
-  onNetworkChange
+  onNetworkChange,
+  periodMetrics,
+  isLoadingPeriodMetrics = false,
 }: RankingTableProps) {
   const [sortMetric, setSortMetric] = useState<SortMetric>(initialSortBy);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -292,6 +298,19 @@ export function RankingTable({
               <TableHead className="text-right">
                 <SortableHeader metric="engagement_rate">Engagement</SortableHeader>
               </TableHead>
+              {periodMetrics && (
+                <>
+                  <TableHead className="text-right">
+                    <span className="text-xs">Posts <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <span className="text-xs">Eng. promedio <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                  <TableHead>
+                    <span className="text-xs">Top post <span className="text-muted-foreground font-normal">(período)</span></span>
+                  </TableHead>
+                </>
+              )}
               <TableHead className="w-32">Relativo</TableHead>
             </TableRow>
           </TableHeader>
@@ -337,6 +356,64 @@ export function RankingTable({
                   <TableCell className="text-right font-medium">
                     {formatPercent(kpi?.engagement_rate)}
                   </TableCell>
+                  {periodMetrics && (() => {
+                    const pm = periodMetrics.get(profile.id);
+                    if (isLoadingPeriodMetrics && !pm) {
+                      return (
+                        <>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        </>
+                      );
+                    }
+                    if (!pm || pm.postCount === 0) {
+                      return (
+                        <>
+                          <TableCell className="text-right text-muted-foreground">0</TableCell>
+                          <TableCell className="text-right text-muted-foreground">—</TableCell>
+                          <TableCell className="text-muted-foreground text-xs italic">Sin posts en el período</TableCell>
+                        </>
+                      );
+                    }
+                    const snippet = pm.topPost?.message
+                      ? pm.topPost.message.slice(0, 60) + (pm.topPost.message.length > 60 ? "…" : "")
+                      : "(sin texto)";
+                    return (
+                      <>
+                        <TableCell className="text-right font-medium">{pm.postCount}</TableCell>
+                        <TableCell className="text-right font-medium">{formatNumber(pm.avgEngagement)}</TableCell>
+                        <TableCell className="max-w-xs">
+                          {pm.topPost ? (
+                            <div className="flex items-start gap-1.5 text-xs">
+                              <FileText className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate" title={pm.topPost.message ?? ""}>
+                                  {snippet}
+                                </p>
+                                <p className="text-muted-foreground mt-0.5 flex items-center gap-1">
+                                  <span>{formatNumber(pm.topPost.engagement)} eng.</span>
+                                  {pm.topPost.link && (
+                                    <a
+                                      href={pm.topPost.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center hover:text-primary"
+                                      aria-label="Abrir post"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                      </>
+                    );
+                  })()}
                   <TableCell>
                     <Progress value={engagementPercent} className="h-2" />
                   </TableCell>

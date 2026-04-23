@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Client } from "@/hooks/useClients";
 import { useFKProfilesByClient } from "@/hooks/useClients";
-import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
+import { useFKProfileKPIs, useFKAllKPIs, useFKTopPosts, useFKPeriodPostMetrics, FKNetwork, FKProfile } from "@/hooks/useFanpageKarma";
 import { FKExcelImporter } from "./FKExcelImporter";
 import { UnclassifiedProfilesDialog } from "./UnclassifiedProfilesDialog";
 import { ProfilesList } from "@/components/rankings/ProfilesList";
@@ -88,6 +88,7 @@ export function ClientDetail({ client, onBack }: Props) {
   const { data: kpis = [], isLoading: loadingKpis } = useFKProfileKPIs(profileIds, periodStart, periodEnd);
   const { data: allKpis = [], isLoading: loadingAllKpis } = useFKAllKPIs(profileIds);
   const { data: dailyTopPosts = [], isLoading: loadingTop } = useFKTopPosts(profileIds, periodStartTop, periodEndTop);
+  const { data: periodMetrics, isLoading: loadingPeriodMetrics } = useFKPeriodPostMetrics(profileIds, periodStart, periodEnd);
 
   const brandCount = rawProfiles.filter((p) => p.classification_status === "brand").length;
   const compCount = rawProfiles.filter((p) => p.classification_status === "competitor").length;
@@ -249,11 +250,11 @@ export function ClientDetail({ client, onBack }: Props) {
                 <span>
                   {fallbackInfo.filterInsideSnapshot ? (
                     <>
-                      Los KPIs importados son un único corte agregado del período <strong>{fallbackInfo.label}</strong>. Para ver el ranking cambiar con el filtro, importa snapshots adicionales con períodos distintos desde Fanpage Karma.
+                      Los <strong>seguidores y crecimiento</strong> vienen del snapshot importado <strong>{fallbackInfo.label}</strong> y no cambian con el filtro. El <strong>engagement y la actividad del período</strong> sí se recalculan desde los posts reales (columnas "Posts", "Eng. promedio" y "Top post").
                     </>
                   ) : (
                     <>
-                      Los datos importados cubren <strong>{fallbackInfo.label}</strong>. Ajusta el filtro para ver ese período exacto.
+                      Los datos KPI agregados cubren <strong>{fallbackInfo.label}</strong>. Las métricas del período (posts y engagement) se calculan desde los posts publicados en el rango activo.
                     </>
                   )}
                 </span>
@@ -307,6 +308,8 @@ export function ClientDetail({ client, onBack }: Props) {
                 sortBy="engagement_rate"
                 filterNetwork={filterNet}
                 onNetworkChange={setFilterNet}
+                periodMetrics={periodMetrics}
+                isLoadingPeriodMetrics={loadingPeriodMetrics}
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <RankingChart profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} filterNetwork={filterNet} metric="engagement_rate" />

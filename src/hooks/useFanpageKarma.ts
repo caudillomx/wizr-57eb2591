@@ -1044,3 +1044,94 @@ export function useFKDailyTopPostsByRanking(rankingId: string | undefined, start
     enabled: !!rankingId,
   });
 }
+
+// =====================================================
+// Period post metrics — computed from fk_posts in real time
+// =====================================================
+export interface FKPeriodPostMetrics {
+  postCount: number;
+  avgEngagement: number;
+  topPost: {
+    engagement: number;
+    message: string | null;
+    link: string | null;
+    published_at: string;
+  } | null;
+}
+
+export function useFKPeriodPostMetrics(
+  profileIds: string[],
+  startDate?: string,
+  endDate?: string,
+) {
+  return useQuery({
+    queryKey: ["fk-period-post-metrics", profileIds, startDate, endDate],
+    queryFn: async () => {
+      const result = new Map<string, FKPeriodPostMetrics>();
+      if (profileIds.length === 0 || !startDate || !endDate) return result;
+
+      const startISO = `${startDate}T00:00:00Z`;
+      const endISO = `${endDate}T23:59:59Z`;
+
+      // Paginate to bypass 1000 row default limit
+      const pageSize = 1000;
+      let from = 0;
+      const allPosts: Array<{
+        fk_profile_id: string;
+        engagement: number | null;
+        message: string | null;
+        link: string | null;
+        published_at: string;
+      }> = [];
+
+      while (true) {
+        const { data, error } = await supabase
+          .from("fk_posts")
+          .select("fk_profile_id, engagement, message, link, published_at")
+          .in("fk_profile_id", profileIds)
+          .gte("published_at", startISO)
+          .lte("published_at", endISO)
+          .order("engagement", { ascending: false, nullsFirst: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allPosts.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      // Group by profile
+      const byProfile = new Map<string, typeof allPosts>();
+      for (const p of allPosts) {
+        const arr = byProfile.get(p.fk_profile_id) ?? [];
+        arr.push(p);
+        byProfile.set(p.fk_profile_id, arr);
+      }
+
+      for (const [pid, posts] of byProfile.entries()) {
+        const engagements = posts.map((p) => p.engagement ?? 0);
+        const total = engagements.reduce((a, b) => a + b, 0);
+        const top = posts.reduce<typeof posts[number] | null>(
+          (best, p) => (!best || (p.engagement ?? 0) > (best.engagement ?? 0) ? p : best),
+          null,
+        );
+        result.set(pid, {
+          postCount: posts.length,
+          avgEngagement: posts.length > 0 ? Math.round(total / posts.length) : 0,
+          topPost: top
+            ? {
+                engagement: top.engagement ?? 0,
+                message: top.message,
+                link: top.link,
+                published_at: top.published_at,
+              }
+            : null,
+        });
+      }
+
+      return result;
+    },
+    enabled: profileIds.length > 0 && !!startDate && !!endDate,
+  });
+}
