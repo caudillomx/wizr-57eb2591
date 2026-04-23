@@ -85,7 +85,12 @@ function FallbackBadge({ periodStart, periodEnd }: FallbackBadgeProps) {
   );
 }
 
-type SortMetric = "followers" | "engagement_rate" | "follower_growth_percent" | "posts_per_day";
+type SortMetric =
+  | "followers"
+  | "engagement_rate"
+  | "follower_growth_percent"
+  | "posts_per_day"
+  | "period_avg_engagement";
 type SortDirection = "asc" | "desc";
 
 interface RankingTableProps {
@@ -120,6 +125,22 @@ const GrowthIndicator = ({ value }: { value: number | null | undefined }) => {
   if (value > 0) return <TrendingUp className="h-4 w-4 text-green-600" />;
   if (value < 0) return <TrendingDown className="h-4 w-4 text-red-600" />;
   return <Minus className="h-4 w-4 text-muted-foreground" />;
+};
+
+const getSortLabel = (metric: SortMetric) => {
+  switch (metric) {
+    case "followers":
+      return "Seguidores";
+    case "follower_growth_percent":
+      return "Crecimiento";
+    case "posts_per_day":
+      return "Posts/día";
+    case "period_avg_engagement":
+      return "Eng. promedio (período)";
+    case "engagement_rate":
+    default:
+      return "Engagement";
+  }
 };
 
 export function RankingTable({ 
@@ -169,7 +190,6 @@ export function RankingTable({
   );
 
   const rankedData = useMemo(() => {
-    // Create a map of profile ID to latest KPIs
     const kpiMap = new Map<string, FKProfileKPI>();
     kpis.forEach((kpi) => {
       const existing = kpiMap.get(kpi.fk_profile_id);
@@ -178,24 +198,29 @@ export function RankingTable({
       }
     });
 
-    // Filter and combine profiles with KPIs
-    let data = profiles
+    const data = profiles
       .filter((p) => filterNetwork === "all" || p.network === filterNetwork)
       .map((profile) => ({
         profile,
         kpi: kpiMap.get(profile.id) || null,
+        periodMetric: periodMetrics?.get(profile.id),
       }));
 
-    // Sort by the selected metric
     data.sort((a, b) => {
-      const aVal = a.kpi?.[sortMetric] ?? -Infinity;
-      const bVal = b.kpi?.[sortMetric] ?? -Infinity;
+      const aVal =
+        sortMetric === "period_avg_engagement"
+          ? a.periodMetric?.avgEngagement ?? -Infinity
+          : (a.kpi?.[sortMetric] ?? -Infinity);
+      const bVal =
+        sortMetric === "period_avg_engagement"
+          ? b.periodMetric?.avgEngagement ?? -Infinity
+          : (b.kpi?.[sortMetric] ?? -Infinity);
       const comparison = (bVal as number) - (aVal as number);
       return sortDirection === "desc" ? comparison : -comparison;
     });
 
     return data;
-  }, [profiles, kpis, sortMetric, sortDirection, filterNetwork]);
+  }, [profiles, kpis, sortMetric, sortDirection, filterNetwork, periodMetrics]);
 
   const hasAnyKpi = useMemo(() => rankedData.some((item) => item.kpi !== null), [rankedData]);
 
@@ -209,7 +234,7 @@ export function RankingTable({
 
     if (fallbackRows.length === rankedData.length && uniquePeriods.length === 1) {
       const [periodStart, periodEnd] = uniquePeriods[0].split("|");
-      return `Todos los perfiles usan el snapshot importado ${formatPeriod(periodStart, periodEnd)}. El ranking no cambiará hasta que existan otros cortes KPI para ese período.`;
+      return `Todos los perfiles usan el snapshot importado ${formatPeriod(periodStart, periodEnd)}. Seguidores y crecimiento permanecen fijos hasta que existan otros cortes KPI para ese período.`;
     }
 
     return `${fallbackRows.length} perfil${fallbackRows.length === 1 ? "" : "es"} muestran el snapshot importado más cercano porque no hay un corte exacto en el rango aplicado.`;
@@ -217,9 +242,8 @@ export function RankingTable({
 
   const profileNetworks = profiles.map(p => p.network as FKNetwork);
 
-  // Calculate max values for relative bars
   const maxEngagement = useMemo(() => {
-    const values = rankedData.map((d) => d.kpi?.engagement_rate ?? 0);
+    const values = rankedData.map((d) => d.periodMetric?.avgEngagement ?? d.kpi?.engagement_rate ?? 0);
     return Math.max(...values, 0.01);
   }, [rankedData]);
 
@@ -264,9 +288,7 @@ export function RankingTable({
               Ranking de Perfiles
             </CardTitle>
             <CardDescription className="mt-1">
-              {rankedData.length} perfiles · Ordenado por {sortMetric === "engagement_rate" ? "Engagement" : 
-                sortMetric === "followers" ? "Seguidores" :
-                sortMetric === "follower_growth_percent" ? "Crecimiento" : "Posts/día"}
+              {rankedData.length} perfiles · Ordenado por {getSortLabel(sortMetric)}
             </CardDescription>
             {fallbackSummary && (
               <p className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
@@ -304,7 +326,9 @@ export function RankingTable({
                     <span className="text-xs">Posts <span className="text-muted-foreground font-normal">(período)</span></span>
                   </TableHead>
                   <TableHead className="text-right">
-                    <span className="text-xs">Eng. promedio <span className="text-muted-foreground font-normal">(período)</span></span>
+                    <SortableHeader metric="period_avg_engagement">
+                      <span className="text-xs">Eng. promedio <span className="text-muted-foreground font-normal">(período)</span></span>
+                    </SortableHeader>
                   </TableHead>
                   <TableHead>
                     <span className="text-xs">Top post <span className="text-muted-foreground font-normal">(período)</span></span>
@@ -316,10 +340,11 @@ export function RankingTable({
           </TableHeader>
           <TableBody>
             {rankedData.map((item, index) => {
-              const { profile, kpi } = item;
+              const { profile, kpi, periodMetric } = item;
               const network = profile.network as FKNetwork;
-              const engagementPercent = kpi?.engagement_rate 
-                ? (kpi.engagement_rate / maxEngagement) * 100 
+              const relativeValue = periodMetric?.avgEngagement ?? kpi?.engagement_rate ?? 0;
+              const engagementPercent = relativeValue > 0
+                ? (relativeValue / maxEngagement) * 100
                 : 0;
 
               return (
