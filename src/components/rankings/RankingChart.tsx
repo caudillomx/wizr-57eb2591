@@ -24,6 +24,16 @@ interface RankingChartProps {
   metric?: "engagement_rate" | "followers" | "follower_growth_percent";
 }
 
+const NETWORK_SHORT: Record<FKNetwork, string> = {
+  facebook: "FB",
+  instagram: "IG",
+  youtube: "YT",
+  linkedin: "LI",
+  tiktok: "TT",
+  threads: "TH",
+  twitter: "X",
+};
+
 const NETWORK_COLORS: Record<FKNetwork, string> = {
   facebook: "#1877F2",
   instagram: "#E4405F",
@@ -73,10 +83,14 @@ export function RankingChart({
           value = kpi?.follower_growth_percent || 0;
         }
         
+        const baseName = getFKProfileDisplayName(profile);
+        const net = profile.network as FKNetwork;
+        const short = NETWORK_SHORT[net] ?? net.slice(0, 2).toUpperCase();
         return {
-          name: getFKProfileDisplayName(profile),
+          name: `${baseName} · ${short}`,
+          fullName: baseName,
           value,
-          network: profile.network as FKNetwork,
+          network: net,
           displayValue: metric === "followers" 
             ? (value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value.toString())
             : `${value.toFixed(2)}%`,
@@ -132,9 +146,15 @@ export function RankingChart({
             <YAxis 
               dataKey="name" 
               type="category" 
-              width={55}
+              width={90}
               fontSize={10}
-              tickFormatter={(v) => v.length > 10 ? `${v.slice(0, 10)}...` : v}
+              tickFormatter={(v) => {
+                const parts = String(v).split(" · ");
+                const base = parts[0] ?? "";
+                const suffix = parts[1] ? ` · ${parts[1]}` : "";
+                const trimmed = base.length > 12 ? `${base.slice(0, 12)}…` : base;
+                return `${trimmed}${suffix}`;
+              }}
             />
             <Tooltip
               contentStyle={{
