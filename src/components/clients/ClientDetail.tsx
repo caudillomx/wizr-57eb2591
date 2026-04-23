@@ -353,6 +353,19 @@ export function ClientDetail({ client, onBack }: Props) {
         <TabsContent value="config" className="mt-6">
           <div className="space-y-6">
             <FKExcelImporter clientId={client.id} />
+            {!isBenchmarkOnly && rawProfiles.length > 0 && (
+              <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+                <div className="text-sm">
+                  <div className="font-medium">Clasificación de perfiles</div>
+                  <div className="text-xs text-muted-foreground">
+                    {brandCount} marca · {compCount} competencia{unclassifiedCount > 0 ? ` · ${unclassifiedCount} sin clasificar` : ""}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={openClassifyAll}>
+                  Re-clasificar perfiles
+                </Button>
+              </div>
+            )}
             <ProfilesList
               profiles={rawProfiles as unknown as FKProfile[]}
               isLoading={loadingProfiles}
@@ -361,6 +374,14 @@ export function ClientDetail({ client, onBack }: Props) {
           </div>
         </TabsContent>
       </Tabs>
+
+      <UnclassifiedProfilesDialog
+        open={classifyDialogOpen}
+        onOpenChange={setClassifyDialogOpen}
+        profiles={rawProfiles}
+        showAll={classifyShowAll}
+      />
     </div>
   );
+}
 }
