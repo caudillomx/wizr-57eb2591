@@ -128,7 +128,9 @@ export function RankingTable({
   isLoading, 
   sortBy: initialSortBy = "engagement_rate",
   filterNetwork: externalFilterNetwork = "all",
-  onNetworkChange
+  onNetworkChange,
+  periodMetrics,
+  isLoadingPeriodMetrics = false,
 }: RankingTableProps) {
   const [sortMetric, setSortMetric] = useState<SortMetric>(initialSortBy);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
