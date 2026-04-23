@@ -308,6 +308,8 @@ export function ClientDetail({ client, onBack }: Props) {
                 sortBy="engagement_rate"
                 filterNetwork={filterNet}
                 onNetworkChange={setFilterNet}
+                periodMetrics={periodMetrics}
+                isLoadingPeriodMetrics={loadingPeriodMetrics}
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <RankingChart profiles={profiles} kpis={kpis} isLoading={loadingProfiles || loadingKpis} filterNetwork={filterNet} metric="engagement_rate" />
