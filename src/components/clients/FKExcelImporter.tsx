@@ -883,6 +883,9 @@ export function FKExcelImporter({ clientId }: Props) {
                 fk_profile_id: id,
                 period_start: periodStart,
                 period_end: periodEnd,
+                // snapshot_date registra la fecha exacta de importación, independiente
+                // del período cubierto. Permite cadencia diaria con períodos solapados.
+                snapshot_date: formatDate(new Date(), "yyyy-MM-dd"),
                 followers: k.followers != null ? Math.round(k.followers) : null,
                 engagement_rate: k.engagementRate,
                 posts_per_day: k.postsPerDay,
