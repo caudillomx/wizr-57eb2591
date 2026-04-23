@@ -512,7 +512,7 @@ export function FKExcelImporter({ clientId }: Props) {
         variant: "destructive",
       });
     }
-    setFiles((prev) => [...prev, ...detected]);
+    setFiles((prev) => applyBatchPeriodInference([...prev, ...detected]));
   }, []);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -521,11 +521,12 @@ export function FKExcelImporter({ clientId }: Props) {
     handleFiles(e.dataTransfer.files);
   };
 
-  const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
+  const removeFile = (i: number) =>
+    setFiles((prev) => applyBatchPeriodInference(prev.filter((_, idx) => idx !== i)));
   const setPeriodStart = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d, periodIsDefault: false } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodStart: d, periodSource: "manual", periodIsDefault: false } : f)));
   const setPeriodEnd = (i: number, d?: Date) =>
-    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d, periodIsDefault: false } : f)));
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? { ...f, periodEnd: d, periodSource: "manual", periodIsDefault: false } : f)));
 
   // Con default automático (28d) ya nunca debería faltar período, pero conservamos
   // el guard por si el usuario borra manualmente las fechas.
