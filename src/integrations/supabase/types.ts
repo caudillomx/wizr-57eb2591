@@ -446,6 +446,7 @@ export type Database = {
           previous_position: number | null
           raw_data: Json | null
           reach_per_day: number | null
+          snapshot_date: string
         }
         Insert: {
           engagement_rate?: number | null
@@ -463,6 +464,7 @@ export type Database = {
           previous_position?: number | null
           raw_data?: Json | null
           reach_per_day?: number | null
+          snapshot_date?: string
         }
         Update: {
           engagement_rate?: number | null
@@ -480,6 +482,7 @@ export type Database = {
           previous_position?: number | null
           raw_data?: Json | null
           reach_per_day?: number | null
+          snapshot_date?: string
         }
         Relationships: [
           {
@@ -496,6 +499,7 @@ export type Database = {
           avatar_url: string | null
           canonical_name: string | null
           canonical_name_normalized: string | null
+          classification_status: string
           client_id: string | null
           created_at: string
           display_name: string | null
@@ -515,6 +519,7 @@ export type Database = {
           avatar_url?: string | null
           canonical_name?: string | null
           canonical_name_normalized?: string | null
+          classification_status?: string
           client_id?: string | null
           created_at?: string
           display_name?: string | null
@@ -534,6 +539,7 @@ export type Database = {
           avatar_url?: string | null
           canonical_name?: string | null
           canonical_name_normalized?: string | null
+          classification_status?: string
           client_id?: string | null
           created_at?: string
           display_name?: string | null
