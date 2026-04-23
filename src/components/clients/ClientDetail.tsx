@@ -384,4 +384,3 @@ export function ClientDetail({ client, onBack }: Props) {
     </div>
   );
 }
-}
