@@ -240,14 +240,28 @@ export function ClientDetail({ client, onBack }: Props) {
           {fallbackInfo && (
             <Alert variant={fallbackInfo.stale ? "destructive" : "default"}>
               <Info className="h-4 w-4" />
-              <AlertTitle>Mostrando el snapshot más reciente disponible</AlertTitle>
+              <AlertTitle>
+                {fallbackInfo.filterInsideSnapshot
+                  ? "El filtro no afecta los datos: solo hay un snapshot importado"
+                  : "Mostrando el snapshot más reciente disponible"}
+              </AlertTitle>
               <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span>
-                  Los datos importados cubren <strong>{fallbackInfo.label}</strong>. Ajusta el filtro para ver ese período exacto.
+                  {fallbackInfo.filterInsideSnapshot ? (
+                    <>
+                      Los KPIs importados son un único corte agregado del período <strong>{fallbackInfo.label}</strong>. Para ver el ranking cambiar con el filtro, importa snapshots adicionales con períodos distintos desde Fanpage Karma.
+                    </>
+                  ) : (
+                    <>
+                      Los datos importados cubren <strong>{fallbackInfo.label}</strong>. Ajusta el filtro para ver ese período exacto.
+                    </>
+                  )}
                 </span>
-                <Button size="sm" variant="outline" onClick={applySnapshotPeriod}>
-                  Usar período del snapshot
-                </Button>
+                {!fallbackInfo.filterInsideSnapshot && (
+                  <Button size="sm" variant="outline" onClick={applySnapshotPeriod}>
+                    Usar período del snapshot
+                  </Button>
+                )}
               </AlertDescription>
             </Alert>
           )}
