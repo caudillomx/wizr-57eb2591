@@ -96,10 +96,19 @@ export function useMentions(projectId: string | undefined, filters?: MentionFilt
         query = query.lte("created_at", filters.endDate.toISOString());
       }
 
-      const { data, error } = await query.limit(500);
-
-      if (error) throw error;
-      return data as Mention[];
+      // Paginate to bypass Supabase's 1000-row default cap
+      const PAGE_SIZE = 1000;
+      const all: Mention[] = [];
+      for (let page = 0; ; page += 1) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await query.range(from, to);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...(data as Mention[]));
+        if (data.length < PAGE_SIZE) break;
+      }
+      return all;
     },
     enabled: !!projectId,
   });
