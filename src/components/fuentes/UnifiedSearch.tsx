@@ -400,21 +400,36 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
           }
         }
 
-        // Post-validate: filter out results that don't actually contain any keyword
-        const entityKeywords = [
+        // Post-validate: token-based filter so frases largas (ej. "Turismo en León, Guanajuato")
+        // no descarten todo. Cualquier token significativo (≥4 chars) basta.
+        const STOPWORDS = new Set(["para","con","los","las","del","una","por","que","sus","sin","mas","muy","como","este","esta","entre","sobre","desde","hasta"]);
+        const tokenize = (s: string) => s
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .split(/[^a-z0-9]+/)
+          .filter(t => t.length >= 4 && !STOPWORDS.has(t));
+
+        const rawKeywords = [
           entity.nombre,
           ...(entity.aliases || []),
           ...(entity.palabras_clave || []),
-        ].filter(Boolean).filter(k => k.length >= 2);
+        ].filter(Boolean);
 
-        const relevantResults = results.filter(r => {
-          const text = [r.title, r.description, r.url].filter(Boolean).join(" ").toLowerCase();
-          return entityKeywords.some(kw => text.includes(kw.toLowerCase()));
+        const tokenSet = new Set<string>();
+        rawKeywords.forEach(k => tokenize(k).forEach(t => tokenSet.add(t)));
+
+        const relevantResults = tokenSet.size === 0 ? results : results.filter(r => {
+          const text = [r.title, r.description, r.url].filter(Boolean).join(" ").toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          for (const t of tokenSet) {
+            if (text.includes(t)) return true;
+          }
+          return false;
         });
 
         const filtered = results.length - relevantResults.length;
         if (filtered > 0) {
-          console.log(`Filtered ${filtered}/${results.length} irrelevant results for ${entity.nombre}`);
+          console.log(`Filtered ${filtered}/${results.length} irrelevant results for ${entity.nombre} (tokens: ${Array.from(tokenSet).join(",")})`);
         }
 
         // Save results to mentions table with semantic deduplication
