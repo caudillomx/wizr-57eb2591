@@ -472,9 +472,10 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
               .upsert(unique, { onConflict: "project_id,url" })
               .select("id, title, description, url");
 
-            if (!saveError) {
+            if (saveError) {
+              console.error(`Save error for ${entity.nombre}/${job.platform}:`, saveError);
+            } else {
               totalSaved += unique.length;
-              // Add newly saved mentions to existing list for cross-job deduplication
               if (savedData) {
                 allExistingMentions.push(...savedData);
               }
@@ -482,9 +483,12 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
           }
         }
 
+        totalFound += results.length;
+        successCount += 1;
         updateJob(job.id, { status: "completed", resultCount: results.length });
       } catch (error) {
         console.error(`Error in job ${job.id}:`, error);
+        failedCount += 1;
         updateJob(job.id, { 
           status: "failed", 
           error: error instanceof Error ? error.message : "Unknown error" 
@@ -497,12 +501,6 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
 
     setIsRunning(false);
     setDuplicatesSkipped(totalDuplicatesSkipped);
-
-    // Calculate final stats
-    const finalJobs = jobList;
-    const totalFound = finalJobs.reduce((sum, j) => sum + j.resultCount, 0);
-    const successCount = finalJobs.filter(j => j.status === "completed").length;
-    const failedCount = finalJobs.filter(j => j.status === "failed").length;
 
     toast({
       title: "Búsqueda completada",
