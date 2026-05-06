@@ -557,7 +557,7 @@ export function MentionsHubTab({
             size="sm"
             onClick={() => { setSourceCategory("__all__"); handleFilterChange(); }}
           >
-            Todas ({mentions.length})
+            Todas ({mentions.length}{hasDateFilter && inRangeCounts.total !== mentions.length ? ` · ${inRangeCounts.total} en rango` : ""})
           </Button>
           <Button
             variant={sourceCategory === "social" ? "default" : "ghost"}
@@ -566,7 +566,7 @@ export function MentionsHubTab({
             className="gap-1"
           >
             <Share2 className="h-3.5 w-3.5" />
-            Redes Sociales ({socialCount})
+            Redes Sociales ({socialCount}{hasDateFilter && inRangeCounts.social !== socialCount ? ` · ${inRangeCounts.social} en rango` : ""})
           </Button>
           <Button
             variant={sourceCategory === "news" ? "default" : "ghost"}
@@ -575,7 +575,7 @@ export function MentionsHubTab({
             className="gap-1"
           >
             <Newspaper className="h-3.5 w-3.5" />
-            Medios Digitales ({newsCount})
+            Medios Digitales ({newsCount}{hasDateFilter && inRangeCounts.news !== newsCount ? ` · ${inRangeCounts.news} en rango` : ""})
           </Button>
         </div>
         <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2">
