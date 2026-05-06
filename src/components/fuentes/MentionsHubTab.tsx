@@ -134,7 +134,6 @@ interface MentionsHubTabProps {
   onDeleteMention: (id: string) => void;
   onAnalyzeUnanalyzed?: () => void;
   isAnalyzing?: boolean;
-  onInRangeCountChange?: (count: number | null) => void;
 }
 
 export function MentionsHubTab({
@@ -145,7 +144,6 @@ export function MentionsHubTab({
   onDeleteMention,
   onAnalyzeUnanalyzed,
   isAnalyzing,
-  onInRangeCountChange,
 }: MentionsHubTabProps) {
   const navigate = useNavigate();
   const { selectedProject } = useProject();
