@@ -266,6 +266,26 @@ export function MentionsHubTab({
     return sortedMentions.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedMentions, currentPage]);
 
+  // In-range counts (only date filter applied) — used to show "X total (Y en rango)"
+  const inRangeCounts = useMemo(() => {
+    let total = 0, social = 0, news = 0;
+    mentions.forEach((m) => {
+      if (dateFrom || dateTo) {
+        const d = new Date(m.published_at || m.created_at);
+        if (dateFrom && d < startOfDay(dateFrom)) return;
+        if (dateTo && d > endOfDay(dateTo)) return;
+      }
+      total++;
+      if (m.source_domain) {
+        if (isSocialDomain(m.source_domain)) social++;
+        else news++;
+      }
+    });
+    return { total, social, news };
+  }, [mentions, dateFrom, dateTo]);
+
+  const hasDateFilter = !!(dateFrom || dateTo);
+
   // Stats for analysis panels
   const stats = useMemo(() => {
     const bySentiment = {
@@ -537,7 +557,7 @@ export function MentionsHubTab({
             size="sm"
             onClick={() => { setSourceCategory("__all__"); handleFilterChange(); }}
           >
-            Todas ({mentions.length})
+            Todas ({mentions.length}{hasDateFilter && inRangeCounts.total !== mentions.length ? ` · ${inRangeCounts.total} en rango` : ""})
           </Button>
           <Button
             variant={sourceCategory === "social" ? "default" : "ghost"}
@@ -546,7 +566,7 @@ export function MentionsHubTab({
             className="gap-1"
           >
             <Share2 className="h-3.5 w-3.5" />
-            Redes Sociales ({socialCount})
+            Redes Sociales ({socialCount}{hasDateFilter && inRangeCounts.social !== socialCount ? ` · ${inRangeCounts.social} en rango` : ""})
           </Button>
           <Button
             variant={sourceCategory === "news" ? "default" : "ghost"}
@@ -555,7 +575,7 @@ export function MentionsHubTab({
             className="gap-1"
           >
             <Newspaper className="h-3.5 w-3.5" />
-            Medios Digitales ({newsCount})
+            Medios Digitales ({newsCount}{hasDateFilter && inRangeCounts.news !== newsCount ? ` · ${inRangeCounts.news} en rango` : ""})
           </Button>
         </div>
         <Button variant="outline" size="sm" onClick={exportCSV} className="gap-2">
