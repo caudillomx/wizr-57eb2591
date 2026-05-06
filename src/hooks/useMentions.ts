@@ -55,6 +55,31 @@ interface MentionFilters {
   endDate?: Date;
 }
 
+function getMentionEffectiveDate(mention: Pick<Mention, "published_at" | "created_at">) {
+  return new Date(mention.published_at ?? mention.created_at);
+}
+
+function buildEffectiveDateFilter(startDate?: Date, endDate?: Date) {
+  if (!startDate && !endDate) return null;
+
+  const publishedConditions: string[] = [];
+  const createdFallbackConditions = ["published_at.is.null"];
+
+  if (startDate) {
+    const startIso = startDate.toISOString();
+    publishedConditions.push(`published_at.gte.${startIso}`);
+    createdFallbackConditions.push(`created_at.gte.${startIso}`);
+  }
+
+  if (endDate) {
+    const endIso = endDate.toISOString();
+    publishedConditions.push(`published_at.lte.${endIso}`);
+    createdFallbackConditions.push(`created_at.lte.${endIso}`);
+  }
+
+  return `and(${publishedConditions.join(",")}),and(${createdFallbackConditions.join(",")})`;
+}
+
 export function useMentions(projectId: string | undefined, filters?: MentionFilters) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -89,11 +114,9 @@ export function useMentions(projectId: string | undefined, filters?: MentionFilt
       if (filters?.sourceDomain) {
         query = query.eq("source_domain", filters.sourceDomain);
       }
-      if (filters?.startDate) {
-        query = query.gte("created_at", filters.startDate.toISOString());
-      }
-      if (filters?.endDate) {
-        query = query.lte("created_at", filters.endDate.toISOString());
+      const dateFilter = buildEffectiveDateFilter(filters?.startDate, filters?.endDate);
+      if (dateFilter) {
+        query = query.or(dateFilter);
       }
 
       // Paginate to bypass Supabase's 1000-row default cap
@@ -108,7 +131,14 @@ export function useMentions(projectId: string | undefined, filters?: MentionFilt
         all.push(...(data as Mention[]));
         if (data.length < PAGE_SIZE) break;
       }
-      return all;
+      if (!filters?.startDate && !filters?.endDate) return all;
+
+      return all.filter((mention) => {
+        const effectiveDate = getMentionEffectiveDate(mention);
+        if (filters?.startDate && effectiveDate < filters.startDate) return false;
+        if (filters?.endDate && effectiveDate > filters.endDate) return false;
+        return true;
+      });
     },
     enabled: !!projectId,
   });
