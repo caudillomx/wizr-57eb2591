@@ -296,6 +296,9 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
 
     let totalSaved = 0;
     let totalDuplicatesSkipped = 0;
+    let totalFound = 0;
+    let successCount = 0;
+    let failedCount = 0;
     const allExistingMentions = [...existingMentions];
 
     // Execute searches in parallel (batched)
