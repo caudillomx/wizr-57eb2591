@@ -368,15 +368,29 @@ export function useMentionStats(projectId: string | undefined) {
     queryFn: async () => {
       if (!projectId) return null;
 
-      const { data, error } = await supabase
-        .from("mentions")
-        .select("id, sentiment, source_domain, created_at, is_read")
-        .eq("project_id", projectId)
-        .eq("is_archived", false);
+      const PAGE_SIZE = 1000;
+      const mentions: Array<{
+        id: string;
+        sentiment: string | null;
+        source_domain: string | null;
+        created_at: string;
+        is_read: boolean;
+      }> = [];
+      for (let page = 0; ; page += 1) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await supabase
+          .from("mentions")
+          .select("id, sentiment, source_domain, created_at, is_read")
+          .eq("project_id", projectId)
+          .eq("is_archived", false)
+          .range(from, to);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        mentions.push(...data);
+        if (data.length < PAGE_SIZE) break;
+      }
 
-      if (error) throw error;
-
-      const mentions = data || [];
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
