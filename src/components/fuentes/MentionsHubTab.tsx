@@ -266,6 +266,26 @@ export function MentionsHubTab({
     return sortedMentions.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedMentions, currentPage]);
 
+  // In-range counts (only date filter applied) — used to show "X total (Y en rango)"
+  const inRangeCounts = useMemo(() => {
+    let total = 0, social = 0, news = 0;
+    mentions.forEach((m) => {
+      if (dateFrom || dateTo) {
+        const d = new Date(m.published_at || m.created_at);
+        if (dateFrom && d < startOfDay(dateFrom)) return;
+        if (dateTo && d > endOfDay(dateTo)) return;
+      }
+      total++;
+      if (m.source_domain) {
+        if (isSocialDomain(m.source_domain)) social++;
+        else news++;
+      }
+    });
+    return { total, social, news };
+  }, [mentions, dateFrom, dateTo]);
+
+  const hasDateFilter = !!(dateFrom || dateTo);
+
   // Stats for analysis panels
   const stats = useMemo(() => {
     const bySentiment = {
