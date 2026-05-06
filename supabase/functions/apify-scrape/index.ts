@@ -395,8 +395,17 @@ serve(async (req) => {
           throw new Error("YouTube requiere un término de búsqueda (query).");
         }
 
+        // Actor enforces a hard 30-char limit on query. Truncate at word boundary when possible.
+        let ytQuery = query.trim();
+        if (ytQuery.length > 30) {
+          const truncated = ytQuery.slice(0, 30);
+          const lastSpace = truncated.lastIndexOf(" ");
+          ytQuery = lastSpace > 15 ? truncated.slice(0, lastSpace) : truncated;
+          console.log(`YouTube query truncated from "${query}" to "${ytQuery}" (30-char actor limit)`);
+        }
+
         input = {
-          query,
+          query: ytQuery,
           resultsCount: youtubeResultsCount,
         };
         
