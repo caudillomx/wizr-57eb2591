@@ -64,7 +64,7 @@ const InsightsPage = () => {
 
   const { mentions, isLoading: mentionsLoading } = useMentions(
     selectedProject?.id,
-    { isArchived: false }
+    { isArchived: false, startDate, endDate }
   );
 
   const { entities } = useEntities(selectedProject?.id);
@@ -179,6 +179,8 @@ const InsightsPage = () => {
       <MentionsSummaryCard 
         mentions={mentions} 
         projectName={selectedProject.nombre}
+        startDate={startDate}
+        endDate={endDate}
         onPlatformClick={(platform, label) => {
           setMentionsFilter({ type: "platform", value: platform, label });
           setMentionsDrawerOpen(true);
