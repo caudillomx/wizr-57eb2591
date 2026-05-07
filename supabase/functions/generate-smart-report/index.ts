@@ -488,7 +488,7 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
     }
     authorMap[key].count++;
     if (m.sentiment) authorMap[key].sentiment.push(m.sentiment);
-    const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0) + ((meta?.views as number) || 0);
+    const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0);
     authorMap[key].engagement += eng;
   });
   const topAuthors = Object.values(authorMap).sort((a, b) => b.count - a.count).slice(0, 10);
