@@ -178,7 +178,7 @@ export function ReportAnalyticsCharts({
                 placeholder="Evaluación de impacto"
               />
             ) : (
-              <p className="text-sm leading-relaxed"><InlineBoldText text={impactAssessment} /></p>
+              <BulletText text={impactAssessment || ""} className="text-sm leading-relaxed" />
             )}
           </CardContent>
         </Card>
