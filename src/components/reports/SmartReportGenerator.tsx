@@ -31,6 +31,7 @@ import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
 import { VisualSlidesViewer } from "./VisualSlidesViewer";
 import { EditableText } from "./EditableText";
+import { InlineBoldText } from "./InlineBoldText";
 import { Globe, Presentation } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
