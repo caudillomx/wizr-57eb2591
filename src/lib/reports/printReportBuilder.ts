@@ -315,7 +315,7 @@ export function buildReportHTML(
   blocks.push(
     section(
       "Resumen Ejecutivo",
-      `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`,
+      renderAsBullets(report.summary, { fontSize: summaryFontSize, lineHeight: summaryLineHeight, color: C.textDark }),
     ),
   );
 
