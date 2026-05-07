@@ -332,16 +332,19 @@ export function SmartReportGenerator({
                   Modo edición. Click en cualquier texto para modificarlo. Las gráficas y métricas no son editables. Los cambios se aplican al PDF y al link público.
                 </div>
               )}
-              <EditableText
-                editing={isEditing}
-                value={activeReport.summary}
-                onChange={(v) => updateReport({ summary: v })}
-                multiline
-                minRows={3}
-                className="text-muted-foreground block"
-                placeholder="Resumen ejecutivo"
-              />
-            </div>
+              {isEditing ? (
+                <EditableText
+                  editing={isEditing}
+                  value={activeReport.summary}
+                  onChange={(v) => updateReport({ summary: v })}
+                  multiline
+                  minRows={3}
+                  className="text-muted-foreground block"
+                  placeholder="Resumen ejecutivo"
+                />
+              ) : (
+                <BulletText text={activeReport.summary} className="text-sm text-muted-foreground leading-relaxed" />
+              )}
 
             {/* Visual Analytics */}
             <ReportAnalyticsCharts
