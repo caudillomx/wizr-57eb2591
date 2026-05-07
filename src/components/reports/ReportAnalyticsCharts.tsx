@@ -202,7 +202,7 @@ export function ReportAnalyticsCharts({
                 placeholder="Análisis de sentimiento"
               />
             ) : (
-              <p className="text-sm leading-relaxed text-muted-foreground"><InlineBoldText text={sentimentAnalysis} /></p>
+              <BulletText text={sentimentAnalysis || ""} className="text-sm leading-relaxed text-muted-foreground" />
             )}
           </CardContent>
         </Card>
