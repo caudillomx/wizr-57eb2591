@@ -77,7 +77,45 @@ function InlineBold({ text }: { text: string }) {
   );
 }
 
+/** Splits a paragraph into sentence-level fragments, merging tiny tails. */
+function splitToBullets(text: string): string[] {
+  if (!text) return [];
+  const raw = text.replace(/\s+/g, " ").trim();
+  if (!raw) return [];
+  const parts = raw.split(/(?<=[\.\?!])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡"“"\d*])/);
+  const out: string[] = [];
+  for (const p of parts) {
+    const t = p.trim();
+    if (!t) continue;
+    if (out.length && t.length < 40) out[out.length - 1] += " " + t;
+    else out.push(t);
+  }
+  return out;
+}
+
+function BulletList({ text, fontSize = "12.5px", color = "#0f172a" }: { text: string; fontSize?: string; color?: string }) {
+  const items = splitToBullets(text);
+  if (items.length < 2) {
+    return <p style={{ fontSize, lineHeight: 1.65, color, margin: 0 }}><InlineBold text={text} /></p>;
+  }
+  return (
+    <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+      {items.map((it, i) => (
+        <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", pageBreakInside: "avoid", breakInside: "avoid" }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: ACCENT, flexShrink: 0, marginTop: "8px" }} />
+          <span style={{ fontSize, lineHeight: 1.65, color }}><InlineBold text={it} /></span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function FormattedText({ text, fontSize = "12.5px" }: { text: string; fontSize?: string }) {
+  // If the text has no explicit list/bullet/numbered structure, render as auto-bullets.
+  const hasExplicitStructure = /(^|\n)\s*(\d+[.)]\s|[-•*]\s)/.test(text);
+  if (!hasExplicitStructure) {
+    return <BulletList text={text} fontSize={fontSize} />;
+  }
   const paragraphs = text.split(/\n\s*\n/);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
