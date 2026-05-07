@@ -723,7 +723,12 @@ serve(async (req) => {
 - narratives: OBLIGATORIO entregar entre 4 y 5 narrativas. NUNCA menos de 4. Si dudas si una idea merece narrativa propia, sepárala antes que fusionarla — es preferible una narrativa secundaria que quedarse en 3.
 - keywords: OBLIGATORIO entregar entre 18 y 25 términos clave (sustantivos, adjetivos calificativos, conceptos o nombres propios). Excluye terminantemente stopwords (artículos, preposiciones, conjunciones, pronombres, verbos auxiliares, números sueltos, palabras vacías). Ordena por relevancia/frecuencia descendente.
 - conclusions: 3-5
-- Cada insight interpretativo (timelineInsight, narrativesInsight, keywordsInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.`;
+- Cada insight interpretativo (timelineInsight, narrativesInsight, keywordsInsight, influencersInsight, mediaInsight, platformsInsight): 2-3 oraciones, máximo 320 caracteres.
+
+ÉNFASIS TIPOGRÁFICO (OBLIGATORIO en summary, keyFindings, recommendations, conclusions y descripciones de narratives):
+- Envuelve con **doble asterisco** las palabras o frases CLAVE que el lector debe captar de un vistazo: cifras y porcentajes con su unidad (p.ej. **62%**, **1,240 menciones**), nombres propios de actores/medios/voceros relevantes (p.ej. **Aristegui Noticias**, **Las Libres**), conceptos eje del hallazgo (p.ej. **encuadre adverso**, **riesgo reputacional**, **oportunidad de posicionamiento**) y verbos de implicación cuando definen la consecuencia (p.ej. **escala**, **consolida**, **fragmenta**).
+- Marca entre **3 y 6 fragmentos por bullet/oración larga**, nunca más: el énfasis pierde valor si se abusa. No marques artículos, conectores ni frases enteras de más de 6 palabras.
+- NO uses otros símbolos de markdown (sin _itálicas_, sin \`código\`, sin # encabezados, sin listas con guiones); solo **negritas** dentro del texto plano.`;
 
     const entityComparisonInstruction = hasDistinctEntities
       ? `\n"entityComparison": "string - Párrafo comparando volumen, sentimiento y cobertura entre las entidades: ${entityNames!.join(', ')}. Incluye share of voice y diferenciadores."`
