@@ -466,7 +466,7 @@ export function SmartReportGenerator({
                               {n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️"} {n.trend}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground">{n.description}</p>
+                          <p className="text-xs text-muted-foreground"><InlineBoldText text={n.description} /></p>
                         </div>
                       </div>
                     </div>
