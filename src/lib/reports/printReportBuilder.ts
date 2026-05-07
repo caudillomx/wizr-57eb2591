@@ -86,9 +86,19 @@ function estimateTextLines(text: string, charsPerLine = 96): number {
 }
 
 function insightCard(text: string, icon: string, color: string): string {
+  // text already comes pre-escaped/highlighted; convert to bullets if multi-sentence.
+  // We re-derive from raw text not available here, so accept callers passing raw and switch.
   return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
     <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
-    <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${text}</p>
+    <div style="flex:1;font-size:10.5px;line-height:1.6;color:${C.textDark};">${text}</div>
+  </div>`;
+}
+
+function insightCardBullets(rawText: string, icon: string, color: string): string {
+  const body = renderAsBullets(rawText, { fontSize: "10.5px", lineHeight: "1.6", color: C.textDark });
+  return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
+    <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
+    <div style="flex:1;">${body}</div>
   </div>`;
 }
 
@@ -98,6 +108,55 @@ function highlightText(text: string): string {
   result = result.replace(/&#39;([^&#]+?)&#39;/g, "<strong>'$1'</strong>");
   result = result.replace(/'([^']+?)'/g, "<strong>'$1'</strong>");
   return result;
+}
+
+/**
+ * Splits a long paragraph into sentence-level fragments for bullet rendering.
+ * Keeps very short text as a single item.
+ */
+function splitToBullets(text: string): string[] {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  // Split by sentence endings, keeping punctuation
+  const parts = clean
+    .split(/(?<=[\.\?\!])\s+(?=[A-ZÁÉÍÓÚÑ¿¡"'(\[])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Merge tiny fragments (<35 chars) with the previous one
+  const merged: string[] = [];
+  for (const p of parts) {
+    if (merged.length > 0 && p.length < 35) {
+      merged[merged.length - 1] += " " + p;
+    } else {
+      merged.push(p);
+    }
+  }
+  return merged.length > 0 ? merged : [clean];
+}
+
+/**
+ * Renders a long text as a bulleted list when it has multiple sentences;
+ * otherwise renders a single paragraph.
+ */
+function renderAsBullets(
+  text: string,
+  opts: { fontSize?: string; lineHeight?: string; color?: string; minSentencesForList?: number } = {},
+): string {
+  const fontSize = opts.fontSize || "10.5px";
+  const lineHeight = opts.lineHeight || "1.6";
+  const color = opts.color || C.textDark;
+  const minSentences = opts.minSentencesForList ?? 2;
+
+  const bullets = splitToBullets(text);
+  if (bullets.length < minSentences) {
+    return `<p style="font-size:${fontSize};line-height:${lineHeight};color:${color};margin:0;">${highlightText(text)}</p>`;
+  }
+  const items = bullets
+    .map(
+      (b) => `<li style="font-size:${fontSize};line-height:${lineHeight};color:${color};margin:0 0 5px 0;padding-left:4px;">${highlightText(b)}</li>`,
+    )
+    .join("");
+  return `<ul style="margin:0;padding-left:18px;list-style-type:disc;">${items}</ul>`;
 }
 
 function chartPlatformBars(sources: SourceBreakdown[]): string {
@@ -256,7 +315,7 @@ export function buildReportHTML(
   blocks.push(
     section(
       "Resumen Ejecutivo",
-      `<p style="font-size:${summaryFontSize};line-height:${summaryLineHeight};color:${C.textDark};margin:0;">${highlightText(report.summary)}</p>`,
+      renderAsBullets(report.summary, { fontSize: summaryFontSize, lineHeight: summaryLineHeight, color: C.textDark }),
     ),
   );
 
@@ -282,12 +341,12 @@ export function buildReportHTML(
   let findingsHtml = "";
   if (findings.length > 0) {
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
-    findingsHtml += `<div class="avoid-break">${insightCard(highlightText(findings[0]), "🔍", firstSentiment)}</div>`;
+    findingsHtml += `<div class="avoid-break">${insightCardBullets(findings[0], "🔍", firstSentiment)}</div>`;
     findings.slice(1).forEach((f, i) => {
       findingsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
         <div class="avoid-break-inner">
           <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+          <div style="flex:1;">${renderAsBullets(f, { fontSize: "10.5px", lineHeight: "1.6" })}</div>
         </div>
       </div>`;
     });
@@ -365,7 +424,7 @@ export function buildReportHTML(
           <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
           <span style="font-size:8px;color:${C.textGray};font-weight:500;">${trendIcon} <strong>${n.mentions}</strong> menciones · ${n.trend}</span>
         </div>
-        <p style="font-size:10px;color:${C.textGray};line-height:1.55;margin:0;">${highlightText(n.description)}</p>
+        <div style="font-size:10px;color:${C.textGray};line-height:1.55;">${renderAsBullets(n.description, { fontSize: "10px", lineHeight: "1.55", color: C.textGray })}</div>
       </div>`;
       })
       .join("");
@@ -375,12 +434,12 @@ export function buildReportHTML(
   const recs = isSummary ? report.recommendations.slice(0, 2) : report.recommendations;
   let recsHtml = "";
   if (recs.length > 0) {
-    recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
+    recsHtml += insightCardBullets(recs[0], "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
       recsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
         <div class="avoid-break-inner">
           <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
+          <div style="flex:1;">${renderAsBullets(r, { fontSize: "10.5px", lineHeight: "1.6" })}</div>
         </div>
       </div>`;
     });
@@ -398,7 +457,7 @@ export function buildReportHTML(
         (c) => `<div class="avoid-break" style="margin-bottom:10px;">
         <div class="avoid-break-inner">
           <span style="min-width:6px;height:6px;border-radius:50%;background:${C.accent};display:block;margin-top:5px;flex-shrink:0;"></span>
-          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(c)}</p>
+          <div style="flex:1;">${renderAsBullets(c, { fontSize: "10.5px", lineHeight: "1.6" })}</div>
         </div>
       </div>`,
       )
