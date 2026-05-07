@@ -10,6 +10,7 @@ import { TrendingUp, Users, Globe, Activity, Eye, Radio } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
 import { EditableText } from "./EditableText";
+import { InlineBoldText } from "./InlineBoldText";
 
 interface ReportAnalyticsChartsProps {
   sourceBreakdown: SourceBreakdown[];
