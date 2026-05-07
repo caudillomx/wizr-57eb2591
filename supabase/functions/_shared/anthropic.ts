@@ -64,7 +64,7 @@ async function callAnthropic(
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: sanitizeJsonString(JSON.stringify(body)),
       signal: controller.signal,
     });
 
