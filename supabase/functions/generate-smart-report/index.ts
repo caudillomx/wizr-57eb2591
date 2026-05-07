@@ -251,7 +251,8 @@ function buildFallbackFindings(
     const authorName = (meta.author || meta.author_name || meta.authorName || meta.author_username || meta.authorUsername) as string | undefined;
     if (authorName) {
       const key = `${authorName}@@${source}`;
-      const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0) + Number(meta.views || 0);
+      // Interacciones reales: likes + comments + shares. Las views NO son interacciones (inflan en órdenes de magnitud videos virales antiguos como VEVO).
+      const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0);
       const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0, samples: [] };
       authorBucket.count += 1;
       authorBucket.engagement += engagement;
@@ -487,7 +488,7 @@ function buildDetailedMentionAnalysis(mentions: Mention[]): string {
     }
     authorMap[key].count++;
     if (m.sentiment) authorMap[key].sentiment.push(m.sentiment);
-    const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0) + ((meta?.views as number) || 0);
+    const eng = ((meta?.likes as number) || 0) + ((meta?.comments as number) || 0) + ((meta?.shares as number) || 0);
     authorMap[key].engagement += eng;
   });
   const topAuthors = Object.values(authorMap).sort((a, b) => b.count - a.count).slice(0, 10);
