@@ -48,6 +48,14 @@ interface AnthropicResponse {
   error?: { message?: string };
 }
 
+/**
+ * Strip lone UTF-16 surrogates that Anthropic's JSON parser rejects.
+ * Any unpaired high/low surrogate is replaced with U+FFFD.
+ */
+function sanitizeJsonString(s: string): string {
+  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
 async function callAnthropic(
   apiKey: string,
   body: Record<string, unknown>,
@@ -64,7 +72,7 @@ async function callAnthropic(
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: sanitizeJsonString(JSON.stringify(body)),
       signal: controller.signal,
     });
 
