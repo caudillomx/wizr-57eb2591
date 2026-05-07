@@ -297,7 +297,7 @@ serve(async (req) => {
     // Step 4: Post-search relevance filter — discard results that don't mention any keyword
     const rawCount = items.length;
     const relevantItems = items.filter(item =>
-      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens)
+      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens, query)
     );
     const discardedCount = rawCount - relevantItems.length;
 
