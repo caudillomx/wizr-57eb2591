@@ -345,6 +345,7 @@ export function SmartReportGenerator({
               ) : (
                 <BulletText text={activeReport.summary} className="text-sm text-muted-foreground leading-relaxed" />
               )}
+            </div>
 
             {/* Visual Analytics */}
             <ReportAnalyticsCharts
