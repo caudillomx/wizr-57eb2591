@@ -49,11 +49,19 @@ interface AnthropicResponse {
 }
 
 /**
- * Strip lone UTF-16 surrogates that Anthropic's JSON parser rejects.
- * Any unpaired high/low surrogate is replaced with U+FFFD.
+ * Strip lone UTF-16 surrogates from a JSON string. JSON.stringify in V8/Deno
+ * emits lone surrogates as literal `\uD8XX` escape sequences (6-char text), so
+ * we must scrub the escape sequences themselves — not raw UTF-16 code units.
+ * Anthropic's parser rejects unpaired surrogates with "no low surrogate in string".
  */
 function sanitizeJsonString(s: string): string {
-  return s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+  // Replace high surrogate escape NOT followed by a low surrogate escape
+  s = s.replace(/\\u([dD][89aAbB][0-9a-fA-F]{2})(?!\\u[dD][c-fC-F][0-9a-fA-F]{2})/g, "\\uFFFD");
+  // Replace low surrogate escape NOT preceded by a high surrogate escape
+  s = s.replace(/(?<!\\u[dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})/g, "\\uFFFD");
+  // Also scrub any raw lone UTF-16 surrogates just in case
+  s = s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+  return s;
 }
 
 async function callAnthropic(
