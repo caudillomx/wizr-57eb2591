@@ -424,7 +424,7 @@ export function buildReportHTML(
           <span style="background:${sentColor(n.sentiment)}15;color:${sentColor(n.sentiment)};font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;">${sentLabel(n.sentiment)}</span>
           <span style="font-size:8px;color:${C.textGray};font-weight:500;">${trendIcon} <strong>${n.mentions}</strong> menciones · ${n.trend}</span>
         </div>
-        <p style="font-size:10px;color:${C.textGray};line-height:1.55;margin:0;">${highlightText(n.description)}</p>
+        <div style="font-size:10px;color:${C.textGray};line-height:1.55;">${renderAsBullets(n.description, { fontSize: "10px", lineHeight: "1.55", color: C.textGray })}</div>
       </div>`;
       })
       .join("");
