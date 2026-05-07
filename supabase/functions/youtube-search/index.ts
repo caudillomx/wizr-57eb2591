@@ -90,18 +90,29 @@ function buildExactQuery(query: string): string {
   return trimmed;
 }
 
-// Extract keyword tokens from the original query for post-search relevance filtering
+// Spanish/English stopwords that should never count alone as a relevance match
+const STOPWORDS = new Set([
+  "de","del","la","el","los","las","un","una","y","o","en","a","al","por","para","con","sin","que","es","se",
+  "the","of","and","or","in","on","at","to","for","a","an","is","it"
+]);
+
+// Extract meaningful keyword tokens (≥3 chars, not stopwords) for relevance scoring
 function extractKeywordTokens(query: string): string[] {
-  // Remove quotes and split into meaningful tokens (2+ chars)
   const cleaned = query.replace(/"/g, "").toLowerCase();
-  return cleaned.split(/\s+/).filter(t => t.length >= 2);
+  return cleaned.split(/\s+/).filter(t => t.length >= 3 && !STOPWORDS.has(t));
 }
 
-// Check if a video's text content is relevant to the search keywords
-function isRelevantResult(title: string, description: string, channelTitle: string, keywords: string[]): boolean {
+// Relevance rule: prefer exact-phrase match; otherwise require ≥2 distinct meaningful tokens
+// (or all of them if the query has fewer than 2). This prevents single-token false positives
+// like "Camino de Guanajuato" matching a query for "Las Libres Guanajuato".
+function isRelevantResult(title: string, description: string, channelTitle: string, keywords: string[], originalQuery: string): boolean {
   const haystack = `${title} ${description} ${channelTitle}`.toLowerCase();
-  // At least one keyword token must appear in title, description, or channel name
-  return keywords.some(kw => haystack.includes(kw));
+  const phrase = originalQuery.replace(/"/g, "").trim().toLowerCase();
+  if (phrase.length >= 4 && haystack.includes(phrase)) return true;
+  if (keywords.length === 0) return true;
+  const matched = keywords.filter(kw => haystack.includes(kw)).length;
+  const required = Math.min(keywords.length, 2);
+  return matched >= required;
 }
 
 // Parse ISO 8601 duration (PT1H2M3S) to seconds
@@ -286,7 +297,7 @@ serve(async (req) => {
     // Step 4: Post-search relevance filter — discard results that don't mention any keyword
     const rawCount = items.length;
     const relevantItems = items.filter(item =>
-      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens)
+      isRelevantResult(item.title, item.description, item.author.name, relevanceTokens, query)
     );
     const discardedCount = rawCount - relevantItems.length;
 
