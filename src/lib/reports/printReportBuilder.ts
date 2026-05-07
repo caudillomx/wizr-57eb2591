@@ -86,9 +86,19 @@ function estimateTextLines(text: string, charsPerLine = 96): number {
 }
 
 function insightCard(text: string, icon: string, color: string): string {
+  // text already comes pre-escaped/highlighted; convert to bullets if multi-sentence.
+  // We re-derive from raw text not available here, so accept callers passing raw and switch.
   return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
     <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
-    <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${text}</p>
+    <div style="flex:1;font-size:10.5px;line-height:1.6;color:${C.textDark};">${text}</div>
+  </div>`;
+}
+
+function insightCardBullets(rawText: string, icon: string, color: string): string {
+  const body = renderAsBullets(rawText, { fontSize: "10.5px", lineHeight: "1.6", color: C.textDark });
+  return `<div class="avoid-break" style="background:${color}08;border-left:4px solid ${color};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;">
+    <span style="font-size:14px;flex-shrink:0;margin-top:1px;">${icon}</span>
+    <div style="flex:1;">${body}</div>
   </div>`;
 }
 
