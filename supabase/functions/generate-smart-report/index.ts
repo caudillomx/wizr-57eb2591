@@ -251,7 +251,8 @@ function buildFallbackFindings(
     const authorName = (meta.author || meta.author_name || meta.authorName || meta.author_username || meta.authorUsername) as string | undefined;
     if (authorName) {
       const key = `${authorName}@@${source}`;
-      const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0) + Number(meta.views || 0);
+      // Interacciones reales: likes + comments + shares. Las views NO son interacciones (inflan en órdenes de magnitud videos virales antiguos como VEVO).
+      const engagement = Number(meta.likes || 0) + Number(meta.comments || 0) + Number(meta.shares || 0);
       const authorBucket = authorMap.get(key) || { count: 0, platform: source, engagement: 0, samples: [] };
       authorBucket.count += 1;
       authorBucket.engagement += engagement;
