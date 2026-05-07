@@ -31,7 +31,7 @@ import { ReportAnalyticsCharts } from "./ReportAnalyticsCharts";
 import { PublishReportDialog } from "./PublishReportDialog";
 import { VisualSlidesViewer } from "./VisualSlidesViewer";
 import { EditableText } from "./EditableText";
-import { InlineBoldText } from "./InlineBoldText";
+import { InlineBoldText, BulletText } from "./InlineBoldText";
 import { Globe, Presentation } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
@@ -332,15 +332,19 @@ export function SmartReportGenerator({
                   Modo edición. Click en cualquier texto para modificarlo. Las gráficas y métricas no son editables. Los cambios se aplican al PDF y al link público.
                 </div>
               )}
-              <EditableText
-                editing={isEditing}
-                value={activeReport.summary}
-                onChange={(v) => updateReport({ summary: v })}
-                multiline
-                minRows={3}
-                className="text-muted-foreground block"
-                placeholder="Resumen ejecutivo"
-              />
+              {isEditing ? (
+                <EditableText
+                  editing={isEditing}
+                  value={activeReport.summary}
+                  onChange={(v) => updateReport({ summary: v })}
+                  multiline
+                  minRows={3}
+                  className="text-muted-foreground block"
+                  placeholder="Resumen ejecutivo"
+                />
+              ) : (
+                <BulletText text={activeReport.summary} className="text-sm text-muted-foreground leading-relaxed" />
+              )}
             </div>
 
             {/* Visual Analytics */}
@@ -467,7 +471,7 @@ export function SmartReportGenerator({
                               {n.trend === "creciente" ? "📈" : n.trend === "decreciente" ? "📉" : "➡️"} {n.trend}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground"><InlineBoldText text={n.description} /></p>
+                          <BulletText text={n.description} className="text-xs text-muted-foreground" />
                         </div>
                       </div>
                     </div>

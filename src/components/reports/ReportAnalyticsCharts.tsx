@@ -10,7 +10,7 @@ import { TrendingUp, Users, Globe, Activity, Eye, Radio } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SourceBreakdown, InfluencerInfo, TimelinePoint, MediaOutletInfo } from "@/hooks/useSmartReport";
 import { EditableText } from "./EditableText";
-import { InlineBoldText } from "./InlineBoldText";
+import { InlineBoldText, BulletText } from "./InlineBoldText";
 
 interface ReportAnalyticsChartsProps {
   sourceBreakdown: SourceBreakdown[];
@@ -178,7 +178,7 @@ export function ReportAnalyticsCharts({
                 placeholder="Evaluación de impacto"
               />
             ) : (
-              <p className="text-sm leading-relaxed"><InlineBoldText text={impactAssessment} /></p>
+              <BulletText text={impactAssessment || ""} className="text-sm leading-relaxed" />
             )}
           </CardContent>
         </Card>
@@ -202,7 +202,7 @@ export function ReportAnalyticsCharts({
                 placeholder="Análisis de sentimiento"
               />
             ) : (
-              <p className="text-sm leading-relaxed text-muted-foreground"><InlineBoldText text={sentimentAnalysis} /></p>
+              <BulletText text={sentimentAnalysis || ""} className="text-sm leading-relaxed text-muted-foreground" />
             )}
           </CardContent>
         </Card>
