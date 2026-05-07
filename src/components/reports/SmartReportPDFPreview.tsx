@@ -826,7 +826,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
           <div data-pdf-section style={SECTION_STYLE}>
             <SectionHeader title="Conclusiones" dark isCrisis={isCrisis} />
             <SectionBody bg="#f8fafc">
-              <p style={{ fontSize: "12.5px", lineHeight: 1.75, marginBottom: "10px" }}>{conclusionIntro}</p>
+              <div style={{ marginBottom: "10px" }}><BulletList text={conclusionIntro} fontSize="12.5px" /></div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {conclusionBullets.map((b, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", pageBreakInside: "avoid", breakInside: "avoid" }}>
