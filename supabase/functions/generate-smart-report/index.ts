@@ -173,33 +173,82 @@ function buildShortAnchor(options?: {
 }
 
 function buildFallbackNarratives(mentions: Mention[]): NarrativeItem[] {
-  const buckets = new Map<string, { count: number; negatives: number; positives: number; samples: string[] }>();
+  // Build thematic clusters from frequent significant terms in titles/descriptions,
+  // NOT from platform/domain. Falls back to a single generic narrative if signal is too weak.
+  const STOP = new Set<string>([
+    "el","la","los","las","un","una","unos","unas","de","del","al","a","y","o","u","e","que","qué","como","cómo",
+    "con","sin","por","para","en","sobre","entre","hasta","desde","contra","bajo","tras","durante","mediante","según",
+    "ante","es","son","fue","fueron","ser","está","están","estar","ha","han","muy","más","menos","ya","aún","aun",
+    "tan","tanto","esto","esta","este","estos","estas","ese","esa","esos","esas","cuando","mientras","donde","quien",
+    "cual","cuales","si","sí","no","ni","pero","aunque","porque","sino","luego","ahora","aquí","allí","cada","todo",
+    "toda","todos","todas","otro","otra","otros","otras","mucho","mucha","muchos","muchas","sus","mi","tu","su",
+    "the","a","an","of","in","on","for","and","or","to","from","by","with","is","are","was","were","be","been","this",
+    "that","these","those","it","its","at","as","but","not",
+  ]);
 
-  for (const mention of mentions) {
-    const source = mention.source_domain || "fuentes digitales";
-    const key = source.toLowerCase();
-    if (!buckets.has(key)) {
-      buckets.set(key, { count: 0, negatives: 0, positives: 0, samples: [] });
+  type Cluster = { term: string; count: number; pos: number; neg: number; samples: string[] };
+  const clusters = new Map<string, Cluster>();
+
+  const addToken = (raw: string, mention: Mention) => {
+    const term = raw.toLowerCase().replace(/[^a-záéíóúñü0-9 ]/gi, "").trim();
+    if (!term || term.length < 4 || STOP.has(term) || /^\d+$/.test(term)) return;
+    if (!clusters.has(term)) clusters.set(term, { term, count: 0, pos: 0, neg: 0, samples: [] });
+    const c = clusters.get(term)!;
+    c.count += 1;
+    if (mention.sentiment === "positivo") c.pos += 1;
+    if (mention.sentiment === "negativo") c.neg += 1;
+    if (c.samples.length < 2) {
+      const sample = (mention.title || mention.description || "").trim();
+      if (sample && !c.samples.includes(sample)) c.samples.push(sample);
     }
-    const bucket = buckets.get(key)!;
-    bucket.count += 1;
-    if (mention.sentiment === "negativo") bucket.negatives += 1;
-    if (mention.sentiment === "positivo") bucket.positives += 1;
-    if (bucket.samples.length < 2) {
-      bucket.samples.push(mention.title || mention.description || mention.url);
+  };
+
+  for (const m of mentions) {
+    const text = `${m.title || ""} ${m.description || ""}`;
+    const words = text.split(/\s+/);
+    // unigrams
+    for (const w of words) addToken(w, m);
+    // bigrams (more thematic)
+    for (let i = 0; i < words.length - 1; i++) {
+      const bigram = `${words[i]} ${words[i + 1]}`;
+      const lc = bigram.toLowerCase();
+      const tokens = lc.split(" ");
+      if (tokens.some((t) => STOP.has(t.replace(/[^a-záéíóúñü0-9]/gi, "")))) continue;
+      addToken(bigram, m);
     }
   }
 
-  return Array.from(buckets.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 5)
-    .map(([source, data], index) => ({
-      narrative: `Narrativa ${index + 1}: conversación en ${source}`,
-      description: `La cobertura en ${source} concentra ${data.count} menciones en la muestra y gira alrededor de ${data.samples.join("; ").slice(0, 220)}.`,
-      mentions: data.count,
-      sentiment: data.negatives > data.positives ? "negativo" : data.positives > data.negatives ? "positivo" : "mixto",
+  const ranked = Array.from(clusters.values())
+    .filter((c) => c.count >= 2)
+    .sort((a, b) => b.count - a.count);
+
+  // Dedupe overlapping themes (keep larger n-gram if it contains a smaller one already taken)
+  const picked: Cluster[] = [];
+  for (const c of ranked) {
+    if (picked.length >= 5) break;
+    const overlaps = picked.some((p) => p.term.includes(c.term) || c.term.includes(p.term));
+    if (!overlaps) picked.push(c);
+  }
+
+  if (picked.length < 4) {
+    // Last-resort generic narrative — never platform-named
+    const total = mentions.length;
+    return [{
+      narrative: "Conversación general sobre el caso monitoreado",
+      description: `La muestra agrupa ${total} menciones sin un eje temático dominante claro; predomina cobertura informativa y reacciones dispersas.`,
+      mentions: total,
+      sentiment: "mixto",
       trend: "estable",
-    }));
+    }];
+  }
+
+  return picked.map((c) => ({
+    narrative: `Eje temático: ${c.term}`,
+    description: `Conjunto de menciones que giran alrededor de "${c.term}" (${c.count} apariciones). Ejemplos: ${c.samples.join("; ").slice(0, 220)}.`,
+    mentions: c.count,
+    sentiment: c.neg > c.pos ? "negativo" : c.pos > c.neg ? "positivo" : "mixto",
+    trend: "estable",
+  }));
 }
 
 function buildFallbackFindings(

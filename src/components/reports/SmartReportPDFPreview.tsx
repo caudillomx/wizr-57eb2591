@@ -669,7 +669,7 @@ export const SmartReportPDFPreview = forwardRef<HTMLDivElement, Props>(
                           <span style={{ fontSize: "10px", color: "#94a3b8" }}>{n.mentions} menciones</span>
                           <span style={{ fontSize: "10px", color: "#94a3b8" }}>{trendIcon} {n.trend}</span>
                         </div>
-                        <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.6, marginTop: "4px" }}>{n.description}</p>
+                        <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.6, marginTop: "4px" }}><InlineBold text={n.description} /></p>
                       </div>
                     );
                   })}
