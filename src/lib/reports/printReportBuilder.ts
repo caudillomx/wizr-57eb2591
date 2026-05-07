@@ -100,6 +100,55 @@ function highlightText(text: string): string {
   return result;
 }
 
+/**
+ * Splits a long paragraph into sentence-level fragments for bullet rendering.
+ * Keeps very short text as a single item.
+ */
+function splitToBullets(text: string): string[] {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  // Split by sentence endings, keeping punctuation
+  const parts = clean
+    .split(/(?<=[\.\?\!])\s+(?=[A-ZÁÉÍÓÚÑ¿¡"'(\[])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Merge tiny fragments (<35 chars) with the previous one
+  const merged: string[] = [];
+  for (const p of parts) {
+    if (merged.length > 0 && p.length < 35) {
+      merged[merged.length - 1] += " " + p;
+    } else {
+      merged.push(p);
+    }
+  }
+  return merged.length > 0 ? merged : [clean];
+}
+
+/**
+ * Renders a long text as a bulleted list when it has multiple sentences;
+ * otherwise renders a single paragraph.
+ */
+function renderAsBullets(
+  text: string,
+  opts: { fontSize?: string; lineHeight?: string; color?: string; minSentencesForList?: number } = {},
+): string {
+  const fontSize = opts.fontSize || "10.5px";
+  const lineHeight = opts.lineHeight || "1.6";
+  const color = opts.color || C.textDark;
+  const minSentences = opts.minSentencesForList ?? 2;
+
+  const bullets = splitToBullets(text);
+  if (bullets.length < minSentences) {
+    return `<p style="font-size:${fontSize};line-height:${lineHeight};color:${color};margin:0;">${highlightText(text)}</p>`;
+  }
+  const items = bullets
+    .map(
+      (b) => `<li style="font-size:${fontSize};line-height:${lineHeight};color:${color};margin:0 0 5px 0;padding-left:4px;">${highlightText(b)}</li>`,
+    )
+    .join("");
+  return `<ul style="margin:0;padding-left:18px;list-style-type:disc;">${items}</ul>`;
+}
+
 function chartPlatformBars(sources: SourceBreakdown[]): string {
   const data = sources.slice(0, 8);
   if (!data.length) return "";
