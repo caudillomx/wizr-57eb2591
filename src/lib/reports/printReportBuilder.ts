@@ -341,12 +341,12 @@ export function buildReportHTML(
   let findingsHtml = "";
   if (findings.length > 0) {
     const firstSentiment = parseFloat(negPct) > 60 ? C.negative : C.accent;
-    findingsHtml += `<div class="avoid-break">${insightCard(highlightText(findings[0]), "🔍", firstSentiment)}</div>`;
+    findingsHtml += `<div class="avoid-break">${insightCardBullets(findings[0], "🔍", firstSentiment)}</div>`;
     findings.slice(1).forEach((f, i) => {
       findingsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
         <div class="avoid-break-inner">
           <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(f)}</p>
+          <div style="flex:1;">${renderAsBullets(f, { fontSize: "10.5px", lineHeight: "1.6" })}</div>
         </div>
       </div>`;
     });
