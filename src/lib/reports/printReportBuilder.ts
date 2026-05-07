@@ -104,7 +104,11 @@ function insightCardBullets(rawText: string, icon: string, color: string): strin
 
 function highlightText(text: string): string {
   const escaped = escapeHtml(text);
-  let result = escaped.replace(/(\d[\d,.]*\s*(?:%|menciones|interacciones|M\b|K\b))/gi, "<strong>$1</strong>");
+  // 1) Markdown-style **bold** from the AI -> <strong>
+  let result = escaped.replace(/\*\*([^*\n]+?)\*\*/g, `<strong>$1</strong>`);
+  // 2) Auto-bold metrics
+  result = result.replace(/(\d[\d,.]*\s*(?:%|menciones|interacciones|M\b|K\b))/gi, "<strong>$1</strong>");
+  // 3) Quoted phrases
   result = result.replace(/&#39;([^&#]+?)&#39;/g, "<strong>'$1'</strong>");
   result = result.replace(/'([^']+?)'/g, "<strong>'$1'</strong>");
   return result;
