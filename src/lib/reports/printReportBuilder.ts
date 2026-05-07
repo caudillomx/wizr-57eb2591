@@ -434,12 +434,12 @@ export function buildReportHTML(
   const recs = isSummary ? report.recommendations.slice(0, 2) : report.recommendations;
   let recsHtml = "";
   if (recs.length > 0) {
-    recsHtml += insightCard(highlightText(recs[0]), "💡", C.accent);
+    recsHtml += insightCardBullets(recs[0], "💡", C.accent);
     recs.slice(1).forEach((r, i) => {
       recsHtml += `<div class="avoid-break" style="margin-bottom:10px;">
         <div class="avoid-break-inner">
           <div style="min-width:24px;height:24px;border-radius:50%;background:${C.primary};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${i + 2}</div>
-          <p style="font-size:10.5px;line-height:1.6;color:${C.textDark};margin:0;">${highlightText(r)}</p>
+          <div style="flex:1;">${renderAsBullets(r, { fontSize: "10.5px", lineHeight: "1.6" })}</div>
         </div>
       </div>`;
     });
