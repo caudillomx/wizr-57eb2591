@@ -46,6 +46,16 @@ function esc(t: string | undefined | null): string {
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Escapes HTML and converts **bold** markdown to <strong>. Strips unpaired ** left by truncation. */
+function escMd(t: string | undefined | null): string {
+  if (!t) return "";
+  const escaped = esc(t);
+  // Convert paired **...** to <strong>
+  const withBold = escaped.replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>");
+  // Strip any remaining stray ** (from truncated text)
+  return withBold.replace(/\*\*/g, "");
+}
+
 function fmtNum(n: number): string {
   if (!n) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -385,7 +395,7 @@ function slideSummary(report: SmartReportContent, projectName: string, page: num
         <div style="font-size:12px;letter-spacing:0.3em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:18px;">01 · Brief Ejecutivo</div>
         <h2 style="font-size:48px;font-weight:800;margin:0 0 24px 0;line-height:1.08;color:${C.text};letter-spacing:-0.02em;">${esc(report.title || "Resumen del período")}</h2>
         <div style="width:80px;height:4px;background:${C.orange};margin-bottom:28px;flex-shrink:0;"></div>
-        <p style="font-size:20px;line-height:1.5;color:${C.textMid};margin:0;font-weight:400;">${esc(truncate(summary, 1600))}</p>
+        <p style="font-size:20px;line-height:1.5;color:${C.textMid};margin:0;font-weight:400;">${escMd(truncate(summary, 1600))}</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;justify-content:center;">
         ${[
@@ -430,7 +440,7 @@ function slideSentiment(report: SmartReportContent, projectName: string, page: n
           </div>
           <div style="background:${C.violetSoft};border-radius:16px;padding:24px 28px;font-size:17px;line-height:1.5;color:${C.text};">
             <div style="font-size:11px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-bottom:10px;">Lectura estratégica</div>
-            ${esc(truncate(interp, 1100))}
+            ${escMd(truncate(interp, 1100))}
           </div>
         </div>
       </div>
@@ -460,7 +470,7 @@ function slideTimeline(report: SmartReportContent, projectName: string, page: nu
         ${svgAreaTimeline(report.timeline, 1680, 440)}
       </div>
       <div style="margin-top:18px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:16px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 800))}
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 800))}
       </div>
     </div>
   `;
@@ -499,8 +509,8 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
           </div>
           <span style="font-size:20px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}<span style="font-size:11px;color:${C.textMuted};font-weight:600;"> · ${pct}%</span></span>
         </div>
-        <div style="font-size:16px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${esc(truncate(n.narrative, 90))}</div>
-        <div style="font-size:11.5px;color:${C.textMid};line-height:1.4;padding-left:8px;flex:1;overflow:hidden;">${esc(truncate(n.description, 320))}</div>
+        <div style="font-size:16px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${escMd(truncate(n.narrative, 90))}</div>
+        <div style="font-size:11.5px;color:${C.textMid};line-height:1.4;padding-left:8px;flex:1;overflow:hidden;">${escMd(truncate(n.description, 320))}</div>
       </div>`;
     })
     .join("");
@@ -524,7 +534,7 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
       <!-- Cards grid -->
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;flex:1;min-height:0;">${cards}</div>
       <div style="margin-top:14px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:14px 22px;font-size:14px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 600))}
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 600))}
       </div>
     </div>
   `;
@@ -573,7 +583,7 @@ function slideKeywordsCloud(report: SmartReportContent, projectName: string, pag
           `).join("")}
         </div>
         <div style="background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:14px 22px;font-size:14px;line-height:1.5;color:${C.text};max-width:1100px;">
-          <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 500))}
+          <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 500))}
         </div>
       </div>
     </div>
@@ -608,7 +618,7 @@ function slideInfluencers(report: SmartReportContent, projectName: string, page:
       <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Voces con mayor impacto en redes</h2>
       <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin influenciadores destacados.</div>`}</div>
       <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -641,7 +651,7 @@ function slideMediaOutlets(report: SmartReportContent, projectName: string, page
       <h2 style="font-size:46px;font-weight:800;margin:0 0 28px 0;color:${C.text};line-height:1.05;letter-spacing:-0.02em;">Cobertura editorial dominante</h2>
       <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">${rows || `<div style="font-size:22px;color:${C.textMuted};text-align:center;padding:80px;">Sin medios digitales destacados.</div>`}</div>
       <div style="margin-top:16px;background:${C.orangeSoft};border-left:4px solid ${C.orange};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.orange};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -660,7 +670,7 @@ function slideSourceMix(report: SmartReportContent, projectName: string, page: n
         ${data.length ? svgHorizontalBars(data, 1700, 60) : `<div style="font-size:22px;color:${C.textMuted};">Sin datos de plataforma.</div>`}
       </div>
       <div style="margin-top:16px;background:${C.violetSoft};border-left:4px solid ${C.violet};border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.5;color:${C.text};">
-        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${esc(truncate(insight, 700))}
+        <span style="font-size:10px;letter-spacing:0.25em;color:${C.violet};font-weight:800;text-transform:uppercase;margin-right:10px;">Lectura</span>${escMd(truncate(insight, 700))}
       </div>
     </div>
   `;
@@ -677,7 +687,7 @@ function slideKeyFindings(report: SmartReportContent, projectName: string, page:
         <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;white-space:nowrap;">${labels[i] || "Hallazgo"}</div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(f, 600))}</div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">${escMd(truncate(f, 600))}</div>
     </div>`,
     )
     .join("");
@@ -709,7 +719,7 @@ function slideRecommendations(report: SmartReportContent, projectName: string, p
         </div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${esc(truncate(r, 600))}</div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${escMd(truncate(r, 600))}</div>
     </div>`;
     })
     .join("");
@@ -744,7 +754,7 @@ function slideClosing(report: SmartReportContent, projectName: string, page: num
         <span style="width:8px;height:8px;border-radius:50%;background:${C.orange};"></span>
         <span style="font-size:13px;letter-spacing:0.28em;color:#fff;font-weight:800;text-transform:uppercase;">Conclusión del periodo</span>
       </div>
-      <p style="font-size:42px;font-weight:600;line-height:1.3;margin:0 0 56px 0;color:#fff;max-width:1620px;letter-spacing:-0.018em;">${esc(truncate(conclusion, 800))}</p>
+      <p style="font-size:42px;font-weight:600;line-height:1.3;margin:0 0 56px 0;color:#fff;max-width:1620px;letter-spacing:-0.018em;">${escMd(truncate(conclusion, 800))}</p>
       <div style="height:1px;background:rgba(255,255,255,0.15);margin:32px 0;"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="display:flex;flex-direction:column;gap:4px;">
