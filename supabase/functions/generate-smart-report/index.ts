@@ -1065,7 +1065,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       strategicFocus,
       knownCases,
     });
-    const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions);
+    const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions, audiencePerspective);
 
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
@@ -1135,8 +1135,12 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       ...fallbackFindings,
     ]).slice(0, 8);
 
+    const aiRecommendations = Array.isArray(reportContent.recommendations) ? reportContent.recommendations : [];
+    const safeAiRecommendations = audiencePerspective === "institutional"
+      ? aiRecommendations
+      : aiRecommendations.filter((item) => !isInstitutionalRecommendation(String(item)));
     const mergedRecommendations = normalizeTextList([
-      ...(Array.isArray(reportContent.recommendations) ? reportContent.recommendations : []),
+      ...safeAiRecommendations,
       ...fallbackRecommendations,
     ]).slice(0, 7);
 
