@@ -687,7 +687,9 @@ function slideKeyFindings(report: SmartReportContent, projectName: string, page:
         <div style="font-size:11px;font-weight:800;letter-spacing:0.22em;opacity:0.85;margin-bottom:8px;text-transform:uppercase;white-space:nowrap;">${labels[i] || "Hallazgo"}</div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">${escMd(truncate(f, 600))}</div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:19px;line-height:1.5;color:${C.text};font-weight:500;">
+        <p style="display:block;margin:0;width:100%;font:inherit;line-height:inherit;color:inherit;">${escMd(truncate(f, 600))}</p>
+      </div>
     </div>`,
     )
     .join("");
@@ -719,7 +721,9 @@ function slideRecommendations(report: SmartReportContent, projectName: string, p
         </div>
         <div style="font-size:48px;font-weight:800;line-height:1;letter-spacing:-0.02em;">${String(i + 1).padStart(2, "0")}</div>
       </div>
-      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">${escMd(truncate(r, 600))}</div>
+      <div style="flex:1;padding:24px 32px;display:flex;align-items:center;font-size:18px;line-height:1.5;color:${C.text};font-weight:500;">
+        <p style="display:block;margin:0;width:100%;font:inherit;line-height:inherit;color:inherit;">${escMd(truncate(r, 600))}</p>
+      </div>
     </div>`;
     })
     .join("");
