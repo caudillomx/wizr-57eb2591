@@ -953,6 +953,8 @@ ${entityNames?.length ? `ENTIDADES: ${entityNames.join(", ")}` : ""}
 
 === MÉTRICAS ===
 Total: ${metrics.totalMentions} | Positivas: ${metrics.positiveCount} (${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%) | Negativas: ${metrics.negativeCount} (${Math.round(metrics.negativeCount/metrics.totalMentions*100)}%) | Neutrales: ${metrics.neutralCount} (${Math.round(metrics.neutralCount/metrics.totalMentions*100)}%)
+
+⚠️ CIFRAS DE SENTIMIENTO BLOQUEADAS: los únicos porcentajes válidos son los listados arriba (positivo ${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%, negativo ${Math.round(metrics.negativeCount/metrics.totalMentions*100)}%, neutral ${Math.round(metrics.neutralCount/metrics.totalMentions*100)}% sobre ${metrics.totalMentions} menciones). PROHIBIDO inventar otros porcentajes (ej. "51.7% positivo" cuando el real es ${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%) o mezclar "porcentajes de la muestra" con "porcentajes del universo": en este reporte la muestra ES el universo. Cualquier porcentaje de sentimiento que escribas debe coincidir EXACTAMENTE (±1pp) con los valores anteriores.
 Fuentes: ${metrics.topSources.join(", ")}
 
 ${detailedAnalysis}
