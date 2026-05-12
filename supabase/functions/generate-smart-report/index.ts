@@ -905,7 +905,7 @@ ${JSON.stringify(mentionsSummary, null, 2)}
   "platformsInsight": "string - 2-3 oraciones explicando dónde se concentra la conversación y qué implica para la estrategia. Máx 320 caracteres.",${entityComparisonInstruction}
   "keyFindings": ["string - hallazgo de 3-5 oraciones con estructura QUÉ + DÓNDE/QUIÉN + IMPLICACIÓN ESTRATÉGICA, citando fuentes específicas y datos auditables. NUNCA un párrafo genérico ni una sola oración descriptiva."],
   "conclusions": ["string - conclusión ESTRATÉGICA integrando múltiples datos"],
-  "recommendations": ["string - recomendación de NIVEL DIRECTIVO de 3-4 oraciones que articule: decisión concreta + riesgo mitigado u oportunidad capturada + plazo (inmediato/2-4 semanas/mes) + área responsable genérica. NUNCA tarea operativa de monitoreo ni una sola línea suelta."],
+  "recommendations": ["string - recomendación de 3-4 oraciones escrita DESDE LA PERSPECTIVA REAL de la audiencia (institucional, participante externo, u observador, según el bloque PERSPECTIVA DE LA AUDIENCIA). Debe articular acción concreta dentro del rol real de la audiencia + por qué importa (anclado al Enfoque) + plazo + ámbito de acción propio. PROHIBIDO asumir autoridad institucional o vocería oficial si la audiencia no la tiene. NUNCA tarea operativa de monitoreo."],
   "templates": {
     "executive": "string - 3-4 párrafos para directivos",
     "technical": "string - 3-4 párrafos para analistas",
