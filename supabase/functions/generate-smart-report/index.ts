@@ -1190,7 +1190,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       recommendations: mergedRecommendations.length >= 5 ? mergedRecommendations : fallbackRecommendations,
       conclusions: reportContent.conclusions || [],
       impactAssessment: reportContent.impactAssessment || undefined,
-      sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
+      sentimentAnalysis: sanitizeSentimentPercents(reportContent.sentimentAnalysis, metrics) || undefined,
       narratives: safeNarratives.length > 0 ? safeNarratives : fallbackNarratives,
       keywords: safeKeywords.length > 0 ? safeKeywords : undefined,
       keywordsInsight: (reportContent as { keywordsInsight?: string }).keywordsInsight || undefined,
