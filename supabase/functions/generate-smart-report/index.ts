@@ -80,6 +80,26 @@ interface ReportContent {
   };
 }
 
+type AudiencePerspective = "institutional" | "external" | "observer";
+
+function inferAudiencePerspective(projectAudience = "", projectObjective = ""): AudiencePerspective {
+  const text = `${projectAudience} ${projectObjective}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (/\b(activista|activistas|empresario|empresarios|sociedad civil|ong|colectivo|colectivos|lider social|lideres sociales|ciudadan|candidat|comunicador independiente|sector privado|camara empresarial)\b/.test(text)) {
+    return "external";
+  }
+  if (/\b(academia|academico|academica|investigador|investigadora|analista|consultor|consultoria|think tank|observador|prensa|periodista)\b/.test(text)) {
+    return "observer";
+  }
+  if (/\b(gobierno|gubernamental|autoridad|alcaldia|municipio|ayuntamiento|secretaria|dependencia|institucion|institucional|voceria oficial|comunicacion corporativa|comunicacion social|prensa oficial|marca monitoreada|organizacion monitoreada)\b/.test(text)) {
+    return "institutional";
+  }
+  return "external";
+}
+
+function isInstitutionalRecommendation(text: string): boolean {
+  return /(área de comunicación|area de comunicacion|comunicación estratégica|comunicacion estrategica|asuntos públicos|asuntos publicos|respuesta pública|respuesta publica|respuesta institucional|postura rectora|dirección responsable|direccion responsable|coordinación institucional|coordinacion institucional|contrapeso institucional|posicionamiento institucional|vocería oficial|voceria oficial|equipo a cargo|contención de tono|contencion de tono|proteger a la organización|proteger a la organizacion|gestión reputacional|gestion reputacional|comité de crisis|comite de crisis)/i.test(text);
+}
+
 function normalizeTextList(items: unknown[]): string[] {
   const seen = new Set<string>();
 
