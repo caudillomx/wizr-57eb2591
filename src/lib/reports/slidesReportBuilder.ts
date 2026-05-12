@@ -46,6 +46,16 @@ function esc(t: string | undefined | null): string {
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Escapes HTML and converts **bold** markdown to <strong>. Strips unpaired ** left by truncation. */
+function escMd(t: string | undefined | null): string {
+  if (!t) return "";
+  const escaped = esc(t);
+  // Convert paired **...** to <strong>
+  const withBold = escaped.replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>");
+  // Strip any remaining stray ** (from truncated text)
+  return withBold.replace(/\*\*/g, "");
+}
+
 function fmtNum(n: number): string {
   if (!n) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
