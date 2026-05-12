@@ -655,6 +655,7 @@ serve(async (req) => {
 
     const body: ReportRequest = await req.json();
     const { mentions, reportFormat = "full", projectName, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, dateRange } = body;
+    const audiencePerspective = inferAudiencePerspective(projectAudience, projectObjective);
 
     if (!mentions || mentions.length === 0) {
       return new Response(
@@ -829,10 +830,17 @@ Las entidades [${entityNames.join(", ")}] son variantes del MISMO sujeto/tema. N
 - Solo distingue entre ellas si hay una diferencia factual evidente en las menciones.\n`
       : "";
 
+    const audiencePerspectiveInstruction = audiencePerspective === "institutional"
+      ? `CLASIFICACIÓN DE AUDIENCIA: A) INSTITUCIONAL / VOCERÍA OFICIAL. Puede recomendar coordinación de vocería, respuesta institucional o gestión reputacional, siempre sin inventar áreas internas específicas.`
+      : audiencePerspective === "observer"
+        ? `CLASIFICACIÓN DE AUDIENCIA: C) OBSERVADOR / ANALISTA. NO interviene ni gestiona la conversación: documenta, contrasta fuentes, profundiza hipótesis y organiza evidencia.`
+        : `CLASIFICACIÓN DE AUDIENCIA: B) PARTICIPANTE EXTERNO / SOCIEDAD CIVIL / ACTORES PRIVADOS. NO es autoridad, NO controla a la entidad monitoreada y NO gestiona la conversación oficial. Sus acciones posibles son: construir postura propia, publicar contenidos, sumar voceros aliados, abrir espacios de conversación, aportar datos, activar presencia digital y participar en el debate público.`;
+
     const systemPrompt = `Eres un ANALISTA SENIOR de inteligencia estratégica y monitoreo de medios.
 
 TU AUDIENCIA: ${projectAudience}
 OBJETIVO DEL MONITOREO: ${projectObjective}
+${audiencePerspectiveInstruction}
 
 PRINCIPIOS:
 1. ESPECIFICIDAD: Usa nombres de fuentes, autores, fechas. Nunca "varias fuentes" o "algunos medios".
