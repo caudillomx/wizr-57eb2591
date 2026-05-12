@@ -80,6 +80,26 @@ interface ReportContent {
   };
 }
 
+type AudiencePerspective = "institutional" | "external" | "observer";
+
+function inferAudiencePerspective(projectAudience = "", projectObjective = ""): AudiencePerspective {
+  const text = `${projectAudience} ${projectObjective}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (/\b(activista|activistas|empresario|empresarios|sociedad civil|ong|colectivo|colectivos|lider social|lideres sociales|ciudadan|candidat|comunicador independiente|sector privado|camara empresarial)\b/.test(text)) {
+    return "external";
+  }
+  if (/\b(academia|academico|academica|investigador|investigadora|analista|consultor|consultoria|think tank|observador|prensa|periodista)\b/.test(text)) {
+    return "observer";
+  }
+  if (/\b(gobierno|gubernamental|autoridad|alcaldia|municipio|ayuntamiento|secretaria|dependencia|institucion|institucional|voceria oficial|comunicacion corporativa|comunicacion social|prensa oficial|marca monitoreada|organizacion monitoreada)\b/.test(text)) {
+    return "institutional";
+  }
+  return "external";
+}
+
+function isInstitutionalRecommendation(text: string): boolean {
+  return /(área de comunicación|area de comunicacion|comunicación estratégica|comunicacion estrategica|asuntos públicos|asuntos publicos|respuesta pública|respuesta publica|capacidad de respuesta|respuesta institucional|postura rectora|dirección responsable|direccion responsable|coordinación institucional|coordinacion institucional|contrapeso institucional|posicionamiento institucional|vocería oficial|voceria oficial|equipo a cargo|contención de tono|contencion de tono|gestión por tipo de canal|gestion por tipo de canal|mitigar riesgo reputacional|umbrales? claros? de escalamiento|proteger a la organización|proteger a la organizacion|sobreexponer a la organización|sobreexponer a la organizacion|gestión reputacional|gestion reputacional|comité de crisis|comite de crisis|acción correctiva|accion correctiva|intervenir|intervención|intervencion|autoridad pública|autoridad publica)/i.test(text);
+}
+
 function normalizeTextList(items: unknown[]): string[] {
   const seen = new Set<string>();
 
@@ -442,7 +462,7 @@ function buildFallbackFindings(
    return normalizeTextList(findings.map(sanitizeFindingText)).slice(0, 8);
 }
 
-function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[]): string[] {
+function buildFallbackRecommendations(metrics: ReportContent["metrics"], mentions: Mention[], perspective: AudiencePerspective = "external"): string[] {
   const dominantTone = metrics.negativeCount > metrics.positiveCount ? "predominio de tono adverso" : metrics.positiveCount > metrics.negativeCount ? "ventana de tono favorable" : "equilibrio inestable de tono";
 
   // Rank sources by volume (NOT order of appearance) and keep only those with material weight
@@ -462,14 +482,32 @@ function buildFallbackRecommendations(metrics: ReportContent["metrics"], mention
   }).length;
   const mediaCount = Math.max(0, mentions.length - socialCount);
 
-  const recommendations = [
-    `En el plazo inmediato, se sugiere que el área de comunicación estratégica defina una postura rectora para ordenar la respuesta pública ante el ${dominantTone} observado. La decisión no pasa por reaccionar a cada mención, sino por fijar un marco interpretativo consistente para las piezas, vocerías y mensajes que eventualmente se activen. Esto ayuda a reducir el riesgo de contradicción narrativa y a evitar que terceros impongan el sentido dominante del tema sin contrapeso institucional.`,
-    `En las próximas 2 a 4 semanas, podría convenir priorizar seguimiento ejecutivo y capacidad de respuesta sobre ${topSources || "las fuentes con mayor concentración de volumen"}. La oportunidad está en actuar sobre los espacios que realmente están moldeando percepción, en lugar de dispersar esfuerzos en canales secundarios. El equipo a cargo de asuntos públicos y comunicación reputacional puede usar esta jerarquización para asignar atención según incidencia real y no solo visibilidad aparente.`,
-    `Dado que la conversación combina ${socialCount} menciones en redes sociales y ${mediaCount} en medios digitales, se recomienda diferenciar la lógica de gestión por tipo de canal durante el próximo mes. En redes, el foco debería estar en velocidad de lectura, escalamiento y contención de tono; en medios, en contextualización, precisión y permanencia del encuadre. Esta separación permite mitigar riesgo reputacional sin tratar ecosistemas distintos como si respondieran a la misma dinámica.`,
-    `Conviene que la dirección responsable evalúe umbrales claros de escalamiento para los próximos días, especialmente si el volumen negativo vuelve a concentrarse en pocos emisores o fechas críticas. La decisión estratégica aquí es anticipar cuándo un tema deja de ser monitoreable y exige coordinación institucional más amplia. Ese criterio reduce improvisación, mejora tiempos de reacción y protege a la organización frente a repuntes que suelen crecer más rápido que la capacidad interna de interpretación.`,
-    `En el horizonte de 2 a 4 semanas, se sugiere capitalizar cualquier ventana de tono neutral o positivo para reequilibrar el marco de conversación con mensajes verificables y consistentes. La oportunidad no radica en sobreexponer a la organización, sino en introducir contexto suficiente para que la percepción pública no quede definida únicamente por los vectores adversos. El equipo a cargo de posicionamiento institucional puede evaluar cuándo esa intervención suma credibilidad y cuándo sería preferible reservarla.`,
-    `También podría convenir revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esta decisión permite distinguir entre un riesgo que se está ampliando y otro que únicamente se mantiene visible por inercia mediática o social. Para la dirección, esa diferencia es clave porque define si se necesita una acción correctiva de fondo o solo una gestión prudente de continuidad.`,
+  const externalRecommendations = [
+    `En el plazo inmediato, convendría construir una **postura propia** frente al ${dominantTone} observado, usando datos verificables y lenguaje público claro. La meta no es administrar la conversación desde una autoridad, sino participar con una voz reconocible en los temas que ya están captando atención. Esto permite entrar al debate sin depender del encuadre que impongan actores con mayor volumen inicial.`,
+    `En las próximas **2 a 4 semanas**, se sugiere priorizar presencia en ${topSources || "los canales con mayor concentración de volumen"}. La decisión útil es identificar dónde se está formando opinión y concentrar ahí contenidos, voceros aliados y piezas breves de explicación pública. Para activistas, empresarios o actores ciudadanos, esa focalización evita dispersión y mejora capacidad de incidencia.`,
+    `Dado que la conversación combina **${socialCount} menciones en redes sociales** y **${mediaCount} en medios digitales**, conviene separar tácticas por ecosistema durante el próximo mes. En redes, la prioridad es conversación, oportunidad y velocidad; en medios, contexto, argumentos verificables y permanencia del mensaje. Esa diferencia ayuda a participar sin tratar todos los espacios como si exigieran la misma respuesta.`,
+    `Si el volumen adverso vuelve a concentrarse en pocos emisores o fechas críticas, podría convenir activar una red de **aliados y voces creíbles** antes de que el encuadre se consolide. La acción no sería pedir una reacción oficial, sino abrir conversación pública con testimonios, datos locales y argumentos compartibles. Este enfoque amplía presencia desde el espacio ciudadano y privado, sin asumir control sobre el debate.`,
+    `En el horizonte de **2 a 4 semanas**, se sugiere aprovechar cualquier ventana neutral o positiva para introducir contexto propio sobre los temas con mayor interés público. La oportunidad está en sumar información útil, casos concretos y propuestas entendibles, no en sobreexponer una marca u organización. Para participantes externos, esa entrada gradual puede convertir escucha digital en presencia pública sostenida.`,
+    `También convendría revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esa lectura permite decidir cuándo publicar, cuándo sumar aliados y cuándo dejar que una conversación pierda fuerza por sí sola. La utilidad está en escoger momentos de participación, no en intentar controlar todo el debate.`,
   ];
+
+  const observerRecommendations = [
+    `En el plazo inmediato, convendría documentar qué temas sostienen el ${dominantTone} observado y cuáles solo aparecen como ruido periférico. La tarea principal es separar evidencia, volumen y actores antes de convertir la conversación en conclusiones públicas. Esto permite producir una lectura más rigurosa del periodo monitoreado.`,
+    `En las próximas **2 a 4 semanas**, se sugiere contrastar ${topSources || "las fuentes con mayor concentración de volumen"} con otros espacios de conversación. La comparación ayuda a distinguir si el encuadre es amplio o si depende de pocos canales con alta actividad. Esa diferencia es clave para interpretar alcance real frente a visibilidad aparente.`,
+    `Dado que la conversación combina **${socialCount} menciones en redes sociales** y **${mediaCount} en medios digitales**, conviene mantener análisis separado por tipo de fuente. Las redes muestran velocidad y reacción; los medios digitales dejan registro más estable y verificable. Separar ambos planos evita conclusiones sobredimensionadas.`,
+    `Durante el próximo mes, podría convenir profundizar en los emisores y términos que más se repiten para identificar hipótesis de lectura más finas. La recomendación es documentar patrones, no intervenir en ellos. Esa disciplina analítica permite distinguir conversación orgánica, amplificación puntual y cobertura editorial.`,
+    `También se sugiere actualizar semanalmente las narrativas dominantes para observar si el tema cambia de intensidad o mantiene el mismo marco. El valor está en construir una serie comparativa que muestre evolución, no solo una fotografía aislada. Esto mejora la capacidad de explicar la conversación pública con evidencia acumulada.`,
+  ];
+
+  const institutionalRecommendations = [
+    `En el plazo inmediato, se sugiere definir una **postura rectora** para ordenar la respuesta pública ante el ${dominantTone} observado. La decisión no pasa por reaccionar a cada mención, sino por fijar un marco interpretativo consistente para mensajes y vocerías. Esto reduce contradicciones y evita que terceros impongan el sentido dominante del tema.`,
+    `En las próximas **2 a 4 semanas**, podría convenir priorizar seguimiento ejecutivo sobre ${topSources || "las fuentes con mayor concentración de volumen"}. La oportunidad está en actuar sobre los espacios que realmente moldean percepción. Esta jerarquización permite asignar atención según incidencia real y no solo visibilidad aparente.`,
+    `Dado que la conversación combina **${socialCount} menciones en redes sociales** y **${mediaCount} en medios digitales**, se recomienda diferenciar la lógica de gestión por canal durante el próximo mes. En redes, el foco debería estar en velocidad de lectura y escalamiento; en medios, en contextualización y precisión. Esta separación permite mitigar riesgo sin confundir ecosistemas distintos.`,
+    `Conviene evaluar umbrales claros de escalamiento para los próximos días, especialmente si el volumen negativo vuelve a concentrarse en pocos emisores o fechas críticas. La decisión estratégica es anticipar cuándo un tema deja de ser monitoreable y exige coordinación más amplia. Ese criterio reduce improvisación y mejora tiempos de reacción.`,
+    `En el horizonte de **2 a 4 semanas**, se sugiere capitalizar cualquier ventana neutral o positiva para reequilibrar el marco de conversación con mensajes verificables. La oportunidad no radica en sobreexponer, sino en introducir contexto suficiente para que la percepción pública no quede definida solo por vectores adversos.`,
+  ];
+
+  const recommendations = perspective === "institutional" ? institutionalRecommendations : perspective === "observer" ? observerRecommendations : externalRecommendations;
 
   return normalizeTextList(recommendations).slice(0, 7);
 }
@@ -617,6 +655,7 @@ serve(async (req) => {
 
     const body: ReportRequest = await req.json();
     const { mentions, reportFormat = "full", projectName, projectAudience, projectObjective, strategicContext, strategicFocus, entityNames, dateRange } = body;
+    const audiencePerspective = inferAudiencePerspective(projectAudience, projectObjective);
 
     if (!mentions || mentions.length === 0) {
       return new Response(
@@ -791,10 +830,17 @@ Las entidades [${entityNames.join(", ")}] son variantes del MISMO sujeto/tema. N
 - Solo distingue entre ellas si hay una diferencia factual evidente en las menciones.\n`
       : "";
 
+    const audiencePerspectiveInstruction = audiencePerspective === "institutional"
+      ? `CLASIFICACIÓN DE AUDIENCIA: A) INSTITUCIONAL / VOCERÍA OFICIAL. Puede recomendar coordinación de vocería, respuesta institucional o gestión reputacional, siempre sin inventar áreas internas específicas.`
+      : audiencePerspective === "observer"
+        ? `CLASIFICACIÓN DE AUDIENCIA: C) OBSERVADOR / ANALISTA. NO interviene ni gestiona la conversación: documenta, contrasta fuentes, profundiza hipótesis y organiza evidencia.`
+        : `CLASIFICACIÓN DE AUDIENCIA: B) PARTICIPANTE EXTERNO / SOCIEDAD CIVIL / ACTORES PRIVADOS. NO es autoridad, NO controla a la entidad monitoreada y NO gestiona la conversación oficial. Sus acciones posibles son: construir postura propia, publicar contenidos, sumar voceros aliados, abrir espacios de conversación, aportar datos, activar presencia digital y participar en el debate público.`;
+
     const systemPrompt = `Eres un ANALISTA SENIOR de inteligencia estratégica y monitoreo de medios.
 
 TU AUDIENCIA: ${projectAudience}
 OBJETIVO DEL MONITOREO: ${projectObjective}
+${audiencePerspectiveInstruction}
 
 PRINCIPIOS:
 1. ESPECIFICIDAD: Usa nombres de fuentes, autores, fechas. Nunca "varias fuentes" o "algunos medios".
@@ -826,7 +872,7 @@ Desconoces la estructura organizacional, áreas, direcciones, voceros oficiales 
 - PROHIBIDO nombrar áreas internas inventadas: "Dirección de Comunicación Corporativa", "Área de Asuntos Públicos", "Vocería oficial", "Equipo Legal", "Gerencia de Riesgos", "Departamento de Prensa", "Comité de Crisis", etc., a menos que aparezcan textualmente en el contexto o en las menciones.
 - PROHIBIDO atribuir acciones, responsabilidades o liderazgo a roles/áreas no documentadas ("liderado por X", "coordinado desde Y", "bajo la responsabilidad de Z").
 - PROHIBIDO inventar nombres propios de funcionarios, voceros o ejecutivos de la organización monitoreada.
-- En su lugar, usa formulaciones neutras orientadas a la decisión directiva: "se sugiere que el área responsable evalúe...", "convendría que la organización defina la vocería...", "el equipo a cargo de comunicación estratégica podría considerar...", "se recomienda que las áreas correspondientes...".
+- Si la audiencia NO está clasificada como A) institucional, también están PROHIBIDAS las fórmulas neutras institucionales: "área responsable", "organización", "vocería", "equipo a cargo", "áreas correspondientes". En esos casos escribe desde la capacidad real de participantes externos u observadores: voz propia, aliados, contenidos, datos, presencia digital, documentación o análisis.
 - Lo mismo aplica a contrapartes (litigantes, autoridades, competidores): solo nómbralas si aparecen en menciones o contexto.
 
 === PERSPECTIVA DE LA AUDIENCIA (CRÍTICO PARA RECOMENDACIONES) ===
@@ -1019,7 +1065,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       strategicFocus,
       knownCases,
     });
-    const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions);
+    const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions, audiencePerspective);
 
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
@@ -1089,8 +1135,12 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       ...fallbackFindings,
     ]).slice(0, 8);
 
+    const aiRecommendations = Array.isArray(reportContent.recommendations) ? reportContent.recommendations : [];
+    const safeAiRecommendations = audiencePerspective === "institutional"
+      ? aiRecommendations
+      : aiRecommendations.filter((item) => !isInstitutionalRecommendation(String(item)));
     const mergedRecommendations = normalizeTextList([
-      ...(Array.isArray(reportContent.recommendations) ? reportContent.recommendations : []),
+      ...safeAiRecommendations,
       ...fallbackRecommendations,
     ]).slice(0, 7);
 
