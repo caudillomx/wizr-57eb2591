@@ -151,6 +151,45 @@ function sanitizeFindingText(text: string): string {
   return sentences.join(" ").replace(/\s+/g, " ").trim();
 }
 
+// Corrige porcentajes inventados de sentimiento en texto narrativo.
+// Si el modelo escribe "51.7% positivo" pero el real es 34.9%, lo reemplaza.
+function sanitizeSentimentPercents(
+  text: string | undefined | null,
+  m: { totalMentions: number; positiveCount: number; negativeCount: number; neutralCount: number } | undefined,
+): string | undefined {
+  if (!text) return text ?? undefined;
+  if (!m || !m.totalMentions) return text;
+  const total = m.totalMentions;
+  const posPct = (m.positiveCount / total) * 100;
+  const negPct = (m.negativeCount / total) * 100;
+  const neuPct = (m.neutralCount / total) * 100;
+  const fmt = (v: number) => (Math.round(v * 10) / 10).toString().replace(/\.0$/, "");
+
+  // Patrón: número% (palabras opcionales) (positiv|negativ|neutral)
+  const re = /(\d{1,3}(?:[.,]\d+)?)\s*%(\s+(?:de\s+)?(?:sentimiento\s+|menciones\s+|tono\s+|cobertura\s+)?)(positiv\w*|negativ\w*|neutral\w*)/gi;
+  let out = text.replace(re, (full, num: string, mid: string, label: string) => {
+    const v = parseFloat(num.replace(",", "."));
+    const lbl = label.toLowerCase();
+    const verified = lbl.startsWith("positiv") ? posPct : lbl.startsWith("negativ") ? negPct : neuPct;
+    if (!Number.isFinite(v)) return full;
+    if (Math.abs(v - verified) <= 2) return full; // tolerancia ±2pp
+    return `${fmt(verified)}%${mid}${label}`;
+  });
+
+  // Patrón inverso: (positiv|negativ|neutral) ... número%
+  const re2 = /(positiv\w*|negativ\w*|neutral\w*)(\s+(?:representa|equivale a|alcanza|asciende a|llega a|es de|del?\s+)?\s*)(\d{1,3}(?:[.,]\d+)?)\s*%/gi;
+  out = out.replace(re2, (full, label: string, mid: string, num: string) => {
+    const v = parseFloat(num.replace(",", "."));
+    const lbl = label.toLowerCase();
+    const verified = lbl.startsWith("positiv") ? posPct : lbl.startsWith("negativ") ? negPct : neuPct;
+    if (!Number.isFinite(v)) return full;
+    if (Math.abs(v - verified) <= 2) return full;
+    return `${label}${mid}${fmt(verified)}%`;
+  });
+
+  return out;
+}
+
 function clipAtWordBoundary(text: string, maxChars: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxChars) return compact;
@@ -914,6 +953,8 @@ ${entityNames?.length ? `ENTIDADES: ${entityNames.join(", ")}` : ""}
 
 === MÉTRICAS ===
 Total: ${metrics.totalMentions} | Positivas: ${metrics.positiveCount} (${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%) | Negativas: ${metrics.negativeCount} (${Math.round(metrics.negativeCount/metrics.totalMentions*100)}%) | Neutrales: ${metrics.neutralCount} (${Math.round(metrics.neutralCount/metrics.totalMentions*100)}%)
+
+⚠️ CIFRAS DE SENTIMIENTO BLOQUEADAS: los únicos porcentajes válidos son los listados arriba (positivo ${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%, negativo ${Math.round(metrics.negativeCount/metrics.totalMentions*100)}%, neutral ${Math.round(metrics.neutralCount/metrics.totalMentions*100)}% sobre ${metrics.totalMentions} menciones). PROHIBIDO inventar otros porcentajes (ej. "51.7% positivo" cuando el real es ${Math.round(metrics.positiveCount/metrics.totalMentions*100)}%) o mezclar "porcentajes de la muestra" con "porcentajes del universo": en este reporte la muestra ES el universo. Cualquier porcentaje de sentimiento que escribas debe coincidir EXACTAMENTE (±1pp) con los valores anteriores.
 Fuentes: ${metrics.topSources.join(", ")}
 
 ${detailedAnalysis}
@@ -1144,27 +1185,28 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       ...fallbackRecommendations,
     ]).slice(0, 7);
 
+    const sp = (t: string | undefined | null) => sanitizeSentimentPercents(t, metrics) || undefined;
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
-      summary: reportContent.summary || "",
-      keyFindings: mergedFindings.length >= 6 ? mergedFindings : fallbackFindings,
-      recommendations: mergedRecommendations.length >= 5 ? mergedRecommendations : fallbackRecommendations,
-      conclusions: reportContent.conclusions || [],
-      impactAssessment: reportContent.impactAssessment || undefined,
-      sentimentAnalysis: reportContent.sentimentAnalysis || undefined,
+      summary: sp(reportContent.summary) || "",
+      keyFindings: (mergedFindings.length >= 6 ? mergedFindings : fallbackFindings).map((f) => sp(f) || f),
+      recommendations: (mergedRecommendations.length >= 5 ? mergedRecommendations : fallbackRecommendations).map((r) => sp(r) || r),
+      conclusions: (reportContent.conclusions || []).map((c) => sp(c) || c),
+      impactAssessment: sp(reportContent.impactAssessment),
+      sentimentAnalysis: sp(reportContent.sentimentAnalysis),
       narratives: safeNarratives.length > 0 ? safeNarratives : fallbackNarratives,
       keywords: safeKeywords.length > 0 ? safeKeywords : undefined,
-      keywordsInsight: (reportContent as { keywordsInsight?: string }).keywordsInsight || undefined,
-      narrativesInsight: reportContent.narrativesInsight || undefined,
-      timelineInsight: reportContent.timelineInsight || undefined,
-      influencersInsight: reportContent.influencersInsight || undefined,
-      mediaInsight: reportContent.mediaInsight || undefined,
-      platformsInsight: reportContent.platformsInsight || undefined,
-      entityComparison: reportContent.entityComparison || undefined,
+      keywordsInsight: sp((reportContent as { keywordsInsight?: string }).keywordsInsight),
+      narrativesInsight: sp(reportContent.narrativesInsight),
+      timelineInsight: sp(reportContent.timelineInsight),
+      influencersInsight: sp(reportContent.influencersInsight),
+      mediaInsight: sp(reportContent.mediaInsight),
+      platformsInsight: sp(reportContent.platformsInsight),
+      entityComparison: sp(reportContent.entityComparison),
       metrics,
       templates: {
-        executive: reportContent.templates?.executive || reportContent.summary || fallbackFindings.join(" "),
-        technical: reportContent.templates?.technical || reportContent.summary || fallbackFindings.join(" "),
+        executive: sp(reportContent.templates?.executive) || sp(reportContent.summary) || fallbackFindings.join(" "),
+        technical: sp(reportContent.templates?.technical) || sp(reportContent.summary) || fallbackFindings.join(" "),
         public: reportContent.templates?.public || `📊 ${reportContent.title || "Reporte Inteligente"}`,
       },
     };
