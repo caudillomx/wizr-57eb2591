@@ -872,7 +872,7 @@ Desconoces la estructura organizacional, áreas, direcciones, voceros oficiales 
 - PROHIBIDO nombrar áreas internas inventadas: "Dirección de Comunicación Corporativa", "Área de Asuntos Públicos", "Vocería oficial", "Equipo Legal", "Gerencia de Riesgos", "Departamento de Prensa", "Comité de Crisis", etc., a menos que aparezcan textualmente en el contexto o en las menciones.
 - PROHIBIDO atribuir acciones, responsabilidades o liderazgo a roles/áreas no documentadas ("liderado por X", "coordinado desde Y", "bajo la responsabilidad de Z").
 - PROHIBIDO inventar nombres propios de funcionarios, voceros o ejecutivos de la organización monitoreada.
-- En su lugar, usa formulaciones neutras orientadas a la decisión directiva: "se sugiere que el área responsable evalúe...", "convendría que la organización defina la vocería...", "el equipo a cargo de comunicación estratégica podría considerar...", "se recomienda que las áreas correspondientes...".
+- Si la audiencia NO está clasificada como A) institucional, también están PROHIBIDAS las fórmulas neutras institucionales: "área responsable", "organización", "vocería", "equipo a cargo", "áreas correspondientes". En esos casos escribe desde la capacidad real de participantes externos u observadores: voz propia, aliados, contenidos, datos, presencia digital, documentación o análisis.
 - Lo mismo aplica a contrapartes (litigantes, autoridades, competidores): solo nómbralas si aparecen en menciones o contexto.
 
 === PERSPECTIVA DE LA AUDIENCIA (CRÍTICO PARA RECOMENDACIONES) ===
