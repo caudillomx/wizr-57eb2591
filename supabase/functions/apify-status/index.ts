@@ -227,9 +227,11 @@ serve(async (req) => {
         // YouTube: Apify already searched for the keyword and results are generally relevant.
         // Twitter: The scraper searches by terms natively, re-filtering with quoted terms causes false negatives.
         // Reddit: The scraper returns generic posts, so keyword filtering IS needed.
-        const useSoftFilter = platform === "youtube";
+        // Apply post-search keyword filter to ALL platforms except Twitter (apidojo searches natively).
+        // TikTok and YouTube previously bypassed this, leading to noisy/off-topic mentions.
+        const useSoftFilter = false;
         
-        if (keywordLower && platform !== "tiktok" && platform !== "twitter" && !useSoftFilter) {
+        if (keywordLower && platform !== "twitter" && !useSoftFilter) {
           const beforeCount = normalized.length;
           
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
@@ -312,10 +314,8 @@ serve(async (req) => {
           console.log(
             `Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}${modeLabel}${commentsNote}`
           );
-        } else if (platform === "tiktok") {
-          console.log(`Skipping keyword filter for TikTok - returning all ${normalized.length} results (user curates manually)`);
-        } else if (useSoftFilter) {
-          console.log(`SOFT FILTER: Skipping keyword filter for ${platform} - Apify already searched for query "${keywordLower}". Returning all ${normalized.length} results.`);
+        } else if (platform === "twitter") {
+          console.log(`Skipping keyword filter for Twitter - apidojo already searches by terms natively (${normalized.length} results)`);
         }
 
         // Sort all results chronologically (newest first)
