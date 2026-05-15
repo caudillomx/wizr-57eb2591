@@ -1024,6 +1024,18 @@ Cada hallazgo será leído por un directivo que descartará el reporte si suena 
 - PROHIBIDO repetir "tono adverso", "carga reputacional", "lectura pública" o "encuadre del periodo" en más del 50% de los hallazgos. Sustituye por verbos y sustantivos concretos: "el medio X fija la cobertura crítica", "el autor Y impulsa el ángulo de escrutinio", "el término Z reaparece en cada pieza".
 - OBLIGATORIO: si un hallazgo describe un dato (volumen, %, autor, día, plataforma) DEBE seguir con qué decisión o vigilancia concreta se desprende, no con una repetición meta del marco estratégico.
 
+=== REGLA CRÍTICA #5: CALIBRACIÓN DE SEVERIDAD (ANTI-ALARMISMO) ===
+La gravedad de una situación reputacional NO se determina por el % de tono negativo aislado, sino por la combinación de volumen + AMPLIFICACIÓN MEDIBLE (engagement, alcance de influenciadores, cobertura tier-1). Usa OBLIGATORIAMENTE el NIVEL DE SEVERIDAD CALIBRADO entregado en SEÑALES DE AMPLIFICACIÓN MEDIDAS y respeta esta gramática:
+
+- Si severidad = SEVERA → puedes escribir "crisis", "impacto reputacional severo", "escalamiento confirmado". Debes nombrar la fuente concreta de amplificación (autor X con N interacciones, o medio tier-1 Y).
+- Si severidad = POTENCIALMENTE CRITICA → usa "situación potencialmente crítica", "riesgo reputacional latente", "encuadre adverso con potencial de escalamiento si se amplifica". PROHIBIDO escribir "crisis severa", "impacto severo", "crisis confirmada".
+- Si severidad = ATENCION → usa "conversación negativa que conviene monitorear", "encuadre adverso acotado", "presencia crítica que aún no amplifica masivamente". PROHIBIDO escribir "crisis", "severo/severa", "escalamiento", "viralización confirmada".
+- Si severidad = MONITOREO → usa "actividad baja con tono negativo predominante", "señal temprana", "ruido reputacional menor". PROHIBIDO usar el vocabulario de crisis.
+
+REGLA ADICIONAL — VIRALIZACIÓN: NO afirmes que algo "se viralizó" o "tiene potencial viral" basándote solo en la presencia en TikTok o en el número de menciones. Una mención sin views/likes/shares NO es evidencia de viralización. Para usar "viral" debes citar una cifra concreta de views, shares o engagement ≥ 5,000 en al menos un post.
+
+REGLA ADICIONAL — TONO NEGATIVO: 60-80% negativo en un universo pequeño (<100 menciones) sin amplificación describe "conversación de tono predominantemente negativo en un nicho acotado", NO una crisis. La crisis exige que ese tono ESTÉ AMPLIFICADO.
+
 FORMATO: Español profesional, sin markdown ni asteriscos. Cita fuentes y autores específicos solo cuando aparezcan en las menciones.`;
 
     const userPrompt = `${formatInstructions}
