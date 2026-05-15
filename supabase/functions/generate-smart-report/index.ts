@@ -190,6 +190,63 @@ function sanitizeSentimentPercents(
   return out;
 }
 
+// Sanitiza cifras "N menciones" / "N mención" cuando refieren a un término del Enfoque.
+// - Si en el contexto cercano (±220 chars) aparece un término de CONTEOS VERIFICADOS y el número
+//   se desvía >max(5, 30%) del conteo verificado → reemplaza por el verificado.
+// - Si el número NO equivale al total ni a sub-totales conocidos y no hay término verificado en el
+//   contexto pero sí hay nombres propios del Enfoque (knownProperNames), neutraliza a "varias menciones".
+function sanitizeMentionCounts(
+  text: string | undefined | null,
+  verified: Array<{ term: string; count: number }>,
+  totals: { total: number; positive: number; negative: number; neutral: number },
+  knownProperNames: string[],
+): string | undefined {
+  if (!text) return text ?? undefined;
+  const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const allowedExact = new Set<number>([
+    totals.total, totals.positive, totals.negative, totals.neutral,
+  ].filter((n) => n > 0));
+
+  const re = /(\d{1,4})\s+(menciones|mención|menciónes)\b/gi;
+  return text.replace(re, (full, numStr: string, word: string, offset: number) => {
+    const num = parseInt(numStr, 10);
+    if (!Number.isFinite(num)) return full;
+    const ctxStart = Math.max(0, offset - 220);
+    const ctxEnd = Math.min(text!.length, offset + 220);
+    const ctxNorm = normalize(text!.slice(ctxStart, ctxEnd));
+
+    // 1) Buscar término verificado en contexto y comparar
+    let bestMatch: { term: string; count: number } | null = null;
+    for (const v of verified) {
+      const tn = normalize(v.term);
+      if (tn.length >= 4 && ctxNorm.includes(tn)) {
+        if (!bestMatch || tn.length > normalize(bestMatch.term).length) bestMatch = v;
+      }
+    }
+    if (bestMatch) {
+      const tolerance = Math.max(5, Math.round(bestMatch.count * 0.3));
+      if (Math.abs(num - bestMatch.count) > tolerance) {
+        const w = bestMatch.count === 1 ? "mención" : "menciones";
+        return `${bestMatch.count} ${w}`;
+      }
+      return full;
+    }
+
+    // 2) No hay término verificado. Si el número coincide con totales globales o sub-totales de sentimiento, dejar pasar.
+    if (allowedExact.has(num)) return full;
+
+    // 3) Si en el contexto aparece un nombre propio del Enfoque pero no está verificado, neutralizar.
+    const hasUnverifiedProper = knownProperNames.some((p) => {
+      const pn = normalize(p);
+      return pn.length >= 4 && ctxNorm.includes(pn);
+    });
+    if (hasUnverifiedProper && num >= 5) {
+      return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
+    }
+    return full;
+  });
+}
+
 function clipAtWordBoundary(text: string, maxChars: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxChars) return compact;
