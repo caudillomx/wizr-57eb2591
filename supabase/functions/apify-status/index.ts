@@ -314,10 +314,8 @@ serve(async (req) => {
           console.log(
             `Filtered ${platform} results from ${beforeCount} to ${normalized.length} using keywords: ${searchTerms.join(", ")}${logExtra}${modeLabel}${commentsNote}`
           );
-        } else if (platform === "tiktok") {
-          console.log(`Skipping keyword filter for TikTok - returning all ${normalized.length} results (user curates manually)`);
-        } else if (useSoftFilter) {
-          console.log(`SOFT FILTER: Skipping keyword filter for ${platform} - Apify already searched for query "${keywordLower}". Returning all ${normalized.length} results.`);
+        } else if (platform === "twitter") {
+          console.log(`Skipping keyword filter for Twitter - apidojo already searches by terms natively (${normalized.length} results)`);
         }
 
         // Sort all results chronologically (newest first)
