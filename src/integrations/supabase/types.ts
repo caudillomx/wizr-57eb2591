@@ -1248,6 +1248,7 @@ export type Database = {
         Returns: boolean
       }
       increment_report_view: { Args: { _token: string }; Returns: undefined }
+      normalize_text: { Args: { _t: string }; Returns: string }
     }
     Enums: {
       alert_status: "active" | "paused" | "triggered"
