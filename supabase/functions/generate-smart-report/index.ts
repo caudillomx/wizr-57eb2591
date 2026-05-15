@@ -1187,6 +1187,13 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
     const narrativeFallbackBase = rawNarratives.length > 0 ? Math.max(1, Math.round(totalForFallback / rawNarratives.length / 2)) : 1;
+    // NOTE: sp() se define más abajo, así que para narrativas usamos directamente sanitizeMentionCounts
+    const totalsForNarrative = {
+      total: metrics.totalMentions,
+      positive: metrics.positiveCount,
+      negative: metrics.negativeCount,
+      neutral: metrics.neutralCount,
+    };
     const safeNarratives: NarrativeItem[] = rawNarratives
       .slice(0, 5)
       .map((n: Partial<NarrativeItem> & { mentions?: unknown }) => {
@@ -1201,9 +1208,16 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         if (safeMentions > metrics.totalMentions) safeMentions = metrics.totalMentions;
         const sent = n?.sentiment;
         const tr = n?.trend;
+        const rawDesc = String(n?.description || "");
+        const cleanedDesc = sanitizeMentionCounts(
+          sanitizeSentimentPercents(rawDesc, metrics) || rawDesc,
+          verifiedCounts,
+          totalsForNarrative,
+          knownProperNames,
+        ) || rawDesc;
         return {
           narrative: String(n?.narrative || "Narrativa identificada"),
-          description: String(n?.description || ""),
+          description: cleanedDesc,
           mentions: safeMentions,
           sentiment: (sent === "positivo" || sent === "negativo" || sent === "mixto") ? sent : "mixto",
           trend: (tr === "creciente" || tr === "decreciente" || tr === "estable") ? tr : "estable",
