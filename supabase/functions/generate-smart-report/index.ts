@@ -190,6 +190,63 @@ function sanitizeSentimentPercents(
   return out;
 }
 
+// Sanitiza cifras "N menciones" / "N mención" cuando refieren a un término del Enfoque.
+// - Si en el contexto cercano (±220 chars) aparece un término de CONTEOS VERIFICADOS y el número
+//   se desvía >max(5, 30%) del conteo verificado → reemplaza por el verificado.
+// - Si el número NO equivale al total ni a sub-totales conocidos y no hay término verificado en el
+//   contexto pero sí hay nombres propios del Enfoque (knownProperNames), neutraliza a "varias menciones".
+function sanitizeMentionCounts(
+  text: string | undefined | null,
+  verified: Array<{ term: string; count: number }>,
+  totals: { total: number; positive: number; negative: number; neutral: number },
+  knownProperNames: string[],
+): string | undefined {
+  if (!text) return text ?? undefined;
+  const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const allowedExact = new Set<number>([
+    totals.total, totals.positive, totals.negative, totals.neutral,
+  ].filter((n) => n > 0));
+
+  const re = /(\d{1,4})\s+(menciones|mención|menciónes)\b/gi;
+  return text.replace(re, (full, numStr: string, word: string, offset: number) => {
+    const num = parseInt(numStr, 10);
+    if (!Number.isFinite(num)) return full;
+    const ctxStart = Math.max(0, offset - 220);
+    const ctxEnd = Math.min(text!.length, offset + 220);
+    const ctxNorm = normalize(text!.slice(ctxStart, ctxEnd));
+
+    // 1) Buscar término verificado en contexto y comparar
+    let bestMatch: { term: string; count: number } | null = null;
+    for (const v of verified) {
+      const tn = normalize(v.term);
+      if (tn.length >= 4 && ctxNorm.includes(tn)) {
+        if (!bestMatch || tn.length > normalize(bestMatch.term).length) bestMatch = v;
+      }
+    }
+    if (bestMatch) {
+      const tolerance = Math.max(5, Math.round(bestMatch.count * 0.3));
+      if (Math.abs(num - bestMatch.count) > tolerance) {
+        const w = bestMatch.count === 1 ? "mención" : "menciones";
+        return `${bestMatch.count} ${w}`;
+      }
+      return full;
+    }
+
+    // 2) No hay término verificado. Si el número coincide con totales globales o sub-totales de sentimiento, dejar pasar.
+    if (allowedExact.has(num)) return full;
+
+    // 3) Si en el contexto aparece un nombre propio del Enfoque pero no está verificado, neutralizar.
+    const hasUnverifiedProper = knownProperNames.some((p) => {
+      const pn = normalize(p);
+      return pn.length >= 4 && ctxNorm.includes(pn);
+    });
+    if (hasUnverifiedProper && num >= 5) {
+      return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
+    }
+    return full;
+  });
+}
+
 function clipAtWordBoundary(text: string, maxChars: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxChars) return compact;
@@ -1108,6 +1165,25 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     });
     const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions, audiencePerspective);
 
+    // Helpers para anti-alucinación de cifras
+    const _normForMatch = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const knownProperNames: string[] = [
+      ...(entityNames || []),
+      ...knownCases.flatMap((c) => (c.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,2}\b/g) || [])),
+    ].filter((n) => n && n.length >= 4);
+
+    const findVerifiedCapForText = (text: string): number | null => {
+      const norm = _normForMatch(text);
+      let best: { term: string; count: number } | null = null;
+      for (const v of verifiedCounts) {
+        const tn = _normForMatch(v.term);
+        if (tn.length >= 4 && norm.includes(tn)) {
+          if (!best || tn.length > _normForMatch(best.term).length) best = v;
+        }
+      }
+      return best ? best.count : null;
+    };
+
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
     const narrativeFallbackBase = rawNarratives.length > 0 ? Math.max(1, Math.round(totalForFallback / rawNarratives.length / 2)) : 1;
@@ -1115,7 +1191,14 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       .slice(0, 5)
       .map((n: Partial<NarrativeItem> & { mentions?: unknown }) => {
         const mNum = Number(n?.mentions);
-        const safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        let safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        // Cap por conteo verificado si la narrativa nombra un término del Enfoque
+        const ctx = `${n?.narrative || ""} ${n?.description || ""}`;
+        const cap = findVerifiedCapForText(ctx);
+        if (cap !== null && safeMentions > cap) {
+          safeMentions = cap;
+        }
+        if (safeMentions > metrics.totalMentions) safeMentions = metrics.totalMentions;
         const sent = n?.sentiment;
         const tr = n?.trend;
         return {
@@ -1185,7 +1268,17 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       ...fallbackRecommendations,
     ]).slice(0, 7);
 
-    const sp = (t: string | undefined | null) => sanitizeSentimentPercents(t, metrics) || undefined;
+    const totalsForSanitize = {
+      total: metrics.totalMentions,
+      positive: metrics.positiveCount,
+      negative: metrics.negativeCount,
+      neutral: metrics.neutralCount,
+    };
+    const sp = (t: string | undefined | null) => {
+      const a = sanitizeSentimentPercents(t, metrics);
+      const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames);
+      return b || undefined;
+    };
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: sp(reportContent.summary) || "",
