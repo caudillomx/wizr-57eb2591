@@ -1165,6 +1165,25 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     });
     const fallbackRecommendations = buildFallbackRecommendations(metrics, mentions, audiencePerspective);
 
+    // Helpers para anti-alucinación de cifras
+    const _normForMatch = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const knownProperNames: string[] = [
+      ...(entityNames || []),
+      ...knownCases.flatMap((c) => (c.match(/\b[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+){0,2}\b/g) || [])),
+    ].filter((n) => n && n.length >= 4);
+
+    const findVerifiedCapForText = (text: string): number | null => {
+      const norm = _normForMatch(text);
+      let best: { term: string; count: number } | null = null;
+      for (const v of verifiedCounts) {
+        const tn = _normForMatch(v.term);
+        if (tn.length >= 4 && norm.includes(tn)) {
+          if (!best || tn.length > _normForMatch(best.term).length) best = v;
+        }
+      }
+      return best ? best.count : null;
+    };
+
     const rawNarratives = Array.isArray(reportContent.narratives) ? reportContent.narratives : [];
     const totalForFallback = metrics.totalMentions || 1;
     const narrativeFallbackBase = rawNarratives.length > 0 ? Math.max(1, Math.round(totalForFallback / rawNarratives.length / 2)) : 1;
@@ -1172,7 +1191,14 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       .slice(0, 5)
       .map((n: Partial<NarrativeItem> & { mentions?: unknown }) => {
         const mNum = Number(n?.mentions);
-        const safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        let safeMentions = Number.isFinite(mNum) && mNum > 0 ? Math.round(mNum) : narrativeFallbackBase;
+        // Cap por conteo verificado si la narrativa nombra un término del Enfoque
+        const ctx = `${n?.narrative || ""} ${n?.description || ""}`;
+        const cap = findVerifiedCapForText(ctx);
+        if (cap !== null && safeMentions > cap) {
+          safeMentions = cap;
+        }
+        if (safeMentions > metrics.totalMentions) safeMentions = metrics.totalMentions;
         const sent = n?.sentiment;
         const tr = n?.trend;
         return {
