@@ -227,9 +227,11 @@ serve(async (req) => {
         // YouTube: Apify already searched for the keyword and results are generally relevant.
         // Twitter: The scraper searches by terms natively, re-filtering with quoted terms causes false negatives.
         // Reddit: The scraper returns generic posts, so keyword filtering IS needed.
-        const useSoftFilter = platform === "youtube";
+        // Apply post-search keyword filter to ALL platforms except Twitter (apidojo searches natively).
+        // TikTok and YouTube previously bypassed this, leading to noisy/off-topic mentions.
+        const useSoftFilter = false;
         
-        if (keywordLower && platform !== "tiktok" && platform !== "twitter" && !useSoftFilter) {
+        if (keywordLower && platform !== "twitter" && !useSoftFilter) {
           const beforeCount = normalized.length;
           
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
