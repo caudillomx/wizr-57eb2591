@@ -768,7 +768,32 @@ serve(async (req) => {
       topSources: [...new Set(mentions.map(m => m.source_domain).filter(Boolean))].slice(0, 5) as string[],
     };
 
-    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120));
+    // ===== SEÑALES DE AMPLIFICACIÓN (para calibrar severidad) =====
+    const TIER1_DOMAINS = /(nytimes|washingtonpost|reuters|bloomberg|wsj|ft\.com|bbc|cnn|elpais|elmundo|reforma|eluniversal|milenio|jornada|excelsior|proceso|animalpolitico|aristegui|infobae|expansion|forbes|economista|elfinanciero|sdpnoticias|televisa|tvazteca|heraldodemexico)/i;
+    let totalEngagement = 0;
+    let maxAuthorEngagement = 0;
+    let tier1Mentions = 0;
+    const authorAgg: Record<string, number> = {};
+    mentions.forEach(m => {
+      const meta = m.raw_metadata as Record<string, unknown> | null;
+      const eng = (Number(meta?.likes) || 0) + (Number(meta?.comments) || 0) + (Number(meta?.shares) || 0);
+      totalEngagement += eng;
+      const author = (meta?.author || meta?.author_name || meta?.authorUsername || meta?.author_username) as string | undefined;
+      if (author) {
+        authorAgg[author] = (authorAgg[author] || 0) + eng;
+        if (authorAgg[author] > maxAuthorEngagement) maxAuthorEngagement = authorAgg[author];
+      }
+      if (m.source_domain && TIER1_DOMAINS.test(m.source_domain)) tier1Mentions++;
+    });
+    // Calibración de severidad: SEVERA exige amplificación demostrable, no solo % negativo.
+    let severityLevel: "monitoreo" | "atencion" | "potencialmente_critica" | "severa" = "monitoreo";
+    if (totalEngagement >= 50000 || maxAuthorEngagement >= 20000 || tier1Mentions >= 5) severityLevel = "severa";
+    else if (totalEngagement >= 10000 || maxAuthorEngagement >= 5000 || tier1Mentions >= 2) severityLevel = "potencialmente_critica";
+    else if (totalEngagement >= 2000 || maxAuthorEngagement >= 1000 || tier1Mentions >= 1 || metrics.totalMentions >= 100) severityLevel = "atencion";
+
+    const amplificationBlock = `\n=== SEÑALES DE AMPLIFICACIÓN MEDIDAS ===\n- Engagement total acumulado (likes+comentarios+shares): ${totalEngagement.toLocaleString()}\n- Engagement máximo concentrado en un autor: ${maxAuthorEngagement.toLocaleString()}\n- Menciones en medios tier-1 (cobertura editorial amplia): ${tier1Mentions}\n- Volumen total: ${metrics.totalMentions} menciones\n- NIVEL DE SEVERIDAD CALIBRADO (USO OBLIGATORIO PARA INTERPRETAR EL CASO): ${severityLevel.toUpperCase().replace("_", " ")}\n`;
+
+    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120)) + amplificationBlock;
 
     const mentionsSummary = mentions.slice(0, 20).map(m => ({
       title: m.title,
