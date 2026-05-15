@@ -234,6 +234,29 @@ serve(async (req) => {
           
           // Handle multiple search terms separated by commas (e.g., "Actinver, @actinver, @actinver_trade")
           const searchTerms: string[] = keywordLower.split(",").map((t: string) => t.trim().replace(/^@/, "")).filter(Boolean);
+
+          // Stopwords (ES/EN) excluded from significant-token matching
+          const STOPWORDS = new Set([
+            "de","la","el","los","las","un","una","unos","unas","y","o","u","a","en","del","al","por","para","con","sin","sobre","entre","que","es","se","lo","su","sus",
+            "the","a","an","of","and","or","in","on","for","to","with","by","at","is","are","be"
+          ]);
+          // Pre-compute significant tokens per search term (length>=3 and not stopword)
+          const termTokens: { term: string; tokens: string[] }[] = searchTerms.map((term: string) => {
+            const tokens = term.split(/\s+/).filter((t) => t.length >= 3 && !STOPWORDS.has(t));
+            return { term, tokens };
+          });
+          // Helper: match if exact phrase appears OR ≥2 significant tokens appear
+          const matchesText = (text: string): boolean => {
+            return termTokens.some(({ term, tokens }) => {
+              if (text.includes(term)) return true;
+              if (tokens.length >= 2) {
+                const hits = tokens.filter((tok) => text.includes(tok)).length;
+                return hits >= 2;
+              }
+              // Single-token term: require exact substring (already covered by term include)
+              return false;
+            });
+          };
           
           // For reddit_comments: prefer showing only posts where keyword appears in comments.
           // IMPORTANT: Some Reddit actors do NOT return comment bodies, even if maxComments is set.
