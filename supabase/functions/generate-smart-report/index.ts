@@ -1268,7 +1268,17 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       ...fallbackRecommendations,
     ]).slice(0, 7);
 
-    const sp = (t: string | undefined | null) => sanitizeSentimentPercents(t, metrics) || undefined;
+    const totalsForSanitize = {
+      total: metrics.totalMentions,
+      positive: metrics.positiveCount,
+      negative: metrics.negativeCount,
+      neutral: metrics.neutralCount,
+    };
+    const sp = (t: string | undefined | null) => {
+      const a = sanitizeSentimentPercents(t, metrics);
+      const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames);
+      return b || undefined;
+    };
     const result: ReportContent = {
       title: reportContent.title || "Reporte Inteligente",
       summary: sp(reportContent.summary) || "",
