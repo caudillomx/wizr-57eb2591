@@ -522,13 +522,21 @@ async function searchNews(
     }
 
     const data = await response.json();
-    return (data.data || []).map((r: Record<string, unknown>) => ({
-      url: r.url as string,
-      title: r.title as string,
-      description: r.description as string,
-      source_domain: r.url ? new URL(r.url as string).hostname.replace("www.", "") : undefined,
-      published_at: (r.metadata as Record<string, unknown>)?.publishedDate as string,
-    }));
+    return (data.data || []).map((r: Record<string, unknown>) => {
+      const enriched = enrichWithDate({
+        title: r.title as string,
+        description: r.description as string,
+        metadata: r.metadata as Record<string, unknown>,
+      });
+      return {
+        url: r.url as string,
+        title: r.title as string,
+        description: r.description as string,
+        source_domain: r.url ? new URL(r.url as string).hostname.replace("www.", "") : undefined,
+        published_at: enriched.publishedAt || undefined,
+        raw_metadata: { date_confidence: enriched.dateConfidence, date_source: enriched.publishedAt ? (enriched.dateConfidence === "high" ? "firecrawl_metadata" : "snippet_parse") : "missing" },
+      };
+    });
   } catch (error) {
     console.error("searchNews error:", error);
     return [];
