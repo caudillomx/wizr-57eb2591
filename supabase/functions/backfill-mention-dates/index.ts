@@ -111,8 +111,9 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    // Skip social platforms where Firecrawl is unreliable for dates
-    const SKIP_DOMAINS = ["facebook.com", "instagram.com", "x.com", "twitter.com", "tiktok.com"];
+    // Firecrawl no soporta FB/IG (responde 4xx "we do not support this site")
+    // y para X/TikTok devuelve HTML sin fecha útil. Solo medios digitales.
+    const SKIP_DOMAINS = ["facebook.com", "instagram.com", "tiktok.com", "x.com", "twitter.com"];
     const eligible = (mentions as Mention[]).filter(
       (m) => m.url && !SKIP_DOMAINS.some((d) => (m.source_domain || "").includes(d))
     );
