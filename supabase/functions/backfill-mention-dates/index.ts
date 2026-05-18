@@ -111,8 +111,10 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    // Skip social platforms where Firecrawl is unreliable for dates
-    const SKIP_DOMAINS = ["facebook.com", "instagram.com", "x.com", "twitter.com", "tiktok.com"];
+    // TikTok rarely exposes datePublished in HTML metadata; skip.
+    // For FB/IG we DO try Firecrawl: public permalinks often include
+    // <meta property="article:published_time"> or JSON-LD datePublished.
+    const SKIP_DOMAINS = ["tiktok.com"];
     const eligible = (mentions as Mention[]).filter(
       (m) => m.url && !SKIP_DOMAINS.some((d) => (m.source_domain || "").includes(d))
     );
