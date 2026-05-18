@@ -328,13 +328,17 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
           const response = await firecrawlApi.searchMultipleEntities([entityForSearch], timeRange, maxResultsPerPlatform);
           
           if (response.success && response.data) {
-            results = response.data.map(r => ({
-              url: r.url,
-              title: r.title,
-              description: r.description,
-              source_domain: r.url ? new URL(r.url).hostname.replace("www.", "") : undefined,
-              published_at: r.metadata?.publishedDate,
-            }));
+            results = response.data.map(r => {
+              const enriched = r as unknown as { publishedAt?: string; dateConfidence?: string };
+              return {
+                url: r.url,
+                title: r.title,
+                description: r.description,
+                source_domain: r.url ? new URL(r.url).hostname.replace("www.", "") : undefined,
+                published_at: enriched.publishedAt || r.metadata?.publishedDate,
+                date_confidence: enriched.dateConfidence,
+              };
+            });
           }
         } else {
           // Use Apify for social platforms through the dedicated client.
