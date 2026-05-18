@@ -451,6 +451,7 @@ export function UnifiedSearch({ projectId, entities, onSearchComplete }: Unified
             matched_keywords: entity.palabras_clave || [],
             published_at: r.published_at || null,
             raw_metadata: {
+              ...(r.date_confidence ? { date_confidence: r.date_confidence } : { date_confidence: r.published_at ? "high" : "unknown" }),
               ...(r.author ? { author: r.author } : {}),
               ...(r.authorUsername ? { authorUsername: r.authorUsername } : {}),
               ...(r.authorUrl ? { authorUrl: r.authorUrl } : {}),
