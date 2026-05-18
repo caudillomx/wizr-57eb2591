@@ -10,7 +10,7 @@ function dateKeyToLocalDate(dateKey: string): Date {
 }
 
 interface ActivityChartProps {
-  data: { date: string; count: number }[];
+  data: { date: string; count: number; lowConfidence?: boolean }[];
   onDateClick?: (date: string, label: string) => void;
 }
 
