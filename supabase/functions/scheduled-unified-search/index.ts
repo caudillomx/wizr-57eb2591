@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { normalizeResults as normalizeShared, toMentionRow, type NormalizedResult, type Platform } from "../_shared/normalize.ts";
+import { normalizeResults as normalizeShared, toMentionRow, enrichWithDate, type NormalizedResult, type Platform } from "../_shared/normalize.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -500,7 +500,7 @@ async function searchNews(
   apiKey: string,
   query: string,
   maxResults: number
-): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; raw_metadata?: Record<string, unknown> }>> {
   try {
     const response = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
@@ -522,13 +522,21 @@ async function searchNews(
     }
 
     const data = await response.json();
-    return (data.data || []).map((r: Record<string, unknown>) => ({
-      url: r.url as string,
-      title: r.title as string,
-      description: r.description as string,
-      source_domain: r.url ? new URL(r.url as string).hostname.replace("www.", "") : undefined,
-      published_at: (r.metadata as Record<string, unknown>)?.publishedDate as string,
-    }));
+    return (data.data || []).map((r: Record<string, unknown>) => {
+      const enriched = enrichWithDate({
+        title: r.title as string,
+        description: r.description as string,
+        metadata: r.metadata as Record<string, unknown>,
+      });
+      return {
+        url: r.url as string,
+        title: r.title as string,
+        description: r.description as string,
+        source_domain: r.url ? new URL(r.url as string).hostname.replace("www.", "") : undefined,
+        published_at: enriched.publishedAt || undefined,
+        raw_metadata: { date_confidence: enriched.dateConfidence, date_source: enriched.publishedAt ? (enriched.dateConfidence === "high" ? "firecrawl_metadata" : "snippet_parse") : "missing" },
+      };
+    });
   } catch (error) {
     console.error("searchNews error:", error);
     return [];

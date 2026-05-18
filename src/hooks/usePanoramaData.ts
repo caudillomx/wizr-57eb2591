@@ -29,7 +29,7 @@ export interface PanoramaMetrics {
     sinAnalizar: number;
   };
   topSources: { domain: string; count: number }[];
-  dailyActivity: { date: string; count: number }[];
+  dailyActivity: { date: string; count: number; lowConfidence: boolean }[];
   trend: "up" | "down" | "stable";
 }
 
@@ -136,16 +136,28 @@ export function usePanoramaData(
       end: startOfDay(effectiveEnd),
     });
 
-    const dailyMap = new Map<string, number>();
+    // Track count + low-confidence count per day.
+    // A day is "lowConfidence" when >= 50% of its mentions had no real
+    // published_at (we fell back to created_at), so the bar reflects capture
+    // time, not actual publication time.
+    const dailyMap = new Map<string, { count: number; lowConf: number }>();
     mentions.forEach((m) => {
       const dateKey = format(getMentionEffectiveDate(m), "yyyy-MM-dd");
-      dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + 1);
+      const entry = dailyMap.get(dateKey) || { count: 0, lowConf: 0 };
+      entry.count += 1;
+      if (!m.published_at) entry.lowConf += 1;
+      dailyMap.set(dateKey, entry);
     });
 
-    const dailyActivity = dateRange.map((d) => ({
-      date: format(d, "yyyy-MM-dd"),
-      count: dailyMap.get(format(d, "yyyy-MM-dd")) || 0,
-    }));
+    const dailyActivity = dateRange.map((d) => {
+      const key = format(d, "yyyy-MM-dd");
+      const entry = dailyMap.get(key) || { count: 0, lowConf: 0 };
+      return {
+        date: key,
+        count: entry.count,
+        lowConfidence: entry.count > 0 && entry.lowConf / entry.count >= 0.5,
+      };
+    });
 
     const olderMentions = mentions.length - recentMentions;
     const avgOlder = olderMentions / Math.max(1, (daysRange - 7) / 7);
