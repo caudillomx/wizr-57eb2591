@@ -500,7 +500,7 @@ async function searchNews(
   apiKey: string,
   query: string,
   maxResults: number
-): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; source_domain?: string; published_at?: string; raw_metadata?: Record<string, unknown> }>> {
   try {
     const response = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
