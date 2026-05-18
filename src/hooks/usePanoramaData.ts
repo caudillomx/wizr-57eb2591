@@ -29,7 +29,7 @@ export interface PanoramaMetrics {
     sinAnalizar: number;
   };
   topSources: { domain: string; count: number }[];
-  dailyActivity: { date: string; count: number }[];
+  dailyActivity: { date: string; count: number; lowConfidence: boolean }[];
   trend: "up" | "down" | "stable";
 }
 
