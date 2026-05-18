@@ -622,3 +622,107 @@ export function toMentionRow(
     },
   };
 }
+
+// ============================================================
+// SNIPPET DATE PARSER — extracts publication date from
+// Firecrawl/Google search snippets when metadata.publishedDate
+// is missing. Returns ISO string + confidence level.
+// ============================================================
+
+export type DateConfidence = "high" | "medium" | "low" | "unknown";
+
+const MONTH_MAP_ES: Record<string, number> = {
+  enero: 0, ene: 0, febrero: 1, feb: 1, marzo: 2, mar: 2, abril: 3, abr: 3,
+  mayo: 4, may: 4, junio: 5, jun: 5, julio: 6, jul: 6, agosto: 7, ago: 7,
+  septiembre: 8, setiembre: 8, sep: 8, sept: 8, octubre: 9, oct: 9,
+  noviembre: 10, nov: 10, diciembre: 11, dic: 11,
+};
+const MONTH_MAP_EN: Record<string, number> = {
+  january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2, april: 3, apr: 3,
+  may: 4, june: 5, jun: 5, july: 6, jul: 6, august: 7, aug: 7,
+  september: 8, sep: 8, sept: 8, october: 9, oct: 9, november: 10, nov: 10,
+  december: 11, dec: 11,
+};
+
+function clampDate(d: Date): string | null {
+  if (isNaN(d.getTime())) return null;
+  const now = Date.now();
+  const t = d.getTime();
+  // Reject future dates >2 days ahead and dates >5 years old
+  if (t > now + 2 * 86400_000) return null;
+  if (t < now - 5 * 365 * 86400_000) return null;
+  return d.toISOString();
+}
+
+/**
+ * Parse a publication date from a free-text snippet.
+ * Handles: "hace N días/horas/semanas/meses", "May 12, 2026",
+ * "12 may 2026", "12 de mayo de 2026", ISO "YYYY-MM-DD".
+ * Returns null if nothing reliable found.
+ */
+export function parseSnippetDate(text: string | null | undefined, now: Date = new Date()): string | null {
+  if (!text) return null;
+  const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // 1) "hace N {unit}" (es) / "N {unit} ago" (en)
+  const rel = t.match(/hace\s+(\d{1,3})\s+(minuto|hora|dia|día|semana|mes|ano|año)s?/) ||
+              t.match(/(\d{1,3})\s+(minute|hour|day|week|month|year)s?\s+ago/);
+  if (rel) {
+    const n = parseInt(rel[1], 10);
+    const u = rel[2];
+    const ms =
+      u.startsWith("minut") ? n * 60_000 :
+      u.startsWith("hora") || u.startsWith("hour") ? n * 3600_000 :
+      u.startsWith("dia") || u.startsWith("día") || u.startsWith("day") ? n * 86400_000 :
+      u.startsWith("seman") || u.startsWith("week") ? n * 7 * 86400_000 :
+      u.startsWith("mes") || u.startsWith("month") ? n * 30 * 86400_000 :
+      u.startsWith("ano") || u.startsWith("año") || u.startsWith("year") ? n * 365 * 86400_000 : 0;
+    if (ms > 0) return clampDate(new Date(now.getTime() - ms));
+  }
+
+  // 2) ISO YYYY-MM-DD
+  const iso = t.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
+  if (iso) return clampDate(new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3])));
+
+  // 3) "12 de mayo de 2026" / "12 mayo 2026" / "12 may 2026"
+  const dmy = t.match(/\b(\d{1,2})\s+(?:de\s+)?([a-z]{3,12})\s+(?:de\s+)?(20\d{2})\b/);
+  if (dmy) {
+    const m = MONTH_MAP_ES[dmy[2]] ?? MONTH_MAP_EN[dmy[2]];
+    if (m !== undefined) return clampDate(new Date(Date.UTC(+dmy[3], m, +dmy[1])));
+  }
+
+  // 4) "May 12, 2026" / "may 12 2026"
+  const mdy = t.match(/\b([a-z]{3,12})\s+(\d{1,2}),?\s+(20\d{2})\b/);
+  if (mdy) {
+    const m = MONTH_MAP_EN[mdy[1]] ?? MONTH_MAP_ES[mdy[1]];
+    if (m !== undefined) return clampDate(new Date(Date.UTC(+mdy[3], m, +mdy[2])));
+  }
+
+  // 5) "ayer" / "yesterday" / "hoy" / "today"
+  if (/\bayer\b|\byesterday\b/.test(t)) return clampDate(new Date(now.getTime() - 86400_000));
+  if (/\bhoy\b|\btoday\b/.test(t)) return clampDate(now);
+
+  return null;
+}
+
+/**
+ * Enrich a Firecrawl search result with publishedAt + dateConfidence.
+ * Priority: metadata.publishedDate (high) > snippet parse (medium) > null (unknown).
+ */
+export function enrichWithDate(result: {
+  title?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+}): { publishedAt: string | null; dateConfidence: DateConfidence } {
+  const meta = (result.metadata || {}) as Record<string, unknown>;
+  const metaDate = (meta.publishedDate || meta.published_time || meta["article:published_time"] ||
+                    meta.datePublished || meta.pubdate) as string | undefined;
+  if (metaDate) {
+    const d = new Date(metaDate);
+    if (!isNaN(d.getTime())) return { publishedAt: d.toISOString(), dateConfidence: "high" };
+  }
+  const snippet = `${result.title || ""}  ${result.description || ""}`;
+  const parsed = parseSnippetDate(snippet);
+  if (parsed) return { publishedAt: parsed, dateConfidence: "medium" };
+  return { publishedAt: null, dateConfidence: "unknown" };
+}
