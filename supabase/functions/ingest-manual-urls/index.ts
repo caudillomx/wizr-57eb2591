@@ -64,7 +64,7 @@ function buildInput(platform: Platform, urls: string[]) {
     case "facebook":
       return { startUrls: urls.map((url) => ({ url })), resultsLimit: Math.max(urls.length, 1) };
     case "instagram":
-      return { directUrls: urls, resultsLimit: Math.max(urls.length, 1), addParentData: false };
+      return { directUrls: urls, resultsType: "posts", resultsLimit: Math.max(urls.length, 1), addParentData: false };
     case "tiktok":
       return { postURLs: urls, resultsPerPage: Math.max(urls.length, 1), shouldDownloadVideos: false };
     case "twitter":
