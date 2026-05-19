@@ -19,6 +19,7 @@ import { AutoSaveConfigPanel } from "@/components/fuentes/AutoSaveConfigPanel";
 import { UnifiedSearch } from "@/components/fuentes/UnifiedSearch";
 import { ScheduledSearchConfig } from "@/components/fuentes/ScheduledSearchConfig";
 import { SocialDateEnrichmentCard } from "@/components/fuentes/SocialDateEnrichmentCard";
+import { ManualUrlIngestCard } from "@/components/fuentes/ManualUrlIngestCard";
 
 import {
   AlertCircle,
@@ -221,6 +222,7 @@ const FuentesPage = () => {
         <TabsContent value="automatizacion" className="space-y-6 mt-4">
           <ScheduledSearchConfig projectId={selectedProject.id} />
           <AutoSaveConfigPanel projectId={selectedProject?.id} />
+          <ManualUrlIngestCard projectId={selectedProject.id} />
           <SocialDateEnrichmentCard projectId={selectedProject.id} />
         </TabsContent>
       </Tabs>
