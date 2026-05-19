@@ -140,21 +140,23 @@ export function usePanoramaData(
     // A day is "lowConfidence" when >= 50% of its mentions had no real
     // published_at (we fell back to created_at), so the bar reflects capture
     // time, not actual publication time.
-    const dailyMap = new Map<string, { count: number; lowConf: number }>();
+    const dailyMap = new Map<string, { count: number; verified: number; lowConf: number }>();
     mentions.forEach((m) => {
       const dateKey = format(getMentionEffectiveDate(m), "yyyy-MM-dd");
-      const entry = dailyMap.get(dateKey) || { count: 0, lowConf: 0 };
+      const entry = dailyMap.get(dateKey) || { count: 0, verified: 0, lowConf: 0 };
       entry.count += 1;
-      if (!m.published_at) entry.lowConf += 1;
+      if (m.published_at) entry.verified += 1;
+      else entry.lowConf += 1;
       dailyMap.set(dateKey, entry);
     });
 
     const dailyActivity = dateRange.map((d) => {
       const key = format(d, "yyyy-MM-dd");
-      const entry = dailyMap.get(key) || { count: 0, lowConf: 0 };
+      const entry = dailyMap.get(key) || { count: 0, verified: 0, lowConf: 0 };
       return {
         date: key,
         count: entry.count,
+        verifiedCount: entry.verified,
         lowConfidence: entry.count > 0 && entry.lowConf / entry.count >= 0.5,
       };
     });
