@@ -285,8 +285,13 @@ Deno.serve(async (req) => {
           needsKeywords = true;
         }
 
-        for (const { original, resolved } of job.batch || []) {
-          const item = findMatchingItem(items, original, resolved);
+        const batch = job.batch || [];
+        const samePositional = items.length === batch.length;
+        for (let i = 0; i < batch.length; i++) {
+          const { original, resolved } = batch[i];
+          let item = findMatchingItem(items, original, resolved);
+          // Fallback: Apify devolvió misma cantidad de items que URLs enviadas → asume orden.
+          if (!item && samePositional) item = items[i];
           if (!item) {
             jobResults.push({ url: original, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
             continue;
