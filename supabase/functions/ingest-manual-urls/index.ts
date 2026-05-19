@@ -218,27 +218,25 @@ Deno.serve(async (req) => {
           continue;
         }
 
-      // Map items by their canonical URL + try fuzzy match
-      const byUrl = new Map<string, any>();
-      for (const it of items) {
-        const u = itemUrl(it);
-        if (u) byUrl.set(u, it);
-      }
+        // Map items by their canonical URL + try fuzzy match
+        const byUrl = new Map<string, any>();
+        for (const it of items) {
+          const u = itemUrl(it);
+          if (u) byUrl.set(u, it);
+        }
 
-      for (const requestedUrl of batch) {
-        let item = byUrl.get(requestedUrl);
+        let item = byUrl.get(resolved);
         if (!item) {
-          // try fuzzy: any item url shares an id segment
           for (const [k, v] of byUrl.entries()) {
-            const a = requestedUrl.replace(/\/+$/, "").split("?")[0];
+            const a = resolved.replace(/\/+$/, "").split("?")[0];
             const b = k.replace(/\/+$/, "").split("?")[0];
             if (a === b || a.endsWith(b) || b.endsWith(a)) { item = v; break; }
           }
         }
-        if (!item && items.length === 1 && batch.length === 1) item = items[0];
+        if (!item && items.length === 1) item = items[0];
 
         if (!item) {
-          results.push({ url: requestedUrl, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
+          results.push({ url: original, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
           continue;
         }
 
@@ -246,7 +244,7 @@ Deno.serve(async (req) => {
         const { title, description } = extractText(platform, item);
         const author = extractAuthor(platform, item);
         const eng = extractEngagement(platform, item);
-        const canonicalUrl = itemUrl(item) || requestedUrl;
+        const canonicalUrl = itemUrl(item) || resolved;
 
         const raw_metadata = {
           ingestion_source: "manual_url_ingest",
@@ -257,16 +255,16 @@ Deno.serve(async (req) => {
           engagement: eng,
           date_source: publishedAt ? "apify_manual" : "unavailable",
           date_confidence: publishedAt ? "high" : "unavailable",
-          original_url: requestedUrl !== canonicalUrl ? requestedUrl : undefined,
+          original_url: original !== canonicalUrl ? original : undefined,
+          resolved_url: resolved !== original ? resolved : undefined,
           raw_item: item,
         };
 
-        // Upsert by (project_id, url) — match patrón Mentions Persistence v2
         const { data: existing } = await supabase
           .from("mentions")
           .select("id")
           .eq("project_id", project_id)
-          .eq("url", canonicalUrl)
+          .or(`url.eq.${canonicalUrl},url.eq.${original},url.eq.${resolved}`)
           .maybeSingle();
 
         if (existing) {
@@ -279,10 +277,11 @@ Deno.serve(async (req) => {
               source_domain: DOMAIN_TO_SOURCE[platform],
               raw_metadata,
               is_archived: false,
+              url: canonicalUrl,
             })
             .eq("id", existing.id);
-          if (updErr) { results.push({ url: requestedUrl, status: "failed", reason: updErr.message }); continue; }
-          results.push({ url: requestedUrl, status: "updated", mention_id: existing.id });
+          if (updErr) { results.push({ url: original, status: "failed", reason: updErr.message }); continue; }
+          results.push({ url: original, status: "updated", mention_id: existing.id });
         } else {
           const { data: ins, error: insErr } = await supabase
             .from("mentions")
@@ -299,9 +298,9 @@ Deno.serve(async (req) => {
             })
             .select("id")
             .maybeSingle();
-          if (insErr) { results.push({ url: requestedUrl, status: "failed", reason: insErr.message }); continue; }
-          if (!ins) { results.push({ url: requestedUrl, status: "skipped", reason: "rechazado por filtro de relevancia" }); continue; }
-          results.push({ url: requestedUrl, status: "inserted", mention_id: ins.id });
+          if (insErr) { results.push({ url: original, status: "failed", reason: insErr.message }); continue; }
+          if (!ins) { results.push({ url: original, status: "skipped", reason: "rechazado por filtro de relevancia" }); continue; }
+          results.push({ url: original, status: "inserted", mention_id: ins.id });
         }
       }
     }
