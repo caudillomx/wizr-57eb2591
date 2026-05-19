@@ -204,37 +204,35 @@ Deno.serve(async (req) => {
 
     const results: Array<{ url: string; status: "inserted" | "updated" | "skipped" | "failed"; reason?: string; mention_id?: string }> = [];
 
-    // Process ONE URL per Apify call to stay under gateway timeout.
-    for (const platform of Object.keys(grouped) as Platform[]) {
-      const batch = grouped[platform];
-      if (batch.length === 0) continue;
+    async function processPlatform(platform: Platform, batch: Array<{ original: string; resolved: string }>) {
+      if (batch.length === 0) return;
+      const resolvedUrls = batch.map((b) => b.resolved);
+      let items: any[] = [];
+      try {
+        items = await runApify(ACTOR_MAP[platform], buildInput(platform, resolvedUrls));
+      } catch (e: any) {
+        for (const { original } of batch) {
+          results.push({ url: original, status: "failed", reason: `apify: ${String(e?.message || e).slice(0, 200)}` });
+        }
+        return;
+      }
+
+      // Index items by canonical URL fragments for fuzzy matching
+      const indexed = items.map((it) => ({ it, u: (itemUrl(it) || "").replace(/\/+$/, "").split("?")[0].toLowerCase() }));
 
       for (const { original, resolved } of batch) {
-        let items: any[] = [];
-        try {
-          items = await runApify(ACTOR_MAP[platform], buildInput(platform, [resolved]));
-        } catch (e: any) {
-          results.push({ url: original, status: "failed", reason: `apify: ${String(e?.message || e).slice(0, 200)}` });
-          continue;
+        const target = resolved.replace(/\/+$/, "").split("?")[0].toLowerCase();
+        let entry = indexed.find((x) => x.u === target);
+        if (!entry) entry = indexed.find((x) => x.u && (x.u.endsWith(target) || target.endsWith(x.u)));
+        // Try matching by post id in URL
+        if (!entry) {
+          const idMatch = target.match(/\/(p|reel|status|video)\/([a-z0-9_-]+)/i) || target.match(/\/posts\/([a-z0-9_-]+)/i);
+          const id = idMatch ? idMatch[idMatch.length - 1] : null;
+          if (id) entry = indexed.find((x) => x.u.includes(id.toLowerCase()));
         }
+        if (!entry && items.length === 1 && batch.length === 1) entry = indexed[0];
 
-        // Map items by their canonical URL + try fuzzy match
-        const byUrl = new Map<string, any>();
-        for (const it of items) {
-          const u = itemUrl(it);
-          if (u) byUrl.set(u, it);
-        }
-
-        let item = byUrl.get(resolved);
-        if (!item) {
-          for (const [k, v] of byUrl.entries()) {
-            const a = resolved.replace(/\/+$/, "").split("?")[0];
-            const b = k.replace(/\/+$/, "").split("?")[0];
-            if (a === b || a.endsWith(b) || b.endsWith(a)) { item = v; break; }
-          }
-        }
-        if (!item && items.length === 1) item = items[0];
-
+        const item = entry?.it;
         if (!item) {
           results.push({ url: original, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
           continue;
@@ -304,6 +302,9 @@ Deno.serve(async (req) => {
         }
       }
     }
+
+    // Run all platforms in parallel (one Apify call per platform with all URLs batched)
+    await Promise.all((Object.keys(grouped) as Platform[]).map((p) => processPlatform(p, grouped[p])));
 
     for (const s of skipped) results.push({ url: s.url, status: "skipped", reason: s.reason });
 
