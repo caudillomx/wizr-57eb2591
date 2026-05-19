@@ -144,7 +144,7 @@ function itemUrl(it: any): string | null {
 }
 
 async function runApify(actorId: string, input: any): Promise<any[]> {
-  const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=120`;
+  const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=50`;
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
