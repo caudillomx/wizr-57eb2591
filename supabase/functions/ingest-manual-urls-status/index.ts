@@ -24,6 +24,8 @@ type IngestJob = {
   datasetId?: string | null;
   status?: string;
   batch: BatchUrl[];
+  processed?: boolean;
+  processedResults?: Array<Record<string, unknown>>;
 };
 
 const DOMAIN_TO_SOURCE: Record<Platform, string> = {
@@ -250,18 +252,30 @@ Deno.serve(async (req) => {
 
     for (const job of jobs as IngestJob[]) {
       try {
+        if (job.processed) {
+          updatedJobs.push(job);
+          results.push(...(job.processedResults || []));
+          continue;
+        }
+
         const run = await getApifyRun(job.runId);
         const status = run.status || job.status || "RUNNING";
         const datasetId = run.defaultDatasetId || job.datasetId || null;
         const nextJob = { ...job, status, datasetId };
-        updatedJobs.push(nextJob);
 
-        if (!isTerminal(status)) continue;
+        if (!isTerminal(status)) {
+          updatedJobs.push(nextJob);
+          continue;
+        }
+
+        const jobResults: Array<Record<string, unknown>> = [];
 
         if (status !== "SUCCEEDED" || !datasetId) {
           for (const { original } of job.batch || []) {
-            results.push({ url: original, status: "failed", reason: `Apify terminó con estado ${status}` });
+            jobResults.push({ url: original, status: "failed", reason: `Apify terminó con estado ${status}` });
           }
+          results.push(...jobResults);
+          updatedJobs.push({ ...nextJob, processed: true, processedResults: jobResults });
           continue;
         }
 
@@ -274,24 +288,26 @@ Deno.serve(async (req) => {
         for (const { original, resolved } of job.batch || []) {
           const item = findMatchingItem(items, original, resolved);
           if (!item) {
-            results.push({ url: original, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
+            jobResults.push({ url: original, status: "failed", reason: "Apify no devolvió contenido (post privado/borrado o URL no soportada)" });
             continue;
           }
           try {
-            results.push(await upsertMention(supabase, project_id, matchedKeywords, job.platform, item, original, resolved));
+            jobResults.push(await upsertMention(supabase, project_id, matchedKeywords, job.platform, item, original, resolved));
           } catch (e: any) {
-            results.push({ url: original, status: "failed", reason: String(e?.message || e).slice(0, 200) });
+            jobResults.push({ url: original, status: "failed", reason: String(e?.message || e).slice(0, 200) });
           }
         }
+        results.push(...jobResults);
+        updatedJobs.push({ ...nextJob, processed: true, processedResults: jobResults });
       } catch (e: any) {
         updatedJobs.push(job);
         for (const { original } of job.batch || []) {
-          results.push({ url: original, status: "failed", reason: String(e?.message || e).slice(0, 200) });
+          results.push({ url: original, status: "failed", reason: `consulta temporal: ${String(e?.message || e).slice(0, 180)}` });
         }
       }
     }
 
-    const done = updatedJobs.every((job) => isTerminal(String(job.status || "")));
+    const done = updatedJobs.every((job) => Boolean(job.processed) || isTerminal(String(job.status || "")));
     const summary = {
       inserted: results.filter((r) => r.status === "inserted").length,
       updated: results.filter((r) => r.status === "updated").length,
