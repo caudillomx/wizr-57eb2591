@@ -17,7 +17,7 @@ type BatchUrl = {
 
 const ACTOR_MAP: Record<Platform, string> = {
   facebook: "apify~facebook-posts-scraper",
-  instagram: "apify~instagram-post-scraper",
+  instagram: "apify~instagram-scraper",
   tiktok: "clockworks~tiktok-scraper",
   twitter: "apidojo~tweet-scraper",
 };
