@@ -39,6 +39,35 @@ function detectPlatform(url: string): Platform | null {
   return null;
 }
 
+// FB share/r/<id> and share/p/<id> are short redirects. Apify actors don't follow them.
+// We resolve client-side so the actor gets a canonical permalink.
+async function resolveShareUrl(url: string): Promise<string> {
+  try {
+    if (!/facebook\.com\/share\/(r|p|v|reel)\//i.test(url) && !/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
+    const resp = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "Accept": "text/html",
+        "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    const finalUrl = resp.url;
+    if (finalUrl && finalUrl !== url && !/login|checkpoint/i.test(finalUrl)) return finalUrl;
+    // Try canonical from HTML
+    const html = await resp.text();
+    const canon = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
+    if (canon?.[1]) return canon[1];
+    const og = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i);
+    if (og?.[1]) return og[1];
+  } catch (e) {
+    console.warn("resolveShareUrl failed", url, String(e));
+  }
+  return url;
+}
+
 function buildInput(platform: Platform, urls: string[]) {
   switch (platform) {
     case "facebook":
