@@ -221,6 +221,7 @@ const FuentesPage = () => {
         <TabsContent value="automatizacion" className="space-y-6 mt-4">
           <ScheduledSearchConfig projectId={selectedProject.id} />
           <AutoSaveConfigPanel projectId={selectedProject?.id} />
+          <SocialDateEnrichmentCard projectId={selectedProject.id} />
         </TabsContent>
       </Tabs>
 
