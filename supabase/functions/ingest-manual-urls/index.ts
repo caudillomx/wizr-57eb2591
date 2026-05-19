@@ -33,26 +33,51 @@ function detectPlatform(url: string): Platform | null {
   return null;
 }
 
-async function resolveShareUrl(url: string): Promise<string> {
+async function tryFetchCanonical(url: string): Promise<string | null> {
   try {
-    if (!/facebook\.com\/share\/(r|p|v|reel|[a-z0-9]+)/i.test(url) && !/^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url)) return url;
     const resp = await fetch(url, {
       method: "GET",
       redirect: "follow",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-        "Accept": "text/html",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+        "Accept": "text/html,application/xhtml+xml",
         "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(6000),
     });
     const finalUrl = resp.url;
-    if (finalUrl && finalUrl !== url && !/login|checkpoint/i.test(finalUrl)) return finalUrl;
+    if (finalUrl && finalUrl !== url && !/login|checkpoint|\/help\//i.test(finalUrl)) {
+      return finalUrl.replace(/^https?:\/\/(m|mbasic|mobile)\.facebook\.com/, "https://www.facebook.com");
+    }
     const html = await resp.text();
     const canon = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
     if (canon?.[1]) return canon[1];
     const og = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i);
     if (og?.[1]) return og[1];
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+async function resolveShareUrl(url: string): Promise<string> {
+  try {
+    const isFbShare = /facebook\.com\/share\//i.test(url);
+    const isTtShort = /^https?:\/\/(vt|vm)\.tiktok\.com\//i.test(url);
+    if (!isFbShare && !isTtShort) return url;
+
+    // Para Facebook share/ probamos primero mbasic (sin login wall) y luego www.
+    const candidates: string[] = [];
+    if (isFbShare) {
+      candidates.push(url.replace(/^https?:\/\/(www\.)?facebook\.com/, "https://mbasic.facebook.com"));
+      candidates.push(url.replace(/^https?:\/\/(www\.)?facebook\.com/, "https://m.facebook.com"));
+    }
+    candidates.push(url);
+
+    for (const c of candidates) {
+      const resolved = await tryFetchCanonical(c);
+      if (resolved && !/facebook\.com\/share\//i.test(resolved) && !/login|checkpoint/i.test(resolved)) {
+        return resolved;
+      }
+    }
   } catch (e) {
     console.warn("resolveShareUrl failed", url, String(e));
   }
