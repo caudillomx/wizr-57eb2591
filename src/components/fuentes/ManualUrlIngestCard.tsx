@@ -16,6 +16,7 @@ export function ManualUrlIngestCard({ projectId }: ManualUrlIngestCardProps) {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
   const [summary, setSummary] = useState<any>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   const parseUrls = (text: string): string[] => {
     const matched = text.match(/https?:\/\/[^\s,)]+/gi) || [];
@@ -31,19 +32,59 @@ export function ManualUrlIngestCard({ projectId }: ManualUrlIngestCardProps) {
     setRunning(true);
     setResults(null);
     setSummary(null);
+    setProgress("Iniciando scrapers…");
     try {
       const { data, error } = await supabase.functions.invoke("ingest-manual-urls", {
         body: { project_id: projectId, urls },
       });
       if (error) throw error;
-      setResults(data?.results || []);
-      setSummary(data?.summary || null);
-      const s = data?.summary || {};
-      toast.success(`Listo: ${s.inserted ?? 0} nuevas, ${s.updated ?? 0} actualizadas, ${s.failed ?? 0} fallidas`);
+      const initialResults = data?.results || [];
+      setResults(initialResults);
+
+      if (data?.mode !== "async") {
+        setSummary(data?.summary || null);
+        const s = data?.summary || {};
+        toast.success(`Listo: ${s.inserted ?? 0} nuevas, ${s.updated ?? 0} actualizadas, ${s.failed ?? 0} fallidas`);
+        return;
+      }
+
+      let jobs = data?.jobs || [];
+      const queued = data?.summary?.queued ?? 0;
+      setSummary({ inserted: 0, updated: 0, skipped: data?.summary?.skipped ?? 0, failed: data?.summary?.failed ?? 0, queued });
+      setProgress(`${queued} URL${queued === 1 ? "" : "s"} en cola. Esperando resultados de Apify…`);
+      toast.info(`Ingestión en segundo plano iniciada: ${queued} URL${queued === 1 ? "" : "s"}`);
+
+      let finalData: any = null;
+      for (let attempt = 1; attempt <= 45; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, attempt < 4 ? 5000 : 8000));
+        const { data: statusData, error: statusError } = await supabase.functions.invoke("ingest-manual-urls-status", {
+          body: { project_id: projectId, jobs },
+        });
+        if (statusError) throw statusError;
+        jobs = statusData?.jobs || jobs;
+        const s = statusData?.summary || {};
+        const mergedResults = [...initialResults, ...(statusData?.results || [])];
+        setResults(mergedResults);
+        setSummary({ ...s, skipped: (s.skipped ?? 0) + (data?.summary?.skipped ?? 0), failed: (s.failed ?? 0) + (data?.summary?.failed ?? 0) });
+        setProgress(statusData?.done ? "Procesamiento finalizado." : `Apify procesando: ${s.completed ?? 0}/${s.total ?? jobs.length} lotes listos…`);
+        if (statusData?.done) {
+          finalData = { ...statusData, results: mergedResults };
+          break;
+        }
+      }
+
+      if (!finalData) {
+        toast.warning("La ingestión sigue procesándose en Apify. Intenta consultar de nuevo en unos minutos.");
+        return;
+      }
+
+      const s = finalData.summary || {};
+      toast.success(`Listo: ${s.inserted ?? 0} nuevas, ${s.updated ?? 0} actualizadas, ${(s.failed ?? 0) + (data?.summary?.failed ?? 0)} fallidas`);
     } catch (e: any) {
       toast.error(e?.message || "Falló la ingestión");
     } finally {
       setRunning(false);
+      setProgress(null);
     }
   };
 
@@ -77,15 +118,16 @@ export function ManualUrlIngestCard({ projectId }: ManualUrlIngestCardProps) {
         />
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            {urlCount > 0 ? <>{urlCount} URL{urlCount === 1 ? "" : "s"} detectada{urlCount === 1 ? "" : "s"}</> : "Sin URLs detectadas"}
+            {progress || (urlCount > 0 ? <>{urlCount} URL{urlCount === 1 ? "" : "s"} detectada{urlCount === 1 ? "" : "s"}</> : "Sin URLs detectadas")}
           </span>
           <Button onClick={ingest} disabled={running || urlCount === 0}>
-            {running ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Procesando…</> : "Ingerir URLs"}
+            {running ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Consultando…</> : "Ingerir URLs"}
           </Button>
         </div>
 
         {summary && (
           <div className="flex gap-2 flex-wrap pt-1">
+            {summary.queued !== undefined && <Badge variant="outline" className="text-xs">En cola: {summary.queued}</Badge>}
             <Badge variant="outline" className="text-xs">Nuevas: {summary.inserted}</Badge>
             <Badge variant="outline" className="text-xs">Actualizadas: {summary.updated}</Badge>
             <Badge variant="outline" className="text-xs">Omitidas: {summary.skipped}</Badge>
