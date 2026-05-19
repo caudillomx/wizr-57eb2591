@@ -189,30 +189,34 @@ Deno.serve(async (req) => {
     }
     const matchedKeywords = Array.from(allKeywords).slice(0, 50);
 
-    // Group URLs by platform
-    const grouped: Record<Platform, string[]> = { facebook: [], instagram: [], tiktok: [], twitter: [] };
+    // Group URLs by platform, resolving share/short URLs first
+    const grouped: Record<Platform, Array<{ original: string; resolved: string }>> = { facebook: [], instagram: [], tiktok: [], twitter: [] };
     const skipped: Array<{ url: string; reason: string }> = [];
     for (const raw of urls) {
       const u = String(raw).trim();
       if (!u) continue;
       const p = detectPlatform(u);
       if (!p) { skipped.push({ url: u, reason: "plataforma no detectada" }); continue; }
-      grouped[p].push(u);
+      const resolved = await resolveShareUrl(u);
+      const finalPlatform = detectPlatform(resolved) || p;
+      grouped[finalPlatform].push({ original: u, resolved });
     }
 
     const results: Array<{ url: string; status: "inserted" | "updated" | "skipped" | "failed"; reason?: string; mention_id?: string }> = [];
 
+    // Process ONE URL per Apify call to stay under gateway timeout.
     for (const platform of Object.keys(grouped) as Platform[]) {
       const batch = grouped[platform];
       if (batch.length === 0) continue;
 
-      let items: any[] = [];
-      try {
-        items = await runApify(ACTOR_MAP[platform], buildInput(platform, batch));
-      } catch (e: any) {
-        for (const u of batch) results.push({ url: u, status: "failed", reason: `apify: ${e?.message || e}` });
-        continue;
-      }
+      for (const { original, resolved } of batch) {
+        let items: any[] = [];
+        try {
+          items = await runApify(ACTOR_MAP[platform], buildInput(platform, [resolved]));
+        } catch (e: any) {
+          results.push({ url: original, status: "failed", reason: `apify: ${String(e?.message || e).slice(0, 200)}` });
+          continue;
+        }
 
       // Map items by their canonical URL + try fuzzy match
       const byUrl = new Map<string, any>();
