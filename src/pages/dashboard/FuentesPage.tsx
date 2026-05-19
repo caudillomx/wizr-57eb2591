@@ -18,6 +18,7 @@ import { MentionsHubTab } from "@/components/fuentes/MentionsHubTab";
 import { AutoSaveConfigPanel } from "@/components/fuentes/AutoSaveConfigPanel";
 import { UnifiedSearch } from "@/components/fuentes/UnifiedSearch";
 import { ScheduledSearchConfig } from "@/components/fuentes/ScheduledSearchConfig";
+import { SocialDateEnrichmentCard } from "@/components/fuentes/SocialDateEnrichmentCard";
 
 import {
   AlertCircle,
