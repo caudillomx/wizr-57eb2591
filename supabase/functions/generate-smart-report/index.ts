@@ -261,6 +261,107 @@ function sanitizeMentionCounts(
   });
 }
 
+// Sanitiza cifras pegadas a un contexto categórico (plataforma o fecha).
+// - "Facebook (89 menciones)" → verifica contra gtByPlatform.facebook; si no coincide, reemplaza o neutraliza.
+// - "15 de mayo con 100 menciones" → verifica contra gtByDate de ese día; si no coincide, reemplaza.
+// - Apertura tipo "se registraron N menciones" / "se contabilizaron N..." → fuerza el total real del universo.
+function sanitizeContextualCounts(
+  text: string | undefined | null,
+  gtByPlatform: Record<string, number>,
+  gtByDate: Record<string, number>,
+  totalMentions: number,
+): string | undefined {
+  if (!text) return text ?? undefined;
+  let out = text;
+
+  // 1) Forzar el total del universo en frases de apertura ("se registraron/contabilizaron/documentaron/identificaron N menciones")
+  if (totalMentions > 0) {
+    const openingRe = /\b(se\s+(?:registraron|contabilizaron|documentaron|identificaron|detectaron|recopilaron|capturaron|monitorearon)\s+)(\d{1,5})(\s+menciones?\b)/gi;
+    out = out.replace(openingRe, (_full, pre: string, num: string, post: string) => {
+      const n = parseInt(num, 10);
+      if (Number.isFinite(n) && n !== totalMentions) {
+        const w = totalMentions === 1 ? " mención" : " menciones";
+        return `${pre}${totalMentions}${post.replace(/\s+menciones?/i, w)}`;
+      }
+      return `${pre}${num}${post}`;
+    });
+  }
+
+  // 2) Plataformas: "Facebook (N menciones)" o "Facebook con N menciones" o "en Facebook ... N menciones"
+  const platformAliases: Record<string, string> = {
+    facebook: "facebook",
+    instagram: "instagram",
+    twitter: "twitter",
+    "x (twitter)": "twitter",
+    "x/twitter": "twitter",
+    tiktok: "tiktok",
+    youtube: "youtube",
+    reddit: "reddit",
+    linkedin: "linkedin",
+  };
+  for (const [alias, key] of Object.entries(platformAliases)) {
+    const real = gtByPlatform[key];
+    if (typeof real !== "number") continue;
+    // a) "Alias (N menciones)" o "Alias (N)"
+    const reParen = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\b\\s*\\(\\s*(\\d{1,5})\\s*(menciones?|posts?|publicaciones?)?\\s*\\)`, "gi");
+    out = out.replace(reParen, (_full, num: string, word?: string) => {
+      const n = parseInt(num, 10);
+      if (Number.isFinite(n) && n !== real) {
+        const w = word ? (real === 1 ? "mención" : "menciones") : "menciones";
+        return `${alias.charAt(0).toUpperCase()}${alias.slice(1)} (${real} ${w})`;
+      }
+      return _full;
+    });
+    // b) "Alias con N menciones"
+    const reCon = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\b(\\s+(?:con|que\\s+suma|suma|concentra|acumula|registra)\\s+)(\\d{1,5})(\\s+menciones?\\b)`, "gi");
+    out = out.replace(reCon, (_full, mid: string, num: string, post: string) => {
+      const n = parseInt(num, 10);
+      if (Number.isFinite(n) && n !== real) {
+        const w = real === 1 ? " mención" : " menciones";
+        return `${alias.charAt(0).toUpperCase()}${alias.slice(1)}${mid}${real}${post.replace(/\s+menciones?/i, w)}`;
+      }
+      return _full;
+    });
+  }
+
+  // 3) Fechas españolas: "15 de mayo con 100 menciones" / "el 15 de mayo (100 menciones)" / "el 17 de mayo, 32 menciones"
+  const MONTHS: Record<string, string> = {
+    enero: "01", febrero: "02", marzo: "03", abril: "04", mayo: "05", junio: "06",
+    julio: "07", agosto: "08", septiembre: "09", setiembre: "09", octubre: "10", noviembre: "11", diciembre: "12",
+  };
+  const peakYear = (() => {
+    const years = Object.keys(gtByDate).map((d) => d.slice(0, 4)).filter(Boolean);
+    if (years.length === 0) return new Date().getFullYear().toString();
+    const freq: Record<string, number> = {};
+    for (const y of years) freq[y] = (freq[y] || 0) + 1;
+    return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+  })();
+  const dateRe = /\b(?:el\s+)?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b([^.;:\n(]{0,80}?)(\(?\b(\d{1,5})\s+menciones?\b\)?)/gi;
+  out = out.replace(dateRe, (full, day: string, month: string, between: string, tail: string, num: string) => {
+    const mm = MONTHS[month.toLowerCase()];
+    if (!mm) return full;
+    const dd = day.padStart(2, "0");
+    const iso = `${peakYear}-${mm}-${dd}`;
+    const real = gtByDate[iso];
+    const n = parseInt(num, 10);
+    if (typeof real !== "number" || !Number.isFinite(n)) {
+      // Día sin datos verificados pero el modelo cita una cifra → neutralizar
+      if (Number.isFinite(n) && n >= 5) {
+        return full.replace(tail, "varias menciones");
+      }
+      return full;
+    }
+    if (n !== real) {
+      const w = real === 1 ? "mención" : "menciones";
+      const replacement = tail.startsWith("(") ? `(${real} ${w})` : `${real} ${w}`;
+      return full.replace(tail, replacement);
+    }
+    return full;
+  });
+
+  return out;
+}
+
 function clipAtWordBoundary(text: string, maxChars: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
   if (compact.length <= maxChars) return compact;
@@ -819,7 +920,7 @@ serve(async (req) => {
       ...Object.values(gtByAuthor),
     ];
 
-    const volumeTruthBlock = `\n=== VOLUMEN VERIFICADO (HECHOS AUDITABLES — USAR LITERALMENTE) ===\nTotal del universo monitoreado: ${metrics.totalMentions} menciones (esta cifra es el TECHO ABSOLUTO; ninguna sub-cifra puede ser mayor).\n${peakEntry ? `Pico diario REAL: ${peakEntry[0]} con ${peakEntry[1]} menciones. PROHIBIDO afirmar que otro día tuvo más, o que el pico tuvo un número distinto.\n` : ""}${gtPlatforms.length > 0 ? `Conteo REAL por plataforma social (universo completo):\n${gtPlatforms.map(([p, c]) => `  - ${p}: ${c}`).join("\n")}\n` : ""}${gtSources.length > 0 ? `Top fuentes/dominios (universo completo):\n${gtSources.map(([s, c]) => `  - ${s}: ${c}`).join("\n")}\n` : ""}REGLA: cualquier afirmación con "N menciones" que NO coincida con alguno de los conteos listados arriba (o con los CONTEOS VERIFICADOS de términos del Enfoque) está PROHIBIDA. Usa lenguaje cualitativo en su lugar ("varias menciones", "presencia recurrente").\n`;
+    const volumeTruthBlock = `\n=== VOLUMEN VERIFICADO (HECHOS AUDITABLES — USAR LITERALMENTE) ===\nTotal del universo monitoreado: ${metrics.totalMentions} menciones (esta cifra es el TECHO ABSOLUTO; ninguna sub-cifra puede ser mayor).\nOBLIGATORIO en 'summary' y en el primer keyFinding: abrir la oración de volumen citando EXACTAMENTE "${metrics.totalMentions} menciones" (no 58, no otra cifra). PROHIBIDO escribir "se registraron N menciones" con un N distinto a ${metrics.totalMentions}.\n${peakEntry ? `Pico diario REAL: ${peakEntry[0]} con ${peakEntry[1]} menciones. PROHIBIDO afirmar que otro día tuvo más, o que el pico tuvo un número distinto.\n` : ""}${gtDates.slice(0, 5).length > 0 ? `Top 5 días por volumen REAL (usar literalmente al describir picos o evolución):\n${gtDates.slice(0, 5).map(([d, c]) => `  - ${d}: ${c} menciones`).join("\n")}\n` : ""}${gtPlatforms.length > 0 ? `Conteo REAL por plataforma social (universo completo). Cuando cites "Facebook (N menciones)" o equivalente, N DEBE ser exactamente el listado:\n${gtPlatforms.map(([p, c]) => `  - ${p}: ${c}`).join("\n")}\n` : ""}${gtSources.length > 0 ? `Top fuentes/dominios (universo completo):\n${gtSources.map(([s, c]) => `  - ${s}: ${c}`).join("\n")}\n` : ""}REGLA: cualquier afirmación con "N menciones" que NO coincida con alguno de los conteos listados arriba (o con los CONTEOS VERIFICADOS de términos del Enfoque) está PROHIBIDA. Usa lenguaje cualitativo en su lugar ("varias menciones", "presencia recurrente"). PROHIBIDO especialmente: pegar una cifra de un día/plataforma a otro día/plataforma distinto.\n`;
 
     // ===== SEÑALES DE AMPLIFICACIÓN (para calibrar severidad) =====
     const TIER1_DOMAINS = /(nytimes|washingtonpost|reuters|bloomberg|wsj|ft\.com|bbc|cnn|elpais|elmundo|reforma|eluniversal|milenio|jornada|excelsior|proceso|animalpolitico|aristegui|infobae|expansion|forbes|economista|elfinanciero|sdpnoticias|televisa|tvazteca|heraldodemexico)/i;
@@ -1299,8 +1400,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         const sent = n?.sentiment;
         const tr = n?.trend;
         const rawDesc = String(n?.description || "");
+        const ctxDesc = sanitizeContextualCounts(rawDesc, gtByPlatform, gtByDate, metrics.totalMentions) || rawDesc;
         const cleanedDesc = sanitizeMentionCounts(
-          sanitizeSentimentPercents(rawDesc, metrics) || rawDesc,
+          sanitizeSentimentPercents(ctxDesc, metrics) || ctxDesc,
           verifiedCounts,
           totalsForNarrative,
           knownProperNames,
@@ -1380,7 +1482,8 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       neutral: metrics.neutralCount,
     };
     const sp = (t: string | undefined | null) => {
-      const a = sanitizeSentimentPercents(t, metrics);
+      const ctx = sanitizeContextualCounts(t, gtByPlatform, gtByDate, metrics.totalMentions);
+      const a = sanitizeSentimentPercents(ctx, metrics);
       const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames, allowedExtraCounts);
       return b || undefined;
     };
