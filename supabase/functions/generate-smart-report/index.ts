@@ -1481,7 +1481,8 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
       neutral: metrics.neutralCount,
     };
     const sp = (t: string | undefined | null) => {
-      const a = sanitizeSentimentPercents(t, metrics);
+      const ctx = sanitizeContextualCounts(t, gtByPlatform, gtByDate, metrics.totalMentions);
+      const a = sanitizeSentimentPercents(ctx, metrics);
       const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames, allowedExtraCounts);
       return b || undefined;
     };
