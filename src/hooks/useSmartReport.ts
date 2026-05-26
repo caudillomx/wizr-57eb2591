@@ -213,6 +213,18 @@ export function useSmartReport() {
         if (inferred) { authorName = inferred; username = inferred; }
       }
 
+      // Sanitize: descarta autores claramente inválidos (slugs de URL, numéricos, archivos)
+      const isJunkAuthor = (n?: string) => {
+        if (!n) return true;
+        const x = String(n).trim();
+        if (x.length < 3) return true;
+        if (/^\d+$/.test(x)) return true;
+        if (/\.(php|html?|aspx?)$/i.test(x)) return true;
+        if (/^(share|photo|photos|video|videos|watch|reel|reels|story|stories|permalink|profile|p|posts|pages|groups|plugins|sharer|dialog|events|marketplace)$/i.test(x)) return true;
+        return false;
+      };
+      if (isJunkAuthor(authorName)) { authorName = undefined; }
+
       // Decisión: ¿Influencer o Medio?
       // - Red social conocida + autor → Influencer
       // - Dominio de medio conocido → Medio
