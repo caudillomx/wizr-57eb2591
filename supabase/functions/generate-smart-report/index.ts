@@ -200,12 +200,15 @@ function sanitizeMentionCounts(
   verified: Array<{ term: string; count: number }>,
   totals: { total: number; positive: number; negative: number; neutral: number },
   knownProperNames: string[],
+  allowedExtra: number[] = [],
 ): string | undefined {
   if (!text) return text ?? undefined;
   const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const allowedExact = new Set<number>([
     totals.total, totals.positive, totals.negative, totals.neutral,
+    ...allowedExtra,
   ].filter((n) => n > 0));
+  const verifiedNums = new Set<number>(verified.map((v) => v.count).filter((n) => n > 0));
 
   const re = /(\d{1,4})\s+(menciones|mención|menciónes)\b/gi;
   return text.replace(re, (full, numStr: string, word: string, offset: number) => {
@@ -214,6 +217,12 @@ function sanitizeMentionCounts(
     const ctxStart = Math.max(0, offset - 220);
     const ctxEnd = Math.min(text!.length, offset + 220);
     const ctxNorm = normalize(text!.slice(ctxStart, ctxEnd));
+
+    // 0) Cifra > universo total → alucinación clara. Capear al total real.
+    if (totals.total > 0 && num > totals.total) {
+      const w = totals.total === 1 ? "mención" : "menciones";
+      return `${totals.total} ${w}`;
+    }
 
     // 1) Buscar término verificado en contexto y comparar
     let bestMatch: { term: string; count: number } | null = null;
@@ -232,15 +241,20 @@ function sanitizeMentionCounts(
       return full;
     }
 
-    // 2) No hay término verificado. Si el número coincide con totales globales o sub-totales de sentimiento, dejar pasar.
-    if (allowedExact.has(num)) return full;
+    // 2) Coincide con totales/sub-totales/conteos auditados (plataforma, día, autor, fuente) → permitir.
+    if (allowedExact.has(num) || verifiedNums.has(num)) return full;
 
-    // 3) Si en el contexto aparece un nombre propio del Enfoque pero no está verificado, neutralizar.
+    // 3) Nombre propio del Enfoque sin verificar en contexto → neutralizar.
     const hasUnverifiedProper = knownProperNames.some((p) => {
       const pn = normalize(p);
       return pn.length >= 4 && ctxNorm.includes(pn);
     });
     if (hasUnverifiedProper && num >= 5) {
+      return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
+    }
+
+    // 4) Catch-all anti-alucinación: cualquier cifra ≥5 que no coincida con ningún conteo auditado se neutraliza.
+    if (num >= 5) {
       return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
     }
     return full;
@@ -768,6 +782,45 @@ serve(async (req) => {
       topSources: [...new Set(mentions.map(m => m.source_domain).filter(Boolean))].slice(0, 5) as string[],
     };
 
+    // ===== GROUND TRUTH COUNTS sobre TODAS las menciones (no muestra) =====
+    const gtByPlatform: Record<string, number> = {};
+    const gtBySource: Record<string, number> = {};
+    const gtByDate: Record<string, number> = {};
+    const gtByAuthor: Record<string, number> = {};
+    mentions.forEach((m) => {
+      const src = (m.source_domain || "").toLowerCase();
+      if (src) gtBySource[src] = (gtBySource[src] || 0) + 1;
+      // Plataforma agregada (Facebook, Instagram, X/Twitter, TikTok, YouTube, Reddit, LinkedIn)
+      let plat = "";
+      if (src.includes("facebook")) plat = "facebook";
+      else if (src.includes("instagram")) plat = "instagram";
+      else if (src.includes("twitter") || src === "x.com" || src.endsWith(".x.com")) plat = "twitter";
+      else if (src.includes("tiktok")) plat = "tiktok";
+      else if (src.includes("youtube") || src.includes("youtu.be")) plat = "youtube";
+      else if (src.includes("reddit")) plat = "reddit";
+      else if (src.includes("linkedin")) plat = "linkedin";
+      if (plat) gtByPlatform[plat] = (gtByPlatform[plat] || 0) + 1;
+      const d = (m.published_at || m.created_at || "").split("T")[0];
+      if (d) gtByDate[d] = (gtByDate[d] || 0) + 1;
+      const meta = m.raw_metadata as Record<string, unknown> | null;
+      const author = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
+      if (author) gtByAuthor[author] = (gtByAuthor[author] || 0) + 1;
+    });
+    const gtDates = Object.entries(gtByDate).sort((a, b) => b[1] - a[1]);
+    const gtPlatforms = Object.entries(gtByPlatform).sort((a, b) => b[1] - a[1]);
+    const gtSources = Object.entries(gtBySource).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const gtAuthors = Object.entries(gtByAuthor).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const peakEntry = gtDates[0];
+
+    const allowedExtraCounts: number[] = [
+      ...Object.values(gtByPlatform),
+      ...Object.values(gtBySource),
+      ...Object.values(gtByDate),
+      ...Object.values(gtByAuthor),
+    ];
+
+    const volumeTruthBlock = `\n=== VOLUMEN VERIFICADO (HECHOS AUDITABLES — USAR LITERALMENTE) ===\nTotal del universo monitoreado: ${metrics.totalMentions} menciones (esta cifra es el TECHO ABSOLUTO; ninguna sub-cifra puede ser mayor).\n${peakEntry ? `Pico diario REAL: ${peakEntry[0]} con ${peakEntry[1]} menciones. PROHIBIDO afirmar que otro día tuvo más, o que el pico tuvo un número distinto.\n` : ""}${gtPlatforms.length > 0 ? `Conteo REAL por plataforma social (universo completo):\n${gtPlatforms.map(([p, c]) => `  - ${p}: ${c}`).join("\n")}\n` : ""}${gtSources.length > 0 ? `Top fuentes/dominios (universo completo):\n${gtSources.map(([s, c]) => `  - ${s}: ${c}`).join("\n")}\n` : ""}REGLA: cualquier afirmación con "N menciones" que NO coincida con alguno de los conteos listados arriba (o con los CONTEOS VERIFICADOS de términos del Enfoque) está PROHIBIDA. Usa lenguaje cualitativo en su lugar ("varias menciones", "presencia recurrente").\n`;
+
     // ===== SEÑALES DE AMPLIFICACIÓN (para calibrar severidad) =====
     const TIER1_DOMAINS = /(nytimes|washingtonpost|reuters|bloomberg|wsj|ft\.com|bbc|cnn|elpais|elmundo|reforma|eluniversal|milenio|jornada|excelsior|proceso|animalpolitico|aristegui|infobae|expansion|forbes|economista|elfinanciero|sdpnoticias|televisa|tvazteca|heraldodemexico)/i;
     let totalEngagement = 0;
@@ -793,7 +846,7 @@ serve(async (req) => {
 
     const amplificationBlock = `\n=== SEÑALES DE AMPLIFICACIÓN MEDIDAS ===\n- Engagement total acumulado (likes+comentarios+shares): ${totalEngagement.toLocaleString()}\n- Engagement máximo concentrado en un autor: ${maxAuthorEngagement.toLocaleString()}\n- Menciones en medios tier-1 (cobertura editorial amplia): ${tier1Mentions}\n- Volumen total: ${metrics.totalMentions} menciones\n- NIVEL DE SEVERIDAD CALIBRADO (USO OBLIGATORIO PARA INTERPRETAR EL CASO): ${severityLevel.toUpperCase().replace("_", " ")}\n`;
 
-    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120)) + amplificationBlock;
+    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120)) + amplificationBlock + volumeTruthBlock;
 
     const mentionsSummary = mentions.slice(0, 20).map(m => ({
       title: m.title,
@@ -1251,6 +1304,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
           verifiedCounts,
           totalsForNarrative,
           knownProperNames,
+          allowedExtraCounts,
         ) || rawDesc;
         return {
           narrative: String(n?.narrative || "Narrativa identificada"),
@@ -1327,7 +1381,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
     };
     const sp = (t: string | undefined | null) => {
       const a = sanitizeSentimentPercents(t, metrics);
-      const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames);
+      const b = sanitizeMentionCounts(a, verifiedCounts, totalsForSanitize, knownProperNames, allowedExtraCounts);
       return b || undefined;
     };
     const result: ReportContent = {
