@@ -200,12 +200,15 @@ function sanitizeMentionCounts(
   verified: Array<{ term: string; count: number }>,
   totals: { total: number; positive: number; negative: number; neutral: number },
   knownProperNames: string[],
+  allowedExtra: number[] = [],
 ): string | undefined {
   if (!text) return text ?? undefined;
   const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const allowedExact = new Set<number>([
     totals.total, totals.positive, totals.negative, totals.neutral,
+    ...allowedExtra,
   ].filter((n) => n > 0));
+  const verifiedNums = new Set<number>(verified.map((v) => v.count).filter((n) => n > 0));
 
   const re = /(\d{1,4})\s+(menciones|mención|menciónes)\b/gi;
   return text.replace(re, (full, numStr: string, word: string, offset: number) => {
@@ -214,6 +217,12 @@ function sanitizeMentionCounts(
     const ctxStart = Math.max(0, offset - 220);
     const ctxEnd = Math.min(text!.length, offset + 220);
     const ctxNorm = normalize(text!.slice(ctxStart, ctxEnd));
+
+    // 0) Cifra > universo total → alucinación clara. Capear al total real.
+    if (totals.total > 0 && num > totals.total) {
+      const w = totals.total === 1 ? "mención" : "menciones";
+      return `${totals.total} ${w}`;
+    }
 
     // 1) Buscar término verificado en contexto y comparar
     let bestMatch: { term: string; count: number } | null = null;
@@ -232,15 +241,20 @@ function sanitizeMentionCounts(
       return full;
     }
 
-    // 2) No hay término verificado. Si el número coincide con totales globales o sub-totales de sentimiento, dejar pasar.
-    if (allowedExact.has(num)) return full;
+    // 2) Coincide con totales/sub-totales/conteos auditados (plataforma, día, autor, fuente) → permitir.
+    if (allowedExact.has(num) || verifiedNums.has(num)) return full;
 
-    // 3) Si en el contexto aparece un nombre propio del Enfoque pero no está verificado, neutralizar.
+    // 3) Nombre propio del Enfoque sin verificar en contexto → neutralizar.
     const hasUnverifiedProper = knownProperNames.some((p) => {
       const pn = normalize(p);
       return pn.length >= 4 && ctxNorm.includes(pn);
     });
     if (hasUnverifiedProper && num >= 5) {
+      return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
+    }
+
+    // 4) Catch-all anti-alucinación: cualquier cifra ≥5 que no coincida con ningún conteo auditado se neutraliza.
+    if (num >= 5) {
       return `varias ${word.toLowerCase().startsWith("menci") ? "menciones" : word}`;
     }
     return full;
