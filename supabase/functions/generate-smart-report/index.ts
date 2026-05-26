@@ -782,6 +782,45 @@ serve(async (req) => {
       topSources: [...new Set(mentions.map(m => m.source_domain).filter(Boolean))].slice(0, 5) as string[],
     };
 
+    // ===== GROUND TRUTH COUNTS sobre TODAS las menciones (no muestra) =====
+    const gtByPlatform: Record<string, number> = {};
+    const gtBySource: Record<string, number> = {};
+    const gtByDate: Record<string, number> = {};
+    const gtByAuthor: Record<string, number> = {};
+    mentions.forEach((m) => {
+      const src = (m.source_domain || "").toLowerCase();
+      if (src) gtBySource[src] = (gtBySource[src] || 0) + 1;
+      // Plataforma agregada (Facebook, Instagram, X/Twitter, TikTok, YouTube, Reddit, LinkedIn)
+      let plat = "";
+      if (src.includes("facebook")) plat = "facebook";
+      else if (src.includes("instagram")) plat = "instagram";
+      else if (src.includes("twitter") || src === "x.com" || src.endsWith(".x.com")) plat = "twitter";
+      else if (src.includes("tiktok")) plat = "tiktok";
+      else if (src.includes("youtube") || src.includes("youtu.be")) plat = "youtube";
+      else if (src.includes("reddit")) plat = "reddit";
+      else if (src.includes("linkedin")) plat = "linkedin";
+      if (plat) gtByPlatform[plat] = (gtByPlatform[plat] || 0) + 1;
+      const d = (m.published_at || m.created_at || "").split("T")[0];
+      if (d) gtByDate[d] = (gtByDate[d] || 0) + 1;
+      const meta = m.raw_metadata as Record<string, unknown> | null;
+      const author = (meta?.author || meta?.author_name || meta?.authorName || meta?.author_username || meta?.authorUsername) as string | undefined;
+      if (author) gtByAuthor[author] = (gtByAuthor[author] || 0) + 1;
+    });
+    const gtDates = Object.entries(gtByDate).sort((a, b) => b[1] - a[1]);
+    const gtPlatforms = Object.entries(gtByPlatform).sort((a, b) => b[1] - a[1]);
+    const gtSources = Object.entries(gtBySource).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const gtAuthors = Object.entries(gtByAuthor).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const peakEntry = gtDates[0];
+
+    const allowedExtraCounts: number[] = [
+      ...Object.values(gtByPlatform),
+      ...Object.values(gtBySource),
+      ...Object.values(gtByDate),
+      ...Object.values(gtByAuthor),
+    ];
+
+    const volumeTruthBlock = `\n=== VOLUMEN VERIFICADO (HECHOS AUDITABLES — USAR LITERALMENTE) ===\nTotal del universo monitoreado: ${metrics.totalMentions} menciones (esta cifra es el TECHO ABSOLUTO; ninguna sub-cifra puede ser mayor).\n${peakEntry ? `Pico diario REAL: ${peakEntry[0]} con ${peakEntry[1]} menciones. PROHIBIDO afirmar que otro día tuvo más, o que el pico tuvo un número distinto.\n` : ""}${gtPlatforms.length > 0 ? `Conteo REAL por plataforma social (universo completo):\n${gtPlatforms.map(([p, c]) => `  - ${p}: ${c}`).join("\n")}\n` : ""}${gtSources.length > 0 ? `Top fuentes/dominios (universo completo):\n${gtSources.map(([s, c]) => `  - ${s}: ${c}`).join("\n")}\n` : ""}REGLA: cualquier afirmación con "N menciones" que NO coincida con alguno de los conteos listados arriba (o con los CONTEOS VERIFICADOS de términos del Enfoque) está PROHIBIDA. Usa lenguaje cualitativo en su lugar ("varias menciones", "presencia recurrente").\n`;
+
     // ===== SEÑALES DE AMPLIFICACIÓN (para calibrar severidad) =====
     const TIER1_DOMAINS = /(nytimes|washingtonpost|reuters|bloomberg|wsj|ft\.com|bbc|cnn|elpais|elmundo|reforma|eluniversal|milenio|jornada|excelsior|proceso|animalpolitico|aristegui|infobae|expansion|forbes|economista|elfinanciero|sdpnoticias|televisa|tvazteca|heraldodemexico)/i;
     let totalEngagement = 0;
