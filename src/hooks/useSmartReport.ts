@@ -153,13 +153,17 @@ export function useSmartReport() {
       const text = `${title || ""} ${description || ""}`;
       const mentionMatch = text.match(/@([A-Za-z0-9_]{2,})/);
       if (mentionMatch) return mentionMatch[1];
+      const FB_BLACKLIST = ["permalink.php","profile.php","story.php","photo.php","photos","photo","video.php","videos","watch","groups","pages","share","sharer","sharer.php","plugins","dialog","events","marketplace","gaming","help","login","reg","reel","reels","media","notes","ads","business","l.php","tr","privacy","policies","terms","hashtag","search","public"];
+      const TW_BLACKLIST = ["search","hashtag","i","intent","share","home","explore","notifications","messages","compose"];
+      const IG_BLACKLIST = ["p","reel","reels","explore","stories","tv","accounts","direct","web"];
+      const isValidHandle = (h: string) => h.length >= 3 && !/^\d+$/.test(h) && !/\.(php|html?|aspx?)$/i.test(h);
       if (url) {
         const twitterMatch = url.match(/(?:twitter\.com|x\.com)\/([A-Za-z0-9_]+)/i);
-        if (twitterMatch && !["search", "hashtag", "i", "intent"].includes(twitterMatch[1].toLowerCase())) return twitterMatch[1];
-        const fbMatch = url.match(/facebook\.com\/([A-Za-z0-9_.]+)/i);
-        if (fbMatch && !["permalink.php", "profile.php", "story.php", "watch", "groups", "pages"].includes(fbMatch[1].toLowerCase())) return fbMatch[1];
+        if (twitterMatch && isValidHandle(twitterMatch[1]) && !TW_BLACKLIST.includes(twitterMatch[1].toLowerCase())) return twitterMatch[1];
+        const fbMatch = url.match(/facebook\.com\/([A-Za-z0-9_.-]+)/i);
+        if (fbMatch && isValidHandle(fbMatch[1]) && !FB_BLACKLIST.includes(fbMatch[1].toLowerCase())) return fbMatch[1];
         const igMatch = url.match(/instagram\.com\/([A-Za-z0-9_.]+)/i);
-        if (igMatch && !["p", "reel", "explore", "stories"].includes(igMatch[1].toLowerCase())) return igMatch[1];
+        if (igMatch && isValidHandle(igMatch[1]) && !IG_BLACKLIST.includes(igMatch[1].toLowerCase())) return igMatch[1];
       }
       return null;
     };
@@ -208,6 +212,18 @@ export function useSmartReport() {
         const inferred = inferAuthorFromText(m.title, m.description, m.url);
         if (inferred) { authorName = inferred; username = inferred; }
       }
+
+      // Sanitize: descarta autores claramente inválidos (slugs de URL, numéricos, archivos)
+      const isJunkAuthor = (n?: string) => {
+        if (!n) return true;
+        const x = String(n).trim();
+        if (x.length < 3) return true;
+        if (/^\d+$/.test(x)) return true;
+        if (/\.(php|html?|aspx?)$/i.test(x)) return true;
+        if (/^(share|photo|photos|video|videos|watch|reel|reels|story|stories|permalink|profile|p|posts|pages|groups|plugins|sharer|dialog|events|marketplace)$/i.test(x)) return true;
+        return false;
+      };
+      if (isJunkAuthor(authorName)) { authorName = undefined; }
 
       // Decisión: ¿Influencer o Medio?
       // - Red social conocida + autor → Influencer
