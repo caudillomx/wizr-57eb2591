@@ -1304,6 +1304,7 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
           verifiedCounts,
           totalsForNarrative,
           knownProperNames,
+          allowedExtraCounts,
         ) || rawDesc;
         return {
           narrative: String(n?.narrative || "Narrativa identificada"),
