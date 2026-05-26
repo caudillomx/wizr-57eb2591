@@ -846,7 +846,7 @@ serve(async (req) => {
 
     const amplificationBlock = `\n=== SEÑALES DE AMPLIFICACIÓN MEDIDAS ===\n- Engagement total acumulado (likes+comentarios+shares): ${totalEngagement.toLocaleString()}\n- Engagement máximo concentrado en un autor: ${maxAuthorEngagement.toLocaleString()}\n- Menciones en medios tier-1 (cobertura editorial amplia): ${tier1Mentions}\n- Volumen total: ${metrics.totalMentions} menciones\n- NIVEL DE SEVERIDAD CALIBRADO (USO OBLIGATORIO PARA INTERPRETAR EL CASO): ${severityLevel.toUpperCase().replace("_", " ")}\n`;
 
-    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120)) + amplificationBlock;
+    const detailedAnalysis = buildDetailedMentionAnalysis(mentions.slice(0, 120)) + amplificationBlock + volumeTruthBlock;
 
     const mentionsSummary = mentions.slice(0, 20).map(m => ({
       title: m.title,
