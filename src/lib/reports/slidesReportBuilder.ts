@@ -509,8 +509,8 @@ function slideNarratives(report: SmartReportContent, projectName: string, page: 
           </div>
           <span style="font-size:20px;font-weight:800;color:${C.text};letter-spacing:-0.02em;">${safeMentions}<span style="font-size:11px;color:${C.textMuted};font-weight:600;"> · ${pct}%</span></span>
         </div>
-        <div style="font-size:16px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${escMd(truncate(n.narrative, 90))}</div>
-        <div style="font-size:11.5px;color:${C.textMid};line-height:1.4;padding-left:8px;flex:1;overflow:hidden;">${escMd(truncate(n.description, 320))}</div>
+        <div style="font-size:15px;font-weight:700;color:${C.text};line-height:1.25;padding-left:8px;letter-spacing:-0.01em;">${escMd(truncate(n.narrative, 110))}</div>
+        <div style="font-size:12px;color:${C.textMid};line-height:1.45;padding-left:8px;flex:1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:8;">${escMd(truncate(n.description, 520))}</div>
       </div>`;
     })
     .join("");
