@@ -1400,8 +1400,9 @@ SOBRE "narratives": Identifica OBLIGATORIAMENTE entre 4 y 5 NARRATIVAS TEMÁTICA
         const sent = n?.sentiment;
         const tr = n?.trend;
         const rawDesc = String(n?.description || "");
+        const ctxDesc = sanitizeContextualCounts(rawDesc, gtByPlatform, gtByDate, metrics.totalMentions) || rawDesc;
         const cleanedDesc = sanitizeMentionCounts(
-          sanitizeSentimentPercents(rawDesc, metrics) || rawDesc,
+          sanitizeSentimentPercents(ctxDesc, metrics) || ctxDesc,
           verifiedCounts,
           totalsForNarrative,
           knownProperNames,
