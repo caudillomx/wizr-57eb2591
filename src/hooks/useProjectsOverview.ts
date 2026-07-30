@@ -21,7 +21,7 @@ const NEXT_META: Record<
 > = {
   define: { label: "Definir entidades", route: "/dashboard/configuracion" },
   capture: { label: "Capturar menciones", route: "/dashboard/fuentes" },
-  analyze: { label: "Analizar datos", route: "/dashboard/panorama" },
+  analyze: { label: "Analizar datos", route: "/dashboard/analizar" },
   report: { label: "Generar reporte", route: "/dashboard/reportes" },
   done: { label: "Ver reportes", route: "/dashboard/reportes" },
 };

@@ -134,9 +134,9 @@ export function useWorkflowState(): WorkflowState {
         description: "Procesar datos e insights",
         status: analyzeStatus,
         count: analyzed,
-        route: "/dashboard/semantica",
+        route: "/dashboard/analizar",
         actionLabel: analyzed > 0 ? "Ver análisis" : "Analizar datos",
-        actionRoute: "/dashboard/semantica",
+        actionRoute: "/dashboard/analizar",
       },
       {
         step: "report",

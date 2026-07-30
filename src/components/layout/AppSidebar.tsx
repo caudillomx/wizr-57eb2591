@@ -1,8 +1,5 @@
 import { useLocation } from "react-router-dom";
 import {
-  MessageSquareText,
-  GitCompare,
-  Users,
   Database,
   FileBarChart,
   Settings,
@@ -46,14 +43,11 @@ const homeItem: NavItemDef = {
 const listeningItems: NavItemDef[] = [
   { title: "Definir", url: "/dashboard/configuracion", icon: Settings, step: 1 },
   { title: "Capturar", url: "/dashboard/fuentes", icon: Database, step: 2 },
-  { title: "Analizar", url: "/dashboard/panorama", icon: Eye, step: 3 },
+  { title: "Analizar", url: "/dashboard/analizar", icon: Eye, step: 3 },
   { title: "Reportar", url: "/dashboard/reportes", icon: FileBarChart, step: 4 },
 ];
 
 const listeningExtras: NavItemDef[] = [
-  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText },
-  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare },
-  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users },
   { title: "Proyectos", url: "/dashboard/proyectos", icon: FolderOpen },
 ];
 
@@ -141,7 +135,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <NavGroup label="Flujo de listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Vistas y proyectos" items={listeningExtras} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Proyectos" items={listeningExtras} collapsed={collapsed} isActive={isActive} />
         <NavGroup label="Benchmarking" items={benchmarkingItems} collapsed={collapsed} isActive={isActive} />
       </SidebarContent>
 

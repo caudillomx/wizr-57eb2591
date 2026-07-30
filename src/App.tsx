@@ -29,6 +29,7 @@ import ConfiguracionPage from "./pages/dashboard/ConfiguracionPage";
 import RankingsPage from "./pages/dashboard/RankingsPage";
 import PerformancePage from "./pages/dashboard/PerformancePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
+import AnalisisPage from "./pages/dashboard/AnalisisPage";
 
 import { Loader2 } from "lucide-react";
 
@@ -113,10 +114,12 @@ const AppRoutes = () => {
       >
         <Route index element={<DashboardHomePage />} />
         <Route path="inicio" element={<DashboardHomePage />} />
-        <Route path="panorama" element={<InsightsPage />} />
-        <Route path="semantica" element={<SemanticaPage />} />
-        <Route path="comparativa" element={<ComparativaPage />} />
-        <Route path="influenciadores" element={<InfluenciadoresPage />} />
+        <Route path="analizar" element={<AnalisisPage />} />
+        {/* Rutas antiguas: se conservan como vistas del destino unificado */}
+        <Route path="panorama" element={<Navigate to="/dashboard/analizar?v=panorama" replace />} />
+        <Route path="semantica" element={<Navigate to="/dashboard/analizar?v=semantica" replace />} />
+        <Route path="comparativa" element={<Navigate to="/dashboard/analizar?v=comparativa" replace />} />
+        <Route path="influenciadores" element={<Navigate to="/dashboard/analizar?v=influenciadores" replace />} />
         <Route path="rankings" element={<Navigate to="/dashboard/performance" replace />} />
         <Route path="performance" element={<PerformancePage />} />
         <Route path="fuentes" element={<FuentesPage />} />
@@ -124,8 +127,8 @@ const AppRoutes = () => {
         <Route path="proyectos" element={<ProjectsPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
         {/* Legacy redirects */}
-        <Route path="tendencias" element={<Navigate to="/dashboard/panorama" replace />} />
-        <Route path="alertas" element={<Navigate to="/dashboard/panorama" replace />} />
+        <Route path="tendencias" element={<Navigate to="/dashboard/analizar" replace />} />
+        <Route path="alertas" element={<Navigate to="/dashboard/analizar" replace />} />
       </Route>
 
       {/* Public shared report (no auth) */}
