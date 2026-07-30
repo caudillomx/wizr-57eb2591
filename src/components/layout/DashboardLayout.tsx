@@ -60,18 +60,15 @@ const DashboardContent = () => {
                   <span className="text-foreground">Benchmarking Competitivo</span>
                 </div>
               ) : isPerformancePage ? (
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
-                    <Building2 className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-foreground">Performance por Cliente</span>
-                </div>
+              ) : isHomePage ? (
+                <span className="text-sm font-medium text-foreground">Inicio</span>
               ) : (
                 <div data-tour="project-selector">
                   <ProjectSelector />
                 </div>
               )}
             </div>
+
 
             <div className="flex items-center gap-4">
               {!isProjectIndependent && (
