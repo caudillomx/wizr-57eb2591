@@ -39,32 +39,42 @@ export function useProjectsOverview() {
     enabled: ids.length > 0,
     staleTime: 60000,
     queryFn: async () => {
-      const [entitiesRes, mentionsRes, cardsRes] = await Promise.all([
-        supabase.from("entities").select("project_id").in("project_id", ids).eq("activo", true),
-        supabase
-          .from("mentions")
-          .select("project_id, sentiment")
-          .in("project_id", ids)
-          .eq("is_archived", false),
-        supabase.from("thematic_cards").select("project_id").in("project_id", ids),
-      ]);
-
       const counts = new Map<
         string,
         { entities: number; mentions: number; analyzed: number; reports: number }
       >();
-      const get = (id: string) => {
-        if (!counts.has(id)) counts.set(id, { entities: 0, mentions: 0, analyzed: 0, reports: 0 });
-        return counts.get(id)!;
-      };
 
-      (entitiesRes.data || []).forEach((r: { project_id: string }) => get(r.project_id).entities++);
-      (mentionsRes.data || []).forEach((r: { project_id: string; sentiment: string | null }) => {
-        const c = get(r.project_id);
-        c.mentions++;
-        if (r.sentiment) c.analyzed++;
-      });
-      (cardsRes.data || []).forEach((r: { project_id: string }) => get(r.project_id).reports++);
+      // Conteos exactos por proyecto (head:true evita traer filas y el límite de 1000)
+      await Promise.all(
+        ids.map(async (id) => {
+          const [entities, mentions, analyzed, reports] = await Promise.all([
+            supabase
+              .from("entities")
+              .select("id", { count: "exact", head: true })
+              .eq("project_id", id)
+              .eq("activo", true),
+            supabase
+              .from("mentions")
+              .select("id", { count: "exact", head: true })
+              .eq("project_id", id)
+              .eq("is_archived", false),
+            supabase
+              .from("mentions")
+              .select("id", { count: "exact", head: true })
+              .eq("project_id", id)
+              .eq("is_archived", false)
+              .not("sentiment", "is", null),
+            supabase.from("thematic_cards").select("id", { count: "exact", head: true }).eq("project_id", id),
+          ]);
+
+          counts.set(id, {
+            entities: entities.count || 0,
+            mentions: mentions.count || 0,
+            analyzed: analyzed.count || 0,
+            reports: reports.count || 0,
+          });
+        })
+      );
 
       return counts;
     },
