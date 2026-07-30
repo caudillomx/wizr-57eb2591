@@ -76,26 +76,29 @@ const FuentesPage = () => {
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="section-label mb-1">Captura y gestión</p>
+          <p className="section-label mb-1">Paso 2 · Capturar</p>
           <h1 className="text-2xl font-bold">Fuentes</h1>
         </div>
-        {stats && (
-          <div className="hidden md:flex items-center gap-4 text-sm">
-            <StatPill icon={<Database className="h-3.5 w-3.5" />} value={stats.total} label="total" />
-            <StatPill icon={<Eye className="h-3.5 w-3.5" />} value={stats.unread} label="sin leer" accent />
-            <StatPill icon={<TrendingUp className="h-3.5 w-3.5" />} value={stats.last24h} label="24h" />
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {stats && (
+            <div className="hidden md:flex items-center gap-4 text-sm">
+              <StatPill icon={<Database className="h-3.5 w-3.5" />} value={stats.total} label="total" />
+              <StatPill icon={<Eye className="h-3.5 w-3.5" />} value={stats.unread} label="sin leer" accent />
+              <StatPill icon={<TrendingUp className="h-3.5 w-3.5" />} value={stats.last24h} label="24h" />
+            </div>
+          )}
+          <AutomationPanel projectId={selectedProject.id} />
+        </div>
       </div>
 
-      {/* Main 3-Tab Structure */}
+      {/* Estructura de 2 pestañas: Menciones · Capturar */}
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
         <TabsList className="h-11 bg-muted/50 p-1">
           <TabsTrigger value="hub" className="gap-2 px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Database className="h-4 w-4" />
-            Hub de Menciones
+            Menciones
             {mentions.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px] font-semibold">
                 {mentions.length}
@@ -104,15 +107,11 @@ const FuentesPage = () => {
           </TabsTrigger>
           <TabsTrigger value="buscar" className="gap-2 px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Search className="h-4 w-4" />
-            Buscar
-          </TabsTrigger>
-          <TabsTrigger value="automatizacion" className="gap-2 px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Settings2 className="h-4 w-4" />
-            Automatización
+            Capturar
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Tab 1: Hub de Menciones ── */}
+        {/* ── Tab 1: Menciones ── */}
         <TabsContent value="hub" className="space-y-4 mt-4">
           <MentionsHubTab
             mentions={mentions}
@@ -125,95 +124,87 @@ const FuentesPage = () => {
           />
         </TabsContent>
 
-        {/* ── Tab 2: Buscar ── */}
+        {/* ── Tab 2: Capturar ── */}
         <TabsContent value="buscar" className="space-y-4 mt-4">
-          {/* Sub-navigation for search types */}
-          <div className="flex flex-wrap gap-2">
-            <SubTabButton
-              active={searchSubTab === "unified"}
-              onClick={() => setSearchSubTab("unified")}
-              icon={<Zap className="h-3.5 w-3.5" />}
-              label="Búsqueda Unificada"
-              primary
-            />
-            <SubTabButton
-              active={searchSubTab === "social"}
-              onClick={() => setSearchSubTab("social")}
-              icon={<MessageCircle className="h-3.5 w-3.5" />}
-              label="Redes Sociales"
-            />
-            <SubTabButton
-              active={searchSubTab === "news"}
-              onClick={() => setSearchSubTab("news")}
-              icon={<Globe className="h-3.5 w-3.5" />}
-              label="Google News"
-            />
-            <SubTabButton
-              active={searchSubTab === "comments"}
-              onClick={() => setSearchSubTab("comments")}
-              icon={<MessageCircle className="h-3.5 w-3.5" />}
-              label="Comentarios"
-            />
-            <SubTabButton
-              active={searchSubTab === "social-history"}
-              onClick={() => setSearchSubTab("social-history")}
-              icon={<History className="h-3.5 w-3.5" />}
-              label="Historial Social"
-            />
-          </div>
-
-          {/* Sub-tab content */}
-          {searchSubTab === "unified" && (
-            <UnifiedSearch
-              projectId={selectedProject.id}
-              entities={entities}
-              onSearchComplete={(total, saved) => {
-                if (saved > 0) {
-                  toast({
-                    title: "Menciones guardadas",
-                    description: `Se guardaron ${saved} nuevas menciones en tu proyecto`,
-                  });
-                }
-              }}
-            />
-          )}
-
-          {searchSubTab === "social" && (
-            <SocialMediaSearch
-              projectId={selectedProject.id}
-              onResultsSaved={() => {
+          {/* Búsqueda unificada: único formulario en primer plano */}
+          <UnifiedSearch
+            projectId={selectedProject.id}
+            entities={entities}
+            onSearchComplete={(total, saved) => {
+              if (saved > 0) {
                 toast({
                   title: "Menciones guardadas",
-                  description: "Los resultados se agregaron al historial",
+                  description: `Se guardaron ${saved} nuevas menciones en tu proyecto`,
                 });
-              }}
-            />
-          )}
+              }
+            }}
+          />
 
-          {searchSubTab === "news" && (
-            <GoogleNewsSearch
-              projectId={selectedProject.id}
-              defaultKeywords={entities.flatMap((e) => [e.nombre, ...e.palabras_clave])}
-            />
-          )}
+          {/* Modos avanzados, colapsados por defecto */}
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${advancedOpen ? "rotate-180" : ""}`}
+                />
+                Modos avanzados de captura
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-3">
+              <div className="flex flex-wrap gap-2">
+                <SubTabButton
+                  active={searchSubTab === "social"}
+                  onClick={() => setSearchSubTab("social")}
+                  icon={<MessageCircle className="h-3.5 w-3.5" />}
+                  label="Redes Sociales"
+                />
+                <SubTabButton
+                  active={searchSubTab === "news"}
+                  onClick={() => setSearchSubTab("news")}
+                  icon={<Globe className="h-3.5 w-3.5" />}
+                  label="Google News"
+                />
+                <SubTabButton
+                  active={searchSubTab === "comments"}
+                  onClick={() => setSearchSubTab("comments")}
+                  icon={<MessageCircle className="h-3.5 w-3.5" />}
+                  label="Comentarios"
+                />
+                <SubTabButton
+                  active={searchSubTab === "social-history"}
+                  onClick={() => setSearchSubTab("social-history")}
+                  icon={<History className="h-3.5 w-3.5" />}
+                  label="Historial Social"
+                />
+              </div>
 
-          {searchSubTab === "comments" && (
-            <CommentsAnalysisTab projectId={selectedProject.id} />
-          )}
+              {searchSubTab === "social" && (
+                <SocialMediaSearch
+                  projectId={selectedProject.id}
+                  onResultsSaved={() => {
+                    toast({
+                      title: "Menciones guardadas",
+                      description: "Los resultados se agregaron al historial",
+                    });
+                  }}
+                />
+              )}
 
-          {searchSubTab === "social-history" && (
-            <SocialHistoryTab projectId={selectedProject.id} />
-          )}
-        </TabsContent>
+              {searchSubTab === "news" && (
+                <GoogleNewsSearch
+                  projectId={selectedProject.id}
+                  defaultKeywords={entities.flatMap((e) => [e.nombre, ...e.palabras_clave])}
+                />
+              )}
 
-        {/* ── Tab 3: Automatización ── */}
-        <TabsContent value="automatizacion" className="space-y-6 mt-4">
-          <ScheduledSearchConfig projectId={selectedProject.id} />
-          <AutoSaveConfigPanel projectId={selectedProject?.id} />
-          <ManualUrlIngestCard projectId={selectedProject.id} />
-          <SocialDateEnrichmentCard projectId={selectedProject.id} />
+              {searchSubTab === "comments" && <CommentsAnalysisTab projectId={selectedProject.id} />}
+
+              {searchSubTab === "social-history" && <SocialHistoryTab projectId={selectedProject.id} />}
+            </CollapsibleContent>
+          </Collapsible>
         </TabsContent>
       </Tabs>
+
 
       {/* Quick Entity Form */}
       <EntityForm
