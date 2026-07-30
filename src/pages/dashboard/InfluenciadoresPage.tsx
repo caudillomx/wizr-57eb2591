@@ -108,19 +108,7 @@ const InfluenciadoresPage = () => {
   const topInfluencers = filteredInfluencers.slice(0, 6);
 
   if (!selectedProject) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Card className="max-w-md">
-          <CardHeader className="text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <CardTitle>Sin proyecto seleccionado</CardTitle>
-            <CardDescription>
-              Selecciona un proyecto para ver el análisis de influenciadores
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
+    return <NoProjectState action="ver el análisis de influenciadores" />;
   }
 
   return (

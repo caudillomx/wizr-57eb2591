@@ -96,21 +96,7 @@ const InsightsPage = () => {
   }
 
   if (!selectedProject) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="rounded-full bg-muted p-4">
-          <AlertCircle className="h-10 w-10 text-muted-foreground" />
-        </div>
-        <h2 className="mt-4 text-xl font-semibold">Sin proyecto seleccionado</h2>
-        <p className="mt-2 max-w-md text-center text-muted-foreground">
-          Crea o selecciona un proyecto para ver el análisis
-        </p>
-        <Button className="mt-4" onClick={() => navigate("/nuevo-proyecto")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Crear Proyecto
-        </Button>
-      </div>
-    );
+    return <NoProjectState action="ver el panorama" />;
   }
 
   const TrendIcon =
