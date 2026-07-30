@@ -100,8 +100,15 @@ const DashboardContent = () => {
             </div>
           </header>
 
+          {/* Barra de flujo: Definir -> Capturar -> Analizar -> Reportar */}
+          {!isProjectIndependent && (
+            <div className="sticky top-14 z-10" data-tour="workflow-progress">
+              <WorkflowFlowBar />
+            </div>
+          )}
+
           {/* Main Content */}
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-4 md:p-6">
             <Outlet />
           </main>
         </SidebarInset>
