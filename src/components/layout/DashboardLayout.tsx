@@ -108,7 +108,8 @@ const DashboardContent = () => {
           </header>
 
           {/* Barra de flujo: Definir -> Capturar -> Analizar -> Reportar */}
-          {!isProjectIndependent && (
+          {!isProjectIndependent && !isHomePage && (
+
             <div className="sticky top-14 z-10" data-tour="workflow-progress">
               <WorkflowFlowBar />
             </div>
