@@ -7,7 +7,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import ProjectSelector from "@/components/layout/ProjectSelector";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { TourGuide } from "@/components/onboarding/TourGuide";
-import { WorkflowProgressBar } from "@/components/workflow/WorkflowProgressBar";
+import { WorkflowFlowBar } from "@/components/workflow/WorkflowFlowBar";
 import { LogOut, User, Plus, Trophy, Building2 } from "lucide-react";
 
 const DashboardContent = () => {
