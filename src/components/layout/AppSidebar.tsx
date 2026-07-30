@@ -1,6 +1,5 @@
 import { useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
   MessageSquareText,
   GitCompare,
   Users,
@@ -10,7 +9,7 @@ import {
   Trophy,
   Home,
   Eye,
-  BarChart3,
+  FolderOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import wizrIcon from "@/assets/wizr-icon-transparent.png";
