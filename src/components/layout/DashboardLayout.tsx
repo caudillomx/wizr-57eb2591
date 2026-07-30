@@ -19,6 +19,9 @@ const DashboardContent = () => {
   const isRankingsPage = location.pathname.startsWith("/dashboard/rankings");
   const isPerformancePage = location.pathname.startsWith("/dashboard/performance");
   const isProjectIndependent = isRankingsPage || isPerformancePage;
+  // Inicio es el lugar donde se elige el proyecto: no duplicamos selector ni barra de flujo
+  const isHomePage = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
+
 
   const handleSignOut = async () => {
     await signOut();
