@@ -135,9 +135,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <NavGroup label="Performance" items={performanceItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Producir" items={outputItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Flujo de listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Vistas y proyectos" items={listeningExtras} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Benchmarking" items={benchmarkingItems} collapsed={collapsed} isActive={isActive} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
