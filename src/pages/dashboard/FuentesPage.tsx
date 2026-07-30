@@ -1,3 +1,5 @@
+import { NoProjectState } from "@/components/layout/NoProjectState";
+import { AutomationPanel } from "@/components/fuentes/AutomationPanel";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { useEntities } from "@/hooks/useEntities";
