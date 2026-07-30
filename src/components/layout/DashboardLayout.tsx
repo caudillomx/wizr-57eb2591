@@ -51,8 +51,8 @@ const DashboardContent = () => {
               {/* Show context indicator OR project selector depending on route */}
               {isRankingsPage ? (
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <div className="h-7 w-7 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/15">
+                    <Trophy className="h-4 w-4 text-accent" />
                   </div>
                   <span className="text-foreground">Benchmarking Competitivo</span>
                 </div>
@@ -64,17 +64,9 @@ const DashboardContent = () => {
                   <span className="text-foreground">Performance por Cliente</span>
                 </div>
               ) : (
-                <>
-                  <div data-tour="project-selector">
-                    <ProjectSelector />
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="h-6 w-px bg-border" />
-                  </div>
-                  <div className="hidden md:block" data-tour="workflow-progress">
-                    <WorkflowProgressBar compact />
-                  </div>
-                </>
+                <div data-tour="project-selector">
+                  <ProjectSelector />
+                </div>
               )}
             </div>
 
