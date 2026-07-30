@@ -1,16 +1,12 @@
 import { useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  MessageSquareText,
-  GitCompare,
-  Users,
   Database,
   FileBarChart,
   Settings,
   Trophy,
   Home,
   Eye,
-  BarChart3,
+  FolderOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import wizrIcon from "@/assets/wizr-icon-transparent.png";
@@ -33,6 +29,8 @@ interface NavItemDef {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Número de paso en el ciclo de trabajo */
+  step?: number;
 }
 
 const homeItem: NavItemDef = {
@@ -41,21 +39,20 @@ const homeItem: NavItemDef = {
   icon: Home,
 };
 
-const performanceItems: NavItemDef[] = [
-  { title: "Clientes", url: "/dashboard/performance", icon: Trophy },
-];
-
+// Ciclo real de trabajo: Definir -> Capturar -> Analizar -> Reportar
 const listeningItems: NavItemDef[] = [
-  { title: "Fuentes", url: "/dashboard/fuentes", icon: Database },
-  { title: "Panorama", url: "/dashboard/panorama", icon: Eye },
-  { title: "Semántica", url: "/dashboard/semantica", icon: MessageSquareText },
-  { title: "Comparativa", url: "/dashboard/comparativa", icon: GitCompare },
-  { title: "Influenciadores", url: "/dashboard/influenciadores", icon: Users },
+  { title: "Definir", url: "/dashboard/configuracion", icon: Settings, step: 1 },
+  { title: "Capturar", url: "/dashboard/fuentes", icon: Database, step: 2 },
+  { title: "Analizar", url: "/dashboard/analizar", icon: Eye, step: 3 },
+  { title: "Reportar", url: "/dashboard/reportes", icon: FileBarChart, step: 4 },
 ];
 
-const outputItems: NavItemDef[] = [
-  { title: "Reportes", url: "/dashboard/reportes", icon: FileBarChart },
-  { title: "Configuración", url: "/dashboard/configuracion", icon: Settings },
+const listeningExtras: NavItemDef[] = [
+  { title: "Proyectos", url: "/dashboard/proyectos", icon: FolderOpen },
+];
+
+const benchmarkingItems: NavItemDef[] = [
+  { title: "Clientes", url: "/dashboard/performance", icon: Trophy },
 ];
 
 function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: boolean; isActive: boolean }) {
@@ -69,6 +66,11 @@ function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: b
         >
           <item.icon className="h-5 w-5 shrink-0" />
           {!collapsed && <span>{item.title}</span>}
+          {!collapsed && item.step !== undefined && (
+            <span className="ml-auto text-[10px] font-semibold text-sidebar-foreground/40">
+              {item.step}
+            </span>
+          )}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -132,9 +134,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <NavGroup label="Performance" items={performanceItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
-        <NavGroup label="Producir" items={outputItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Flujo de listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Proyectos" items={listeningExtras} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Benchmarking" items={benchmarkingItems} collapsed={collapsed} isActive={isActive} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">

@@ -7,7 +7,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import ProjectSelector from "@/components/layout/ProjectSelector";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { TourGuide } from "@/components/onboarding/TourGuide";
-import { WorkflowProgressBar } from "@/components/workflow/WorkflowProgressBar";
+import { WorkflowFlowBar } from "@/components/workflow/WorkflowFlowBar";
 import { LogOut, User, Plus, Trophy, Building2 } from "lucide-react";
 
 const DashboardContent = () => {
@@ -51,8 +51,8 @@ const DashboardContent = () => {
               {/* Show context indicator OR project selector depending on route */}
               {isRankingsPage ? (
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <div className="h-7 w-7 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/15">
+                    <Trophy className="h-4 w-4 text-accent" />
                   </div>
                   <span className="text-foreground">Benchmarking Competitivo</span>
                 </div>
@@ -64,17 +64,9 @@ const DashboardContent = () => {
                   <span className="text-foreground">Performance por Cliente</span>
                 </div>
               ) : (
-                <>
-                  <div data-tour="project-selector">
-                    <ProjectSelector />
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="h-6 w-px bg-border" />
-                  </div>
-                  <div className="hidden md:block" data-tour="workflow-progress">
-                    <WorkflowProgressBar compact />
-                  </div>
-                </>
+                <div data-tour="project-selector">
+                  <ProjectSelector />
+                </div>
               )}
             </div>
 
@@ -108,8 +100,15 @@ const DashboardContent = () => {
             </div>
           </header>
 
+          {/* Barra de flujo: Definir -> Capturar -> Analizar -> Reportar */}
+          {!isProjectIndependent && (
+            <div className="sticky top-14 z-10" data-tour="workflow-progress">
+              <WorkflowFlowBar />
+            </div>
+          )}
+
           {/* Main Content */}
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-4 md:p-6">
             <Outlet />
           </main>
         </SidebarInset>

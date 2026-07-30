@@ -1,3 +1,4 @@
+import { NoProjectState } from "@/components/layout/NoProjectState";
 import { useState, useEffect } from "react";
 import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,17 +154,7 @@ const ConfiguracionPage = () => {
   };
 
   if (!selectedProject) {
-    return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h2 className="text-xl font-semibold mb-2">Sin proyecto seleccionado</h2>
-          <p className="text-muted-foreground">
-            Selecciona un proyecto para configurar sus entidades.
-          </p>
-        </div>
-      </div>
-    );
+    return <NoProjectState action="configurar entidades y palabras clave" />;
   }
 
   return (

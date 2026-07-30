@@ -1,71 +1,41 @@
-## Objetivo
+## Auditoría: por qué se siente complicado
 
-Cerrar el último hueco en la curva de actividad: las menciones de Facebook, Instagram, TikTok y X que entran sin `published_at` (Apify y otros scrapers no lo devuelven siempre). Hoy esas menciones caen al `created_at` y distorsionan el gráfico (picos artificiales del día de captura + valles en los días reales).
+Lo que encontré revisando la estructura actual:
 
-Ya hay paliativo visual ("Solo fechas verificadas" en Panorama → Actividad Diaria), pero la solución de fondo es reconstruir la fecha real.
+1. **La navegación no refleja el trabajo real.** El sidebar agrupa por concepto interno (Performance / Listening / Producir) con 8 destinos. Un usuario no piensa "voy a Semántica", piensa "quiero ver de qué se habla". Y `Configuración` (donde viven las entidades, el paso 1 del proceso) está al final, después de Reportes.
+2. **No hay sensación de progreso.** Existe `WorkflowProgressBar` (Definir → Capturar → Analizar → Reportar) pero solo aparece como 4 puntitos de 24px en el header, escondida en `md:` y sin texto. El motor de estado (`useWorkflowState`) ya está bien hecho — está desperdiciado.
+3. **Fuentes es un laberinto.** 3 pestañas principales + 5 sub-pestañas + 4 tarjetas de configuración en "Automatización". `SocialMediaSearch.tsx` tiene 2 393 líneas y `MentionsHubTab.tsx` 1 011. Hay 3 buscadores distintos (unificado, social, news) donde el unificado ya cubre casi todo.
+4. **Análisis fragmentado.** Panorama (9 pestañas), Semántica, Comparativa e Influenciadores son 4 destinos que se leen sobre el mismo universo de menciones con distintos cortes. Se siente repetido porque lo es.
+5. **El Home no conecta con nada.** 4 tarjetas (dos de ellas apuntan al mismo destino: Performance) y una nota al pie diciendo "selecciona un proyecto arriba". No dice en qué estado están tus proyectos ni qué sigue.
+6. **Sin proyecto seleccionado, media app es un muro vacío.** Cada página repite su propio empty state "Sin proyecto seleccionado".
+7. **Deuda visual.** Hay tokens semánticos pero también colores crudos (`bg-amber-100`, `dark:text-amber-400`) en el layout; densidad y tamaños de título inconsistentes entre pantallas.
 
-## Alcance
+## Plan de rediseño
 
-Edge function nueva `enrich-social-dates` + un panel mínimo en el módulo de Fuentes para dispararla manualmente y verla correr en background. No toca el flujo de captura inicial (sigue Microworlds/apidojo/etc); enriquece después.
+### Fase 1 — Estructura y orientación
+- **Sidebar reorganizado en 2 contextos claros**: `Listening` (por proyecto) y `Benchmarking` (global), más `Inicio`.
+- Dentro de Listening el orden pasa a ser el ciclo real: **Definir → Capturar → Analizar → Reportar**. `Configuración/Entidades` sube a "Definir".
+- **Barra de flujo real** debajo del header: 4 pasos con etiqueta, conteo y CTA "qué sigue" (reusa `useWorkflowState`, sin cambiar su lógica). Visible también en móvil.
+- **Home rediseñado**: lista de proyectos con su estado de flujo (entidades / menciones / analizadas / reportes) y un CTA directo al siguiente paso de cada uno. Benchmarking pasa a una tarjeta secundaria.
+- **Empty state único y guiado** cuando no hay proyecto, en lugar de uno distinto por página.
 
-## Arquitectura
+### Fase 2 — Captura simplificada
+- Fuentes se convierte en **2 pestañas**: `Menciones` (el hub) y `Capturar`.
+- Dentro de `Capturar`: la búsqueda unificada como único formulario visible; social/news/comentarios pasan a ser modos avanzados dentro de ese formulario, no pestañas hermanas.
+- Automatización (programadas, autoguardado, enriquecimiento de fechas, ingesta manual de URLs) sale de las pestañas a un **panel lateral "Automatización"** que se abre desde el header de Fuentes.
+- Sin cambios en edge functions ni en la lógica de captura: solo reorganización de UI.
 
-```text
-mentions (published_at IS NULL, platform in fb/ig/tt/x)
-        │
-        ▼
-enrich-social-dates  ──► router por plataforma
-        ├── facebook  → Apify apify/facebook-post-scraper (input: postUrls[])
-        ├── instagram → Apify apify/instagram-post-scraper (input: directUrls[])
-        ├── tiktok    → Apify clockworks/tiktok-video-scraper o BrightData (ya configurado)
-        └── x/twitter → apidojo/twitter-scraper-lite (input: tweetUrls[])
-        │
-        ▼
-normalize.ts → extrae taken_at / timestamp / createTime / createdAt
-        │
-        ▼
-UPDATE mentions SET published_at = ?, raw_metadata.date_source='apify_enrichment',
-                    raw_metadata.date_confidence='high'
-```
+### Fase 3 — Análisis consolidado y capa visual
+- **Un solo destino "Analizar"** con 4 vistas (Panorama, Semántica, Comparativa, Influenciadores) como secciones de una misma página con navegación interna y filtro de fechas compartido arriba. Las rutas viejas siguen funcionando con redirect.
+- Panorama baja de 9 pestañas a los bloques que realmente se usan; el resto queda accesible pero no en primer plano.
+- **Sistema visual unificado**: escala tipográfica y de densidad consistente, un solo patrón de encabezado de página, tarjetas KPI homogéneas, eliminación de colores crudos en favor de tokens. Se respeta la identidad actual (tema claro, Space Grotesk / Inter, violeta y naranja Wizr, colores de sentimiento).
+- **Modo presentable para clientes**: las vistas de análisis y el visor de reportes quedan limpias y sin controles de operación, aptas para mostrar en pantalla.
 
-Reusa `APIFY_API_TOKEN` y `BRIGHTDATA_API_KEY` (ya en secretos). Sin claves nuevas.
+## Notas técnicas
 
-## Implementación
+- Cero cambios de esquema, RLS o edge functions. Todo es frontend y presentación.
+- `useWorkflowState`, `useMentions`, `usePanoramaData`, `useSmartReport` y los sanitizadores del reporte se conservan tal cual; solo cambia quién los consume.
+- Los archivos gigantes (`SocialMediaSearch` 2.4k líneas, `MentionsHubTab` 1k) se dividen en subcomponentes al moverlos, sin reescribir su comportamiento.
+- Todas las rutas actuales se mantienen vía `Navigate` para no romper enlaces guardados.
 
-1. **`supabase/functions/enrich-social-dates/index.ts`**
-   - Params: `{ project_id, platforms?, limit?, dry_run? }`
-   - Selecciona mentions sin `published_at` (filtra por dominio: facebook.com, instagram.com, tiktok.com, x.com/twitter.com)
-   - Agrupa por plataforma, batch de 50 URLs por run de Apify (sync mode con timeout 60s)
-   - Mapea respuesta → `published_at`
-   - Update por lotes, registra en `raw_metadata` el origen
-   - Devuelve `{ scanned, updated, failed_by_platform }`
-
-2. **Reutilizar `_shared/normalize.ts`**
-   - Añadir helper `extractPublishedAt(rawItem, platform)` con los paths conocidos: `taken_at`, `timestamp`, `createTimeISO`, `createdAt`, `time`.
-
-3. **Panel UI en `/dashboard/fuentes`** (sección "Mantenimiento")
-   - Card "Enriquecer fechas de redes sociales"
-   - Muestra conteo de pendientes por plataforma (query en vivo)
-   - Botón "Ejecutar" → invoca la función, muestra progreso
-   - Histórico simple de últimas 5 corridas (timestamp, scanned, updated)
-
-4. **Cron opcional (fase 2)**
-   - Schedule diario 04:00 UTC que enriquezca hasta 500 mentions por proyecto activo. Solo si la fase manual demuestra costo aceptable.
-
-## Consideraciones
-
-- **Costo Apify**: ~$0.30 por 1000 posts FB/IG. Para los 25 pendientes del caso conejita: irrelevante. Para volumen sostenido habrá que monitorear.
-- **Rate limits**: batches de 50 con espera de 2s entre runs.
-- **Fallback**: si Apify devuelve 404 (post borrado), marca `date_confidence='unavailable'` para no reintentar.
-- **No tocar** `enforce_mention_age_floor` ni triggers de relevance; solo UPDATE de `published_at` + `raw_metadata`.
-
-## Entregables
-
-- 1 edge function nueva
-- 1 helper en `_shared/normalize.ts`
-- 1 card en Fuentes (`SocialDateEnrichmentCard.tsx`)
-- 0 migraciones (solo UPDATEs runtime)
-
-## Validación
-
-Tras correr sobre las ~25 menciones del proyecto Instituto La Paz, esperamos ver la curva real de la conversación de "la conejita" reconstruida en Panorama con el toggle "Solo fechas verificadas" desactivado y los picos artificiales del 16 may eliminados.
+Sugiero ejecutar por fases y validar cada una en preview antes de seguir, empezando por la Fase 1 (es la que ataca directo el "no sé dónde estoy").

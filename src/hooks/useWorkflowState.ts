@@ -56,18 +56,24 @@ export function useWorkflowState(): WorkflowState {
     queryKey: ["workflow-mentions", projectId],
     queryFn: async () => {
       if (!projectId) return { total: 0, analyzed: 0, unanalyzed: 0 };
-      const { data, error } = await supabase
-        .from("mentions")
-        .select("id, sentiment")
-        .eq("project_id", projectId)
-        .eq("is_archived", false);
-      if (error) throw error;
-      const mentions = data || [];
-      return {
-        total: mentions.length,
-        analyzed: mentions.filter((m) => m.sentiment).length,
-        unanalyzed: mentions.filter((m) => !m.sentiment).length,
-      };
+      const [totalRes, analyzedRes] = await Promise.all([
+        supabase
+          .from("mentions")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", projectId)
+          .eq("is_archived", false),
+        supabase
+          .from("mentions")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", projectId)
+          .eq("is_archived", false)
+          .not("sentiment", "is", null),
+      ]);
+      if (totalRes.error) throw totalRes.error;
+      if (analyzedRes.error) throw analyzedRes.error;
+      const total = totalRes.count || 0;
+      const analyzed = analyzedRes.count || 0;
+      return { total, analyzed, unanalyzed: total - analyzed };
     },
     enabled: !!projectId,
     staleTime: 30000,
@@ -134,9 +140,9 @@ export function useWorkflowState(): WorkflowState {
         description: "Procesar datos e insights",
         status: analyzeStatus,
         count: analyzed,
-        route: "/dashboard/semantica",
+        route: "/dashboard/analizar",
         actionLabel: analyzed > 0 ? "Ver análisis" : "Analizar datos",
-        actionRoute: "/dashboard/semantica",
+        actionRoute: "/dashboard/analizar",
       },
       {
         step: "report",
