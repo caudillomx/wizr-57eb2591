@@ -72,6 +72,11 @@ function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: b
         >
           <item.icon className="h-5 w-5 shrink-0" />
           {!collapsed && <span>{item.title}</span>}
+          {!collapsed && item.step !== undefined && (
+            <span className="ml-auto text-[10px] font-semibold text-sidebar-foreground/40">
+              {item.step}
+            </span>
+          )}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
