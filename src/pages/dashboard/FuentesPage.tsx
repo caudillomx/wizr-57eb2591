@@ -1,5 +1,7 @@
 import { NoProjectState } from "@/components/layout/NoProjectState";
 import { AutomationPanel } from "@/components/fuentes/AutomationPanel";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { useEntities } from "@/hooks/useEntities";
@@ -38,8 +40,8 @@ import {
   History,
 } from "lucide-react";
 
-type MainTab = "hub" | "buscar" | "automatizacion";
-type SearchSubTab = "unified" | "social" | "news" | "comments" | "social-history";
+type MainTab = "hub" | "buscar";
+type SearchSubTab = "social" | "news" | "comments" | "social-history";
 
 const FuentesPage = () => {
   const { selectedProject, loading: projectLoading } = useProject();
@@ -57,8 +59,9 @@ const FuentesPage = () => {
   const { toast } = useToast();
 
   const [mainTab, setMainTab] = useState<MainTab>("hub");
-  const [searchSubTab, setSearchSubTab] = useState<SearchSubTab>("unified");
+  const [searchSubTab, setSearchSubTab] = useState<SearchSubTab>("social");
   const [showEntityForm, setShowEntityForm] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   if (projectLoading) {
     return (
