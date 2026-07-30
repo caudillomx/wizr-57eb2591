@@ -1,3 +1,4 @@
+import { NoProjectState } from "@/components/layout/NoProjectState";
 import { useState } from "react";
 import { useProject } from "@/contexts/ProjectContext";
 import { useInfluencersData } from "@/hooks/useInfluencersData";

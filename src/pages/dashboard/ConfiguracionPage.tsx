@@ -1,3 +1,4 @@
+import { NoProjectState } from "@/components/layout/NoProjectState";
 import { useState, useEffect } from "react";
 import { Settings, Plus, User, Building2, Briefcase, Filter, Save, Target, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
