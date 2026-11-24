@@ -131,7 +131,7 @@ export async function syncSourceExtraction(sourceId: string) {
       timeout: 30_000,
     });
     const rawItems = Array.isArray(itemsRes.data) ? itemsRes.data : [];
-    normalizedItems = rawItems.map((it) => normalizeApifyComment(it, source.platform)).filter(Boolean);
+    normalizedItems = rawItems.map((it: any) => normalizeApifyComment(it, source.platform)).filter(Boolean);
   }
 
   if (normalizedItems.length > 0) {
