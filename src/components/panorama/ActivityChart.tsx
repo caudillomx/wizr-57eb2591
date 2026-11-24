@@ -16,7 +16,7 @@ interface ActivityChartProps {
 }
 
 export function ActivityChart({ data, onDateClick }: ActivityChartProps) {
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   if (data.length === 0) {
     return (
@@ -51,6 +51,29 @@ export function ActivityChart({ data, onDateClick }: ActivityChartProps) {
 
   const hasLowConfidence = formattedData.some((d) => d.lowConfidence);
   const totalEstimated = data.reduce((acc, d) => acc + ((d.count ?? 0) - (d.verifiedCount ?? 0)), 0);
+
+  const lowConfidenceRanges = useMemo(() => {
+    if (verifiedOnly) return [];
+    const ranges: { start: string; end: string }[] = [];
+    let currentStart: string | null = null;
+    let currentEnd: string | null = null;
+
+    for (let i = 0; i < formattedData.length; i++) {
+      const d = formattedData[i];
+      if (d.lowConfidence) {
+        if (!currentStart) currentStart = d.label;
+        currentEnd = d.label;
+      } else if (currentStart && currentEnd) {
+        ranges.push({ start: currentStart, end: currentEnd });
+        currentStart = null;
+        currentEnd = null;
+      }
+    }
+    if (currentStart && currentEnd) {
+      ranges.push({ start: currentStart, end: currentEnd });
+    }
+    return ranges;
+  }, [formattedData, verifiedOnly]);
 
   return (
     <Card>
@@ -134,18 +157,16 @@ export function ActivityChart({ data, onDateClick }: ActivityChartProps) {
               formatter={(value: number) => [value, verifiedOnly ? "Menciones verificadas" : "Menciones"]}
             />
             {!verifiedOnly &&
-              formattedData.map((d) =>
-                d.lowConfidence ? (
-                  <ReferenceArea
-                    key={`lc-${d.date}`}
-                    x1={d.label}
-                    x2={d.label}
-                    fill="url(#lowConfidencePattern)"
-                    fillOpacity={1}
-                    ifOverflow="visible"
-                  />
-                ) : null
-              )}
+              lowConfidenceRanges.map((r, i) => (
+                <ReferenceArea
+                  key={`lc-${i}`}
+                  x1={r.start}
+                  x2={r.end}
+                  fill="url(#lowConfidencePattern)"
+                  fillOpacity={1}
+                  ifOverflow="visible"
+                />
+              ))}
             <Area
               type="monotone"
               dataKey="displayCount"

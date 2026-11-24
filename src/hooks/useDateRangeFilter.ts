@@ -40,7 +40,7 @@ export function useDateRangeFilter(defaultPreset: TimeRangePreset = "day") {
     // Preset modes (7d, 30d, 90d)
     const days = dateConfig.type === "7d" ? 7 : dateConfig.type === "30d" ? 30 : 90;
     return {
-      startDate: subDays(now, days),
+      startDate: startOfDay(subDays(now, days)),
       endDate: now,
     };
   }, [dateConfig]);

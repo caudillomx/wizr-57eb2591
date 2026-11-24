@@ -205,8 +205,21 @@ const isSocialDomain = (domain: string): boolean => SOCIAL_DOMAINS.some((s) => d
 
 export const getMentionAuthorInfo = (mention: MentionAuthorSource): MentionAuthorInfo | null => {
   const metadata = getMetadataRecord(mention.raw_metadata);
-  const author = normalizeText(metadata?.author) || normalizeText(metadata?.author_name);
-  const authorUsername = (normalizeText(metadata?.authorUsername) || normalizeText(metadata?.author_username)).replace(/^@/, "");
+  const rawAuth = metadata?.author;
+  const authorFromObj =
+    typeof rawAuth === "object" && rawAuth !== null
+      ? normalizeText((rawAuth as any).name || (rawAuth as any).username)
+      : "";
+  const author = normalizeText(rawAuth) || normalizeText(metadata?.author_name) || authorFromObj;
+  const usernameFromObj =
+    typeof rawAuth === "object" && rawAuth !== null
+      ? normalizeText((rawAuth as any).username)
+      : "";
+  const authorUsername = (
+    normalizeText(metadata?.authorUsername) ||
+    normalizeText(metadata?.author_username) ||
+    usernameFromObj
+  ).replace(/^@/, "");
   const authorUrl = normalizeText(metadata?.authorUrl) || normalizeText(metadata?.author_url);
 
   if (author || authorUsername) {

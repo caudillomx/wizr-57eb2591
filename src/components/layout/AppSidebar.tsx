@@ -7,6 +7,10 @@ import {
   Home,
   Eye,
   FolderOpen,
+  Search,
+  Microscope,
+  Radar,
+  BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import wizrIcon from "@/assets/wizr-icon-transparent.png";
@@ -53,6 +57,16 @@ const listeningExtras: NavItemDef[] = [
 
 const benchmarkingItems: NavItemDef[] = [
   { title: "Clientes", url: "/dashboard/performance", icon: Trophy },
+];
+
+const searchItems: NavItemDef[] = [
+  { title: "Buscador", url: "/dashboard/search", icon: Search },
+];
+
+const netnographyItems: NavItemDef[] = [
+  { title: "Estudios", url: "/dashboard/netnografia", icon: Microscope },
+  { title: "Señales Virales", url: "/dashboard/netnografia/senales", icon: Radar },
+  { title: "Metodología", url: "/dashboard/netnografia/metodologia", icon: BookOpen },
 ];
 
 function NavItem({ item, collapsed, isActive }: { item: NavItemDef; collapsed: boolean; isActive: boolean }) {
@@ -136,6 +150,8 @@ export function AppSidebar() {
 
         <NavGroup label="Flujo de listening" items={listeningItems} collapsed={collapsed} isActive={isActive} />
         <NavGroup label="Proyectos" items={listeningExtras} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Exploración" items={searchItems} collapsed={collapsed} isActive={isActive} />
+        <NavGroup label="Netnografía" items={netnographyItems} collapsed={collapsed} isActive={isActive} />
         <NavGroup label="Benchmarking" items={benchmarkingItems} collapsed={collapsed} isActive={isActive} />
       </SidebarContent>
 

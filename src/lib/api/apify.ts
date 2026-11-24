@@ -80,6 +80,8 @@ export const apifyApi = {
     maxResults?: number;
     youtubeUploadDate?: "lastHour" | "today" | "thisWeek" | "thisMonth" | "thisYear";
     youtubeSortType?: "relevance" | "popularity";
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<ApifyResponse<ScrapeStartResponse>> {
     const result = await invokeBackendFunction<ScrapeStartResponse>(
       "apify-scrape",

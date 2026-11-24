@@ -30,6 +30,12 @@ import RankingsPage from "./pages/dashboard/RankingsPage";
 import PerformancePage from "./pages/dashboard/PerformancePage";
 import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
 import AnalisisPage from "./pages/dashboard/AnalisisPage";
+import SearchPage from "./pages/dashboard/Search";
+import NetnographyListPage from "./pages/dashboard/NetnographyListPage";
+import NetnographyDetailPage from "./pages/dashboard/NetnographyDetailPage";
+import NetnographyPresentationPage from "./pages/dashboard/NetnographyPresentationPage";
+import NetnographySignalsPage from "./pages/dashboard/NetnographySignalsPage";
+import NetnographyMethodologyPage from "./pages/dashboard/NetnographyMethodologyPage";
 
 // Portal Ejecutivo Multi-Cliente y Administración
 import PortalRouter from "./pages/portal/PortalRouter";
@@ -153,6 +159,12 @@ const AppRoutes = () => {
       >
         <Route index element={<DashboardHomePage />} />
         <Route path="inicio" element={<DashboardHomePage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="netnografia" element={<NetnographyListPage />} />
+        <Route path="netnografia/senales" element={<NetnographySignalsPage />} />
+        <Route path="netnografia/metodologia" element={<NetnographyMethodologyPage />} />
+        <Route path="netnografia/:studyId" element={<NetnographyDetailPage />} />
+        <Route path="netnografia/:studyId/presentacion" element={<NetnographyPresentationPage />} />
         <Route path="analizar" element={<AnalisisPage />} />
         <Route path="panorama" element={<Navigate to="/dashboard/analizar?v=panorama" replace />} />
         <Route path="semantica" element={<Navigate to="/dashboard/analizar?v=semantica" replace />} />

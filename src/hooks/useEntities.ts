@@ -27,6 +27,7 @@ interface CreateEntityData {
   palabras_clave: string[];
   aliases: string[];
   platform_keywords?: Record<string, string[]>;
+  metadata?: Record<string, unknown>;
 }
 
 interface UpdateEntityData extends Partial<CreateEntityData> {

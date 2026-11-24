@@ -1,13 +1,19 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useProject } from "@/contexts/ProjectContext";
 import { useProjectsOverview, type ProjectWorkflowSummary } from "@/hooks/useProjectsOverview";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { searchEngine } from "@/lib/services/searchEngine";
+import { subDays } from "date-fns";
 import {
   Plus,
   ArrowRight,
@@ -20,6 +26,7 @@ import {
   BarChart3,
   FileText,
   FolderOpen,
+  Loader2,
 } from "lucide-react";
 
 const STEP_ICONS = [Settings, Search, BarChart3, FileText];
@@ -51,6 +58,62 @@ const DashboardHomePage = () => {
   const active: ProjectWorkflowSummary | undefined = selectedProject
     ? summaries.find((s) => s.project.id === selectedProject.id)
     : undefined;
+
+  const [quickQuery, setQuickQuery] = useState("");
+  const [quickChannel, setQuickChannel] = useState<"news" | "social" | "all">("news");
+  const [isQuickSearching, setIsQuickSearching] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleQuickSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickQuery.trim() || !active?.project.id) return;
+
+    setIsQuickSearching(true);
+    const platforms =
+      quickChannel === "news"
+        ? ["google_news"]
+        : quickChannel === "social"
+        ? ["twitter", "instagram", "facebook"]
+        : ["google_news", "twitter", "instagram", "facebook"];
+
+    try {
+      const res = await searchEngine.executeSearch({
+        query: quickQuery.trim(),
+        platforms,
+        dateFilterEnabled: true,
+        dateFrom: subDays(new Date(), 7),
+        dateTo: new Date(),
+        projectId: active.project.id,
+        maxResults: 25,
+        strictMatching: false,
+      });
+
+      if (res.savedCount > 0) {
+        toast({
+          title: "✓ Menciones capturadas",
+          description: `Se guardaron ${res.savedCount} nuevas menciones en "${active.project.nombre}".`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["mentions", active.project.id] });
+        queryClient.invalidateQueries({ queryKey: ["mention-stats", active.project.id] });
+        queryClient.invalidateQueries({ queryKey: ["projects-overview"] });
+        setQuickQuery("");
+      } else {
+        toast({
+          title: "Búsqueda finalizada",
+          description: "No se encontraron nuevas menciones para este término.",
+        });
+      }
+    } catch {
+      toast({
+        title: "Error en la búsqueda",
+        description: "No se pudo completar la búsqueda rápida.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsQuickSearching(false);
+    }
+  };
 
   const renderHeader = () => (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
@@ -188,6 +251,81 @@ const DashboardHomePage = () => {
                   </button>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Search Widget */}
+        <Card className="mt-4 border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Captura Rápida en este proyecto</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Busca y almacena menciones directamente en "{active.project.nombre}"
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 rounded-md border bg-muted/30 p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setQuickChannel("news")}
+                    className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                      quickChannel === "news"
+                        ? "bg-background text-foreground font-medium shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Noticias
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickChannel("social")}
+                    className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                      quickChannel === "social"
+                        ? "bg-background text-foreground font-medium shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Redes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickChannel("all")}
+                    className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                      quickChannel === "all"
+                        ? "bg-background text-foreground font-medium shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleQuickSearch} className="flex gap-2">
+                <Input
+                  value={quickQuery}
+                  onChange={(e) => setQuickQuery(e.target.value)}
+                  placeholder="Escribe un término (ej: marca, competidor, noticia)..."
+                  disabled={isQuickSearching}
+                  className="h-9 text-sm"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isQuickSearching || !quickQuery.trim()}
+                  className="gap-1.5 h-9 shrink-0"
+                >
+                  {isQuickSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  <span>{isQuickSearching ? "Buscando..." : "Capturar"}</span>
+                </Button>
+              </form>
             </div>
           </CardContent>
         </Card>

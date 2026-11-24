@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes";
 import projectsRoutes from "./routes/projects.routes";
+import netnographyRoutes from "./routes/netnography.routes";
 import {
   handleTableQuery,
   handleRpc,
@@ -23,9 +24,10 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// 1. Auth & Projects REST routes
+// 1. Auth, Projects & Netnography REST routes
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectsRoutes);
+app.use("/api/netnography", netnographyRoutes);
 
 // 2. Universal Database Query Adapter, RPC & Storage (Wizr + Portal Ejecutivo)
 app.post("/api/db/:table", handleTableQuery);

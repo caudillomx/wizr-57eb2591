@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import wizrLogo from "@/assets/wizr-logo.png";
 import { cn } from "@/lib/utils";
+import { searchEngine } from "@/lib/services/searchEngine";
+import { subDays } from "date-fns";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -397,11 +399,28 @@ const ProjectWizard = () => {
         }
       }
 
+      // Trigger initial fast ingestion for project in background
+      if (data?.id) {
+        const queryTerm = finalState.entities[0] || projectName;
+        searchEngine
+          .executeSearch({
+            query: queryTerm,
+            platforms: ["google_news"],
+            dateFilterEnabled: true,
+            dateFrom: subDays(new Date(), 7),
+            dateTo: new Date(),
+            projectId: data.id,
+            maxResults: 25,
+            strictMatching: false,
+          })
+          .catch((e) => console.warn("Initial wizard ingestion error:", e));
+      }
+
       setTimeout(() => {
         const entityCount = finalState.entities.length;
         const entityMsg = entityCount > 0 ? `\n${entityCount} entidades creadas.` : "";
         addAssistantMessage(
-          `✅ **¡Proyecto creado!**\n\n**${projectName}**${entityMsg}\n\nTe llevo al dashboard para que empieces a trabajar.`
+          `✅ **¡Proyecto creado!**\n\n**${projectName}**${entityMsg}\n\nIniciando captura de menciones iniciales. Te llevo al dashboard...`
         );
 
         setTimeout(() => {

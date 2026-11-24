@@ -1121,3 +1121,171 @@ model ClientGoogleAdsAccount {
   @@index([client_id])
   @@map("client_google_ads_accounts")
 }
+
+// =========================================================================
+// MÓDULO DE ESTUDIOS NETNOGRÁFICOS (Metodología Híbrida v2.1 + Radar + Newsloom)
+// =========================================================================
+
+model NetnographyStudy {
+  id                         String    @id @default(uuid()) @db.Uuid
+  folio                      String?
+  kind                       String    @default("deep") // quick | deep
+  title                      String
+  topic                      String    @default("")
+  central_question           String?
+  secondary_questions        Json      @default("[]")
+  requester                  String?
+  decision_enabled           String?
+  universe_definition        String?
+  hypothesis                 String?
+  ethical_risk               String    @default("bajo") // bajo | medio | alto
+  stance_target              String?
+  date_from                  DateTime?
+  date_to                    DateTime?
+  external_validation_source String?
+  external_validation_note   String?
+  project_id                 String?   @db.Uuid
+  client_id                  String?   @db.Uuid
+  user_id                    String?   @db.Uuid
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
+
+  sources  NetnographySource[]
+  analyses NetnographyAnalysis[]
+
+  @@index([project_id])
+  @@index([client_id])
+  @@index([created_at(sort: Desc)])
+  @@map("netnography_studies")
+}
+
+model NetnographySource {
+  id                 String    @id @default(uuid()) @db.Uuid
+  study_id           String    @db.Uuid
+  url                String
+  platform           String    // instagram | tiktok | youtube | facebook | x | fanpage_karma
+  post_id            String?
+  community_name     String?
+  inclusion_criteria Json      @default("{}")
+  status             String    @default("pendiente") // pendiente | lista | iniciando | extrayendo | extraida | error
+  max_comments       Int       @default(500)
+  include_replies    Boolean   @default(true)
+  apify_run_id       String?
+  apify_dataset_id   String?
+  error              String?
+  comment_count      Int       @default(0)
+  extra_pass         Boolean   @default(false)
+  recheck_at         DateTime?
+  rechecked          Boolean   @default(false)
+  started_at         DateTime?
+  finished_at        DateTime?
+  created_at         DateTime  @default(now())
+
+  study    NetnographyStudy     @relation(fields: [study_id], references: [id], onDelete: Cascade)
+  comments NetnographyComment[]
+
+  @@unique([study_id, url])
+  @@index([study_id])
+  @@map("netnography_sources")
+}
+
+model NetnographyComment {
+  id                   String    @id @default(uuid()) @db.Uuid
+  source_id            String    @db.Uuid
+  external_id          String?
+  author_alias         String?   // Seudonimizado U-0001 o figura pública
+  author_hash          String?
+  text                 String
+  published_at         DateTime?
+  likes                Int       @default(0)
+  replies_count        Int       @default(0)
+  shares_count         Int       @default(0)
+  url                  String?
+  is_reply             Boolean   @default(false)
+  parent_external_id   String?
+  authenticity_flag    String    @default("organic") // organic | suspicious | coordinated
+  authenticity_signals Json      @default("[]")
+  stratum              String?
+  weight               Float     @default(1.0)
+  is_in_sample         Boolean   @default(false)
+  raw                  Json      @default("{}")
+  created_at           DateTime  @default(now())
+
+  source NetnographySource         @relation(fields: [source_id], references: [id], onDelete: Cascade)
+  labels NetnographyCommentLabel[]
+
+  @@unique([source_id, external_id])
+  @@index([source_id])
+  @@index([is_in_sample])
+  @@map("netnography_comments")
+}
+
+model NetnographyAnalysis {
+  id                    String    @id @default(uuid()) @db.Uuid
+  study_id              String    @db.Uuid
+  status                String    @default("procesando") // procesando | completado | error
+  stage                 String    @default("muestreo")   // muestreo | sintesis | clasificacion | agregado | completado
+  model                 String?
+  comment_count         Int       @default(0)
+  sample_size           Int       @default(0)
+  effective_sample_size Float     @default(0)
+  batches_total         Int       @default(0)
+  batches_done          Int       @default(0)
+  sample                Json?
+  codebook              Json?
+  synthesis             Json?
+  batch_attempts        Json      @default("{}")
+  result                Json?
+  validation_metrics    Json?
+  field_diary           String?
+  error                 String?
+  progress_at           DateTime  @default(now())
+  locked_until          DateTime?
+  created_at            DateTime  @default(now())
+  finished_at           DateTime?
+
+  study  NetnographyStudy          @relation(fields: [study_id], references: [id], onDelete: Cascade)
+  labels NetnographyCommentLabel[]
+
+  @@index([study_id, created_at(sort: Desc)])
+  @@map("netnography_analyses")
+}
+
+model NetnographyCommentLabel {
+  id                   String    @id @default(uuid()) @db.Uuid
+  analysis_id          String    @db.Uuid
+  comment_id           String    @db.Uuid
+  is_relevant          String?   // si | no | dudoso
+  open_codes           Json      @default("[]")
+  narrative            String?
+  subcategory          String?
+  framing              Json?     // { problema, causa, juicio, solucion }
+  actors               Json      @default("[]") // [{ nombre, postura }]
+  sentiment            String?   // positive | neutral | negative
+  stance               String?   // favor | contra | ambigua | no_aplica
+  emotion              String?   // enojo | miedo | tristeza | burla | esperanza | orgullo | neutral
+  emotion_intensity    Int?
+  emic_terms           Json      @default("[]")
+  is_irony             Boolean   @default(false)
+  confidence           String?   // alta | media | baja
+  account_type         String?   // persona | marca | medio
+  language             String?
+  gender               String?
+  age                  String?
+  country              String?
+  is_validation_sample Boolean   @default(false)
+  human_sentiment      String?
+  human_stance         String?
+  human_narrative      String?
+  reviewed_at          DateTime?
+  reviewed_by          String?
+  created_at           DateTime  @default(now())
+
+  analysis NetnographyAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+  comment  NetnographyComment  @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+
+  @@unique([analysis_id, comment_id])
+  @@index([analysis_id])
+  @@index([analysis_id, is_validation_sample])
+  @@map("netnography_comment_labels")
+}

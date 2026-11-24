@@ -3,15 +3,36 @@
  * Detects duplicate content beyond simple URL matching
  */
 
-/**
- * Normalize text for comparison: lowercase, remove extra spaces, strip punctuation
- */
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Normalize and clean URLs by stripping tracking parameters (e.g. facebook/twitter sharing parameters)
+ */
+export function cleanUrl(urlStr: string): string {
+  try {
+    const url = new URL(urlStr);
+    const paramsToRemove = [
+      "__cft__", "__tn__", "fbclid", "hrc", "s", "t",
+      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+      "extid", "ref"
+    ];
+    paramsToRemove.forEach((param) => url.searchParams.delete(param));
+
+    const hostname = url.hostname.toLowerCase();
+    if (hostname.includes("facebook.com")) {
+      url.hostname = "www.facebook.com";
+    }
+
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return urlStr.toLowerCase().replace(/\/$/, "");
+  }
 }
 
 /**
@@ -109,17 +130,42 @@ export function findDuplicates(
   existingItems: DuplicateCandidate[],
   similarityThreshold: number = 0.7
 ): DuplicateMatch | null {
-  const newUrl = newItem.url.toLowerCase().replace(/\/$/, "");
+  const newUrl = cleanUrl(newItem.url);
   
   for (const existing of existingItems) {
     // Check URL match first (fastest)
-    const existingUrl = existing.url.toLowerCase().replace(/\/$/, "");
+    const existingUrl = cleanUrl(existing.url);
     if (newUrl === existingUrl) {
       return {
         existingId: existing.id,
         similarity: 1,
         matchType: "url",
       };
+    }
+
+    // Check exact title or description match (for copy-pasted captions or republished news headlines)
+    if (newItem.description && existing.description) {
+      const normDescNew = normalizeText(newItem.description);
+      const normDescExisting = normalizeText(existing.description);
+      if (normDescNew.length >= 30 && normDescNew === normDescExisting) {
+        return {
+          existingId: existing.id,
+          similarity: 1,
+          matchType: "semantic",
+        };
+      }
+    }
+
+    if (newItem.title && existing.title) {
+      const normTitleNew = normalizeText(newItem.title);
+      const normTitleExisting = normalizeText(existing.title);
+      if (normTitleNew.length >= 25 && normTitleNew === normTitleExisting) {
+        return {
+          existingId: existing.id,
+          similarity: 1,
+          matchType: "semantic",
+        };
+      }
     }
     
     // Check content similarity
