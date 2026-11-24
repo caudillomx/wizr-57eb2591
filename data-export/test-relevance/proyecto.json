@@ -1,0 +1,106 @@
+{
+    "alertas": [
+    ],
+    "proyecto": {
+        "id": "099ea3ac-0f94-4110-bd54-d376d0c5d574",
+        "tipo": "monitoreo",
+        "activo": true,
+        "nombre": "Test Relevance",
+        "user_id": "b4c71393-2662-44ef-b813-57475e840292",
+        "version": 1,
+        "objetivo": "Monitorear y analizar conversaciones sobre Instituto La Paz Puebla, maltrato animal Puebla, Fundación Patitas Enlodadas en medios digitales y redes sociales.",
+        "audiencia": "Mi equipo",
+        "created_at": "2026-07-03T17:12:14.498038+00:00",
+        "updated_at": "2026-07-03T17:12:14.498038+00:00",
+        "descripcion": "Producto: listening | Profundidad: investigacion",
+        "sensibilidad": "alto",
+        "alcance_temporal": "mensual",
+        "alcance_geografico": [
+            "México",
+            "LATAM"
+        ],
+        "contexto_estrategico": null
+    },
+    "entidades": [
+        {
+            "id": "0792dd57-d129-45dd-a5ca-782aab06fee3",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Instituto La Paz Puebla",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-07-03T17:12:14.924426+00:00",
+            "project_id": "099ea3ac-0f94-4110-bd54-d376d0c5d574",
+            "updated_at": "2026-07-03T17:12:14.924426+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Instituto La Paz Puebla"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "2e304a53-c413-49b4-8d4d-46b4053fb7bd",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "maltrato animal Puebla",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-07-03T17:12:14.924426+00:00",
+            "project_id": "099ea3ac-0f94-4110-bd54-d376d0c5d574",
+            "updated_at": "2026-07-03T17:12:14.924426+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "maltrato animal Puebla"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "ea1c10e0-b2a2-46ab-b9dc-ceb57b8586f0",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Fundación Patitas Enlodadas",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-07-03T17:12:14.924426+00:00",
+            "project_id": "099ea3ac-0f94-4110-bd54-d376d0c5d574",
+            "updated_at": "2026-07-03T17:12:14.924426+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Fundación Patitas Enlodadas"
+            ],
+            "platform_keywords": {
+            }
+        }
+    ],
+    "busqueda_programada": {
+        "id": "5a7f6b6b-c0f1-42a7-8eec-051b68f59db8",
+        "frequency": "every_3_hours",
+        "platforms": [
+            "news",
+            "twitter",
+            "facebook",
+            "youtube",
+            "tiktok",
+            "instagram",
+            "linkedin",
+            "reddit"
+        ],
+        "run_count": 555,
+        "created_at": "2026-07-03T17:12:14.498038+00:00",
+        "is_enabled": true,
+        "last_error": null,
+        "project_id": "099ea3ac-0f94-4110-bd54-d376d0c5d574",
+        "updated_at": "2026-11-24T15:00:08.588883+00:00",
+        "last_run_at": "2026-11-24T15:00:08.475+00:00",
+        "next_run_at": "2026-11-24T18:00:08.475+00:00",
+        "max_results_per_platform": 50
+    }
+}

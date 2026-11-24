@@ -1,0 +1,106 @@
+{
+    "alertas": [
+    ],
+    "proyecto": {
+        "id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+        "tipo": "monitoreo",
+        "activo": true,
+        "nombre": "Zaga",
+        "user_id": "0b9b775b-379b-4446-a4a1-90044d34806a",
+        "version": 1,
+        "objetivo": "Monitorear y analizar conversaciones sobre Rafael Zaga Tawil, zaga tawil, Zaga Tawil en medios digitales y redes sociales.",
+        "audiencia": "Director Ejecutivo",
+        "created_at": "2026-04-14T20:42:17.620779+00:00",
+        "updated_at": "2026-04-23T18:50:52.139392+00:00",
+        "descripcion": "Producto: listening | Profundidad: brief",
+        "sensibilidad": "medio",
+        "alcance_temporal": "diario",
+        "alcance_geografico": [
+            "México",
+            "LATAM"
+        ],
+        "contexto_estrategico": "Rafael Zaga Tawil mantiene un litigio contra Actinver por el supuesto mal manejo de un fideicomiso hace años. El litigio está ante la Corte mexicana. La detención en EU no fue por ese tema, sino por otro. La idea es que se analice si la presencia en la conversación del caso Zaga afecta y en qué medida la reputación de Actinver."
+    },
+    "entidades": [
+        {
+            "id": "f54a9ce1-41cf-4aee-8a11-767aa09d1e4c",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Rafael Zaga Tawil",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-04-14T20:42:17.848163+00:00",
+            "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+            "updated_at": "2026-04-14T20:42:17.848163+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Rafael Zaga Tawil"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "d4a8446c-cc4c-4ce3-9ebf-9853a500e09d",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "zaga tawil",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-04-14T20:42:17.848163+00:00",
+            "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+            "updated_at": "2026-04-14T20:42:17.848163+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "zaga tawil"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "b6e1497d-276e-4d24-a426-cf4eabd59c3e",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Zaga Tawil",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-04-14T20:42:17.848163+00:00",
+            "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+            "updated_at": "2026-04-14T20:42:17.848163+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Zaga Tawil"
+            ],
+            "platform_keywords": {
+            }
+        }
+    ],
+    "busqueda_programada": {
+        "id": "6fc5364e-a5d4-48b5-8465-a182f279b9b3",
+        "frequency": "every_3_hours",
+        "platforms": [
+            "news",
+            "twitter",
+            "facebook",
+            "youtube",
+            "tiktok",
+            "instagram",
+            "linkedin",
+            "reddit"
+        ],
+        "run_count": 861,
+        "created_at": "2026-04-15T15:17:15.600157+00:00",
+        "is_enabled": true,
+        "last_error": null,
+        "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+        "updated_at": "2026-11-24T18:00:07.416614+00:00",
+        "last_run_at": "2026-11-24T18:00:07.376+00:00",
+        "next_run_at": "2026-11-24T21:00:07.376+00:00",
+        "max_results_per_platform": 50
+    }
+}

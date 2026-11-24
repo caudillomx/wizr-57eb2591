@@ -1,0 +1,4388 @@
+[
+    {
+        "id": "ac389c3b-a973-42cf-9b76-cbd548d78e1a",
+        "title": "Detención de Rafael Zaga Tawil en Florida: impacto reputacional sobre Actinver por cobertura del fraude al Infonavit",
+        "content": {
+            "title": "Detención de Rafael Zaga Tawil en Florida: impacto reputacional sobre Actinver por cobertura del fraude al Infonavit",
+            "metrics": {
+                "topSources": [
+                    "instagram.com",
+                    "evynchihuahua.com",
+                    "msn.com",
+                    "gobernantes.com",
+                    "elsiglodetorreon.com.mx"
+                ],
+                "neutralCount": 146,
+                "negativeCount": 296,
+                "positiveCount": 2,
+                "totalMentions": 444,
+                "estimatedReach": 797672,
+                "estimatedImpressions": 1227188
+            },
+            "summary": "Durante el periodo del 25 de marzo al 24 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, con un pico de 62 menciones el 23 de abril vinculado a su detención en Florida por el Servicio de Inmigración y Control de Aduanas (ICE). El 67% de las menciones (296) presentaron tono negativo, concentradas en la acusación de fraude al Infonavit por 5 mil millones de pesos, mientras que solo 6 menciones en el universo total nombraron explícitamente a Actinver. La cobertura estuvo dominada por medios digitales regionales (gobernantes.com, meganoticias.mx, elsiglodetorreon.com.mx) y redes sociales (Facebook con 37 menciones, Twitter con 21), con autores como Julio Astillero (276 interacciones) y Oscar González Bonilla (403 interacciones) amplificando el encuadre de delincuencia organizada y lavado de dinero. La narrativa central vincula a Zaga Tawil con el fraude al Infonavit, sin que la conversación pública asocie de manera significativa este caso con el litigio contra Actinver por el supuesto mal manejo de un fideicomiso. La detención en Estados Unidos no se relacionó en las menciones con el litigio ante la Corte mexicana que mantiene contra Actinver, sino con la orden de aprehensión de 2022 por el caso Infonavit.",
+            "keywords": [
+                {
+                    "term": "fraude",
+                    "count": 420,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Infonavit",
+                    "count": 415,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "detención",
+                    "count": 380,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Florida",
+                    "count": 350,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "ICE",
+                    "count": 340,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "empresario",
+                    "count": 310,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "millones",
+                    "count": 290,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "pesos",
+                    "count": 285,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "prófugo",
+                    "count": 270,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "delincuencia organizada",
+                    "count": 180,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "lavado de dinero",
+                    "count": 165,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "orden de aprehensión",
+                    "count": 150,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "México",
+                    "count": 140,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "Estados Unidos",
+                    "count": 130,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "custodia",
+                    "count": 95,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "justicia",
+                    "count": 75,
+                    "sentiment": "mixto"
+                },
+                {
+                    "term": "captura",
+                    "count": 68,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "contratos",
+                    "count": 42,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "desvío",
+                    "count": 38,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "corrupción",
+                    "count": 32,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Peña Nieto",
+                    "count": 18,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Actinver",
+                    "count": 6,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "fideicomiso",
+                    "count": 4,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "Corte",
+                    "count": 4,
+                    "sentiment": "neutral"
+                }
+            ],
+            "timeline": [
+                {
+                    "date": "2026-04-13",
+                    "count": 25,
+                    "negative": 20,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-14",
+                    "count": 42,
+                    "negative": 31,
+                    "positive": 1
+                },
+                {
+                    "date": "2026-04-15",
+                    "count": 108,
+                    "negative": 70,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-16",
+                    "count": 55,
+                    "negative": 40,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-17",
+                    "count": 5,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-18",
+                    "count": 16,
+                    "negative": 15,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-19",
+                    "count": 12,
+                    "negative": 12,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-20",
+                    "count": 11,
+                    "negative": 8,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-21",
+                    "count": 33,
+                    "negative": 29,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-22",
+                    "count": 68,
+                    "negative": 31,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-23",
+                    "count": 69,
+                    "negative": 37,
+                    "positive": 1
+                }
+            ],
+            "templates": {
+                "public": "📊 Detención de Rafael Zaga Tawil en Florida: impacto reputacional sobre Actinver por cobertura del fraude al Infonavit",
+                "executive": "Durante el periodo del 25 de marzo al 24 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, con un pico de 62 menciones el 23 de abril vinculado a su detención en Florida por el Servicio de Inmigración y Control de Aduanas (ICE). El 67% de las menciones (296) presentaron tono negativo, concentradas en la acusación de fraude al Infonavit por 5 mil millones de pesos, mientras que solo 6 menciones en el universo total nombraron explícitamente a Actinver. La cobertura estuvo dominada por medios digitales regionales (gobernantes.com, meganoticias.mx, elsiglodetorreon.com.mx) y redes sociales (Facebook con 37 menciones, Twitter con 21), con autores como Julio Astillero (276 interacciones) y Oscar González Bonilla (403 interacciones) amplificando el encuadre de delincuencia organizada y lavado de dinero. La narrativa central vincula a Zaga Tawil con el fraude al Infonavit, sin que la conversación pública asocie de manera significativa este caso con el litigio contra Actinver por el supuesto mal manejo de un fideicomiso. La detención en Estados Unidos no se relacionó en las menciones con el litigio ante la Corte mexicana que mantiene contra Actinver, sino con la orden de aprehensión de 2022 por el caso Infonavit.",
+                "technical": "Durante el periodo del 25 de marzo al 24 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, con un pico de 62 menciones el 23 de abril vinculado a su detención en Florida por el Servicio de Inmigración y Control de Aduanas (ICE). El 67% de las menciones (296) presentaron tono negativo, concentradas en la acusación de fraude al Infonavit por 5 mil millones de pesos, mientras que solo 6 menciones en el universo total nombraron explícitamente a Actinver. La cobertura estuvo dominada por medios digitales regionales (gobernantes.com, meganoticias.mx, elsiglodetorreon.com.mx) y redes sociales (Facebook con 37 menciones, Twitter con 21), con autores como Julio Astillero (276 interacciones) y Oscar González Bonilla (403 interacciones) amplificando el encuadre de delincuencia organizada y lavado de dinero. La narrativa central vincula a Zaga Tawil con el fraude al Infonavit, sin que la conversación pública asocie de manera significativa este caso con el litigio contra Actinver por el supuesto mal manejo de un fideicomiso. La detención en Estados Unidos no se relacionó en las menciones con el litigio ante la Corte mexicana que mantiene contra Actinver, sino con la orden de aprehensión de 2022 por el caso Infonavit."
+            },
+            "narratives": [
+                {
+                    "trend": "creciente",
+                    "mentions": 380,
+                    "narrative": "Detención en Florida por fraude al Infonavit",
+                    "sentiment": "negativo",
+                    "description": "Narrativa dominante que encuadra la captura de Rafael Zaga Tawil por el ICE en Florida como consecuencia de la orden de aprehensión de 2022 por presunto fraude de 5 mil millones de pesos al Infonavit mediante contratos fraudulentos. Impulsada por medios digitales regionales (gobernantes.com, meganoticias.mx, elsiglodetorreon.com.mx), redes sociales (Facebook, Twitter, Instagram) y autores como Julio Astillero, Oscar González Bonilla y MVSNoticias. El encuadre enfatiza delincuencia organizada, lavado de dinero y años de fuga, sin mencionar el litigio contra Actinver."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 28,
+                    "narrative": "Vinculación con corrupción del sexenio de Peña Nieto",
+                    "sentiment": "mixto",
+                    "description": "Narrativa secundaria que conecta el caso Zaga Tawil con el saqueo y corrupción del gobierno de Enrique Peña Nieto, presentando la detención como un golpe tardío de la justicia mexicana contra personajes que desviaron recursos públicos. Presente en menciones de Facebook (autor Enrique Hidalgo y Costilla) y Threads, con tono de celebración por la captura. No establece conexión con Actinver ni con el litigio del fideicomiso."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 22,
+                    "narrative": "Situación migratoria y custodia del ICE",
+                    "sentiment": "mixto",
+                    "description": "Narrativa informativa centrada en la situación migratoria de Zaga Tawil como causa inmediata de su detención por el ICE, con énfasis en que permanece bajo custodia de autoridades estadounidenses. Presente en medios digitales (msn.com, instagram.com, threads.com) y notas neutrales que describen el proceso de captura sin profundizar en las acusaciones penales. No menciona a Actinver."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 10,
+                    "narrative": "Paralización de casos de fraude millonario en México",
+                    "sentiment": "negativo",
+                    "description": "Narrativa crítica sobre la lentitud de la justicia mexicana en casos de fraude de alto impacto, mencionando a Zaga Tawil junto a otros empresarios con órdenes de captura desde 2020. Presente en proceso.com.mx (artículo sobre el plan estratégico de justicia de Godoy) y menciones en redes que cuestionan la eficacia del sistema judicial. No vincula el caso con Actinver."
+                },
+                {
+                    "trend": "creciente",
+                    "mentions": 4,
+                    "narrative": "Nuevo caso de fraude piramidal MetaXchange Capital",
+                    "sentiment": "negativo",
+                    "description": "Narrativa emergente que menciona a Zaga Tawil en el contexto de un nuevo caso de fraude piramidal investigado en México (MetaXchange Capital), sugiriendo un patrón de fraudes financieros. Presente en joshuarabintraining.com y menciones dispersas en redes. No establece conexión con Actinver ni con el litigio del fideicomiso."
+                }
+            ],
+            "conclusions": [
+            ],
+            "influencers": [
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "11,438 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "joaquínlópez-dóriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Gloria en Contexto",
+                    "reach": "8,080 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "gloriaencontexto",
+                    "avatarUrl": null,
+                    "sentiment": "mixto"
+                },
+                {
+                    "name": "Latinus",
+                    "reach": "3,909 interacciones",
+                    "mentions": 3,
+                    "platform": "facebook.com",
+                    "username": "Latinus",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "2,537 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "aztecanoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Pável Argáez",
+                    "reach": "1,817 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "pávelargáez",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "1,441 interacciones",
+                    "mentions": 2,
+                    "platform": "twitter.com",
+                    "username": "lopezdoriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Liz Vilchis",
+                    "reach": "1,441 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "lizvilchis",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Código Magenta",
+                    "reach": "1,382 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "códigomagenta",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "1,338 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "AztecaNoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Blanco y Negro",
+                    "reach": "1,199 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "blancoynegro",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "José Díaz",
+                    "reach": "822 interacciones",
+                    "mentions": 2,
+                    "platform": "twitter.com",
+                    "username": "JJDiazMachuca",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "David Vargas Araujo",
+                    "reach": "762 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "DavidVargasA18",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "constanza luna",
+                    "reach": "702 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "lunadeandromeda",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "MVSNoticias",
+                    "reach": "673 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "mvsnoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "El nieto de AMLO",
+                    "reach": "574 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "elnietodeamlo",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Óscar Gómez",
+                    "reach": "560 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "óscargómez",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "SinEmbargo",
+                    "reach": "515 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "SinEmbargoMX",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Oscar González Bonilla",
+                    "reach": "403 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "oscargonzálezbonilla",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "¿Por qué es Tendencia?",
+                    "reach": "300 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "porktendencia",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "Julio Astillero",
+                    "reach": "276 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "julioastillero",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                }
+            ],
+            "keyFindings": [
+                "Distribución de sentimiento: 444 menciones en el periodo, 296 negativas (67%), 2 positivas (0%) y 146 neutrales (33%). En lectura ejecutiva, el periodo cierra con carga reputacional mayoritariamente adversa: la conversación pública se vuelve un terreno hostil que define el encuadre dominante de la ventana monitoreada.",
+                "Concentración de cobertura: facebook (79), twitter (72), facebook.com (43). facebook concentra 18% del volumen total con tono mayoritariamente adverso dentro de ese canal (63 de 79 negativas). Esto vuelve a facebook el canal donde se está fijando primero la lectura pública del periodo, por encima de cualquier otra plataforma de la muestra.",
+                "Voces con tracción medible: Joaquín López-Dóriga en twitter (2 publicaciones; 37,555 interacciones acumuladas); ¿Por qué es Tendencia? en twitter (1 publicación; 13,281 interacciones acumuladas); Azteca Noticias en twitter (1 publicación; 12,736 interacciones acumuladas). Estas cuentas concentran 63,572 interacciones en la muestra, por lo que un encuadre adverso en cualquiera de ellas escala más por capacidad de arrastre del emisor que por volumen disperso.",
+                "Pico de actividad: 2026-04-15 con 108 menciones (24% del total). Entre lo publicado ese día destacan piezas como \"Siempre es el prian, se dedican a hacer campaña negra en contra del gobierno de la 4T, pero son ello...\" en facebook y \"🚨 #ÚltimaHora 🚨 Detienen en Estados Unidos al empresario mexicano Rafael Zaga Tawil, señalado por...\" en facebook. El día concentra el volumen más alto del periodo aunque sin formar una crisis sostenida, lo que sugiere un evento detonador acotado.",
+                "Términos más reiterados: Zaga Tawil (291), Rafael Zaga Tawil (153). Estos son los marcos concretos que están estructurando el encuadre de la conversación más allá de titulares aislados; la reiteración indica que el periodo quedó anclado a estos nombres y conceptos, no a hechos puntuales dispersos.",
+                "Reparto entre redes sociales (297 menciones, 67%) y medios digitales (147). La combinación equilibrada de ambos canales produjo tanto aceleración social como registro público persistente, doble carril que conviene leer por separado."
+            ],
+            "mediaInsight": "La cobertura estuvo dominada por medios digitales regionales (gobernantes.com, meganoticias.mx, elsiglodetorreon.com.mx) y redes sociales (Facebook 37 menciones, Twitter 21), sin participación significativa de medios financieros tier-1 ni prensa especializada en mercados de capitales. Este perfil de fuentes reduce la exposición del caso en audiencias corporativas y de inversión, segmentos clave para la reputación de Actinver.",
+            "mediaOutlets": [
+                {
+                    "name": "Threads",
+                    "domain": "threads.com",
+                    "neutral": 1,
+                    "articles": 7,
+                    "negative": 5,
+                    "positive": 1,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Msn",
+                    "domain": "msn.com",
+                    "neutral": 3,
+                    "articles": 5,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Gobernantes",
+                    "domain": "gobernantes.com",
+                    "neutral": 1,
+                    "articles": 5,
+                    "negative": 4,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Meganoticias",
+                    "domain": "meganoticias.mx",
+                    "neutral": 3,
+                    "articles": 5,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Milenio",
+                    "domain": "milenio.com",
+                    "neutral": 3,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "El País",
+                    "domain": "elpais.com",
+                    "neutral": 1,
+                    "articles": 4,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-16T14:06:05.722412+00:00"
+                },
+                {
+                    "name": "Evynchihuahua",
+                    "domain": "evynchihuahua.com",
+                    "neutral": 0,
+                    "articles": 3,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Elsiglodetorreon",
+                    "domain": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "El Universal",
+                    "domain": "eluniversal.com.mx",
+                    "neutral": 3,
+                    "articles": 3,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Polemón",
+                    "domain": "polemon.mx",
+                    "neutral": 0,
+                    "articles": 3,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T21:00:16.145873+00:00"
+                },
+                {
+                    "name": "Sin Embargo",
+                    "domain": "sinembargo.mx",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T18:52:45.173964+00:00"
+                },
+                {
+                    "name": "Aztecaquintanaroo",
+                    "domain": "aztecaquintanaroo.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T21:00:09.592882+00:00"
+                },
+                {
+                    "name": "Binoticias",
+                    "domain": "binoticias.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Efinf",
+                    "domain": "efinf.com",
+                    "neutral": 0,
+                    "articles": 3,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Tvazteca",
+                    "domain": "tvazteca.com",
+                    "neutral": 2,
+                    "articles": 3,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Reforma",
+                    "domain": "reforma.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-21T15:00:19.259408+00:00"
+                },
+                {
+                    "name": "Aristegui Noticias",
+                    "domain": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.211566+00:00"
+                },
+                {
+                    "name": "Oem",
+                    "domain": "oem.com.mx",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.173964+00:00"
+                },
+                {
+                    "name": "Elpoderdelasnoticiasleon",
+                    "domain": "elpoderdelasnoticiasleon.com",
+                    "neutral": 0,
+                    "articles": 2,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Cadenapolitica",
+                    "domain": "cadenapolitica.com",
+                    "neutral": 1,
+                    "articles": 2,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                }
+            ],
+            "keywordsInsight": "Los términos dominantes (fraude, Infonavit, detención, delincuencia organizada, lavado de dinero) anclan la conversación pública exclusivamente al caso del fraude al Infonavit, con carga negativa concentrada en la figura de Zaga Tawil. La presencia marginal de Actinver (6 menciones) y fideicomiso (4 menciones) confirma la desvinculación entre ambos casos en el encuadre mediático del periodo.",
+            "recommendations": [
+                "En el plazo inmediato, se sugiere que el área de comunicación estratégica defina una postura rectora para ordenar la respuesta pública ante el predominio de tono adverso observado. La decisión no pasa por reaccionar a cada mención, sino por fijar un marco interpretativo consistente para las piezas, vocerías y mensajes que eventualmente se activen. Esto ayuda a reducir el riesgo de contradicción narrativa y a evitar que terceros impongan el sentido dominante del tema sin contrapeso institucional.",
+                "En las próximas 2 a 4 semanas, podría convenir priorizar seguimiento ejecutivo y capacidad de respuesta sobre facebook, twitter, facebook.com. La oportunidad está en actuar sobre los espacios que realmente están moldeando percepción, en lugar de dispersar esfuerzos en canales secundarios. El equipo a cargo de asuntos públicos y comunicación reputacional puede usar esta jerarquización para asignar atención según incidencia real y no solo visibilidad aparente.",
+                "Dado que la conversación combina 297 menciones en redes sociales y 147 en medios digitales, se recomienda diferenciar la lógica de gestión por tipo de canal durante el próximo mes. En redes, el foco debería estar en velocidad de lectura, escalamiento y contención de tono; en medios, en contextualización, precisión y permanencia del encuadre. Esta separación permite mitigar riesgo reputacional sin tratar ecosistemas distintos como si respondieran a la misma dinámica.",
+                "Conviene que la dirección responsable evalúe umbrales claros de escalamiento para los próximos días, especialmente si el volumen negativo vuelve a concentrarse en pocos emisores o fechas críticas. La decisión estratégica aquí es anticipar cuándo un tema deja de ser monitoreable y exige coordinación institucional más amplia. Ese criterio reduce improvisación, mejora tiempos de reacción y protege a la organización frente a repuntes que suelen crecer más rápido que la capacidad interna de interpretación.",
+                "En el horizonte de 2 a 4 semanas, se sugiere capitalizar cualquier ventana de tono neutral o positivo para reequilibrar el marco de conversación con mensajes verificables y consistentes. La oportunidad no radica en sobreexponer a la organización, sino en introducir contexto suficiente para que la percepción pública no quede definida únicamente por los vectores adversos. El equipo a cargo de posicionamiento institucional puede evaluar cuándo esa intervención suma credibilidad y cuándo sería preferible reservarla.",
+                "También podría convenir revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esta decisión permite distinguir entre un riesgo que se está ampliando y otro que únicamente se mantiene visible por inercia mediática o social. Para la dirección, esa diferencia es clave porque define si se necesita una acción correctiva de fondo o solo una gestión prudente de continuidad."
+            ],
+            "sourceBreakdown": [
+                {
+                    "count": 122,
+                    "source": "facebook.com",
+                    "neutral": 30,
+                    "negative": 91,
+                    "positive": 1
+                },
+                {
+                    "count": 83,
+                    "source": "twitter.com",
+                    "neutral": 24,
+                    "negative": 59,
+                    "positive": 0
+                },
+                {
+                    "count": 45,
+                    "source": "youtube.com",
+                    "neutral": 12,
+                    "negative": 33,
+                    "positive": 0
+                },
+                {
+                    "count": 36,
+                    "source": "instagram.com",
+                    "neutral": 14,
+                    "negative": 22,
+                    "positive": 0
+                },
+                {
+                    "count": 7,
+                    "source": "tiktok.com",
+                    "neutral": 2,
+                    "negative": 5,
+                    "positive": 0
+                },
+                {
+                    "count": 7,
+                    "source": "threads.com",
+                    "neutral": 1,
+                    "negative": 5,
+                    "positive": 1
+                },
+                {
+                    "count": 5,
+                    "source": "msn.com",
+                    "neutral": 3,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "gobernantes.com",
+                    "neutral": 1,
+                    "negative": 4,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "meganoticias.mx",
+                    "neutral": 3,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "milenio.com",
+                    "neutral": 3,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "elpais.com",
+                    "neutral": 1,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "evynchihuahua.com",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "eluniversal.com.mx",
+                    "neutral": 3,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "polemon.mx",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "sinembargo.mx",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "aztecaquintanaroo.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "binoticias.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "efinf.com",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "tvazteca.com",
+                    "neutral": 2,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "reforma.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "oem.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elpoderdelasnoticiasleon.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "cadenapolitica.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "criteriohidalgo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "sociedad-noticias.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "aztecabajio.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "reddit.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "contrareplica.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "vanguardia.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "plazadearmas.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "mvsnoticias.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "dailymotion.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "xevt.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elceo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "proceso.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "joshuarabintraining.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "open.spotify.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "es.linkedin.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "el-mexicano.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "julioastillero.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "serpientesyescaleras.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendelgolfo.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "informatelaguna.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "canal13mexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "ejecentral.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elpopular.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecaaguascalientes.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lajornadadeoriente.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "podcasts.apple.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "losnoticieristas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecachiapas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecajalisco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecasinaloa.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "music.youtube.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "posta.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "dallasnews.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "pirapolitica.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notiver.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "angulo7.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "periodicocontacto.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elfinanciero.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notese.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "ahoratabasco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "puentelibre.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "latinus.us",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariocambio22.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elimparcial.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lja.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "dospuntos.media",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elnorte.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "am.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elorbe.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nvinoticias.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "laaudiencia.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "consultamonterrey.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "24-horas.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nacion321.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nuevolaredo.tv",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "info7.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendeveracruz.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "somosaltiplano.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sipse.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "xeva.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "yucatan.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "expreso.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "radioformula.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "razon.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sdpnoticias.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "excelsior.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "tribunademexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariodechiapas.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "infobae.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "unotv.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "jornada.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "latintimes.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                }
+            ],
+            "timelineInsight": "El 23 de abril concentró el 52% de la actividad del periodo (62 menciones) tras la confirmación de la detención de Zaga Tawil en Florida por ICE, con cobertura simultánea en medios digitales regionales, redes sociales y plataformas de video. Los días previos (13-15 de abril) registraron actividad moderada (10-17 menciones diarias) vinculada a notas de seguimiento sobre la orden de aprehensión de 2022, mientras que del 16 al 22 de abril la conversación cayó a niveles residuales (1-6 menciones diarias).",
+            "impactAssessment": "La conversación pública sobre Rafael Zaga Tawil durante el periodo monitoreado no generó impacto reputacional directo significativo sobre Actinver. De las 444 menciones totales, solo 6 nombraron explícitamente a Actinver, lo que representa el 1.35% del universo, indicando una desvinculación casi total en el encuadre mediático y social entre la detención de Zaga Tawil por el fraude al Infonavit y el litigio que mantiene contra la casa de bolsa por el supuesto mal manejo de un fideicomiso. La narrativa dominante ancló la figura de Zaga Tawil exclusivamente al fraude al Infonavit, delincuencia organizada y lavado de dinero, sin que medios tier-1 ni autores con alto engagement establecieran conexión con Actinver. Este desacoplamiento representa una oportunidad para que Actinver mantenga separada su reputación del caso Zaga Tawil, siempre que el litigio ante la Corte mexicana no escale en cobertura mediática o que actores externos no busquen vincular ambos casos en futuras narrativas. El riesgo latente radica en que una eventual sentencia o desarrollo judicial del litigio contra Actinver podría reactivar la asociación pública si coincide con nuevos episodios del caso Infonavit, especialmente si autores con tracción como Julio Astillero o medios especializados deciden conectar ambos expedientes.",
+            "platformsInsight": "Facebook concentró el 31% de las menciones (37) con engagement moderado, seguido por Twitter (21 menciones) e Instagram (10). La ausencia de conversación significativa en LinkedIn o medios financieros especializados indica que el caso no penetró en audiencias corporativas ni de inversión, limitando el riesgo reputacional para Actinver en sus segmentos estratégicos.",
+            "narrativesInsight": "Las cinco narrativas identificadas convergen en encuadrar a Zaga Tawil exclusivamente como responsable del fraude al Infonavit, sin que ninguna establezca conexión con el litigio contra Actinver por el supuesto mal manejo de un fideicomiso. La narrativa dominante (detención en Florida) concentra el 85% de las menciones y fija el marco interpretativo público, mientras que las narrativas secundarias refuerzan el deterioro reputacional de Zaga Tawil sin impactar a Actinver.",
+            "sentimentAnalysis": "El 67% de las menciones (296) presentaron sentimiento negativo, impulsado por el encuadre de fraude millonario, delincuencia organizada y lavado de dinero asociado a Rafael Zaga Tawil. El 33% neutral (146 menciones) correspondió principalmente a notas informativas sobre la detención en Florida sin calificativos editoriales, mientras que solo 2 menciones positivas (0.45%) celebraron la captura como un logro de justicia contra la corrupción del sexenio de Peña Nieto. Desde la perspectiva del litigio que Zaga Tawil mantiene contra Actinver por el supuesto mal manejo de un fideicomiso, el tono negativo dominante hacia Zaga Tawil podría interpretarse como favorable para Actinver, ya que deteriora la credibilidad pública del litigante. Sin embargo, esta ventaja es latente y no se materializó en la conversación monitoreada, dado que las 6 menciones que nombraron a Actinver no establecieron una narrativa de defensa ni de contraste reputacional.",
+            "influencersInsight": "Los autores con mayor engagement (Julio Astillero con 276 interacciones, Oscar González Bonilla con 403, MVSNoticias con 396) concentraron su cobertura en el fraude al Infonavit sin mencionar a Actinver. La ausencia de voces con tracción vinculando ambos casos reduce el riesgo de escalamiento reputacional inmediato para Actinver, aunque estos mismos autores podrían reactivar la conexión si el litigio del fideicomiso avanza judicialmente.",
+            "totalUniqueAuthors": 267
+        },
+        "client_id": null,
+        "created_at": "2026-04-24T18:58:46.950553+00:00",
+        "created_by": "0b9b775b-379b-4446-a4a1-90044d34806a",
+        "date_range": {
+            "end": "2026-04-24T18:45:54.328Z",
+            "label": "Últimos 30 días",
+            "start": "2026-03-25T06:00:00.000Z"
+        },
+        "expires_at": "2026-05-24T18:58:46.52+00:00",
+        "is_revoked": false,
+        "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+        "updated_at": "2026-05-20T00:01:04.669187+00:00",
+        "view_count": 3,
+        "report_kind": "listening",
+        "project_name": "Zaga",
+        "last_viewed_at": "2026-05-20T00:01:04.669187+00:00"
+    },
+    {
+        "id": "54099d38-061b-4f03-b762-fbe807c5dc6e",
+        "title": "Monitoreo estratégico: impacto reputacional del caso Rafael Zaga Tawil sobre Actinver (abril 2026)",
+        "content": {
+            "title": "Monitoreo estratégico: impacto reputacional del caso Rafael Zaga Tawil sobre Actinver (abril 2026)",
+            "metrics": {
+                "topSources": [
+                    "oem.com.mx",
+                    "vocesnacionales.com",
+                    "889noticias.mx",
+                    "endirectomx.com",
+                    "facebook.com"
+                ],
+                "neutralCount": 209,
+                "negativeCount": 523,
+                "positiveCount": 12,
+                "totalMentions": 924,
+                "estimatedReach": 2650195,
+                "estimatedImpressions": 3785993
+            },
+            "summary": "Durante abril de 2026 se registraron **924 menciones** vinculadas a Rafael Zaga Tawil, con un **57% de tono negativo** y un pico de **924 menciones el 14 de abril**, día en que se difundió su detención por el Servicio de Inmigración y Control de Aduanas de Estados Unidos (ICE) en Florida. La conversación se concentró en **Facebook (264 menciones)**, **Twitter (216)** e **Instagram (63)**, con un engagement acumulado de **80,920 interacciones** y cobertura en **46 medios tier-1**, lo que configura un escenario de **severidad reputacional confirmada**. **Actinver** fue mencionada en **7 ocasiones** dentro del universo total, siempre en contexto del litigio por el supuesto mal manejo de un fideicomiso, mientras que **8 menciones** hicieron referencia a la **Corte** mexicana donde se ventila el caso. La narrativa dominante vincula a Zaga Tawil con fraude al Infonavit y delincuencia organizada, sin embargo, la presencia de Actinver en la conversación pública es marginal y acotada a medios especializados y redes sociales de nicho, lo que limita —por ahora— el riesgo de contagio reputacional directo hacia la institución financiera.",
+            "keywords": [
+                {
+                    "term": "Rafael Zaga Tawil",
+                    "count": 924,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "detención",
+                    "count": 412,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "ICE",
+                    "count": 398,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "fraude",
+                    "count": 318,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Infonavit",
+                    "count": 305,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Florida",
+                    "count": 275,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "delincuencia organizada",
+                    "count": 156,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "lavado de dinero",
+                    "count": 142,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Teófilo Zaga",
+                    "count": 89,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "David Penchyna",
+                    "count": 67,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "FGR",
+                    "count": 54,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "indemnización ilegal",
+                    "count": 48,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "empresas fachada",
+                    "count": 41,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "facturas falsas",
+                    "count": 38,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "CFE",
+                    "count": 31,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "saqueo",
+                    "count": 28,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "corrupción",
+                    "count": 24,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Corte",
+                    "count": 8,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "Actinver",
+                    "count": 7,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "fideicomiso",
+                    "count": 6,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "irregularidades migratorias",
+                    "count": 5,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "extradición",
+                    "count": 4,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "custodia",
+                    "count": 3,
+                    "sentiment": "neutral"
+                }
+            ],
+            "timeline": [
+                {
+                    "date": "2026-04-08",
+                    "count": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-13",
+                    "count": 101,
+                    "negative": 65,
+                    "positive": 6
+                },
+                {
+                    "date": "2026-04-14",
+                    "count": 275,
+                    "negative": 213,
+                    "positive": 5
+                },
+                {
+                    "date": "2026-04-15",
+                    "count": 109,
+                    "negative": 70,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-16",
+                    "count": 55,
+                    "negative": 40,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-17",
+                    "count": 5,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-18",
+                    "count": 16,
+                    "negative": 15,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-19",
+                    "count": 12,
+                    "negative": 12,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-20",
+                    "count": 11,
+                    "negative": 8,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-21",
+                    "count": 33,
+                    "negative": 29,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-22",
+                    "count": 68,
+                    "negative": 31,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-23",
+                    "count": 69,
+                    "negative": 37,
+                    "positive": 1
+                },
+                {
+                    "date": "2026-04-25",
+                    "count": 23,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-26",
+                    "count": 31,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-27",
+                    "count": 16,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-28",
+                    "count": 38,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-29",
+                    "count": 30,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-30",
+                    "count": 31,
+                    "negative": 0,
+                    "positive": 0
+                }
+            ],
+            "templates": {
+                "public": "📊 Monitoreo estratégico: impacto reputacional del caso Rafael Zaga Tawil sobre Actinver (abril 2026)",
+                "executive": "Durante abril de 2026 se registraron **924 menciones** vinculadas a Rafael Zaga Tawil, con un **57% de tono negativo** y un pico de **924 menciones el 14 de abril**, día en que se difundió su detención por el Servicio de Inmigración y Control de Aduanas de Estados Unidos (ICE) en Florida. La conversación se concentró en **Facebook (264 menciones)**, **Twitter (216)** e **Instagram (63)**, con un engagement acumulado de **80,920 interacciones** y cobertura en **46 medios tier-1**, lo que configura un escenario de **severidad reputacional confirmada**. **Actinver** fue mencionada en **7 ocasiones** dentro del universo total, siempre en contexto del litigio por el supuesto mal manejo de un fideicomiso, mientras que **8 menciones** hicieron referencia a la **Corte** mexicana donde se ventila el caso. La narrativa dominante vincula a Zaga Tawil con fraude al Infonavit y delincuencia organizada, sin embargo, la presencia de Actinver en la conversación pública es marginal y acotada a medios especializados y redes sociales de nicho, lo que limita —por ahora— el riesgo de contagio reputacional directo hacia la institución financiera.",
+                "technical": "Durante abril de 2026 se registraron **924 menciones** vinculadas a Rafael Zaga Tawil, con un **57% de tono negativo** y un pico de **924 menciones el 14 de abril**, día en que se difundió su detención por el Servicio de Inmigración y Control de Aduanas de Estados Unidos (ICE) en Florida. La conversación se concentró en **Facebook (264 menciones)**, **Twitter (216)** e **Instagram (63)**, con un engagement acumulado de **80,920 interacciones** y cobertura en **46 medios tier-1**, lo que configura un escenario de **severidad reputacional confirmada**. **Actinver** fue mencionada en **7 ocasiones** dentro del universo total, siempre en contexto del litigio por el supuesto mal manejo de un fideicomiso, mientras que **8 menciones** hicieron referencia a la **Corte** mexicana donde se ventila el caso. La narrativa dominante vincula a Zaga Tawil con fraude al Infonavit y delincuencia organizada, sin embargo, la presencia de Actinver en la conversación pública es marginal y acotada a medios especializados y redes sociales de nicho, lo que limita —por ahora— el riesgo de contagio reputacional directo hacia la institución financiera."
+            },
+            "narratives": [
+                {
+                    "trend": "decreciente",
+                    "mentions": 412,
+                    "narrative": "Detención de Zaga Tawil por ICE y controversias migratorias",
+                    "sentiment": "negativo",
+                    "description": "Cobertura factual y crítica de la detención de Rafael Zaga Tawil en Florida por el Servicio de Inmigración y Control de Aduanas de Estados Unidos (ICE), con énfasis en irregularidades migratorias y su estatus de custodia. Presente en medios como oem.com.mx, vocesnacionales.com, 889noticias.mx, endirectomx.com, elpais.com, excelsior.com.mx, y en redes sociales (Facebook, Twitter, Instagram, Threads). Autores y medios especializados en seguridad y justicia amplifican la noticia, vinculándola con el historial de controversias legales del empresario."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 318,
+                    "narrative": "Acusaciones de fraude al Infonavit y desfalco millonario",
+                    "sentiment": "negativo",
+                    "description": "Narrativa que vincula a Zaga Tawil con un presunto fraude de 5,000 millones de pesos al Infonavit, atribuido a una indemnización ilegal negociada en 2017 durante la gestión de David Penchyna como director del instituto. Presente en 889noticias.mx, sergiovalle.mx, guillermoortega.com, TikTok y Threads. Medios regionales y cuentas de análisis político amplifican el encuadre de corrupción institucional y saqueo de recursos públicos, con referencias a facturas falsas, empresas fachada y millones ocultos."
+                },
+                {
+                    "trend": "creciente",
+                    "mentions": 156,
+                    "narrative": "Delincuencia organizada, lavado de dinero y vínculos con su hermano Teófilo",
+                    "sentiment": "negativo",
+                    "description": "Cobertura que señala a Rafael Zaga Tawil y a su hermano Teófilo como acusados por la Fiscalía General de la República (FGR) de delincuencia organizada y lavado de dinero, con referencias a operaciones de saqueo y ocultamiento de activos. Presente en TikTok, Threads, Instagram y medios digitales especializados. La narrativa se amplifica en redes sociales con contenido audiovisual y análisis de usuarios que vinculan el caso con redes de corrupción más amplias."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 7,
+                    "narrative": "Litigio contra Actinver por mal manejo de fideicomiso",
+                    "sentiment": "negativo",
+                    "description": "Mención acotada del litigio que Rafael Zaga Tawil mantiene contra Actinver por el supuesto mal manejo de un fideicomiso, en proceso ante la Corte mexicana. Presente de forma marginal en menciones de contexto en redes sociales y medios digitales, sin cobertura editorial amplia ni amplificación por voces con alta tracción. La narrativa no se desarrolla de forma autónoma y aparece subordinada a la cobertura de las acusaciones de fraude al Infonavit y delincuencia organizada."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 31,
+                    "narrative": "Posible fraude a la Comisión Federal de Electricidad (CFE)",
+                    "sentiment": "negativo",
+                    "description": "Referencias emergentes en TikTok y redes sociales a un posible fraude por 1,000 millones de pesos vinculado a la CFE, mencionado en contexto de análisis sobre el historial de controversias de Zaga Tawil. La narrativa carece de cobertura editorial verificada en medios tier-1 y se limita a especulación en redes sociales, sin desarrollo factual ni fuentes oficiales citadas."
+                }
+            ],
+            "conclusions": [
+            ],
+            "influencers": [
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "12,515 interacciones",
+                    "mentions": 3,
+                    "platform": "facebook.com",
+                    "username": "joaquínlópez-dóriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "El Chapucero",
+                    "reach": "8,584 interacciones",
+                    "mentions": 3,
+                    "platform": "facebook.com",
+                    "username": "elchapucero",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Gloria en Contexto",
+                    "reach": "8,080 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "gloriaencontexto",
+                    "avatarUrl": null,
+                    "sentiment": "mixto"
+                },
+                {
+                    "name": "Simón Levy",
+                    "reach": "6,464 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "simónlevy",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Latinus",
+                    "reach": "5,574 interacciones",
+                    "mentions": 4,
+                    "platform": "facebook.com",
+                    "username": "Latinus",
+                    "avatarUrl": null,
+                    "sentiment": "mixto"
+                },
+                {
+                    "name": "Azucena Uresti",
+                    "reach": "4,292 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "azucenau",
+                    "avatarUrl": null,
+                    "sentiment": "positivo"
+                },
+                {
+                    "name": "ZuritaCarpio",
+                    "reach": "2,881 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "ZuritaCarpio",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "2,537 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "aztecanoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Pável Argáez",
+                    "reach": "1,817 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "pávelargáez",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "La Izquierda Noticias México",
+                    "reach": "1,543 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "IzqNoticiasMx",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "1,515 interacciones",
+                    "mentions": 3,
+                    "platform": "twitter.com",
+                    "username": "lopezdoriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Liz Vilchis",
+                    "reach": "1,441 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "lizvilchis",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Código Magenta",
+                    "reach": "1,382 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "códigomagenta",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "1,338 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "AztecaNoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Blanco y Negro",
+                    "reach": "1,199 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "blancoynegro",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "TORI Noticias",
+                    "reach": "1,088 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "tori_noticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "José Díaz",
+                    "reach": "822 interacciones",
+                    "mentions": 2,
+                    "platform": "twitter.com",
+                    "username": "JJDiazMachuca",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Sin Embargo MX",
+                    "reach": "798 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "sinembargomx",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "David Vargas Araujo",
+                    "reach": "762 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "DavidVargasA18",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "EL PAÍS México",
+                    "reach": "718 interacciones",
+                    "mentions": 3,
+                    "platform": "facebook.com",
+                    "username": "elpaísméxico",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                }
+            ],
+            "keyFindings": [
+                "Distribución de sentimiento: 924 menciones en el periodo, 523 negativas (57%), 12 positivas (1%) y 209 neutrales (23%). En lectura ejecutiva, el periodo cierra con carga reputacional mayoritariamente adversa: la conversación pública se vuelve un terreno hostil que define el encuadre dominante de la ventana monitoreada.",
+                "Concentración de cobertura: Twitter (216 menciones), Facebook (264 menciones), facebook.com (88). twitter concentra 22% del volumen total con tono mayoritariamente adverso dentro de ese canal (131 de 203 negativas). Esto vuelve a twitter el canal donde se está fijando primero la lectura pública del periodo, por encima de cualquier otra plataforma de la muestra.",
+                "Voces con tracción medible: Joaquín López-Dóriga en facebook (3 publicaciones; 12,515 interacciones acumuladas); El Chapucero en facebook (3 publicaciones; 8,584 interacciones acumuladas); Gloria en Contexto en facebook (2 publicaciones; 8,080 interacciones acumuladas). Estas cuentas concentran 29,179 interacciones en la muestra, por lo que un encuadre adverso en cualquiera de ellas escala más por capacidad de arrastre del emisor que por volumen disperso.",
+                "Pico de actividad: 2026-04-14 con 275 menciones (30% del total). Entre lo publicado ese día destacan piezas como \"México en el espejo roto del periodismo - Voces Nacionales\" en vocesnacionales.com y \"Se reaviva el presunto desfalco de 5 mil millones al Infonavit de ...\" en 889noticias.mx. La concentración indica un detonador puntual y no un crecimiento sostenido: esa jornada funciona como punto de máxima exposición acumulada del periodo.",
+                "Términos más reiterados: Rafael Zaga Tawil (924). Estos son los marcos concretos que están estructurando el encuadre de la conversación más allá de titulares aislados; la reiteración indica que el periodo quedó anclado a estos nombres y conceptos, no a hechos puntuales dispersos.",
+                "Reparto entre redes sociales (varias menciones, 70%) y medios digitales (281). El predominio de redes (70%) indica que la exposición fue principalmente reactiva: conversación impulsada por usuarios, no por cobertura editorial estructurada. Esto eleva la velocidad pero baja la durabilidad del registro."
+            ],
+            "mediaInsight": "La cobertura editorial se concentra en **46 medios tier-1** y portales especializados en justicia y seguridad (oem.com.mx, vocesnacionales.com, 889noticias.mx, elpais.com, excelsior.com.mx), con encuadre factual sobre la detención de Zaga Tawil y crítico sobre las acusaciones de fraude al Infonavit. **Actinver no aparece en titulares ni en el cuerpo principal de las piezas editoriales analizadas**, lo que limita su exposición en la agenda mediática de alto impacto.",
+            "mediaOutlets": [
+                {
+                    "name": "Threads",
+                    "domain": "threads.com",
+                    "neutral": 1,
+                    "articles": 19,
+                    "negative": 5,
+                    "positive": 1,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-30T21:00:18.977815+00:00"
+                },
+                {
+                    "name": "Msn",
+                    "domain": "msn.com",
+                    "neutral": 3,
+                    "articles": 14,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-30T21:00:15.225189+00:00"
+                },
+                {
+                    "name": "Gobernantes",
+                    "domain": "gobernantes.com",
+                    "neutral": 1,
+                    "articles": 9,
+                    "negative": 4,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-25T03:00:15.230372+00:00"
+                },
+                {
+                    "name": "Meganoticias",
+                    "domain": "meganoticias.mx",
+                    "neutral": 3,
+                    "articles": 8,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-30T21:00:18.977815+00:00"
+                },
+                {
+                    "name": "Elsiglodetorreon",
+                    "domain": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "articles": 8,
+                    "negative": 4,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-28T09:00:21.259052+00:00"
+                },
+                {
+                    "name": "Oem",
+                    "domain": "oem.com.mx",
+                    "neutral": 2,
+                    "articles": 7,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-29T15:00:23.16907+00:00"
+                },
+                {
+                    "name": "El País",
+                    "domain": "elpais.com",
+                    "neutral": 1,
+                    "articles": 6,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-25T03:00:11.271085+00:00"
+                },
+                {
+                    "name": "Elceo",
+                    "domain": "elceo.com",
+                    "neutral": 1,
+                    "articles": 6,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-29T15:00:23.16907+00:00"
+                },
+                {
+                    "name": "Sergiovalle",
+                    "domain": "sergiovalle.mx",
+                    "neutral": 0,
+                    "articles": 5,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-28T15:00:06.702956+00:00"
+                },
+                {
+                    "name": "Mvsnoticias",
+                    "domain": "mvsnoticias.com",
+                    "neutral": 0,
+                    "articles": 5,
+                    "negative": 4,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-30T21:00:15.225189+00:00"
+                },
+                {
+                    "name": "Sociedad Noticias",
+                    "domain": "sociedad-noticias.com",
+                    "neutral": 2,
+                    "articles": 5,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-29T15:00:23.16907+00:00"
+                },
+                {
+                    "name": "Polemón",
+                    "domain": "polemon.mx",
+                    "neutral": 0,
+                    "articles": 5,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-28T15:00:06.702956+00:00"
+                },
+                {
+                    "name": "Tvazteca",
+                    "domain": "tvazteca.com",
+                    "neutral": 2,
+                    "articles": 5,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-25T03:00:15.230372+00:00"
+                },
+                {
+                    "name": "El Universal",
+                    "domain": "eluniversal.com.mx",
+                    "neutral": 3,
+                    "articles": 5,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T21:00:21.161322+00:00"
+                },
+                {
+                    "name": "Serpientesyescaleras",
+                    "domain": "serpientesyescaleras.mx",
+                    "neutral": 1,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-28T09:00:17.857118+00:00"
+                },
+                {
+                    "name": "Aristegui Noticias",
+                    "domain": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-26T03:00:19.971093+00:00"
+                },
+                {
+                    "name": "Sin Embargo",
+                    "domain": "sinembargo.mx",
+                    "neutral": 1,
+                    "articles": 4,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-25T03:00:15.230372+00:00"
+                },
+                {
+                    "name": "Milenio",
+                    "domain": "milenio.com",
+                    "neutral": 3,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Es Us Noticias Yahoo",
+                    "domain": "es-us.noticias.yahoo.com",
+                    "neutral": 0,
+                    "articles": 4,
+                    "negative": 4,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-14T20:43:13.245826+00:00"
+                },
+                {
+                    "name": "El Economista",
+                    "domain": "eleconomista.com.mx",
+                    "neutral": 0,
+                    "articles": 3,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-30T21:00:15.225189+00:00"
+                }
+            ],
+            "keywordsInsight": "Los términos **\"fraude\" (318), \"Infonavit\" (305), \"delincuencia organizada\" (156) y \"lavado de dinero\" (142)** anclan el encuadre adverso dominante, mientras que **\"Actinver\" (7) y \"fideicomiso\" (6)** tienen presencia residual. La conversación pública asocia a Zaga Tawil con corrupción institucional y delitos financieros graves, pero no ha consolidado una vinculación semántica sistemática con la institución financiera.",
+            "recommendations": [
+                "En el plazo inmediato, convendría construir una **postura propia** frente al predominio de tono adverso observado, usando datos verificables y lenguaje público claro. La meta no es administrar la conversación desde una autoridad, sino participar con una voz reconocible en los temas que ya están captando atención. Esto permite entrar al debate sin depender del encuadre que impongan actores con mayor volumen inicial.",
+                "En las próximas **2 a 4 semanas**, se sugiere priorizar presencia en twitter, facebook, facebook.com. La decisión útil es identificar dónde se está formando opinión y concentrar ahí contenidos, voceros aliados y piezas breves de explicación pública. Para activistas, empresarios o actores ciudadanos, esa focalización evita dispersión y mejora capacidad de incidencia.",
+                "Dado que la conversación combina **varias menciones en redes sociales** y **281 en medios digitales**, conviene separar tácticas por ecosistema durante el próximo mes. En redes, la prioridad es conversación, oportunidad y velocidad; en medios, contexto, argumentos verificables y permanencia del mensaje. Esa diferencia ayuda a participar sin tratar todos los espacios como si exigieran la misma respuesta.",
+                "Si el volumen adverso vuelve a concentrarse en pocos emisores o fechas críticas, podría convenir activar una red de **aliados y voces creíbles** antes de que el encuadre se consolide. La acción no sería pedir una reacción oficial, sino abrir conversación pública con testimonios, datos locales y argumentos compartibles. Este enfoque amplía presencia desde el espacio ciudadano y privado, sin asumir control sobre el debate.",
+                "En el horizonte de **2 a 4 semanas**, se sugiere aprovechar cualquier ventana neutral o positiva para introducir contexto propio sobre los temas con mayor interés público. La oportunidad está en sumar información útil, casos concretos y propuestas entendibles, no en sobreexponer una marca u organización. Para participantes externos, esa entrada gradual puede convertir escucha digital en presencia pública sostenida.",
+                "También convendría revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esa lectura permite decidir cuándo publicar, cuándo sumar aliados y cuándo dejar que una conversación pierda fuerza por sí sola. La utilidad está en escoger momentos de participación, no en intentar controlar todo el debate."
+            ],
+            "sourceBreakdown": [
+                {
+                    "count": 264,
+                    "source": "facebook.com",
+                    "neutral": 45,
+                    "negative": 181,
+                    "positive": 1
+                },
+                {
+                    "count": 216,
+                    "source": "twitter.com",
+                    "neutral": 66,
+                    "negative": 140,
+                    "positive": 10
+                },
+                {
+                    "count": 63,
+                    "source": "instagram.com",
+                    "neutral": 14,
+                    "negative": 26,
+                    "positive": 0
+                },
+                {
+                    "count": 58,
+                    "source": "youtube.com",
+                    "neutral": 17,
+                    "negative": 38,
+                    "positive": 0
+                },
+                {
+                    "count": 32,
+                    "source": "tiktok.com",
+                    "neutral": 2,
+                    "negative": 5,
+                    "positive": 0
+                },
+                {
+                    "count": 19,
+                    "source": "threads.com",
+                    "neutral": 1,
+                    "negative": 5,
+                    "positive": 1
+                },
+                {
+                    "count": 14,
+                    "source": "msn.com",
+                    "neutral": 3,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 9,
+                    "source": "gobernantes.com",
+                    "neutral": 1,
+                    "negative": 4,
+                    "positive": 0
+                },
+                {
+                    "count": 8,
+                    "source": "meganoticias.mx",
+                    "neutral": 3,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 8,
+                    "source": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "negative": 4,
+                    "positive": 0
+                },
+                {
+                    "count": 7,
+                    "source": "oem.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 6,
+                    "source": "elpais.com",
+                    "neutral": 1,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 6,
+                    "source": "elceo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "sergiovalle.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "mvsnoticias.com",
+                    "neutral": 0,
+                    "negative": 4,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "sociedad-noticias.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "polemon.mx",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "tvazteca.com",
+                    "neutral": 2,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 5,
+                    "source": "eluniversal.com.mx",
+                    "neutral": 3,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "reddit.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "serpientesyescaleras.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "sinembargo.mx",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "milenio.com",
+                    "neutral": 3,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "es-us.noticias.yahoo.com",
+                    "neutral": 0,
+                    "negative": 4,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "eleconomista.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "es.linkedin.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "pressreader.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "unotv.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "contrareplica.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "jornada.com.mx",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "infobae.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "elfinanciero.com.mx",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "evynchihuahua.com",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "aztecaquintanaroo.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "binoticias.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "efinf.com",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "reforma.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "vocesnacionales.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "trespm.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "eldiariodelnoroeste.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "primeralinea.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "axisnegocios.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "criteriohidalgo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elpoderdelasnoticiasleon.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "cadenapolitica.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "lajornadadeoriente.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "ejecentral.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "aztecabajio.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "dallasnews.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "vanguardia.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "plazadearmas.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "dailymotion.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "latinus.us",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "xevt.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "nmas.com.mx",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "889noticias.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "endirectomx.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "guillermoortega.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "legislacion.edomex.gob.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "music.amazon.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "produhome.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diario21.com.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "cconoticias.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elobservadornacionalmx.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "shows.acast.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "universalnoticias.com.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "bbmnoticias.com",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "emmanuelameth.com.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "exilio.mx",
+                    "neutral": 0,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "proceso.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "joshuarabintraining.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "open.spotify.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "el-mexicano.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "informatelaguna.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "canal13mexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "julioastillero.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendelgolfo.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecaaguascalientes.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elpopular.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "losnoticieristas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecajalisco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "pirapolitica.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecachiapas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "music.youtube.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "posta.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "podcasts.apple.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecasinaloa.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notiver.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "angulo7.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "periodicocontacto.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notese.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "dospuntos.media",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "puentelibre.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "ahoratabasco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariocambio22.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lja.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elimparcial.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nvinoticias.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elnorte.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "am.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elorbe.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "laaudiencia.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "consultamonterrey.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "24-horas.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nacion321.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "somosaltiplano.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "info7.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendeveracruz.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nuevolaredo.tv",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sipse.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "xeva.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "yucatan.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "expreso.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "tribunademexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "excelsior.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "razon.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "radioformula.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sdpnoticias.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariodechiapas.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "latintimes.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nxnoticias.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "zocalo.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "publimetro.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diarioelindependiente.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "tribunadelabahia.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "abcnoticias.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "gamavision.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "mgnoticias.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "agendaqr.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lopezdoriga.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "forbes.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lasillarota.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "superchannel12.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "termometroenlinea.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "netnoticias.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "heraldodemexico.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sintesis.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "adnsureste.info",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sonorapresente.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "memoriacolectiva.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                }
+            ],
+            "timelineInsight": "El **14 de abril** concentró **275 menciones** (30% del total mensual) tras la difusión de la detención de Zaga Tawil por ICE en Florida, seguido por **109 menciones el 15 de abril** y **101 el 13 de abril**. La actividad cayó a niveles residuales entre el 16 y el 26 de abril, con un repunte menor los días **27-30 de abril** (31 menciones) acumuladas) impulsado por cobertura en TikTok y Threads que retomó el caso en clave de análisis político y judicial.",
+            "impactAssessment": "El litigio de Rafael Zaga Tawil contra Actinver por el supuesto mal manejo de un fideicomiso permanece como un elemento latente en la conversación pública, pero su presencia es cuantitativamente marginal: **solo 924 menciones de las 924 totales** vinculan explícitamente a la institución financiera con el caso. La detención de Zaga Tawil en Estados Unidos reactivó la cobertura mediática sobre sus controversias legales, sin embargo, el encuadre dominante se concentra en el presunto fraude al Infonavit y en acusaciones de delincuencia organizada y lavado de dinero, desplazando el litigio contra Actinver a un plano secundario. La **severidad reputacional del periodo es alta para Zaga Tawil** (engagement de 80,920 interacciones, 46 medios tier-1), pero el **riesgo de contagio hacia Actinver es acotado** en tanto la narrativa pública no ha establecido una asociación sistemática entre ambos actores. No obstante, la permanencia del litigio ante la Corte mexicana y la posibilidad de que nuevos desarrollos judiciales o mediáticos reactiven la mención de Actinver en contextos adversos constituyen un riesgo latente que conviene monitorear de forma continua, especialmente si el caso Zaga Tawil escala en cobertura o si actores con alta tracción digital deciden vincular explícitamente a la institución financiera con las controversias del empresario.",
+            "platformsInsight": "**Facebook (264 menciones) y Twitter (216)** concentran el **52% del volumen total**, seguidos por **Instagram (63)** y **TikTok (32)**. La conversación en redes sociales es predominantemente reactiva a la cobertura editorial, con bajo nivel de contenido original generado por usuarios. La presencia en TikTok y Threads (19) al cierre del periodo sugiere un potencial de reactivación en plataformas de video corto y conversación emergente.",
+            "narrativesInsight": "La conversación pública sobre Rafael Zaga Tawil está dominada por **dos narrativas adversas consolidadas**: su detención por ICE (924 menciones) y las acusaciones de fraude al Infonavit (924 menciones), que concentran el **79% del volumen total**. El litigio contra Actinver permanece marginal (7 menciones) y subordinado a encuadres de mayor impacto mediático, lo que limita su capacidad de contagio reputacional hacia la institución financiera en el corto plazo.",
+            "sentimentAnalysis": "El **57% de las 924 menciones** presenta tono negativo, concentrado en la figura de Rafael Zaga Tawil y en las acusaciones de fraude, delincuencia organizada y lavado de dinero que pesan sobre él. El **23% neutral** corresponde a cobertura factual de su detención por ICE, mientras que el **1% positivo** es residual y no configura una narrativa de defensa o contrapeso. Desde la perspectiva del litigio contra Actinver, el tono adverso hacia Zaga Tawil **no se traduce en exposición reputacional directa para la institución financiera**, dado que las 7 menciones que la nombran se limitan a contextualizar el litigio sin atribuirle responsabilidad en los delitos que dominan la conversación pública. Sin embargo, la asociación semántica entre \"fraude\", \"Infonavit\" y \"Zaga Tawil\" en el 57% negativo del corpus genera un entorno de riesgo latente: cualquier escalamiento mediático que vincule a Actinver con el empresario podría heredar parte de la carga adversa acumulada en este periodo.",
+            "influencersInsight": "No se identificaron voces individuales con tracción digital significativa (≥3 menciones y ≥500 interacciones acumuladas) que lideren la conversación sobre el caso. La amplificación proviene de **medios tier-1 (varias menciones editoriales)** y de la **distribución horizontal en redes sociales** (Facebook 264, Twitter 216), sin concentración en influenciadores específicos. Este patrón reduce el riesgo de escalamiento viral impulsado por voceros adversos con alta capacidad de movilización.",
+            "totalUniqueAuthors": 511
+        },
+        "client_id": null,
+        "created_at": "2026-07-09T16:58:01.854533+00:00",
+        "created_by": "0b9b775b-379b-4446-a4a1-90044d34806a",
+        "date_range": {
+            "end": "2026-05-01T05:59:59.999Z",
+            "label": "1 abr - 30 abr 2026",
+            "start": "2026-04-01T06:00:00.000Z"
+        },
+        "expires_at": "2026-08-08T16:58:01.466+00:00",
+        "is_revoked": false,
+        "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+        "updated_at": "2026-07-09T16:58:07.076661+00:00",
+        "view_count": 1,
+        "report_kind": "listening",
+        "project_name": "Zaga",
+        "last_viewed_at": "2026-07-09T16:58:07.076661+00:00"
+    },
+    {
+        "id": "279daac2-dd7b-4e72-93f6-268ceac1b13c",
+        "title": "Detención de Rafael Zaga Tawil en Florida: impacto reputacional limitado sobre Actinver en conversación dominada por fraude al Infonavit",
+        "content": {
+            "title": "Detención de Rafael Zaga Tawil en Florida: impacto reputacional limitado sobre Actinver en conversación dominada por fraude al Infonavit",
+            "metrics": {
+                "topSources": [
+                    "facebook",
+                    "twitter",
+                    "eluniversal.com.mx",
+                    "facebook.com",
+                    "meganoticias.mx"
+                ],
+                "neutralCount": 155,
+                "negativeCount": 288,
+                "positiveCount": 1,
+                "totalMentions": 444,
+                "estimatedReach": 866618,
+                "estimatedImpressions": 1333258
+            },
+            "summary": "Entre el 12 y el 23 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, concentradas en su detención por ICE en Florida el 13 de abril. El 65% de las menciones presentó tono negativo, impulsado por medios regionales en Facebook (37 menciones) y cuentas de periodistas como Julio Astillero (276 interacciones acumuladas) y Oscar González Bonilla (403 interacciones). La narrativa dominante vincula a Zaga Tawil con un presunto fraude de 5,000 millones de pesos al Infonavit durante el sexenio de Peña Nieto, sin embargo, Actinver aparece en apenas 6 menciones del universo total, lo que representa el 1.4% de la conversación. La cobertura no establece conexión explícita entre la detención y el litigio que Zaga Tawil mantiene contra Actinver por el supuesto mal manejo de un fideicomiso, caso que permanece ante la Corte mexicana. Los picos de actividad se registraron el 23 de abril (41 menciones) y el 22 de abril (22 menciones), impulsados por la difusión de la noticia de detención y posteriores actualizaciones sobre su situación migratoria. La baja presencia de Actinver en la conversación sugiere que el evento no ha generado asociación pública significativa entre la detención y el litigio que afecta a la institución financiera.",
+            "keywords": [
+                {
+                    "term": "Rafael Zaga Tawil",
+                    "count": 444,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "fraude",
+                    "count": 312,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Infonavit",
+                    "count": 298,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "detención",
+                    "count": 187,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Florida",
+                    "count": 165,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "ICE",
+                    "count": 142,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "empresario",
+                    "count": 128,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "millonario",
+                    "count": 95,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "prófugo",
+                    "count": 78,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "Peña Nieto",
+                    "count": 64,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "sexenio",
+                    "count": 52,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "acusado",
+                    "count": 48,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "autoridades",
+                    "count": 41,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "México",
+                    "count": 38,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "justicia",
+                    "count": 29,
+                    "sentiment": "mixto"
+                },
+                {
+                    "term": "captura",
+                    "count": 24,
+                    "sentiment": "negativo"
+                },
+                {
+                    "term": "inmigración",
+                    "count": 19,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "Actinver",
+                    "count": 6,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "Corte",
+                    "count": 5,
+                    "sentiment": "neutral"
+                },
+                {
+                    "term": "fideicomiso",
+                    "count": 3,
+                    "sentiment": "neutral"
+                }
+            ],
+            "timeline": [
+                {
+                    "date": "2026-04-13",
+                    "count": 32,
+                    "negative": 23,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-14",
+                    "count": 63,
+                    "negative": 46,
+                    "positive": 1
+                },
+                {
+                    "date": "2026-04-15",
+                    "count": 108,
+                    "negative": 70,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-16",
+                    "count": 55,
+                    "negative": 40,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-17",
+                    "count": 5,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-18",
+                    "count": 16,
+                    "negative": 15,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-19",
+                    "count": 12,
+                    "negative": 12,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-20",
+                    "count": 11,
+                    "negative": 8,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-21",
+                    "count": 33,
+                    "negative": 29,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-22",
+                    "count": 68,
+                    "negative": 31,
+                    "positive": 0
+                },
+                {
+                    "date": "2026-04-23",
+                    "count": 41,
+                    "negative": 11,
+                    "positive": 0
+                }
+            ],
+            "templates": {
+                "public": "📊 Detención de Rafael Zaga Tawil en Florida: impacto reputacional limitado sobre Actinver en conversación dominada por fraude al Infonavit",
+                "executive": "Entre el 12 y el 23 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, concentradas en su detención por ICE en Florida el 13 de abril. El 65% de las menciones presentó tono negativo, impulsado por medios regionales en Facebook (37 menciones) y cuentas de periodistas como Julio Astillero (276 interacciones acumuladas) y Oscar González Bonilla (403 interacciones). La narrativa dominante vincula a Zaga Tawil con un presunto fraude de 5,000 millones de pesos al Infonavit durante el sexenio de Peña Nieto, sin embargo, Actinver aparece en apenas 6 menciones del universo total, lo que representa el 1.4% de la conversación. La cobertura no establece conexión explícita entre la detención y el litigio que Zaga Tawil mantiene contra Actinver por el supuesto mal manejo de un fideicomiso, caso que permanece ante la Corte mexicana. Los picos de actividad se registraron el 23 de abril (41 menciones) y el 22 de abril (22 menciones), impulsados por la difusión de la noticia de detención y posteriores actualizaciones sobre su situación migratoria. La baja presencia de Actinver en la conversación sugiere que el evento no ha generado asociación pública significativa entre la detención y el litigio que afecta a la institución financiera.",
+                "technical": "Entre el 12 y el 23 de abril de 2026 se registraron 444 menciones sobre Rafael Zaga Tawil, concentradas en su detención por ICE en Florida el 13 de abril. El 65% de las menciones presentó tono negativo, impulsado por medios regionales en Facebook (37 menciones) y cuentas de periodistas como Julio Astillero (276 interacciones acumuladas) y Oscar González Bonilla (403 interacciones). La narrativa dominante vincula a Zaga Tawil con un presunto fraude de 5,000 millones de pesos al Infonavit durante el sexenio de Peña Nieto, sin embargo, Actinver aparece en apenas 6 menciones del universo total, lo que representa el 1.4% de la conversación. La cobertura no establece conexión explícita entre la detención y el litigio que Zaga Tawil mantiene contra Actinver por el supuesto mal manejo de un fideicomiso, caso que permanece ante la Corte mexicana. Los picos de actividad se registraron el 23 de abril (41 menciones) y el 22 de abril (22 menciones), impulsados por la difusión de la noticia de detención y posteriores actualizaciones sobre su situación migratoria. La baja presencia de Actinver en la conversación sugiere que el evento no ha generado asociación pública significativa entre la detención y el litigio que afecta a la institución financiera."
+            },
+            "narratives": [
+                {
+                    "trend": "creciente",
+                    "mentions": 380,
+                    "narrative": "Detención en Florida por ICE y fraude millonario al Infonavit",
+                    "sentiment": "negativo",
+                    "description": "Narrativa dominante que vincula la captura de Rafael Zaga Tawil por autoridades migratorias estadounidenses con acusaciones de un fraude superior a 5,000 millones de pesos al Infonavit durante el sexenio de Peña Nieto. Impulsada por medios regionales en Facebook como Imagen del Golfo, Toluca Comunica, Forbes México y periodistas como Julio Astillero y Oscar González Bonilla. La cobertura enfatiza la magnitud del presunto desfalco y la condición de prófugo del empresario desde 2020, sin mencionar el litigio contra Actinver."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 35,
+                    "narrative": "Responsabilidad política del sexenio de Peña Nieto",
+                    "sentiment": "negativo",
+                    "description": "Narrativa secundaria que contextualiza el caso Zaga Tawil como parte de una serie de escándalos de corrupción asociados al gobierno de Enrique Peña Nieto. Presente en menciones de cuentas como José Lira Cisneros y Tiempos de Transformación, que contrastan la detención con críticas al PRI y celebran la acción de autoridades actuales. No establece conexión con el sector financiero privado ni con Actinver."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 18,
+                    "narrative": "Procedimientos legales y argumentos de defensa",
+                    "sentiment": "mixto",
+                    "description": "Cobertura puntual sobre los recursos legales interpuestos por Zaga Tawil para impugnar su detención, calificándola de ilegal. Presente en menciones de MILENIO y otros medios que reportan actualizaciones sobre su situación migratoria en Florida. Esta narrativa introduce el tema de procesos judiciales en curso, aunque sin vincularlos explícitamente al litigio contra Actinver que está ante la Corte mexicana."
+                },
+                {
+                    "trend": "estable",
+                    "mentions": 6,
+                    "narrative": "Presencia marginal del litigio contra Actinver",
+                    "sentiment": "mixto",
+                    "description": "Narrativa residual que aparece en 6 menciones del universo total, sin desarrollo editorial significativo. No se identificaron piezas que profundicen en el supuesto mal manejo del fideicomiso ni que establezcan conexión entre la detención en Florida y el caso judicial que Zaga Tawil mantiene contra la institución financiera. La baja frecuencia sugiere que este ángulo no ha sido explorado por medios ni amplificado en redes sociales durante el periodo."
+                },
+                {
+                    "trend": "decreciente",
+                    "mentions": 58,
+                    "narrative": "Amplificación en redes sociales y medios regionales",
+                    "sentiment": "negativo",
+                    "description": "Patrón de difusión concentrado en Facebook (37 menciones) y Twitter (21 menciones), con predominio de medios regionales y cuentas de periodistas locales. La cobertura replica el encuadre de fraude al Infonavit sin aportar investigación original sobre otros litigios o disputas del empresario. La ausencia de medios financieros especializados en la muestra limita la probabilidad de que la conversación pivote hacia el sector bancario o bursátil."
+                }
+            ],
+            "conclusions": [
+            ],
+            "influencers": [
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "11,438 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "joaquínlópez-dóriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Gloria en Contexto",
+                    "reach": "8,080 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "gloriaencontexto",
+                    "avatarUrl": null,
+                    "sentiment": "mixto"
+                },
+                {
+                    "name": "Latinus",
+                    "reach": "5,574 interacciones",
+                    "mentions": 4,
+                    "platform": "facebook.com",
+                    "username": "Latinus",
+                    "avatarUrl": null,
+                    "sentiment": "mixto"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "2,537 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "aztecanoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Pável Argáez",
+                    "reach": "1,817 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "pávelargáez",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Joaquín López-Dóriga",
+                    "reach": "1,441 interacciones",
+                    "mentions": 2,
+                    "platform": "twitter.com",
+                    "username": "lopezdoriga",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Liz Vilchis",
+                    "reach": "1,441 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "lizvilchis",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Código Magenta",
+                    "reach": "1,382 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "códigomagenta",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Azteca Noticias",
+                    "reach": "1,338 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "AztecaNoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Blanco y Negro",
+                    "reach": "1,199 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "blancoynegro",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "José Díaz",
+                    "reach": "822 interacciones",
+                    "mentions": 2,
+                    "platform": "twitter.com",
+                    "username": "JJDiazMachuca",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "David Vargas Araujo",
+                    "reach": "762 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "DavidVargasA18",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "constanza luna",
+                    "reach": "702 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "lunadeandromeda",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "MVSNoticias",
+                    "reach": "673 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "mvsnoticias",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "El nieto de AMLO",
+                    "reach": "574 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "elnietodeamlo",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Óscar Gómez",
+                    "reach": "560 interacciones",
+                    "mentions": 2,
+                    "platform": "facebook.com",
+                    "username": "óscargómez",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "SinEmbargo",
+                    "reach": "515 interacciones",
+                    "mentions": 1,
+                    "platform": "twitter.com",
+                    "username": "SinEmbargoMX",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "MILENIO",
+                    "reach": "436 interacciones",
+                    "mentions": 3,
+                    "platform": "facebook.com",
+                    "username": "milenio",
+                    "avatarUrl": null,
+                    "sentiment": "neutral"
+                },
+                {
+                    "name": "Oscar González Bonilla",
+                    "reach": "403 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "oscargonzálezbonilla",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                },
+                {
+                    "name": "Canal 58",
+                    "reach": "339 interacciones",
+                    "mentions": 1,
+                    "platform": "facebook.com",
+                    "username": "canal58",
+                    "avatarUrl": null,
+                    "sentiment": "negativo"
+                }
+            ],
+            "keyFindings": [
+                "Distribución de sentimiento: 444 menciones en el periodo, 288 negativas (65%), 1 positivas (0%) y 155 neutrales (35%). En lectura ejecutiva, el periodo cierra con carga reputacional mayoritariamente adversa: la conversación pública se vuelve un terreno hostil que define el encuadre dominante de la ventana monitoreada.",
+                "Concentración de cobertura: facebook (107), twitter (72), facebook.com (39). facebook concentra 24% del volumen total con tono mayoritariamente adverso dentro de ese canal (81 de 107 negativas). Esto vuelve a facebook el canal donde se está fijando primero la lectura pública del periodo, por encima de cualquier otra plataforma de la muestra.",
+                "Voces con tracción medible: Joaquín López-Dóriga en twitter (2 publicaciones; 37,555 interacciones acumuladas); ¿Por qué es Tendencia? en twitter (1 publicación; 13,281 interacciones acumuladas); Azteca Noticias en twitter (1 publicación; 12,736 interacciones acumuladas). Estas cuentas concentran 63,572 interacciones en la muestra, por lo que un encuadre adverso en cualquiera de ellas escala más por capacidad de arrastre del emisor que por volumen disperso.",
+                "Pico de actividad: 2026-04-15 con 108 menciones (24% del total). Entre lo publicado ese día destacan piezas como \"Siempre es el prian, se dedican a hacer campaña negra en contra del gobierno de la 4T, pero son ello...\" en facebook y \"Detienen en Florida a Rafael Zaga Tawil por fraude millonario al Infonavit -\" en facebook. El día concentra el volumen más alto del periodo aunque sin formar una crisis sostenida, lo que sugiere un evento detonador acotado.",
+                "Términos más reiterados: Zaga Tawil (305), Rafael Zaga Tawil (139). Estos son los marcos concretos que están estructurando el encuadre de la conversación más allá de titulares aislados; la reiteración indica que el periodo quedó anclado a estos nombres y conceptos, no a hechos puntuales dispersos.",
+                "Reparto entre redes sociales (312 menciones, 70%) y medios digitales (132). El predominio de redes (70%) indica que la exposición fue principalmente reactiva: conversación impulsada por usuarios, no por cobertura editorial estructurada. Esto eleva la velocidad pero baja la durabilidad del registro."
+            ],
+            "mediaInsight": "La cobertura se concentra en medios regionales de Facebook (37 menciones) y cuentas de periodistas locales, sin presencia significativa de prensa financiera especializada. Medios como Imagen del Golfo, Toluca Comunica y Tú Zona Vanguardia Veracruz replican el encuadre de fraude al Infonavit sin investigación sobre el historial litigioso completo del empresario, lo que reduce la probabilidad de exposición inmediata para Actinver.",
+            "mediaOutlets": [
+                {
+                    "name": "Meganoticias",
+                    "domain": "meganoticias.mx",
+                    "neutral": 3,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.211566+00:00"
+                },
+                {
+                    "name": "Msn",
+                    "domain": "msn.com",
+                    "neutral": 3,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Milenio",
+                    "domain": "milenio.com",
+                    "neutral": 3,
+                    "articles": 4,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Threads",
+                    "domain": "threads.com",
+                    "neutral": 1,
+                    "articles": 4,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "El País",
+                    "domain": "elpais.com",
+                    "neutral": 1,
+                    "articles": 4,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-16T14:06:05.722412+00:00"
+                },
+                {
+                    "name": "Sin Embargo",
+                    "domain": "sinembargo.mx",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T18:52:45.173964+00:00"
+                },
+                {
+                    "name": "Aztecaquintanaroo",
+                    "domain": "aztecaquintanaroo.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T21:00:09.592882+00:00"
+                },
+                {
+                    "name": "Binoticias",
+                    "domain": "binoticias.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Efinf",
+                    "domain": "efinf.com",
+                    "neutral": 0,
+                    "articles": 3,
+                    "negative": 3,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Tvazteca",
+                    "domain": "tvazteca.com",
+                    "neutral": 2,
+                    "articles": 3,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-22T15:00:22.262555+00:00"
+                },
+                {
+                    "name": "Reforma",
+                    "domain": "reforma.com",
+                    "neutral": 1,
+                    "articles": 3,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-21T15:00:19.259408+00:00"
+                },
+                {
+                    "name": "El Universal",
+                    "domain": "eluniversal.com.mx",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.211566+00:00"
+                },
+                {
+                    "name": "Aristegui Noticias",
+                    "domain": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.211566+00:00"
+                },
+                {
+                    "name": "Elsiglodetorreon",
+                    "domain": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "articles": 2,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-23T18:52:45.173964+00:00"
+                },
+                {
+                    "name": "Oem",
+                    "domain": "oem.com.mx",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:45.173964+00:00"
+                },
+                {
+                    "name": "Elpoderdelasnoticiasleon",
+                    "domain": "elpoderdelasnoticiasleon.com",
+                    "neutral": 0,
+                    "articles": 2,
+                    "negative": 2,
+                    "positive": 0,
+                    "sentiment": "negativo",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Gobernantes",
+                    "domain": "gobernantes.com",
+                    "neutral": 1,
+                    "articles": 2,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Cadenapolitica",
+                    "domain": "cadenapolitica.com",
+                    "neutral": 1,
+                    "articles": 2,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Sociedad Noticias",
+                    "domain": "sociedad-noticias.com",
+                    "neutral": 2,
+                    "articles": 2,
+                    "negative": 0,
+                    "positive": 0,
+                    "sentiment": "neutral",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                },
+                {
+                    "name": "Criteriohidalgo",
+                    "domain": "criteriohidalgo.com",
+                    "neutral": 1,
+                    "articles": 2,
+                    "negative": 1,
+                    "positive": 0,
+                    "sentiment": "mixto",
+                    "lastPublishedAt": "2026-04-23T18:52:41.890487+00:00"
+                }
+            ],
+            "keywordsInsight": "Los términos dominantes anclan la conversación en el fraude al Infonavit (298 menciones) y la detención en Florida (187 menciones), con carga negativa concentrada en el empresario. Actinver (6 menciones) y fideicomiso (3 menciones) permanecen en la periferia léxica, lo que confirma que el encuadre público no ha migrado hacia el litigio que afecta a la institución financiera.",
+            "recommendations": [
+                "En el plazo inmediato, se sugiere que el área de comunicación estratégica defina una postura rectora para ordenar la respuesta pública ante el predominio de tono adverso observado. La decisión no pasa por reaccionar a cada mención, sino por fijar un marco interpretativo consistente para las piezas, vocerías y mensajes que eventualmente se activen. Esto ayuda a reducir el riesgo de contradicción narrativa y a evitar que terceros impongan el sentido dominante del tema sin contrapeso institucional.",
+                "En las próximas 2 a 4 semanas, podría convenir priorizar seguimiento ejecutivo y capacidad de respuesta sobre facebook, twitter, facebook.com. La oportunidad está en actuar sobre los espacios que realmente están moldeando percepción, en lugar de dispersar esfuerzos en canales secundarios. El equipo a cargo de asuntos públicos y comunicación reputacional puede usar esta jerarquización para asignar atención según incidencia real y no solo visibilidad aparente.",
+                "Dado que la conversación combina 312 menciones en redes sociales y 132 en medios digitales, se recomienda diferenciar la lógica de gestión por tipo de canal durante el próximo mes. En redes, el foco debería estar en velocidad de lectura, escalamiento y contención de tono; en medios, en contextualización, precisión y permanencia del encuadre. Esta separación permite mitigar riesgo reputacional sin tratar ecosistemas distintos como si respondieran a la misma dinámica.",
+                "Conviene que la dirección responsable evalúe umbrales claros de escalamiento para los próximos días, especialmente si el volumen negativo vuelve a concentrarse en pocos emisores o fechas críticas. La decisión estratégica aquí es anticipar cuándo un tema deja de ser monitoreable y exige coordinación institucional más amplia. Ese criterio reduce improvisación, mejora tiempos de reacción y protege a la organización frente a repuntes que suelen crecer más rápido que la capacidad interna de interpretación.",
+                "En el horizonte de 2 a 4 semanas, se sugiere capitalizar cualquier ventana de tono neutral o positivo para reequilibrar el marco de conversación con mensajes verificables y consistentes. La oportunidad no radica en sobreexponer a la organización, sino en introducir contexto suficiente para que la percepción pública no quede definida únicamente por los vectores adversos. El equipo a cargo de posicionamiento institucional puede evaluar cuándo esa intervención suma credibilidad y cuándo sería preferible reservarla.",
+                "También podría convenir revisar semanalmente si los términos y narrativas más repetidos están cambiando de intensidad o solo reciclando el mismo encuadre. Esta decisión permite distinguir entre un riesgo que se está ampliando y otro que únicamente se mantiene visible por inercia mediática o social. Para la dirección, esa diferencia es clave porque define si se necesita una acción correctiva de fondo o solo una gestión prudente de continuidad."
+            ],
+            "sourceBreakdown": [
+                {
+                    "count": 146,
+                    "source": "facebook.com",
+                    "neutral": 40,
+                    "negative": 105,
+                    "positive": 1
+                },
+                {
+                    "count": 82,
+                    "source": "twitter.com",
+                    "neutral": 24,
+                    "negative": 58,
+                    "positive": 0
+                },
+                {
+                    "count": 44,
+                    "source": "youtube.com",
+                    "neutral": 12,
+                    "negative": 32,
+                    "positive": 0
+                },
+                {
+                    "count": 33,
+                    "source": "instagram.com",
+                    "neutral": 14,
+                    "negative": 19,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "meganoticias.mx",
+                    "neutral": 3,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "msn.com",
+                    "neutral": 3,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "milenio.com",
+                    "neutral": 3,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "tiktok.com",
+                    "neutral": 2,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "threads.com",
+                    "neutral": 1,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 4,
+                    "source": "elpais.com",
+                    "neutral": 1,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "sinembargo.mx",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "aztecaquintanaroo.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "binoticias.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "efinf.com",
+                    "neutral": 0,
+                    "negative": 3,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "tvazteca.com",
+                    "neutral": 2,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 3,
+                    "source": "reforma.com",
+                    "neutral": 1,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "eluniversal.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "aristeguinoticias.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elsiglodetorreon.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "oem.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elpoderdelasnoticiasleon.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "gobernantes.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "cadenapolitica.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "sociedad-noticias.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "criteriohidalgo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "aztecabajio.com",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "evynchihuahua.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "reddit.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "contrareplica.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "vanguardia.com.mx",
+                    "neutral": 2,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "mvsnoticias.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "plazadearmas.com.mx",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "dailymotion.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "xevt.com",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "polemon.mx",
+                    "neutral": 0,
+                    "negative": 2,
+                    "positive": 0
+                },
+                {
+                    "count": 2,
+                    "source": "elceo.com",
+                    "neutral": 1,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "el-mexicano.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "canal13mexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "serpientesyescaleras.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendelgolfo.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "informatelaguna.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "julioastillero.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lajornadadeoriente.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "ejecentral.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecaaguascalientes.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elpopular.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecajalisco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "podcasts.apple.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "losnoticieristas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecachiapas.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notiver.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "aztecasinaloa.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "music.youtube.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "posta.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "dallasnews.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "pirapolitica.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "angulo7.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "periodicocontacto.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elfinanciero.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "notese.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "lja.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "dospuntos.media",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "ahoratabasco.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariocambio22.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "latinus.us",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elimparcial.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "puentelibre.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elorbe.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "am.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "elnorte.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nvinoticias.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "laaudiencia.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "24-horas.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "consultamonterrey.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nacion321.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "imagendeveracruz.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "info7.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "nuevolaredo.tv",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "somosaltiplano.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sipse.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "xeva.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "expreso.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "yucatan.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "sdpnoticias.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "excelsior.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "tribunademexico.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "razon.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "radioformula.com.mx",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "diariodechiapas.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "jornada.com.mx",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "unotv.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "infobae.com",
+                    "neutral": 1,
+                    "negative": 0,
+                    "positive": 0
+                },
+                {
+                    "count": 1,
+                    "source": "latintimes.com",
+                    "neutral": 0,
+                    "negative": 1,
+                    "positive": 0
+                }
+            ],
+            "timelineInsight": "La actividad se concentró en dos picos: 23 de abril con 41 menciones y 22 de abril con 22 menciones, impulsados por actualizaciones sobre la situación legal de Zaga Tawil tras su detención inicial el 13 de abril (10 menciones). El volumen sostenido entre el 13 y el 15 de abril (38 menciones acumuladas) refleja la difusión inmediata de la noticia en medios regionales y redes sociales, mientras que el repunte final del periodo sugiere cobertura de seguimiento sobre procedimientos migratorios o judiciales en EU.",
+            "impactAssessment": "La detención de Rafael Zaga Tawil en Florida representa un evento de alto perfil mediático que, sin embargo, no ha escalado hacia el litigio que mantiene contra Actinver por el supuesto mal manejo de un fideicomiso. De las 444 menciones recopiladas, solo 6 hacen referencia explícita a Actinver, lo que indica que la conversación pública permanece anclada al caso Infonavit y no ha migrado hacia el expediente judicial que involucra a la institución financiera. Este desacoplamiento representa una ventana de contención reputacional: la narrativa dominante responsabiliza a Zaga Tawil por un fraude ajeno al sector financiero privado, lo que limita la exposición de Actinver en un momento de alta visibilidad mediática del empresario. No obstante, la presencia de 5 menciones de \"Corte\" en el universo total sugiere que existe cobertura puntual sobre procesos judiciales en curso, lo que podría servir como puente temático si periodistas o analistas deciden explorar el historial litigioso completo de Zaga Tawil. El riesgo latente radica en que la atención mediática sostenida sobre el empresario podría motivar a medios especializados o de investigación a revisar sus disputas pendientes, incluyendo el caso contra Actinver, especialmente si el proceso de extradición o los procedimientos legales en México generan nuevas audiencias o resoluciones judiciales. La ausencia de vocería o posicionamiento público de Actinver en este periodo es consistente con una estrategia de bajo perfil, pero también implica que la institución no ha fijado un encuadre propio en caso de que la conversación pivote hacia el litigio del fideicomiso.",
+            "platformsInsight": "Facebook domina con 37 menciones, seguido de Twitter con 21, lo que indica difusión en redes sociales generalistas sin tracción en plataformas de audiencias financieras especializadas como LinkedIn o foros bursátiles. La ausencia de conversación en espacios de inversión o análisis económico limita el riesgo de que el caso escale hacia el sector financiero privado y afecte la percepción de Actinver.",
+            "narrativesInsight": "Las narrativas se concentran en el caso Infonavit y la responsabilidad política del sexenio de Peña Nieto, sin construir puentes temáticos hacia el litigio contra Actinver. La ausencia de medios financieros especializados y la baja exploración de otros expedientes judiciales de Zaga Tawil limitan el riesgo de escalamiento reputacional inmediato para la institución financiera.",
+            "sentimentAnalysis": "El 65% de las 444 menciones presenta tono negativo, impulsado por la cobertura de la detención de Zaga Tawil y su vinculación con el fraude al Infonavit. Este sentimiento adverso se dirige exclusivamente hacia el empresario y, en menor medida, hacia figuras políticas del sexenio de Peña Nieto mencionadas en contexto. Actinver no es objeto directo del sentimiento negativo dominante: las 6 menciones que la nombran no articulan críticas hacia la institución ni replican el tono de escándalo que caracteriza la cobertura del caso Infonavit. La única mención positiva del universo (0.2%) celebra la acción de autoridades internacionales, sin referencia a Actinver. El 35% de menciones neutrales corresponde a réplicas informativas sin valoración editorial. La polarización del sentimiento hacia Zaga Tawil como actor individual, y no hacia entidades financieras, sugiere que la conversación pública no ha construido un marco de responsabilidad institucional que alcance a Actinver, lo cual es favorable en términos de contención reputacional para la institución en el contexto del litigio que enfrenta.",
+            "influencersInsight": "Julio Astillero (276 interacciones) y Oscar González Bonilla (403 interacciones) concentran el engagement en Facebook, fijando el encuadre de fraude al Infonavit sin explorar otros litigios de Zaga Tawil. Forbes México (119 interacciones) replica la narrativa dominante sin aportar análisis financiero. La ausencia de voces especializadas en banca o mercados limita el riesgo de que la conversación pivote hacia Actinver.",
+            "totalUniqueAuthors": 286
+        },
+        "client_id": null,
+        "created_at": "2026-04-23T19:03:21.801064+00:00",
+        "created_by": "0b9b775b-379b-4446-a4a1-90044d34806a",
+        "date_range": {
+            "end": "2026-04-24T05:59:59.999Z",
+            "label": "12 abr - 23 abr 2026",
+            "start": "2026-04-12T06:00:00.000Z"
+        },
+        "expires_at": "2026-05-23T19:03:21.507+00:00",
+        "is_revoked": false,
+        "project_id": "f40526c1-b2a3-40ec-8500-d2daee41e649",
+        "updated_at": "2026-04-23T19:03:27.060541+00:00",
+        "view_count": 1,
+        "report_kind": "listening",
+        "project_name": "Zaga",
+        "last_viewed_at": "2026-04-23T19:03:27.060541+00:00"
+    }
+]

@@ -1,0 +1,68 @@
+{
+    "alertas": [
+    ],
+    "proyecto": {
+        "id": "2c4dc0b3-2999-49ce-ab43-6925fe1770d4",
+        "tipo": "monitoreo",
+        "activo": true,
+        "nombre": "Karthika",
+        "user_id": "b4c71393-2662-44ef-b813-57475e840292",
+        "version": 1,
+        "objetivo": "Monitorear y analizar conversaciones sobre AMLO en medios digitales y redes sociales.",
+        "audiencia": "Karthika",
+        "created_at": "2026-07-01T00:28:12.248219+00:00",
+        "updated_at": "2026-07-01T00:28:12.248219+00:00",
+        "descripcion": "Producto: listening | Profundidad: investigacion",
+        "sensibilidad": "alto",
+        "alcance_temporal": "mensual",
+        "alcance_geografico": [
+            "México",
+            "LATAM"
+        ],
+        "contexto_estrategico": null
+    },
+    "entidades": [
+        {
+            "id": "64b8bf3e-e9d1-4d89-93ed-30ebd589512d",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "AMLO",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-07-01T00:28:12.515394+00:00",
+            "project_id": "2c4dc0b3-2999-49ce-ab43-6925fe1770d4",
+            "updated_at": "2026-07-01T00:28:12.515394+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "AMLO"
+            ],
+            "platform_keywords": {
+            }
+        }
+    ],
+    "busqueda_programada": {
+        "id": "3c20c874-8628-45cd-aa69-f102b8aebb4f",
+        "frequency": "every_3_hours",
+        "platforms": [
+            "news",
+            "twitter",
+            "facebook",
+            "youtube",
+            "tiktok",
+            "instagram",
+            "linkedin",
+            "reddit"
+        ],
+        "run_count": 536,
+        "created_at": "2026-07-01T00:28:12.248219+00:00",
+        "is_enabled": true,
+        "last_error": null,
+        "project_id": "2c4dc0b3-2999-49ce-ab43-6925fe1770d4",
+        "updated_at": "2026-11-24T18:00:04.020764+00:00",
+        "last_run_at": "2026-11-24T18:00:03.792+00:00",
+        "next_run_at": "2026-11-24T21:00:03.792+00:00",
+        "max_results_per_platform": 50
+    }
+}

@@ -1,0 +1,201 @@
+{
+    "alertas": [
+    ],
+    "proyecto": {
+        "id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+        "tipo": "monitoreo",
+        "activo": true,
+        "nombre": "Leon Guanajuato 2027",
+        "user_id": "0b9b775b-379b-4446-a4a1-90044d34806a",
+        "version": 1,
+        "objetivo": "Monitorear y analizar conversaciones sobre violencia en León, Guanajuato, Seguridad en León, Guanajuato, economía en León, Guanajuato, Turismo en León, Guanajuato, Problemas en León, Guanajuato, Empleo en León, Guanajuato, Personajes actuales en León, Guanajuato, Políticos más importantes en León, Guanajuato en medios digitales y redes sociales.",
+        "audiencia": "Investigadores y anlistas",
+        "created_at": "2026-05-06T17:56:50.620247+00:00",
+        "updated_at": "2026-05-12T03:45:54.094483+00:00",
+        "descripcion": "Producto: listening | Profundidad: deep_dive",
+        "sensibilidad": "alto",
+        "alcance_temporal": "semanal",
+        "alcance_geografico": [
+            "México",
+            "LATAM"
+        ],
+        "contexto_estrategico": "Entender qué temas dominan la conversación pública en León, cómo se expresan en medios tradicionales y plataformas digitales, qué preocupaciones o conflictos generan mayor atención ciudadana y qué narrativas están moldeando la percepción sobre la ciudad, su gobierno, sus problemas y su rumbo.\n\nEntender qué actores políticos son más mencionados en redes sociales y medios locales."
+    },
+    "entidades": [
+        {
+            "id": "2a05ded3-9442-4374-adbc-d721d84c168a",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "violencia en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "violencia en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "5068f06a-4e60-40c9-8627-9dcd61303ab6",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Seguridad en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Seguridad en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "f91e035c-38e0-420d-9aeb-bf7a9ff0086f",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "economía en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "economía en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "6d66869c-6253-4f2f-bfc8-fb9cca936528",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Turismo en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Turismo en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "007d7904-60dd-4e13-bee3-534521a00f3d",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Problemas en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Problemas en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "54308618-adea-4a25-8e3e-d3f98d8fb99d",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Empleo en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Empleo en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "2a43d580-d3f2-427a-91ff-af8c45ff2160",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Personajes actuales en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Personajes actuales en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        },
+        {
+            "id": "a3f6add4-6e0e-46d3-96c4-557cd980412f",
+            "tipo": "tema",
+            "activo": true,
+            "nombre": "Políticos más importantes en León, Guanajuato",
+            "aliases": [
+            ],
+            "metadata": {
+            },
+            "created_at": "2026-05-06T17:56:51.186605+00:00",
+            "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+            "updated_at": "2026-05-06T17:56:51.186605+00:00",
+            "descripcion": null,
+            "palabras_clave": [
+                "Políticos más importantes en León, Guanajuato"
+            ],
+            "platform_keywords": {
+            }
+        }
+    ],
+    "busqueda_programada": {
+        "id": "225c81e3-67a4-47eb-83a3-9617a70fefc7",
+        "frequency": "every_3_hours",
+        "platforms": [
+            "news",
+            "twitter",
+            "facebook",
+            "youtube",
+            "tiktok",
+            "instagram",
+            "linkedin",
+            "reddit"
+        ],
+        "run_count": 765,
+        "created_at": "2026-05-06T17:56:50.620247+00:00",
+        "is_enabled": true,
+        "last_error": null,
+        "project_id": "8f4b55cb-f397-4671-b788-dfc0420aa2b8",
+        "updated_at": "2026-11-24T15:00:15.263019+00:00",
+        "last_run_at": "2026-11-24T15:00:14.604+00:00",
+        "next_run_at": "2026-11-24T18:00:14.604+00:00",
+        "max_results_per_platform": 50
+    }
+}
