@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,29 +18,24 @@ import ProjectSpecBuilder from "./pages/ProjectSpecBuilder";
 import NotFound from "./pages/NotFound";
 import PublicReportPage from "./pages/PublicReportPage";
 
-// Dashboard pages (Wizr Core + Unified Views)
-import InsightsPage from "./pages/dashboard/InsightsPage";
-import SemanticaPage from "./pages/dashboard/SemanticaPage";
-import ComparativaPage from "./pages/dashboard/ComparativaPage";
-import InfluenciadoresPage from "./pages/dashboard/InfluenciadoresPage";
-import FuentesPage from "./pages/dashboard/FuentesPage";
-import ReportesPage from "./pages/dashboard/ReportesPage";
-import ProjectsPage from "./pages/dashboard/ProjectsPage";
-import ConfiguracionPage from "./pages/dashboard/ConfiguracionPage";
-import RankingsPage from "./pages/dashboard/RankingsPage";
-import PerformancePage from "./pages/dashboard/PerformancePage";
-import DashboardHomePage from "./pages/dashboard/DashboardHomePage";
-import AnalisisPage from "./pages/dashboard/AnalisisPage";
-import SearchPage from "./pages/dashboard/Search";
-import NetnographyListPage from "./pages/dashboard/NetnographyListPage";
-import NetnographyDetailPage from "./pages/dashboard/NetnographyDetailPage";
-import NetnographyPresentationPage from "./pages/dashboard/NetnographyPresentationPage";
-import NetnographySignalsPage from "./pages/dashboard/NetnographySignalsPage";
-import NetnographyMethodologyPage from "./pages/dashboard/NetnographyMethodologyPage";
+// Dashboard pages (lazy-loaded para optimizar el bundle inicial)
+const FuentesPage = lazy(() => import("./pages/dashboard/FuentesPage"));
+const ReportesPage = lazy(() => import("./pages/dashboard/ReportesPage"));
+const ProjectsPage = lazy(() => import("./pages/dashboard/ProjectsPage"));
+const ConfiguracionPage = lazy(() => import("./pages/dashboard/ConfiguracionPage"));
+const PerformancePage = lazy(() => import("./pages/dashboard/PerformancePage"));
+const DashboardHomePage = lazy(() => import("./pages/dashboard/DashboardHomePage"));
+const AnalisisPage = lazy(() => import("./pages/dashboard/AnalisisPage"));
+const SearchPage = lazy(() => import("./pages/dashboard/Search"));
+const NetnographyListPage = lazy(() => import("./pages/dashboard/NetnographyListPage"));
+const NetnographyDetailPage = lazy(() => import("./pages/dashboard/NetnographyDetailPage"));
+const NetnographyPresentationPage = lazy(() => import("./pages/dashboard/NetnographyPresentationPage"));
+const NetnographySignalsPage = lazy(() => import("./pages/dashboard/NetnographySignalsPage"));
+const NetnographyMethodologyPage = lazy(() => import("./pages/dashboard/NetnographyMethodologyPage"));
 
 // Portal Ejecutivo Multi-Cliente y Administración
-import PortalRouter from "./pages/portal/PortalRouter";
-import ClientPortalAdmin from "./pages/admin/ClientPortalAdmin";
+const PortalRouter = lazy(() => import("./pages/portal/PortalRouter"));
+const ClientPortalAdmin = lazy(() => import("./pages/admin/ClientPortalAdmin"));
 import { detectClientPortal } from "./lib/clientPortal";
 
 import { Loader2 } from "lucide-react";
@@ -196,7 +192,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            }
+          >
+            <AppRoutes />
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
