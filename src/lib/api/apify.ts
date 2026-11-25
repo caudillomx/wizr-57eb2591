@@ -61,7 +61,7 @@ async function invokeBackendFunction<T>(
       error:
         error?.response?.data?.error ||
         error?.message ||
-        "Error de conexiÃ³n con el servidor",
+        "Error de conexión con el servidor",
     };
   }
 }

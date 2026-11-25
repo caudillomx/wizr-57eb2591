@@ -38,12 +38,12 @@ const RestablecerContrasena = () => {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Las contraseÃ±as no coinciden");
+      setError("Las contraseñas no coinciden");
       return;
     }
 
     if (password.length < 6) {
-      setError("La contraseÃ±a debe tener al menos 6 caracteres");
+      setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
@@ -63,7 +63,7 @@ const RestablecerContrasena = () => {
         navigate("/login");
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.error || "OcurriÃ³ un error al restablecer la contraseÃ±a.");
+      setError(err.response?.data?.error || "Ocurrió un error al restablecer la contraseña.");
     } finally {
       setLoading(false);
     }
@@ -87,9 +87,9 @@ const RestablecerContrasena = () => {
         >
           <img src={wizrLogo} alt="Wizr" className="mx-auto h-16 w-auto" />
           <div className="space-y-2">
-            <h1 className="text-xl font-semibold text-foreground">Enlace invÃ¡lido o expirado</h1>
+            <h1 className="text-xl font-semibold text-foreground">Enlace inválido o expirado</h1>
             <p className="text-sm text-muted-foreground">
-              El enlace de recuperaciÃ³n ya no es vÃ¡lido. Solicita uno nuevo.
+              El enlace de recuperación ya no es válido. Solicita uno nuevo.
             </p>
           </div>
           <Link to="/recuperar-contrasena">
@@ -112,7 +112,7 @@ const RestablecerContrasena = () => {
             <CheckCircle className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Â¡ContraseÃ±a actualizada!</h1>
+            <h1 className="text-2xl font-bold text-foreground">¡Contraseña actualizada!</h1>
             <p className="text-sm text-muted-foreground">
               Redirigiendo al dashboard...
             </p>
@@ -134,9 +134,9 @@ const RestablecerContrasena = () => {
         <div className="flex flex-col items-center gap-4">
           <img src={wizrLogo} alt="Wizr" className="h-16 w-auto" />
           <div className="space-y-1 text-center">
-            <h1 className="text-xl font-semibold text-foreground">Nueva contraseÃ±a</h1>
+            <h1 className="text-xl font-semibold text-foreground">Nueva contraseña</h1>
             <p className="text-sm text-muted-foreground">
-              Ingresa tu nueva contraseÃ±a
+              Ingresa tu nueva contraseña
             </p>
           </div>
         </div>
@@ -146,7 +146,7 @@ const RestablecerContrasena = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                Nueva contraseÃ±a
+                Nueva contraseña
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -155,7 +155,7 @@ const RestablecerContrasena = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="••••••••"
                   required
                   autoComplete="new-password"
                   className="bg-card pl-10 pr-10"
@@ -172,7 +172,7 @@ const RestablecerContrasena = () => {
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirmar contraseÃ±a
+                Confirmar contraseña
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -181,7 +181,7 @@ const RestablecerContrasena = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="••••••••"
                   required
                   autoComplete="new-password"
                   className="bg-card pl-10"
@@ -207,7 +207,7 @@ const RestablecerContrasena = () => {
                 Actualizando...
               </>
             ) : (
-              "Actualizar contraseÃ±a"
+              "Actualizar contraseña"
             )}
           </Button>
         </form>
